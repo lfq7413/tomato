@@ -7,7 +7,7 @@ import (
 
 func init() {
 	ns := beego.NewNamespace("/v1",
-        beego.NSNamespace("/objects",
+        beego.NSNamespace("/classes",
 			beego.NSInclude(
 				&controllers.ObjectsController{},
 			),

@@ -8,9 +8,9 @@ import (
 )
 
 // Run ...
-func Run() {
+func Run(url string) {
     
-    orm.OpenDB("192.168.99.100:27017/test")
+    orm.OpenDB(url)
     defer orm.CloseDB()
     
     if beego.BConfig.RunMode == "dev" {

@@ -3,7 +3,9 @@ package controllers
 import (
 	"github.com/astaxie/beego"
     "github.com/lfq7413/tomato/orm"
-    "gopkg.in/mgo.v2/bson"
+    "github.com/lfq7413/tomato/utils"
+    // "gopkg.in/mgo.v2/bson"
+    "encoding/json"
     "log"
 )
 
@@ -16,10 +18,17 @@ type ObjectsController struct {
 // @router /:className [post]
 func (o *ObjectsController) Post() {
     className := o.Ctx.Input.Param(":className")
+    
+    var cls map[string]interface{}
+    json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
+    
+    cls["objectId"] = utils.CreateObjectId()
+    
     data := make(map[string]string)
     data["method"] = "Post"
     data["className"] = className
-    err := orm.TomatoDB.Insert("std", bson.M{"name": "joe"})
+    
+    err := orm.TomatoDB.Insert("std", cls)
     if err != nil {
         log.Fatal(err)
     }

@@ -14,7 +14,7 @@ package main
 import "github.com/lfq7413/tomato"
 
 func main() {
-    tomato.Run()
+    tomato.Run("127.0.0.1:27017/test")
 }
 ```
 ###### 运行

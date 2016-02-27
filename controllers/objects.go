@@ -22,16 +22,20 @@ func (o *ObjectsController) Post() {
     var cls map[string]interface{}
     json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
     
-    cls["objectId"] = utils.CreateObjectId()
+    objectId := utils.CreateObjectId()
+    cls["objectId"] = objectId
+    cls["createdAt"] = ""
+    cls["updatedAt"] = ""
     
-    data := make(map[string]string)
-    data["method"] = "Post"
-    data["className"] = className
-    
-    err := orm.TomatoDB.Insert("std", cls)
+    err := orm.TomatoDB.Insert(className, cls)
     if err != nil {
         log.Fatal(err)
     }
+    
+    data := make(map[string]string)
+    data["objectId"] = objectId
+    data["createdAt"] = ""
+    
 	o.Data["json"] = data
 	o.ServeJSON()
 }

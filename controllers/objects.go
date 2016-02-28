@@ -47,10 +47,23 @@ func (o *ObjectsController) Post() {
 func (o *ObjectsController) Get() {
     className := o.Ctx.Input.Param(":className")
     objectId := o.Ctx.Input.Param(":objectId")
-    data := make(map[string]string)
-    data["method"] = "Get"
-    data["className"] = className
-    data["objectId"] = objectId
+    
+    cls := make(map[string]interface{})
+    cls["objectId"] = objectId
+    
+    data, err := orm.TomatoDB.FindOne(className, cls)
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    delete(data, "_id")
+    if createdAt, ok := data["createdAt"].(int64); ok{
+        data["createdAt"] = utils.UnixmillitoString(createdAt)
+    }
+    if updatedAt, ok := data["updatedAt"].(int64); ok{
+        data["updatedAt"] = utils.UnixmillitoString(updatedAt)
+    }
+    
 	o.Data["json"] = data
 	o.ServeJSON()
 }

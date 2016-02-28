@@ -7,6 +7,7 @@ import (
     // "gopkg.in/mgo.v2/bson"
     "encoding/json"
     "log"
+    "time"
 )
 
 // ObjectsController ...
@@ -23,9 +24,10 @@ func (o *ObjectsController) Post() {
     json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
     
     objectId := utils.CreateObjectId()
+    now := time.Now()
     cls["objectId"] = objectId
-    cls["createdAt"] = ""
-    cls["updatedAt"] = ""
+    cls["createdAt"] = utils.TimetoUnixmilli(now)
+    cls["updatedAt"] = utils.TimetoUnixmilli(now)
     
     err := orm.TomatoDB.Insert(className, cls)
     if err != nil {
@@ -34,7 +36,7 @@ func (o *ObjectsController) Post() {
     
     data := make(map[string]string)
     data["objectId"] = objectId
-    data["createdAt"] = ""
+    data["createdAt"] = utils.TimetoString(now)
     
 	o.Data["json"] = data
 	o.ServeJSON()

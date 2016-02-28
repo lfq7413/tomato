@@ -47,3 +47,10 @@ func (d *Database)Insert(collection string, docs interface{}) error{
     err := d.Database.C(collection).Insert(docs)
     return err
 }
+
+// FindOne ...
+func (d *Database)FindOne(collection string, query interface{}) (map[string]interface{}, error) {
+    var result map[string]interface{}
+    err := d.Database.C(collection).Find(query).One(&result)
+    return result, err
+}

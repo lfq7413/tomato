@@ -39,6 +39,8 @@ func (o *ObjectsController) Post() {
     data["createdAt"] = utils.TimetoString(now)
     
 	o.Data["json"] = data
+    o.Ctx.Output.SetStatus(201)
+    o.Ctx.Output.Header("Location", beego.AppConfig.String("myhttpurl") + "classes/" + className + "/" + objectId)
 	o.ServeJSON()
 }
 

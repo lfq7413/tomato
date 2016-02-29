@@ -7,7 +7,7 @@ const ISO8601 = "2006-01-02T15:04:05.000Z"
 
 // StringtoTime ...
 func StringtoTime(s string) (time.Time, error) {
-    return time.ParseInLocation(ISO8601, s, time.Local)
+    return time.ParseInLocation(ISO8601, s, time.UTC)
 }
 
 // TimetoString ...
@@ -17,7 +17,7 @@ func TimetoString(t time.Time) string {
 
 // UnixmillitoTime ...
 func UnixmillitoTime(m int64) time.Time {
-    return time.Unix(m/1000, m%1000*1e6)
+    return time.Unix(m/1000, m%1000*1e6).UTC()
 }
 
 // TimetoUnixmilli ...

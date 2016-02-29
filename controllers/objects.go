@@ -24,10 +24,10 @@ func (o *ObjectsController) Post() {
     json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
     
     objectId := utils.CreateObjectId()
-    now := time.Now()
+    now := time.Now().UTC()
     cls["objectId"] = objectId
-    cls["createdAt"] = utils.TimetoUnixmilli(now)
-    cls["updatedAt"] = utils.TimetoUnixmilli(now)
+    cls["createdAt"] = now
+    cls["updatedAt"] = now
     
     err := orm.TomatoDB.Insert(className, cls)
     if err != nil {
@@ -57,11 +57,11 @@ func (o *ObjectsController) Get() {
     }
     
     delete(data, "_id")
-    if createdAt, ok := data["createdAt"].(int64); ok{
-        data["createdAt"] = utils.UnixmillitoString(createdAt)
+    if createdAt, ok := data["createdAt"].(time.Time); ok{
+        data["createdAt"] = utils.TimetoString(createdAt.UTC())
     }
-    if updatedAt, ok := data["updatedAt"].(int64); ok{
-        data["updatedAt"] = utils.UnixmillitoString(updatedAt)
+    if updatedAt, ok := data["updatedAt"].(time.Time); ok{
+        data["updatedAt"] = utils.TimetoString(updatedAt.UTC())
     }
     
 	o.Data["json"] = data

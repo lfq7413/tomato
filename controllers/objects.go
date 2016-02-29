@@ -4,7 +4,7 @@ import (
 	"github.com/astaxie/beego"
     "github.com/lfq7413/tomato/orm"
     "github.com/lfq7413/tomato/utils"
-    // "gopkg.in/mgo.v2/bson"
+    "github.com/lfq7413/tomato/config"
     "encoding/json"
     "log"
     "time"
@@ -40,7 +40,7 @@ func (o *ObjectsController) Post() {
     
 	o.Data["json"] = data
     o.Ctx.Output.SetStatus(201)
-    o.Ctx.Output.Header("Location", beego.AppConfig.String("myhttpurl") + "classes/" + className + "/" + objectId)
+    o.Ctx.Output.Header("Location", config.TConfig.URL + "classes/" + className + "/" + objectId)
 	o.ServeJSON()
 }
 

@@ -4,5 +4,5 @@ import "github.com/astaxie/beego/utils"
 
 // CreateObjectId ...
 func CreateObjectId() string {
-    return string(utils.RandomCreateBytes(32))
+	return string(utils.RandomCreateBytes(32))
 }

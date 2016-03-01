@@ -8,7 +8,7 @@ type Config struct {
 }
 
 var (
-    // TConfig ...
+	// TConfig ...
 	TConfig *Config
 )
 

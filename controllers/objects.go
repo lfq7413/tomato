@@ -26,7 +26,7 @@ func (o *ObjectsController) Post() {
 
 	objectId := utils.CreateObjectId()
 	now := time.Now().UTC()
-	cls["objectId"] = objectId
+	cls["_id"] = objectId
 	cls["createdAt"] = now
 	cls["updatedAt"] = now
 
@@ -52,13 +52,14 @@ func (o *ObjectsController) Get() {
 	objectId := o.Ctx.Input.Param(":objectId")
 
 	cls := make(map[string]interface{})
-	cls["objectId"] = objectId
+	cls["_id"] = objectId
 
 	data, err := orm.TomatoDB.FindOne(className, cls)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	data["objectId"] = data["_id"]
 	delete(data, "_id")
 	if createdAt, ok := data["createdAt"].(time.Time); ok {
 		data["createdAt"] = utils.TimetoString(createdAt.UTC())

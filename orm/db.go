@@ -56,6 +56,13 @@ func (d *Database) FindOne(collection string, query interface{}) (map[string]int
 	return result, err
 }
 
+// Find ...
+func (d *Database) Find(collection string, query interface{}) ([]map[string]interface{}, error) {
+	var result []map[string]interface{}
+	err := d.Database.C(collection).Find(query).All(&result)
+	return result, err
+}
+
 // Remove ...
 func (d *Database) Remove(collection string, selector interface{}) error {
 	err := d.Database.C(collection).Remove(selector)

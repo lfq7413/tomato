@@ -89,10 +89,25 @@ func (o *ObjectsController) Put() {
 // @router /:className [get]
 func (o *ObjectsController) GetAll() {
 	className := o.Ctx.Input.Param(":className")
-	data := make(map[string]string)
-	data["method"] = "GetAll"
-	data["className"] = className
-	o.Data["json"] = data
+
+	cls := make(map[string]interface{})
+
+	data, err := orm.TomatoDB.Find(className, cls)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, v := range data {
+		v["objectId"] = v["_id"]
+		delete(v, "_id")
+		if createdAt, ok := v["createdAt"].(time.Time); ok {
+			v["createdAt"] = utils.TimetoString(createdAt.UTC())
+		}
+		if updatedAt, ok := v["updatedAt"].(time.Time); ok {
+			v["updatedAt"] = utils.TimetoString(updatedAt.UTC())
+		}
+	}
+	o.Data["json"] = map[string]interface{}{"results": data}
 	o.ServeJSON()
 }
 

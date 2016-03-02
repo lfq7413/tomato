@@ -101,10 +101,16 @@ func (o *ObjectsController) GetAll() {
 func (o *ObjectsController) Delete() {
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
+
+	cls := make(map[string]string)
+	cls["_id"] = objectId
+
+	err := orm.TomatoDB.Remove(className, cls)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	data := make(map[string]string)
-	data["method"] = "Delete"
-	data["className"] = className
-	data["objectId"] = objectId
 	o.Data["json"] = data
 	o.ServeJSON()
 }

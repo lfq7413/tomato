@@ -9,6 +9,7 @@ import (
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/utils"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // ObjectsController ...
@@ -77,10 +78,21 @@ func (o *ObjectsController) Get() {
 func (o *ObjectsController) Put() {
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
+
+	var cls map[string]interface{}
+	json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
+
+	now := time.Now().UTC()
+	cls["updatedAt"] = now
+	update := bson.M{"$set": cls}
+
+	err := orm.TomatoDB.Update(className, map[string]string{"_id": objectId}, update)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	data := make(map[string]string)
-	data["method"] = "Put"
-	data["className"] = className
-	data["objectId"] = objectId
+	data["updatedAt"] = utils.TimetoString(now)
 	o.Data["json"] = data
 	o.ServeJSON()
 }

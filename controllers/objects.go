@@ -22,7 +22,7 @@ type ObjectsController struct {
 func (o *ObjectsController) Post() {
 	className := o.Ctx.Input.Param(":className")
 
-	var cls map[string]interface{}
+	var cls bson.M
 	json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
 
 	objectId := utils.CreateObjectId()
@@ -36,7 +36,7 @@ func (o *ObjectsController) Post() {
 		log.Fatal(err)
 	}
 
-	data := make(map[string]string)
+	data := bson.M{}
 	data["objectId"] = objectId
 	data["createdAt"] = utils.TimetoString(now)
 
@@ -52,7 +52,7 @@ func (o *ObjectsController) Get() {
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 
-	cls := make(map[string]interface{})
+	cls := bson.M{}
 	cls["_id"] = objectId
 
 	data, err := orm.TomatoDB.FindOne(className, cls)
@@ -79,19 +79,19 @@ func (o *ObjectsController) Put() {
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 
-	var cls map[string]interface{}
+	var cls bson.M
 	json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
 
 	now := time.Now().UTC()
 	cls["updatedAt"] = now
 	update := bson.M{"$set": cls}
 
-	err := orm.TomatoDB.Update(className, map[string]string{"_id": objectId}, update)
+	err := orm.TomatoDB.Update(className, bson.M{"_id": objectId}, update)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := make(map[string]string)
+	data := bson.M{}
 	data["updatedAt"] = utils.TimetoString(now)
 	o.Data["json"] = data
 	o.ServeJSON()
@@ -102,7 +102,7 @@ func (o *ObjectsController) Put() {
 func (o *ObjectsController) GetAll() {
 	className := o.Ctx.Input.Param(":className")
 
-	cls := make(map[string]interface{})
+	cls := bson.M{}
 
 	data, err := orm.TomatoDB.Find(className, cls)
 	if err != nil {
@@ -119,7 +119,7 @@ func (o *ObjectsController) GetAll() {
 			v["updatedAt"] = utils.TimetoString(updatedAt.UTC())
 		}
 	}
-	o.Data["json"] = map[string]interface{}{"results": data}
+	o.Data["json"] = bson.M{"results": data}
 	o.ServeJSON()
 }
 
@@ -129,7 +129,7 @@ func (o *ObjectsController) Delete() {
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 
-	cls := make(map[string]string)
+	cls := bson.M{}
 	cls["_id"] = objectId
 
 	err := orm.TomatoDB.Remove(className, cls)
@@ -137,7 +137,7 @@ func (o *ObjectsController) Delete() {
 		log.Fatal(err)
 	}
 
-	data := make(map[string]string)
+	data := bson.M{}
 	o.Data["json"] = data
 	o.ServeJSON()
 }

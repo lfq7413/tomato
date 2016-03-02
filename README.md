@@ -37,4 +37,4 @@ func main() {
 
 ## LICENSE
 
-MIT
+[MIT](/LICENSE)

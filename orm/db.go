@@ -3,6 +3,7 @@ package orm
 import (
 	"fmt"
 
+	"github.com/lfq7413/tomato/config"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -35,8 +36,8 @@ func NewDatabase(url string) *Database {
 }
 
 // OpenDB ...
-func OpenDB(url string) {
-	TomatoDB = NewDatabase(url)
+func OpenDB() {
+	TomatoDB = NewDatabase(config.TConfig.DatabaseURI)
 }
 
 // CloseDB ...

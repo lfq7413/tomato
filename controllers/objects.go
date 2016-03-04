@@ -42,7 +42,7 @@ func (o *ObjectsController) Post() {
 
 	o.Data["json"] = data
 	o.Ctx.Output.SetStatus(201)
-	o.Ctx.Output.Header("Location", config.TConfig.URL+"classes/"+className+"/"+objectId)
+	o.Ctx.Output.Header("Location", config.TConfig.ServerURL+"/classes/"+className+"/"+objectId)
 	o.ServeJSON()
 }
 

@@ -4,7 +4,11 @@ import "github.com/astaxie/beego"
 
 // Config ...
 type Config struct {
-	URL string
+	ServerURL   string
+	DatabaseURI string
+	AppID       string
+	MasterKey   string
+	ClientKey   string
 }
 
 var (
@@ -14,7 +18,11 @@ var (
 
 func init() {
 	TConfig = &Config{
-		URL: "http://127.0.0.1:8080/v1/",
+		ServerURL:   "http://127.0.0.1:8080/v1",
+		DatabaseURI: "192.168.99.100:27017/test",
+		AppID:       "",
+		MasterKey:   "",
+		ClientKey:   "",
 	}
 
 	ParseConfig()
@@ -22,5 +30,9 @@ func init() {
 
 // ParseConfig ...
 func ParseConfig() {
-	TConfig.URL = beego.AppConfig.String("myhttpurl")
+	TConfig.ServerURL = beego.AppConfig.String("serverurl")
+	TConfig.DatabaseURI = beego.AppConfig.String("databaseuri")
+	TConfig.AppID = beego.AppConfig.String("appid")
+	TConfig.MasterKey = beego.AppConfig.String("masterkey")
+	TConfig.ClientKey = beego.AppConfig.String("clientkey")
 }

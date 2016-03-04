@@ -14,8 +14,20 @@ package main
 import "github.com/lfq7413/tomato"
 
 func main() {
-    tomato.Run("127.0.0.1:27017/test")
+    tomato.Run()
 }
+```
+###### 创建配置文件 /conf/app.conf
+```
+appname = hello
+httpport = 8080
+runmode = dev
+autorender = false
+copyrequestbody = true
+EnableDocs = true
+
+serverurl = http://127.0.0.1:8080/v1/
+databaseuri = 192.168.99.100:27017/test
 ```
 ###### 运行
 ```bash

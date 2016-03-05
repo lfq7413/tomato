@@ -18,7 +18,7 @@ func main() {
 }
 ```
 ###### 创建配置文件 /conf/app.conf
-```
+```ini
 appname = hello
 httpport = 8080
 runmode = dev

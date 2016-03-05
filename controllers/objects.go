@@ -15,6 +15,30 @@ import (
 // ObjectsController ...
 type ObjectsController struct {
 	beego.Controller
+	Info *RequestInfo
+}
+
+// RequestInfo ...
+type RequestInfo struct {
+	AppID          string
+	MasterKey      string
+	ClientKey      string
+	SessionToken   string
+	InstallationID string
+}
+
+// Prepare ...
+func (o *ObjectsController) Prepare() {
+	//TODO 1、获取请求头
+	info := &RequestInfo{}
+	info.AppID = o.Ctx.Input.Header("X-Parse-Application-Id")
+	info.MasterKey = o.Ctx.Input.Header("X-Parse-Master-Key")
+	info.ClientKey = o.Ctx.Input.Header("X-Parse-Client-Key")
+	info.SessionToken = o.Ctx.Input.Header("X-Parse-Session-Token")
+	info.InstallationID = o.Ctx.Input.Header("X-Parse-Installation-Id")
+	o.Info = info
+	//TODO 2、校验头部数据
+	//TODO 3、生成当前会话用户权限信息
 }
 
 // Post ...

@@ -16,8 +16,10 @@ import (
 // ObjectsController ...
 type ObjectsController struct {
 	beego.Controller
-	Info *RequestInfo
-	Auth *auth.Auth
+	Info      *RequestInfo
+	Auth      *auth.Auth
+	ClassName string
+	ObjectID  string
 }
 
 // RequestInfo ...

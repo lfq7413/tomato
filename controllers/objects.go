@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/astaxie/beego"
+	"github.com/lfq7413/tomato/auth"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/utils"
@@ -16,6 +17,7 @@ import (
 type ObjectsController struct {
 	beego.Controller
 	Info *RequestInfo
+	Auth *auth.Auth
 }
 
 // RequestInfo ...
@@ -38,7 +40,23 @@ func (o *ObjectsController) Prepare() {
 	info.InstallationID = o.Ctx.Input.Header("X-Parse-Installation-Id")
 	o.Info = info
 	//TODO 2、校验头部数据
+	if info.AppID != config.TConfig.AppID {
+		//TODO AppID 不正确
+	}
+	if info.MasterKey == config.TConfig.MasterKey {
+		o.Auth = &auth.Auth{InstallationID: info.InstallationID, IsMaster: true}
+		return
+	}
+	if info.ClientKey != config.TConfig.ClientKey {
+		//TODO ClientKey 不正确
+	}
 	//TODO 3、生成当前会话用户权限信息
+	if info.SessionToken == "" {
+		o.Auth = &auth.Auth{InstallationID: info.InstallationID, IsMaster: false}
+	} else {
+		o.Auth = auth.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
+	}
+
 }
 
 // Post ...

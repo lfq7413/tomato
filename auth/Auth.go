@@ -19,3 +19,8 @@ func Master() *Auth {
 func Nobody() *Auth {
 	return &Auth{IsMaster: false}
 }
+
+// GetAuthForSessionToken ...
+func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
+	return &Auth{IsMaster: false, InstallationID: installationID}
+}

@@ -149,15 +149,15 @@ func (o *ObjectsController) GetAll() {
 
 	// TODO 获取查询参数，并组装
 	options := map[string]interface{}{}
-	if o.Ctx.Input.Param("skip") != "" {
-		if i, err := strconv.Atoi(o.Ctx.Input.Param("skip")); err == nil {
+	if o.GetString("skip") != "" {
+		if i, err := strconv.Atoi(o.GetString("skip")); err == nil {
 			options["skip"] = i
 		} else {
 			// TODO return error
 		}
 	}
-	if o.Ctx.Input.Param("limit") != "" {
-		if i, err := strconv.Atoi(o.Ctx.Input.Param("limit")); err == nil {
+	if o.GetString("limit") != "" {
+		if i, err := strconv.Atoi(o.GetString("limit")); err == nil {
 			options["limit"] = i
 		} else {
 			// TODO return error
@@ -165,22 +165,22 @@ func (o *ObjectsController) GetAll() {
 	} else {
 		options["limit"] = 100
 	}
-	if o.Ctx.Input.Param("order") != "" {
-		options["order"] = o.Ctx.Input.Param("order")
+	if o.GetString("order") != "" {
+		options["order"] = o.GetString("order")
 	}
-	if o.Ctx.Input.Param("count") != "" {
+	if o.GetString("count") != "" {
 		options["count"] = true
 	}
-	if o.Ctx.Input.Param("keys") != "" {
-		options["keys"] = o.Ctx.Input.Param("keys")
+	if o.GetString("keys") != "" {
+		options["keys"] = o.GetString("keys")
 	}
-	if o.Ctx.Input.Param("include") != "" {
-		options["include"] = o.Ctx.Input.Param("include")
+	if o.GetString("include") != "" {
+		options["include"] = o.GetString("include")
 	}
 
 	where := map[string]interface{}{}
-	if o.Ctx.Input.Param("where") != "" {
-		err := json.Unmarshal([]byte(o.Ctx.Input.Param("where")), where)
+	if o.GetString("where") != "" {
+		err := json.Unmarshal([]byte(o.GetString("where")), &where)
 		if err != nil {
 			// TODO return err
 		}

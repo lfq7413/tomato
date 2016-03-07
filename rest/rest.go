@@ -10,8 +10,8 @@ func Find(
 	className string,
 	where map[string]interface{},
 	options map[string]interface{},
-) map[string]interface{} {
-	return map[string]interface{}{}
+) []map[string]interface{} {
+	return []map[string]interface{}{}
 }
 
 // Delete ...

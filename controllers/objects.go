@@ -3,12 +3,14 @@ package controllers
 import (
 	"encoding/json"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/lfq7413/tomato/auth"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/utils"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -144,6 +146,48 @@ func (o *ObjectsController) Put() {
 // GetAll ...
 // @router /:className [get]
 func (o *ObjectsController) GetAll() {
+
+	// TODO 获取查询参数，并组装
+	options := map[string]interface{}{}
+	if o.Ctx.Input.Param("skip") != "" {
+		if i, err := strconv.Atoi(o.Ctx.Input.Param("skip")); err == nil {
+			options["skip"] = i
+		} else {
+			// TODO return error
+		}
+	}
+	if o.Ctx.Input.Param("limit") != "" {
+		if i, err := strconv.Atoi(o.Ctx.Input.Param("limit")); err == nil {
+			options["limit"] = i
+		} else {
+			// TODO return error
+		}
+	} else {
+		options["limit"] = 100
+	}
+	if o.Ctx.Input.Param("order") != "" {
+		options["order"] = o.Ctx.Input.Param("order")
+	}
+	if o.Ctx.Input.Param("count") != "" {
+		options["count"] = true
+	}
+	if o.Ctx.Input.Param("keys") != "" {
+		options["keys"] = o.Ctx.Input.Param("keys")
+	}
+	if o.Ctx.Input.Param("include") != "" {
+		options["include"] = o.Ctx.Input.Param("include")
+	}
+
+	where := map[string]interface{}{}
+	if o.Ctx.Input.Param("where") != "" {
+		err := json.Unmarshal([]byte(o.Ctx.Input.Param("where")), where)
+		if err != nil {
+			// TODO return err
+		}
+	}
+
+	rest.Find(o.Auth, o.ClassName, where, options)
+
 	className := o.Ctx.Input.Param(":className")
 
 	cls := bson.M{}

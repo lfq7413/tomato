@@ -95,6 +95,12 @@ func (o *ObjectsController) Post() {
 // Get ...
 // @router /:className/:objectId [get]
 func (o *ObjectsController) Get() {
+
+	options := map[string]interface{}{}
+	where := map[string]interface{}{"objectId": o.ObjectID}
+
+	rest.Find(o.Auth, o.ClassName, where, options)
+
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 

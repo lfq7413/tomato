@@ -66,6 +66,12 @@ func (o *ObjectsController) Prepare() {
 // Post ...
 // @router /:className [post]
 func (o *ObjectsController) Post() {
+
+	var object map[string]interface{}
+	json.Unmarshal(o.Ctx.Input.RequestBody, &object)
+
+	rest.Create(o.Auth, o.ClassName, object)
+
 	className := o.Ctx.Input.Param(":className")
 
 	var cls bson.M

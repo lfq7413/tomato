@@ -226,6 +226,9 @@ func (o *ObjectsController) GetAll() {
 // Delete ...
 // @router /:className/:objectId [delete]
 func (o *ObjectsController) Delete() {
+
+	rest.Delete(o.Auth, o.ClassName, o.ObjectID)
+
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 

@@ -134,6 +134,12 @@ func (o *ObjectsController) Get() {
 // Put ...
 // @router /:className/:objectId [put]
 func (o *ObjectsController) Put() {
+
+	var object map[string]interface{}
+	json.Unmarshal(o.Ctx.Input.RequestBody, &object)
+
+	rest.Update(o.Auth, o.ClassName, o.ObjectID, object)
+
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 

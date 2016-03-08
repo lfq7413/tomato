@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/lfq7413/tomato/auth"
@@ -14,7 +15,7 @@ type Query struct {
 	findOptions map[string]interface{}
 	response    map[string]interface{}
 	doCount     bool
-	include     []string
+	include     [][]string
 	keys        []string
 }
 
@@ -32,7 +33,7 @@ func NewQuery(
 		findOptions: map[string]interface{}{},
 		response:    nil,
 		doCount:     false,
-		include:     []string{},
+		include:     [][]string{},
 		keys:        []string{},
 	}
 
@@ -63,9 +64,21 @@ func NewQuery(
 				query.findOptions["sort"] = sortMap
 			}
 		case "include":
-			// if s, ok := v.(string); ok {
-			// 	paths := strings.Split(s, ",")
-			// }
+			if s, ok := v.(string); ok { // v = "user.session,name.friend"
+				paths := strings.Split(s, ",") // paths = ["user.session","name.friend"]
+				pathSet := []string{}
+				for _, path := range paths {
+					parts := strings.Split(path, ".") // parts = ["user","session"]
+					for lenght := 1; lenght <= len(parts); lenght++ {
+						pathSet = append(pathSet, strings.Join(parts[0:lenght], "."))
+					} // pathSet = ["user","user.session"]
+				} // pathSet = ["user","user.session","name","name.friend"]
+				sort.Strings(pathSet) // pathSet = ["name","name.friend","user","user.session"]
+				for _, set := range pathSet {
+					query.include = append(query.include, strings.Split(set, "."))
+				} // query.include = [["name"],["name","friend"],["user"],["user","seeeion"]]
+			}
+		default:
 		}
 	}
 

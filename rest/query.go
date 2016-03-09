@@ -84,3 +84,53 @@ func NewQuery(
 
 	return query
 }
+
+// Execute ...
+func (q *Query) Execute() map[string]interface{} {
+	q.getUserAndRoleACL()
+	q.validateClientClassCreation()
+	q.replaceSelect()
+	q.replaceDontSelect()
+	q.replaceInQuery()
+	q.replaceNotInQuery()
+	q.runFind()
+	q.runCount()
+	q.handleInclude()
+	return q.response
+}
+
+func (q *Query) getUserAndRoleACL() error {
+	return nil
+}
+
+func (q *Query) validateClientClassCreation() error {
+	return nil
+}
+
+func (q *Query) replaceSelect() error {
+	return nil
+}
+
+func (q *Query) replaceDontSelect() error {
+	return nil
+}
+
+func (q *Query) replaceInQuery() error {
+	return nil
+}
+
+func (q *Query) replaceNotInQuery() error {
+	return nil
+}
+
+func (q *Query) runFind() error {
+	return nil
+}
+
+func (q *Query) runCount() error {
+	return nil
+}
+
+func (q *Query) handleInclude() error {
+	return nil
+}

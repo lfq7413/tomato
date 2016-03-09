@@ -15,6 +15,7 @@ func Find(
 ) []map[string]interface{} {
 	fmt.Println("where", where)
 	fmt.Println("options", options)
+	enforceRoleSecurity("find", className, auth)
 	return []map[string]interface{}{}
 }
 
@@ -46,4 +47,13 @@ func Update(
 ) map[string]interface{} {
 	fmt.Println("object", object)
 	return map[string]interface{}{}
+}
+
+func enforceRoleSecurity(method string, className string, auth *auth.Auth) {
+	if className == "_Role" && auth.IsMaster == false {
+
+	}
+	if method == "delete" && className == "_Installation" && auth.IsMaster == false {
+
+	}
 }

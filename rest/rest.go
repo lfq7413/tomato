@@ -1,6 +1,8 @@
 package rest
 
 import (
+	"fmt"
+
 	"github.com/lfq7413/tomato/auth"
 )
 
@@ -11,6 +13,8 @@ func Find(
 	where map[string]interface{},
 	options map[string]interface{},
 ) []map[string]interface{} {
+	fmt.Println("where", where)
+	fmt.Println("options", options)
 	return []map[string]interface{}{}
 }
 
@@ -29,6 +33,7 @@ func Create(
 	className string,
 	object map[string]interface{},
 ) map[string]interface{} {
+	fmt.Println("object", object)
 	return map[string]interface{}{}
 }
 
@@ -39,5 +44,6 @@ func Update(
 	objectID string,
 	object map[string]interface{},
 ) map[string]interface{} {
+	fmt.Println("object", object)
 	return map[string]interface{}{}
 }

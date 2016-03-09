@@ -67,6 +67,10 @@ func (o *ObjectsController) Prepare() {
 // @router /:className [post]
 func (o *ObjectsController) Post() {
 
+	if o.ClassName == "" {
+		o.ClassName = o.Ctx.Input.Param(":className")
+	}
+
 	var object map[string]interface{}
 	json.Unmarshal(o.Ctx.Input.RequestBody, &object)
 
@@ -102,6 +106,13 @@ func (o *ObjectsController) Post() {
 // @router /:className/:objectId [get]
 func (o *ObjectsController) Get() {
 
+	if o.ClassName == "" {
+		o.ClassName = o.Ctx.Input.Param(":className")
+	}
+	if o.ObjectID == "" {
+		o.ObjectID = o.Ctx.Input.Param(":objectId")
+	}
+
 	options := map[string]interface{}{}
 	where := map[string]interface{}{"objectId": o.ObjectID}
 
@@ -135,6 +146,13 @@ func (o *ObjectsController) Get() {
 // @router /:className/:objectId [put]
 func (o *ObjectsController) Put() {
 
+	if o.ClassName == "" {
+		o.ClassName = o.Ctx.Input.Param(":className")
+	}
+	if o.ObjectID == "" {
+		o.ObjectID = o.Ctx.Input.Param(":objectId")
+	}
+
 	var object map[string]interface{}
 	json.Unmarshal(o.Ctx.Input.RequestBody, &object)
 
@@ -164,6 +182,10 @@ func (o *ObjectsController) Put() {
 // GetAll ...
 // @router /:className [get]
 func (o *ObjectsController) GetAll() {
+
+	if o.ClassName == "" {
+		o.ClassName = o.Ctx.Input.Param(":className")
+	}
 
 	// TODO 获取查询参数，并组装
 	options := map[string]interface{}{}
@@ -232,6 +254,13 @@ func (o *ObjectsController) GetAll() {
 // Delete ...
 // @router /:className/:objectId [delete]
 func (o *ObjectsController) Delete() {
+
+	if o.ClassName == "" {
+		o.ClassName = o.Ctx.Input.Param(":className")
+	}
+	if o.ObjectID == "" {
+		o.ObjectID = o.Ctx.Input.Param(":objectId")
+	}
 
 	rest.Delete(o.Auth, o.ClassName, o.ObjectID)
 

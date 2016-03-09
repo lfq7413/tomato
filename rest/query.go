@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -87,6 +88,12 @@ func NewQuery(
 
 // Execute ...
 func (q *Query) Execute() map[string]interface{} {
+
+	fmt.Println("keys       ", q.keys)
+	fmt.Println("doCount    ", q.doCount)
+	fmt.Println("findOptions", q.findOptions)
+	fmt.Println("include    ", q.include)
+
 	q.getUserAndRoleACL()
 	q.validateClientClassCreation()
 	q.replaceSelect()

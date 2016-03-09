@@ -12,11 +12,12 @@ func Find(
 	className string,
 	where map[string]interface{},
 	options map[string]interface{},
-) []map[string]interface{} {
-	fmt.Println("where", where)
-	fmt.Println("options", options)
+) map[string]interface{} {
+
 	enforceRoleSecurity("find", className, auth)
-	return []map[string]interface{}{}
+	query := NewQuery(auth, className, where, options)
+
+	return query.Execute()
 }
 
 // Delete ...
@@ -25,7 +26,20 @@ func Delete(
 	className string,
 	objectID string,
 ) map[string]interface{} {
-	return map[string]interface{}{}
+
+	if className == "_User" && auth.CouldUpdateUserID(objectID) == false {
+		// TODO 权限不足
+	}
+
+	enforceRoleSecurity("delete", className, auth)
+
+	var inflatedObject map[string]interface{}
+
+	// TODO 获取要删除的对象
+
+	destroy := NewDestroy(auth, className, map[string]interface{}{"objectId": objectID}, inflatedObject)
+
+	return destroy.Execute()
 }
 
 // Create ...
@@ -51,9 +65,9 @@ func Update(
 
 func enforceRoleSecurity(method string, className string, auth *auth.Auth) {
 	if className == "_Role" && auth.IsMaster == false {
-
+		// TODO 权限不足
 	}
 	if method == "delete" && className == "_Installation" && auth.IsMaster == false {
-
+		// TODO 权限不足
 	}
 }

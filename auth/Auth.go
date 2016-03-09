@@ -8,7 +8,9 @@ type Auth struct {
 }
 
 // UserInfo ...
-type UserInfo struct{}
+type UserInfo struct {
+	ID string
+}
 
 // Master ...
 func Master() *Auth {
@@ -23,4 +25,15 @@ func Nobody() *Auth {
 // GetAuthForSessionToken ...
 func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
 	return &Auth{IsMaster: false, InstallationID: installationID}
+}
+
+// CouldUpdateUserID ...
+func (a *Auth) CouldUpdateUserID(objectID string) bool {
+	if a.IsMaster {
+		return true
+	}
+	if a.User != nil && a.User.ID == objectID {
+		return true
+	}
+	return false
 }

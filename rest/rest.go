@@ -1,10 +1,6 @@
 package rest
 
-import (
-	"fmt"
-
-	"github.com/lfq7413/tomato/auth"
-)
+import "github.com/lfq7413/tomato/auth"
 
 // Find ...
 func Find(
@@ -34,7 +30,6 @@ func Delete(
 	enforceRoleSecurity("delete", className, auth)
 
 	var inflatedObject map[string]interface{}
-
 	// TODO 获取要删除的对象
 
 	destroy := NewDestroy(auth, className, map[string]interface{}{"objectId": objectID}, inflatedObject)
@@ -48,8 +43,11 @@ func Create(
 	className string,
 	object map[string]interface{},
 ) map[string]interface{} {
-	fmt.Println("object", object)
-	return map[string]interface{}{}
+
+	enforceRoleSecurity("create", className, auth)
+	write := NewWrite(auth, className, nil, object, nil)
+
+	return write.Execute()
 }
 
 // Update ...
@@ -59,8 +57,15 @@ func Update(
 	objectID string,
 	object map[string]interface{},
 ) map[string]interface{} {
-	fmt.Println("object", object)
-	return map[string]interface{}{}
+
+	enforceRoleSecurity("update", className, auth)
+
+	var originalRestObject map[string]interface{}
+	// TODO 获取要更新的对象
+
+	write := NewWrite(auth, className, map[string]interface{}{"objectId": objectID}, object, originalRestObject)
+
+	return write.Execute()
 }
 
 func enforceRoleSecurity(method string, className string, auth *auth.Auth) {

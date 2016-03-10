@@ -6,9 +6,10 @@ import (
 
 // Destroy ...
 type Destroy struct {
-	auth      *auth.Auth
-	className string
-	query     map[string]interface{}
+	auth         *auth.Auth
+	className    string
+	query        map[string]interface{}
+	originalData map[string]interface{}
 }
 
 // NewDestroy ...
@@ -19,9 +20,10 @@ func NewDestroy(
 	originalData map[string]interface{},
 ) *Destroy {
 	destroy := &Destroy{
-		auth:      auth,
-		className: className,
-		query:     query,
+		auth:         auth,
+		className:    className,
+		query:        query,
+		originalData: originalData,
 	}
 	return destroy
 }

@@ -38,6 +38,22 @@ func NewQuery(
 		keys:        []string{},
 	}
 
+	if auth.IsMaster == false {
+		if auth.User != nil {
+			query.findOptions["acl"] = []string{auth.User.ID}
+		} else {
+			query.findOptions["acl"] = nil
+		}
+		if className == "_Session" {
+			if query.findOptions["acl"] == nil {
+				// TODO session 无效
+			}
+			user := map[string]string{"__type": "Pointer", "className": "_User", "objectId": auth.User.ID}
+			and := []interface{}{where, user}
+			query.where = map[string]interface{}{"$and": and}
+		}
+	}
+
 	for k, v := range options {
 		switch k {
 		case "keys":

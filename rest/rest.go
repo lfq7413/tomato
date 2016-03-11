@@ -1,6 +1,7 @@
 package rest
 
 import "github.com/lfq7413/tomato/auth"
+import "github.com/lfq7413/tomato/triggers"
 
 // Find ...
 func Find(
@@ -30,7 +31,34 @@ func Delete(
 	enforceRoleSecurity("delete", className, auth)
 
 	var inflatedObject map[string]interface{}
-	// TODO 获取要删除的对象
+
+	if triggers.TriggerExists(triggers.TypeBeforeDelete, className) ||
+		triggers.TriggerExists(triggers.TypeAfterDelete, className) ||
+		className == "_Session" {
+		response := Find(auth, className, map[string]interface{}{"objectId": objectID}, map[string]interface{}{})
+		if response == nil {
+			// TODO 未找到要删除的对象
+		}
+		results := response["results"]
+		if results == nil {
+			// TODO 未找到要删除的对象
+		}
+		var result []interface{}
+		if v, ok := results.([]interface{}); ok {
+			result = v
+		} else {
+			// TODO 未找到要删除的对象
+		}
+		if len(result) == 0 {
+			// TODO 未找到要删除的对象
+		}
+		if v, ok := result[0].(map[string]interface{}); ok {
+			// TODO 删除sessionToken
+			inflatedObject = v
+		} else {
+			// TODO 未找到要删除的对象
+		}
+	}
 
 	destroy := NewDestroy(auth, className, map[string]interface{}{"objectId": objectID}, inflatedObject)
 
@@ -61,7 +89,27 @@ func Update(
 	enforceRoleSecurity("update", className, auth)
 
 	var originalRestObject map[string]interface{}
-	// TODO 获取要更新的对象
+
+	var response map[string]interface{}
+	if triggers.TriggerExists(triggers.TypeBeforeSave, className) ||
+		triggers.TriggerExists(triggers.TypeAfterSave, className) {
+		response = Find(auth, className, map[string]interface{}{"objectId": objectID}, map[string]interface{}{})
+	}
+	var results interface{}
+	if response != nil {
+		results = response["results"]
+	}
+	var result []interface{}
+	if results != nil {
+		if v, ok := results.([]interface{}); ok {
+			result = v
+		}
+	}
+	if len(result) != 0 {
+		if v, ok := result[0].(map[string]interface{}); ok {
+			originalRestObject = v
+		}
+	}
 
 	write := NewWrite(auth, className, map[string]interface{}{"objectId": objectID}, object, originalRestObject)
 

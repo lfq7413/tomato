@@ -5,6 +5,9 @@ type Auth struct {
 	IsMaster       bool
 	InstallationID string
 	User           *UserInfo
+	UserRoles      []string
+	FetchedRoles   bool
+	RolePromise    []string
 }
 
 // UserInfo ...
@@ -36,4 +39,23 @@ func (a *Auth) CouldUpdateUserID(objectID string) bool {
 		return true
 	}
 	return false
+}
+
+// GetUserRoles ...
+func (a *Auth) GetUserRoles() []string {
+	if a.IsMaster || a.User == nil {
+		return []string{}
+	}
+	if a.FetchedRoles {
+		return a.UserRoles
+	}
+	if a.RolePromise != nil {
+		return a.RolePromise
+	}
+	a.RolePromise = a.loadRoles()
+	return a.RolePromise
+}
+
+func (a *Auth) loadRoles() []string {
+	return []string{}
 }

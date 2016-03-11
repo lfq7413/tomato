@@ -123,6 +123,12 @@ func (q *Query) Execute() map[string]interface{} {
 }
 
 func (q *Query) getUserAndRoleACL() error {
+	if q.auth.IsMaster || q.auth.User == nil {
+		return nil
+	}
+	roles := q.auth.GetUserRoles()
+	roles = append(roles, q.auth.User.ID)
+	q.findOptions["acl"] = roles
 	return nil
 }
 

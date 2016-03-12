@@ -1,6 +1,7 @@
 package auth
 
 import "github.com/lfq7413/tomato/rest"
+import "github.com/lfq7413/tomato/conv"
 
 // Auth ...
 type Auth struct {
@@ -64,21 +65,16 @@ func (a *Auth) loadRoles() []string {
 	where := map[string]interface{}{"users": users}
 
 	response := rest.Find(Master(), "_Role", where, map[string]interface{}{})
-	if response == nil {
-		return []string{}
+	if response == nil ||
+		response["results"] == nil ||
+		conv.SliceInterface(response["results"]) == nil ||
+		len(conv.SliceInterface(response["results"])) == 0 {
+		a.UserRoles = []string{}
+		a.FetchedRoles = true
+		a.RolePromise = nil
+		return a.UserRoles
 	}
-	if response["results"] == nil {
-		return []string{}
-	}
-	var results []interface{}
-	if v, ok := response["results"].([]interface{}); ok {
-		results = v
-	} else {
-		return []string{}
-	}
-	if len(results) == 0 {
-		return []string{}
-	}
+	results := conv.SliceInterface(response["results"])
 
 	return []string{}
 }

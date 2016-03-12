@@ -1,5 +1,7 @@
 package auth
 
+import "github.com/lfq7413/tomato/rest"
+
 // Auth ...
 type Auth struct {
 	IsMaster       bool
@@ -57,5 +59,26 @@ func (a *Auth) GetUserRoles() []string {
 }
 
 func (a *Auth) loadRoles() []string {
+
+	users := map[string]string{"__type": "Pointer", "className": "_User", "objectId": a.User.ID}
+	where := map[string]interface{}{"users": users}
+
+	response := rest.Find(Master(), "_Role", where, map[string]interface{}{})
+	if response == nil {
+		return []string{}
+	}
+	if response["results"] == nil {
+		return []string{}
+	}
+	var results []interface{}
+	if v, ok := response["results"].([]interface{}); ok {
+		results = v
+	} else {
+		return []string{}
+	}
+	if len(results) == 0 {
+		return []string{}
+	}
+
 	return []string{}
 }

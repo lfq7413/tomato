@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/lfq7413/tomato/auth"
 )
 
 // Query ...
 type Query struct {
-	auth        *auth.Auth
+	auth        *Auth
 	className   string
 	where       map[string]interface{}
 	findOptions map[string]interface{}
@@ -22,7 +20,7 @@ type Query struct {
 
 // NewQuery ...
 func NewQuery(
-	auth *auth.Auth,
+	auth *Auth,
 	className string,
 	where map[string]interface{},
 	options map[string]interface{},

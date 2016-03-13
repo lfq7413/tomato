@@ -1,7 +1,8 @@
-package auth
+package rest
 
-import "github.com/lfq7413/tomato/rest"
-import "github.com/lfq7413/tomato/conv"
+import (
+	"github.com/lfq7413/tomato/utils"
+)
 
 // Auth ...
 type Auth struct {
@@ -64,17 +65,22 @@ func (a *Auth) loadRoles() []string {
 	users := map[string]string{"__type": "Pointer", "className": "_User", "objectId": a.User.ID}
 	where := map[string]interface{}{"users": users}
 
-	response := rest.Find(Master(), "_Role", where, map[string]interface{}{})
+	response := Find(Master(), "_Role", where, map[string]interface{}{})
 	if response == nil ||
 		response["results"] == nil ||
-		conv.SliceInterface(response["results"]) == nil ||
-		len(conv.SliceInterface(response["results"])) == 0 {
+		utils.SliceInterface(response["results"]) == nil ||
+		len(utils.SliceInterface(response["results"])) == 0 {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
 		a.RolePromise = nil
 		return a.UserRoles
 	}
-	results := conv.SliceInterface(response["results"])
+	results := utils.SliceInterface(response["results"])
+	roleIDs := []string{}
+	for _, v := range results {
+		roleObj := utils.MapInterface(v)
+		roleIDs = append(roleIDs, utils.String(roleObj["objectId"]))
+	}
 
 	return []string{}
 }

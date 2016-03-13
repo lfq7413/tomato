@@ -1,12 +1,8 @@
 package rest
 
-import (
-	"github.com/lfq7413/tomato/auth"
-)
-
 // Destroy ...
 type Destroy struct {
-	auth         *auth.Auth
+	auth         *Auth
 	className    string
 	query        map[string]interface{}
 	originalData map[string]interface{}
@@ -14,7 +10,7 @@ type Destroy struct {
 
 // NewDestroy ...
 func NewDestroy(
-	auth *auth.Auth,
+	auth *Auth,
 	className string,
 	query map[string]interface{},
 	originalData map[string]interface{},

@@ -1,12 +1,8 @@
 package rest
 
-import (
-	"github.com/lfq7413/tomato/auth"
-)
-
 // Write ...
 type Write struct {
-	auth         *auth.Auth
+	auth         *Auth
 	className    string
 	query        map[string]interface{}
 	data         map[string]interface{}
@@ -15,7 +11,7 @@ type Write struct {
 
 // NewWrite ...
 func NewWrite(
-	auth *auth.Auth,
+	auth *Auth,
 	className string,
 	query map[string]interface{},
 	data map[string]interface{},

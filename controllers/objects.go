@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/astaxie/beego"
-	"github.com/lfq7413/tomato/auth"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
@@ -19,7 +18,7 @@ import (
 type ObjectsController struct {
 	beego.Controller
 	Info      *RequestInfo
-	Auth      *auth.Auth
+	Auth      *rest.Auth
 	ClassName string
 	ObjectID  string
 }
@@ -48,7 +47,7 @@ func (o *ObjectsController) Prepare() {
 		//TODO AppID 不正确
 	}
 	if info.MasterKey == config.TConfig.MasterKey {
-		o.Auth = &auth.Auth{InstallationID: info.InstallationID, IsMaster: true}
+		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: true}
 		return
 	}
 	if info.ClientKey != config.TConfig.ClientKey {
@@ -56,9 +55,9 @@ func (o *ObjectsController) Prepare() {
 	}
 	//TODO 3、生成当前会话用户权限信息
 	if info.SessionToken == "" {
-		o.Auth = &auth.Auth{InstallationID: info.InstallationID, IsMaster: false}
+		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: false}
 	} else {
-		o.Auth = auth.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
+		o.Auth = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
 	}
 
 }

@@ -1,8 +1,4 @@
-package triggers
-
-import (
-	"github.com/lfq7413/tomato/auth"
-)
+package rest
 
 // TypeBeforeSave ...
 const TypeBeforeSave = "beforeSave"
@@ -19,7 +15,7 @@ const TypeAfterDelete = "afterDelete"
 // RequestInfo ...
 type RequestInfo struct {
 	TriggerType    string
-	Auth           *auth.Auth
+	Auth           *Auth
 	NewObject      map[string]interface{}
 	OriginalObject map[string]interface{}
 }
@@ -101,7 +97,7 @@ func GetFunction(name string) TypeFunction {
 func RunTrigger(
 	triggerType string,
 	className string,
-	auth *auth.Auth,
+	auth *Auth,
 	newObject map[string]interface{},
 	originalObject map[string]interface{},
 ) map[string]interface{} {

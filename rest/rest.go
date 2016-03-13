@@ -1,11 +1,8 @@
 package rest
 
-import "github.com/lfq7413/tomato/auth"
-import "github.com/lfq7413/tomato/triggers"
-
 // Find ...
 func Find(
-	auth *auth.Auth,
+	auth *Auth,
 	className string,
 	where map[string]interface{},
 	options map[string]interface{},
@@ -19,7 +16,7 @@ func Find(
 
 // Delete ...
 func Delete(
-	auth *auth.Auth,
+	auth *Auth,
 	className string,
 	objectID string,
 ) map[string]interface{} {
@@ -32,8 +29,8 @@ func Delete(
 
 	var inflatedObject map[string]interface{}
 
-	if triggers.TriggerExists(triggers.TypeBeforeDelete, className) ||
-		triggers.TriggerExists(triggers.TypeAfterDelete, className) ||
+	if TriggerExists(TypeBeforeDelete, className) ||
+		TriggerExists(TypeAfterDelete, className) ||
 		className == "_Session" {
 		response := Find(auth, className, map[string]interface{}{"objectId": objectID}, map[string]interface{}{})
 		if response == nil {
@@ -67,7 +64,7 @@ func Delete(
 
 // Create ...
 func Create(
-	auth *auth.Auth,
+	auth *Auth,
 	className string,
 	object map[string]interface{},
 ) map[string]interface{} {
@@ -80,7 +77,7 @@ func Create(
 
 // Update ...
 func Update(
-	auth *auth.Auth,
+	auth *Auth,
 	className string,
 	objectID string,
 	object map[string]interface{},
@@ -91,8 +88,8 @@ func Update(
 	var originalRestObject map[string]interface{}
 
 	var response map[string]interface{}
-	if triggers.TriggerExists(triggers.TypeBeforeSave, className) ||
-		triggers.TriggerExists(triggers.TypeAfterSave, className) {
+	if TriggerExists(TypeBeforeSave, className) ||
+		TriggerExists(TypeAfterSave, className) {
 		response = Find(auth, className, map[string]interface{}{"objectId": objectID}, map[string]interface{}{})
 	}
 	var results interface{}
@@ -116,7 +113,7 @@ func Update(
 	return write.Execute()
 }
 
-func enforceRoleSecurity(method string, className string, auth *auth.Auth) {
+func enforceRoleSecurity(method string, className string, auth *Auth) {
 	if className == "_Role" && auth.IsMaster == false {
 		// TODO 权限不足
 	}

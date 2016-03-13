@@ -64,7 +64,7 @@ func (a *Auth) loadRoles() []string {
 
 	users := map[string]string{"__type": "Pointer", "className": "_User", "objectId": a.User.ID}
 	where := map[string]interface{}{"users": users}
-
+	// 取出当前用户直接对应的所有角色
 	response := Find(Master(), "_Role", where, map[string]interface{}{})
 	if response == nil ||
 		response["results"] == nil ||
@@ -81,6 +81,27 @@ func (a *Auth) loadRoles() []string {
 		roleObj := utils.MapInterface(v)
 		roleIDs = append(roleIDs, utils.String(roleObj["objectId"]))
 	}
+	// 取出角色对应的父角色
+	for _, v := range roleIDs {
+		roleIDs = utils.AppendString(roleIDs, a.getAllRoleNamesForID(v))
+	}
 
-	return []string{}
+	objectID := map[string]interface{}{"$in": roleIDs}
+	where = map[string]interface{}{"objectId": objectID}
+	// 取出所有角色名称
+	response = Find(Master(), "_Role", where, map[string]interface{}{})
+	results = utils.SliceInterface(response["results"])
+	a.UserRoles = []string{}
+	for _, v := range results {
+		roleObj := utils.MapInterface(v)
+		a.UserRoles = append(a.UserRoles, "role:"+utils.String(roleObj["name"]))
+	}
+	a.FetchedRoles = true
+	a.RolePromise = nil
+
+	return a.UserRoles
+}
+
+func (a *Auth) getAllRoleNamesForID(id string) []string {
+	return nil
 }

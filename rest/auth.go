@@ -62,8 +62,14 @@ func (a *Auth) GetUserRoles() []string {
 
 func (a *Auth) loadRoles() []string {
 
-	users := map[string]string{"__type": "Pointer", "className": "_User", "objectId": a.User.ID}
-	where := map[string]interface{}{"users": users}
+	users := map[string]string{
+		"__type":    "Pointer",
+		"className": "_User",
+		"objectId":  a.User.ID,
+	}
+	where := map[string]interface{}{
+		"users": users,
+	}
 	// 取出当前用户直接对应的所有角色
 	response := Find(Master(), "_Role", where, map[string]interface{}{})
 	if response == nil ||
@@ -86,8 +92,12 @@ func (a *Auth) loadRoles() []string {
 		roleIDs = utils.AppendString(roleIDs, a.getAllRoleNamesForID(v))
 	}
 
-	objectID := map[string]interface{}{"$in": roleIDs}
-	where = map[string]interface{}{"objectId": objectID}
+	objectID := map[string]interface{}{
+		"$in": roleIDs,
+	}
+	where = map[string]interface{}{
+		"objectId": objectID,
+	}
 	// 取出所有角色名称
 	response = Find(Master(), "_Role", where, map[string]interface{}{})
 	results = utils.SliceInterface(response["results"])
@@ -102,6 +112,32 @@ func (a *Auth) loadRoles() []string {
 	return a.UserRoles
 }
 
-func (a *Auth) getAllRoleNamesForID(id string) []string {
-	return nil
+func (a *Auth) getAllRoleNamesForID(roleID string) []string {
+	rolePointer := map[string]string{
+		"__type":    "Pointer",
+		"className": "_Role",
+		"objectId":  roleID,
+	}
+	where := map[string]interface{}{
+		"roles": rolePointer,
+	}
+	// 取出当前角色对应的直接父角色
+	response := Find(Master(), "_Role", where, map[string]interface{}{})
+	if response == nil ||
+		response["results"] == nil ||
+		utils.SliceInterface(response["results"]) == nil ||
+		len(utils.SliceInterface(response["results"])) == 0 {
+		return []string{}
+	}
+	results := utils.SliceInterface(response["results"])
+	roleIDs := []string{}
+	for _, v := range results {
+		roleObj := utils.MapInterface(v)
+		roleIDs = append(roleIDs, utils.String(roleObj["objectId"]))
+	}
+	// 递归取出角色对应的父角色
+	for _, v := range roleIDs {
+		roleIDs = utils.AppendString(roleIDs, a.getAllRoleNamesForID(v))
+	}
+	return roleIDs
 }

@@ -108,16 +108,21 @@ func (q *Query) Execute() map[string]interface{} {
 	fmt.Println("findOptions", q.findOptions)
 	fmt.Println("include    ", q.include)
 
+	q.buildRestWhere()
+	q.runFind()
+	q.runCount()
+	q.handleInclude()
+	return q.response
+}
+
+func (q *Query) buildRestWhere() error {
 	q.getUserAndRoleACL()
 	q.validateClientClassCreation()
 	q.replaceSelect()
 	q.replaceDontSelect()
 	q.replaceInQuery()
 	q.replaceNotInQuery()
-	q.runFind()
-	q.runCount()
-	q.handleInclude()
-	return q.response
+	return nil
 }
 
 func (q *Query) getUserAndRoleACL() error {

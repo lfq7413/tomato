@@ -7,6 +7,7 @@ import (
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/utils"
 )
 
 // Query ...
@@ -183,5 +184,29 @@ func (q *Query) runCount() error {
 }
 
 func (q *Query) handleInclude() error {
+	return nil
+}
+
+// 查找带有指定 key 的对象
+func findObjectWithKey(root interface{}, key string) map[string]interface{} {
+	if s := utils.SliceInterface(root); s != nil {
+		for _, v := range s {
+			answer := findObjectWithKey(v, key)
+			if answer != nil {
+				return answer
+			}
+		}
+	}
+	if m := utils.MapInterface(root); m != nil {
+		if m[key] != nil {
+			return m
+		}
+		for _, v := range m {
+			answer := findObjectWithKey(v, key)
+			if answer != nil {
+				return answer
+			}
+		}
+	}
 	return nil
 }

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/orm"
 )
 
 // Query ...
@@ -136,6 +139,22 @@ func (q *Query) getUserAndRoleACL() error {
 }
 
 func (q *Query) validateClientClassCreation() error {
+	sysClass := []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
+	if config.TConfig.AllowClientClassCreation {
+		return nil
+	}
+	if q.auth.IsMaster {
+		return nil
+	}
+	for _, v := range sysClass {
+		if v == q.className {
+			return nil
+		}
+	}
+	if orm.CollectionExists(q.className) {
+		return nil
+	}
+	// TODO 无法操作不存在的表
 	return nil
 }
 

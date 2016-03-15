@@ -16,7 +16,7 @@ var (
 func init() {
 }
 
-// Database is sds.
+// Database ...
 type Database struct {
 	Session  *mgo.Session
 	Database *mgo.Database
@@ -75,4 +75,12 @@ func (d *Database) Find(collection string, query interface{}) ([]bson.M, error) 
 func (d *Database) Remove(collection string, selector interface{}) error {
 	err := d.Database.C(collection).Remove(selector)
 	return err
+}
+
+func (d *Database) getCollectionNames() []string {
+	names, err := d.Database.CollectionNames()
+	if err == nil {
+		return names
+	}
+	return []string{}
 }

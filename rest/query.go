@@ -393,6 +393,14 @@ func (q *Query) runFind() error {
 }
 
 func (q *Query) runCount() error {
+	if q.doCount == false {
+		return nil
+	}
+	q.findOptions["count"] = true
+	delete(q.findOptions, "skip")
+	delete(q.findOptions, "limit")
+	count := orm.Count(q.className, q.where, q.findOptions)
+	q.response["count"] = count
 	return nil
 }
 

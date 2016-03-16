@@ -24,3 +24,8 @@ func CollectionExists(className string) bool {
 func Find(className string, where map[string]interface{}, options map[string]interface{}) []interface{} {
 	return []interface{}{}
 }
+
+// Count ...
+func Count(className string, where map[string]interface{}, options map[string]interface{}) int {
+	return 0
+}

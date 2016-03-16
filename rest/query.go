@@ -213,7 +213,56 @@ func (q *Query) replaceSelect() error {
 }
 
 func (q *Query) replaceDontSelect() error {
-	return nil
+	dontSelectObject := findObjectWithKey(q.where, "$dontSelect")
+	if dontSelectObject == nil {
+		return nil
+	}
+	// 必须包含两个 key ： query key
+	dontSelectValue := utils.MapInterface(dontSelectObject["$dontSelect"])
+	if dontSelectValue == nil ||
+		dontSelectValue["query"] == nil ||
+		dontSelectValue["key"] == nil {
+		// TODO $dontSelect 用法不正确
+		return nil
+	}
+	queryValue := utils.MapInterface(dontSelectValue["query"])
+	if queryValue == nil ||
+		queryValue["className"] == nil ||
+		queryValue["where"] == nil {
+		// TODO $dontSelect 用法不正确
+		return nil
+	}
+
+	values := []interface{}{}
+	response := Find(
+		q.auth,
+		utils.String(queryValue["className"]),
+		utils.MapInterface(queryValue["where"]),
+		map[string]interface{}{})
+	// 组装查询到的对象
+	if response != nil &&
+		response["results"] != nil &&
+		utils.SliceInterface(response["results"]) != nil &&
+		len(utils.SliceInterface(response["results"])) > 0 {
+		for _, v := range utils.SliceInterface(response["results"]) {
+			result := utils.MapInterface(v)
+			key := result[utils.String(dontSelectValue["key"])]
+			if key != nil {
+				values = append(values, key)
+			}
+		}
+	}
+	// 替换 $dontSelect 为 $nin
+	delete(dontSelectObject, "$dontSelect")
+	if dontSelectObject["$nin"] != nil &&
+		utils.SliceInterface(dontSelectObject["$nin"]) != nil {
+		in := utils.SliceInterface(dontSelectObject["$nin"])
+		in = utils.AppendInterface(in, values)
+	} else {
+		dontSelectObject["$nin"] = values
+	}
+	// 继续搜索替换
+	return q.replaceDontSelect()
 }
 
 func (q *Query) replaceInQuery() error {

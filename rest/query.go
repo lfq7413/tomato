@@ -168,7 +168,50 @@ func (q *Query) replaceDontSelect() error {
 }
 
 func (q *Query) replaceInQuery() error {
-	return nil
+	inQueryObject := findObjectWithKey(q.where, "$inQuery")
+	if inQueryObject == nil {
+		return nil
+	}
+	// 必须包含两个 key ： where className
+	inQueryValue := utils.MapInterface(inQueryObject["$inQuery"])
+	if inQueryValue == nil ||
+		inQueryValue["where"] == nil ||
+		inQueryValue["className"] == nil {
+		// TODO $inQuery 用法不正确
+		return nil
+	}
+
+	values := []interface{}{}
+	response := Find(
+		q.auth,
+		utils.String(inQueryValue["className"]),
+		utils.MapInterface(inQueryValue["where"]),
+		map[string]interface{}{})
+	// 组装查询到的对象
+	if response != nil &&
+		response["results"] != nil &&
+		utils.SliceInterface(response["results"]) != nil &&
+		len(utils.SliceInterface(response["results"])) > 0 {
+		for _, v := range utils.SliceInterface(response["results"]) {
+			result := utils.MapInterface(v)
+			pointer := map[string]interface{}{
+				"__type":    "Pointer",
+				"className": inQueryValue["className"],
+				"objectId":  result["objectId"],
+			}
+			values = append(values, pointer)
+		}
+	}
+	delete(inQueryObject, "$inQuery")
+	if inQueryObject["$in"] != nil &&
+		utils.SliceInterface(inQueryObject["$in"]) != nil {
+		in := utils.SliceInterface(inQueryObject["$in"])
+		in = utils.AppendInterface(in, values)
+	} else {
+		inQueryObject["$in"] = values
+	}
+
+	return q.replaceInQuery()
 }
 
 func (q *Query) replaceNotInQuery() error {

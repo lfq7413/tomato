@@ -405,6 +405,24 @@ func (q *Query) runCount() error {
 }
 
 func (q *Query) handleInclude() error {
+	if len(q.include) == 0 {
+		return nil
+	}
+	pathResponse := includePath(q.auth, q.response, q.include[0])
+	if pathResponse != nil {
+		q.response = pathResponse
+		q.include = q.include[1:]
+		return q.handleInclude()
+	}
+	if len(q.include) > 0 {
+		q.include = q.include[1:]
+		return q.handleInclude()
+	}
+
+	return nil
+}
+
+func includePath(auth *Auth, response map[string]interface{}, path []string) map[string]interface{} {
 	return nil
 }
 

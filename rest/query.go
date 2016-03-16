@@ -202,6 +202,7 @@ func (q *Query) replaceInQuery() error {
 			values = append(values, pointer)
 		}
 	}
+	// 替换 $inQuery 为 $in
 	delete(inQueryObject, "$inQuery")
 	if inQueryObject["$in"] != nil &&
 		utils.SliceInterface(inQueryObject["$in"]) != nil {
@@ -210,12 +211,56 @@ func (q *Query) replaceInQuery() error {
 	} else {
 		inQueryObject["$in"] = values
 	}
-
+	// 继续搜索替换
 	return q.replaceInQuery()
 }
 
 func (q *Query) replaceNotInQuery() error {
-	return nil
+	notInQueryObject := findObjectWithKey(q.where, "$notInQuery")
+	if notInQueryObject == nil {
+		return nil
+	}
+	// 必须包含两个 key ： where className
+	notInQueryValue := utils.MapInterface(notInQueryObject["$notInQuery"])
+	if notInQueryValue == nil ||
+		notInQueryValue["where"] == nil ||
+		notInQueryValue["className"] == nil {
+		// TODO $notInQuery 用法不正确
+		return nil
+	}
+
+	values := []interface{}{}
+	response := Find(
+		q.auth,
+		utils.String(notInQueryValue["className"]),
+		utils.MapInterface(notInQueryValue["where"]),
+		map[string]interface{}{})
+	// 组装查询到的对象
+	if response != nil &&
+		response["results"] != nil &&
+		utils.SliceInterface(response["results"]) != nil &&
+		len(utils.SliceInterface(response["results"])) > 0 {
+		for _, v := range utils.SliceInterface(response["results"]) {
+			result := utils.MapInterface(v)
+			pointer := map[string]interface{}{
+				"__type":    "Pointer",
+				"className": notInQueryValue["className"],
+				"objectId":  result["objectId"],
+			}
+			values = append(values, pointer)
+		}
+	}
+	// 替换 $notInQuery 为 $nin
+	delete(notInQueryObject, "$notInQuery")
+	if notInQueryObject["$nin"] != nil &&
+		utils.SliceInterface(notInQueryObject["$nin"]) != nil {
+		in := utils.SliceInterface(notInQueryObject["$nin"])
+		in = utils.AppendInterface(in, values)
+	} else {
+		notInQueryObject["$nin"] = values
+	}
+	// 继续搜索替换
+	return q.replaceNotInQuery()
 }
 
 func (q *Query) runFind() error {

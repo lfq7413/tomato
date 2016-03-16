@@ -160,7 +160,56 @@ func (q *Query) validateClientClassCreation() error {
 }
 
 func (q *Query) replaceSelect() error {
-	return nil
+	selectObject := findObjectWithKey(q.where, "$select")
+	if selectObject == nil {
+		return nil
+	}
+	// 必须包含两个 key ： query key
+	selectValue := utils.MapInterface(selectObject["$select"])
+	if selectValue == nil ||
+		selectValue["query"] == nil ||
+		selectValue["key"] == nil {
+		// TODO $select 用法不正确
+		return nil
+	}
+	queryValue := utils.MapInterface(selectValue["query"])
+	if queryValue == nil ||
+		queryValue["className"] == nil ||
+		queryValue["where"] == nil {
+		// TODO $select 用法不正确
+		return nil
+	}
+
+	values := []interface{}{}
+	response := Find(
+		q.auth,
+		utils.String(queryValue["className"]),
+		utils.MapInterface(queryValue["where"]),
+		map[string]interface{}{})
+	// 组装查询到的对象
+	if response != nil &&
+		response["results"] != nil &&
+		utils.SliceInterface(response["results"]) != nil &&
+		len(utils.SliceInterface(response["results"])) > 0 {
+		for _, v := range utils.SliceInterface(response["results"]) {
+			result := utils.MapInterface(v)
+			key := result[utils.String(selectValue["key"])]
+			if key != nil {
+				values = append(values, key)
+			}
+		}
+	}
+	// 替换 $select 为 $in
+	delete(selectObject, "$select")
+	if selectObject["$in"] != nil &&
+		utils.SliceInterface(selectObject["$in"]) != nil {
+		in := utils.SliceInterface(selectObject["$in"])
+		in = utils.AppendInterface(in, values)
+	} else {
+		selectObject["$in"] = values
+	}
+	// 继续搜索替换
+	return q.replaceSelect()
 }
 
 func (q *Query) replaceDontSelect() error {
@@ -254,8 +303,8 @@ func (q *Query) replaceNotInQuery() error {
 	delete(notInQueryObject, "$notInQuery")
 	if notInQueryObject["$nin"] != nil &&
 		utils.SliceInterface(notInQueryObject["$nin"]) != nil {
-		in := utils.SliceInterface(notInQueryObject["$nin"])
-		in = utils.AppendInterface(in, values)
+		nin := utils.SliceInterface(notInQueryObject["$nin"])
+		nin = utils.AppendInterface(nin, values)
 	} else {
 		notInQueryObject["$nin"] = values
 	}

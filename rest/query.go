@@ -426,6 +426,36 @@ func includePath(auth *Auth, response map[string]interface{}, path []string) map
 	return nil
 }
 
+// 查询路径对应的对象列表
+func findPointers(object interface{}, path []string) []interface{} {
+	// 如果是对象数组，则遍历每一个对象
+	if utils.SliceInterface(object) != nil {
+		answer := []interface{}{}
+		for _, v := range utils.SliceInterface(object) {
+			answer = utils.AppendInterface(answer, findPointers(v, path))
+		}
+		return answer
+	}
+
+	obj := utils.MapInterface(object)
+	if obj == nil {
+		return []interface{}{}
+	}
+	// 如果当前是路径最后一个节点，判断是否为 Pointer
+	if len(path) == 0 {
+		if obj["__type"] == "Pointer" {
+			return []interface{}{obj}
+		}
+		return []interface{}{}
+	}
+	// 取出下一个路径对应的对象，进行查找
+	subobject := obj[path[0]]
+	if subobject == nil {
+		return []interface{}{}
+	}
+	return findPointers(subobject, path[1:])
+}
+
 // 查找带有指定 key 的对象
 func findObjectWithKey(root interface{}, key string) map[string]interface{} {
 	if s := utils.SliceInterface(root); s != nil {

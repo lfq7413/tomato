@@ -362,6 +362,33 @@ func (q *Query) replaceNotInQuery() error {
 }
 
 func (q *Query) runFind() error {
+	response := orm.Find(q.className, q.where, q.findOptions)
+	if q.className == "_User" {
+		for _, v := range response {
+			user := utils.MapInterface(v)
+			if user != nil {
+				delete(user, "password")
+			}
+		}
+	}
+	// TODO 取出需要的 key   （TODO：通过数据库直接取key）
+	results := []interface{}{}
+	if len(q.keys) > 0 && len(response) > 0 {
+		for _, v := range response {
+			obj := utils.MapInterface(v)
+			newObj := map[string]interface{}{}
+			for _, s := range q.keys {
+				if obj[s] != nil {
+					newObj[s] = obj[s]
+				}
+			}
+			results = append(results, newObj)
+		}
+	}
+
+	// TODO 展开文件类型
+
+	q.response["results"] = results
 	return nil
 }
 

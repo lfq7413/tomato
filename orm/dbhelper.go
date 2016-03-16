@@ -19,3 +19,8 @@ func CollectionExists(className string) bool {
 	}
 	return false
 }
+
+// Find ...
+func Find(className string, where map[string]interface{}, options map[string]interface{}) []interface{} {
+	return []interface{}{}
+}

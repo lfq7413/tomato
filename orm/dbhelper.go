@@ -22,10 +22,12 @@ func CollectionExists(className string) bool {
 
 // Find ...
 func Find(className string, where map[string]interface{}, options map[string]interface{}) []interface{} {
+	// TODO
 	return []interface{}{}
 }
 
 // Count ...
 func Count(className string, where map[string]interface{}, options map[string]interface{}) int {
+	// TODO
 	return 0
 }

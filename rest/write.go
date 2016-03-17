@@ -2,6 +2,8 @@ package rest
 
 import (
 	"time"
+
+	"github.com/lfq7413/tomato/utils"
 )
 
 // Write ...
@@ -61,6 +63,17 @@ func (w *Write) Execute() map[string]interface{} {
 }
 
 func (w *Write) getUserAndRoleACL() error {
+	if w.auth.IsMaster {
+		return nil
+	}
+	w.runOptions["acl"] = []string{"*"}
+	if w.auth.User != nil {
+		roles := w.auth.GetUserRoles()
+		roles = append(roles, w.auth.User.ID)
+		if v, ok := w.runOptions["acl"].([]string); ok {
+			v = utils.AppendString(v, roles)
+		}
+	}
 	return nil
 }
 

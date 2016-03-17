@@ -423,6 +423,54 @@ func (q *Query) handleInclude() error {
 }
 
 func includePath(auth *Auth, response map[string]interface{}, path []string) map[string]interface{} {
+	pointers := findPointers(response["results"], path)
+	if len(pointers) == 0 {
+		return nil
+	}
+	className := ""
+	objectIDs := []string{}
+	for _, v := range pointers {
+		pointer := utils.MapInterface(v)
+		if className == "" {
+			className = utils.String(pointer["className"])
+		} else {
+			if className != utils.String(pointer["className"]) {
+				// TODO 对象类型不一致
+				return nil
+			}
+		}
+		objectIDs = append(objectIDs, utils.String(pointer["objectId"]))
+	}
+	if className == "" {
+		// TODO 无效对象
+		return nil
+	}
+
+	objectID := map[string]interface{}{
+		"$in": objectIDs,
+	}
+	where := map[string]interface{}{
+		"objectId": objectID,
+	}
+	includeResponse := Find(auth, className, where, map[string]interface{}{})
+	if includeResponse == nil ||
+		includeResponse["results"] == nil ||
+		utils.SliceInterface(includeResponse["results"]) == nil ||
+		len(utils.SliceInterface(includeResponse["results"])) == 0 {
+		return nil
+	}
+	results := utils.SliceInterface(includeResponse["results"])
+	replace := map[string]interface{}{}
+	for _, v := range results {
+		obj := utils.MapInterface(v)
+		if className == "_User" {
+			delete(obj, "sessionToken")
+		}
+		replace[utils.String(obj["objectId"])] = obj
+	}
+
+	replacePointers(pointers, replace)
+
 	return nil
 }
 

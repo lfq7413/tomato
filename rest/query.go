@@ -50,7 +50,7 @@ func NewQuery(
 			if query.findOptions["acl"] == nil {
 				// TODO session 无效
 			}
-			user := map[string]string{"__type": "Pointer", "className": "_User", "objectId": auth.User.ID}
+			user := map[string]interface{}{"__type": "Pointer", "className": "_User", "objectId": auth.User.ID}
 			and := []interface{}{where, user}
 			query.where = map[string]interface{}{"$and": and}
 		}
@@ -408,12 +408,8 @@ func (q *Query) handleInclude() error {
 	if len(q.include) == 0 {
 		return nil
 	}
-	pathResponse := includePath(q.auth, q.response, q.include[0])
-	if pathResponse != nil {
-		q.response = pathResponse
-		q.include = q.include[1:]
-		return q.handleInclude()
-	}
+	includePath(q.auth, q.response, q.include[0])
+
 	if len(q.include) > 0 {
 		q.include = q.include[1:]
 		return q.handleInclude()
@@ -422,7 +418,7 @@ func (q *Query) handleInclude() error {
 	return nil
 }
 
-func includePath(auth *Auth, response map[string]interface{}, path []string) map[string]interface{} {
+func includePath(auth *Auth, response map[string]interface{}, path []string) error {
 	pointers := findPointers(response["results"], path)
 	if len(pointers) == 0 {
 		return nil
@@ -515,6 +511,7 @@ func replacePointers(pointers []interface{}, replace map[string]interface{}) err
 		for k, v := range rpl {
 			pointer[k] = v
 		}
+		pointer["__type"] = "Object"
 	}
 	return nil
 }

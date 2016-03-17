@@ -62,7 +62,7 @@ func (a *Auth) GetUserRoles() []string {
 
 func (a *Auth) loadRoles() []string {
 
-	users := map[string]string{
+	users := map[string]interface{}{
 		"__type":    "Pointer",
 		"className": "_User",
 		"objectId":  a.User.ID,
@@ -113,7 +113,7 @@ func (a *Auth) loadRoles() []string {
 }
 
 func (a *Auth) getAllRoleNamesForID(roleID string) []string {
-	rolePointer := map[string]string{
+	rolePointer := map[string]interface{}{
 		"__type":    "Pointer",
 		"className": "_Role",
 		"objectId":  roleID,

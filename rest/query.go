@@ -456,6 +456,21 @@ func findPointers(object interface{}, path []string) []interface{} {
 	return findPointers(subobject, path[1:])
 }
 
+func replacePointers(pointers []interface{}, replace map[string]interface{}) error {
+	for _, v := range pointers {
+		pointer := utils.MapInterface(v)
+		objectID := utils.String(pointer["objectId"])
+		if replace[objectID] == nil {
+			continue
+		}
+		rpl := utils.MapInterface(replace[objectID])
+		for k, v := range rpl {
+			pointer[k] = v
+		}
+	}
+	return nil
+}
+
 // 查找带有指定 key 的对象
 func findObjectWithKey(root interface{}, key string) map[string]interface{} {
 	if s := utils.SliceInterface(root); s != nil {

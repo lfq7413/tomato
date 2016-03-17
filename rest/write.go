@@ -3,6 +3,8 @@ package rest
 import (
 	"time"
 
+	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -78,6 +80,22 @@ func (w *Write) getUserAndRoleACL() error {
 }
 
 func (w *Write) validateClientClassCreation() error {
+	sysClass := []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
+	if config.TConfig.AllowClientClassCreation {
+		return nil
+	}
+	if w.auth.IsMaster {
+		return nil
+	}
+	for _, v := range sysClass {
+		if v == w.className {
+			return nil
+		}
+	}
+	if orm.CollectionExists(w.className) {
+		return nil
+	}
+	// TODO 无法操作不存在的表
 	return nil
 }
 

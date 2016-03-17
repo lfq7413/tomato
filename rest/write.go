@@ -100,6 +100,8 @@ func (w *Write) validateClientClassCreation() error {
 }
 
 func (w *Write) validateSchema() error {
+	// TODO 判断是否可以进行操作
+	orm.ValidateObject(w.className, w.data, w.query, w.runOptions)
 	return nil
 }
 

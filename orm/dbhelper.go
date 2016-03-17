@@ -31,3 +31,19 @@ func Count(className string, where map[string]interface{}, options map[string]in
 	// TODO
 	return 0
 }
+
+// ValidateObject ...
+func ValidateObject(className string, object map[string]interface{}, where map[string]interface{}, options map[string]interface{}) error {
+	// TODO
+	return nil
+}
+
+// LoadSchema ...
+func LoadSchema() {
+	// TODO
+}
+
+// CanAddField ...
+func CanAddField() {
+	// TODO
+}

@@ -236,6 +236,58 @@ func (w *Write) handleInstallation() error {
 }
 
 func (w *Write) handleSession() error {
+	if w.response != nil || w.className != "_Session" {
+		return nil
+	}
+
+	if w.auth.User == nil && w.auth.IsMaster == false {
+		// TODO 需要 Session token
+		return nil
+	}
+
+	if w.data["ACL"] != nil {
+		// TODO Session 不能设置 ACL
+		return nil
+	}
+
+	if w.query == nil && w.auth.IsMaster == false {
+		token := "r:" + utils.CreateToken()
+		expiresAt := time.Now().UTC()
+		expiresAt.AddDate(1, 0, 0)
+		user := map[string]interface{}{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  w.auth.User.ID,
+		}
+		createdWith := map[string]interface{}{
+			"action": "create",
+		}
+		sessionData := map[string]interface{}{
+			"sessionToken": token,
+			"user":         user,
+			"createdWith":  createdWith,
+			"restricted":   true,
+			"expiresAt":    expiresAt,
+		}
+		for k, v := range w.data {
+			if k == "objectId" {
+				continue
+			}
+			sessionData[k] = v
+		}
+		results := NewWrite(Master(), "_Session", nil, sessionData, map[string]interface{}{}).Execute()
+		if results["response"] == nil {
+			// TODO 创建 Session 失败
+			return nil
+		}
+		sessionData["objectId"] = utils.MapInterface(results["response"])["objectId"]
+		w.response = map[string]interface{}{
+			"status":   201,
+			"location": results["location"],
+			"response": sessionData,
+		}
+	}
+
 	return nil
 }
 

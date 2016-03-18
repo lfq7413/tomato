@@ -80,7 +80,7 @@ func (o *ObjectsController) Post() {
 	var cls bson.M
 	json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
 
-	objectId := utils.CreateObjectId()
+	objectId := utils.CreateObjectID()
 	now := time.Now().UTC()
 	cls["_id"] = objectId
 	cls["createdAt"] = now

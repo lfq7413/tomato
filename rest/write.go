@@ -130,6 +130,7 @@ func (w *Write) handleInstallation() error {
 	}
 
 	var idMatch map[string]interface{}
+	var deviceTokenMatches []interface{}
 
 	if w.query != nil && w.query["objectId"] != nil {
 		results := orm.Find("_Installation", map[string]interface{}{"objectId": w.query["objectId"]}, map[string]interface{}{})
@@ -154,8 +155,82 @@ func (w *Write) handleInstallation() error {
 			//TODO deviceType 不能修改
 			return nil
 		}
-		return nil
 	}
+
+	idMatch = nil
+	if w.data["installationId"] != nil {
+		results := orm.Find("_Installation", map[string]interface{}{"installationId": w.data["installationId"]}, map[string]interface{}{})
+		if results != nil && len(results) > 0 {
+			idMatch = utils.MapInterface(results[0])
+		}
+	}
+	if w.data["deviceToken"] != nil {
+		results := orm.Find("_Installation", map[string]interface{}{"deviceToken": w.data["deviceToken"]}, map[string]interface{}{})
+		if results != nil {
+			deviceTokenMatches = results
+		}
+	}
+
+	var objID string
+	if idMatch == nil {
+		if deviceTokenMatches == nil || len(deviceTokenMatches) == 0 {
+			objID = ""
+		} else if len(deviceTokenMatches) == 1 &&
+			(utils.MapInterface(deviceTokenMatches[0])["installationId"] == nil || w.data["installationId"] == nil) {
+			objID = utils.String(utils.MapInterface(deviceTokenMatches[0])["objectId"])
+		} else if w.data["installationId"] == nil {
+			// TODO 当有多个 deviceToken 时，必须指定 installationId
+			return nil
+		} else {
+			// 清理多余数据
+			installationID := map[string]interface{}{
+				"$ne": w.data["installationId"],
+			}
+			delQuery := map[string]interface{}{
+				"deviceToken":    w.data["deviceToken"],
+				"installationId": installationID,
+			}
+			if w.data["appIdentifier"] != nil {
+				delQuery["appIdentifier"] = w.data["appIdentifier"]
+			}
+			orm.Destroy("_Installation", delQuery)
+			objID = ""
+		}
+	} else {
+		if deviceTokenMatches != nil && len(deviceTokenMatches) == 1 &&
+			utils.MapInterface(deviceTokenMatches[0])["installationId"] == nil {
+			// 合并
+			delQuery := map[string]interface{}{
+				"objectId": idMatch["objectId"],
+			}
+			orm.Destroy("_Installation", delQuery)
+			objID = utils.String(utils.MapInterface(deviceTokenMatches[0])["objectId"])
+		} else {
+			if w.data["deviceToken"] != nil && idMatch["deviceToken"] != w.data["deviceToken"] {
+				// 清理多余数据
+				installationID := map[string]interface{}{
+					"$ne": w.data["installationId"],
+				}
+				delQuery := map[string]interface{}{
+					"deviceToken":    w.data["deviceToken"],
+					"installationId": installationID,
+				}
+				if w.data["appIdentifier"] != nil {
+					delQuery["appIdentifier"] = w.data["appIdentifier"]
+				}
+				orm.Destroy("_Installation", delQuery)
+			}
+			objID = utils.String(idMatch["objectId"])
+		}
+	}
+	if objID != "" {
+		w.query = map[string]interface{}{
+			"objectId": objID,
+		}
+		delete(w.data, "objectId")
+		delete(w.data, "createdAt")
+	}
+	// TODO Validate ops (add/remove on channels, $inc on badge, etc.)
 
 	return nil
 }

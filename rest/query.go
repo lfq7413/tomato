@@ -437,7 +437,7 @@ func includePath(auth *Auth, response map[string]interface{}, path []string) err
 		"objectId": objectID,
 	}
 	includeResponse := NewQuery(auth, className, where, map[string]interface{}{}).Execute()
-	if utils.HasResponse(includeResponse) == false {
+	if utils.HasResults(includeResponse) == false {
 		return nil
 	}
 	results := utils.SliceInterface(includeResponse["results"])

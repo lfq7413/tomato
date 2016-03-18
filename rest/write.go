@@ -292,6 +292,41 @@ func (w *Write) handleSession() error {
 }
 
 func (w *Write) validateAuthData() error {
+	if w.className != "_User" {
+		return nil
+	}
+
+	if w.query == nil && w.data["authData"] == nil {
+		if utils.String(w.data["username"]) == "" {
+			// TODO 没有设置 username
+			return nil
+		}
+		if utils.String(w.data["password"]) == "" {
+			// TODO 没有设置 password
+			return nil
+		}
+	}
+
+	if w.data["authData"] == nil || len(utils.MapInterface(w.data["authData"])) == 0 {
+		return nil
+	}
+
+	authData := utils.MapInterface(w.data["authData"])
+	canHandleAuthData := true
+
+	for _, v := range authData {
+		providerAuthData := utils.MapInterface(v)
+		hasToken := (providerAuthData != nil && providerAuthData["id"] != nil)
+		canHandleAuthData = (canHandleAuthData && (hasToken || providerAuthData == nil))
+	}
+	if canHandleAuthData {
+		return w.handleAuthData(authData)
+	}
+	// TODO 这个 authentication 不支持
+	return nil
+}
+
+func (w *Write) handleAuthData(authData map[string]interface{}) error {
 	return nil
 }
 

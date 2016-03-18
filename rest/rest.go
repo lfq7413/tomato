@@ -1,5 +1,7 @@
 package rest
 
+import "github.com/lfq7413/tomato/utils"
+
 // Find ...
 func Find(
 	auth *Auth,
@@ -33,26 +35,13 @@ func Delete(
 		TriggerExists(TypeAfterDelete, className) ||
 		className == "_Session" {
 		response := Find(auth, className, map[string]interface{}{"objectId": objectID}, map[string]interface{}{})
-		if response == nil {
+		if utils.HasResults(response) == false {
 			// TODO 未找到要删除的对象
 		}
-		results := response["results"]
-		if results == nil {
-			// TODO 未找到要删除的对象
-		}
-		var result []interface{}
-		if v, ok := results.([]interface{}); ok {
-			result = v
-		} else {
-			// TODO 未找到要删除的对象
-		}
-		if len(result) == 0 {
-			// TODO 未找到要删除的对象
-		}
-		if v, ok := result[0].(map[string]interface{}); ok {
-			// TODO 删除sessionToken
-			inflatedObject = v
-		} else {
+
+		result := utils.SliceInterface(response["results"])
+		inflatedObject = utils.MapInterface(result[0])
+		if inflatedObject == nil {
 			// TODO 未找到要删除的对象
 		}
 	}
@@ -91,20 +80,15 @@ func Update(
 	if TriggerExists(TypeBeforeSave, className) ||
 		TriggerExists(TypeAfterSave, className) {
 		response = Find(auth, className, map[string]interface{}{"objectId": objectID}, map[string]interface{}{})
-	}
-	var results interface{}
-	if response != nil {
-		results = response["results"]
-	}
-	var result []interface{}
-	if results != nil {
-		if v, ok := results.([]interface{}); ok {
-			result = v
+
+		if utils.HasResults(response) == false {
+			// TODO 未找到要更新的对象
 		}
-	}
-	if len(result) != 0 {
-		if v, ok := result[0].(map[string]interface{}); ok {
-			originalRestObject = v
+
+		result := utils.SliceInterface(response["results"])
+		originalRestObject = utils.MapInterface(result[0])
+		if originalRestObject == nil {
+			// TODO 未找到要更新的对象
 		}
 	}
 

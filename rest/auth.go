@@ -72,10 +72,7 @@ func (a *Auth) loadRoles() []string {
 	}
 	// 取出当前用户直接对应的所有角色
 	response := Find(Master(), "_Role", where, map[string]interface{}{})
-	if response == nil ||
-		response["results"] == nil ||
-		utils.SliceInterface(response["results"]) == nil ||
-		len(utils.SliceInterface(response["results"])) == 0 {
+	if utils.HasResults(response) == false {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
 		a.RolePromise = nil
@@ -123,10 +120,7 @@ func (a *Auth) getAllRoleNamesForID(roleID string) []string {
 	}
 	// 取出当前角色对应的直接父角色
 	response := Find(Master(), "_Role", where, map[string]interface{}{})
-	if response == nil ||
-		response["results"] == nil ||
-		utils.SliceInterface(response["results"]) == nil ||
-		len(utils.SliceInterface(response["results"])) == 0 {
+	if utils.HasResults(response) == false {
 		return []string{}
 	}
 	results := utils.SliceInterface(response["results"])

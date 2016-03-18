@@ -181,16 +181,13 @@ func (q *Query) replaceSelect() error {
 	}
 
 	values := []interface{}{}
-	response := Find(
+	response := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
 		utils.MapInterface(queryValue["where"]),
-		map[string]interface{}{})
+		map[string]interface{}{}).Execute()
 	// 组装查询到的对象
-	if response != nil &&
-		response["results"] != nil &&
-		utils.SliceInterface(response["results"]) != nil &&
-		len(utils.SliceInterface(response["results"])) > 0 {
+	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
 			key := result[utils.String(selectValue["key"])]
@@ -234,16 +231,13 @@ func (q *Query) replaceDontSelect() error {
 	}
 
 	values := []interface{}{}
-	response := Find(
+	response := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
 		utils.MapInterface(queryValue["where"]),
-		map[string]interface{}{})
+		map[string]interface{}{}).Execute()
 	// 组装查询到的对象
-	if response != nil &&
-		response["results"] != nil &&
-		utils.SliceInterface(response["results"]) != nil &&
-		len(utils.SliceInterface(response["results"])) > 0 {
+	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
 			key := result[utils.String(dontSelectValue["key"])]
@@ -280,16 +274,13 @@ func (q *Query) replaceInQuery() error {
 	}
 
 	values := []interface{}{}
-	response := Find(
+	response := NewQuery(
 		q.auth,
 		utils.String(inQueryValue["className"]),
 		utils.MapInterface(inQueryValue["where"]),
-		map[string]interface{}{})
+		map[string]interface{}{}).Execute()
 	// 组装查询到的对象
-	if response != nil &&
-		response["results"] != nil &&
-		utils.SliceInterface(response["results"]) != nil &&
-		len(utils.SliceInterface(response["results"])) > 0 {
+	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
 			pointer := map[string]interface{}{
@@ -328,16 +319,13 @@ func (q *Query) replaceNotInQuery() error {
 	}
 
 	values := []interface{}{}
-	response := Find(
+	response := NewQuery(
 		q.auth,
 		utils.String(notInQueryValue["className"]),
 		utils.MapInterface(notInQueryValue["where"]),
-		map[string]interface{}{})
+		map[string]interface{}{}).Execute()
 	// 组装查询到的对象
-	if response != nil &&
-		response["results"] != nil &&
-		utils.SliceInterface(response["results"]) != nil &&
-		len(utils.SliceInterface(response["results"])) > 0 {
+	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
 			pointer := map[string]interface{}{
@@ -448,11 +436,8 @@ func includePath(auth *Auth, response map[string]interface{}, path []string) err
 	where := map[string]interface{}{
 		"objectId": objectID,
 	}
-	includeResponse := Find(auth, className, where, map[string]interface{}{})
-	if includeResponse == nil ||
-		includeResponse["results"] == nil ||
-		utils.SliceInterface(includeResponse["results"]) == nil ||
-		len(utils.SliceInterface(includeResponse["results"])) == 0 {
+	includeResponse := NewQuery(auth, className, where, map[string]interface{}{}).Execute()
+	if utils.HasResponse(includeResponse) == false {
 		return nil
 	}
 	results := utils.SliceInterface(includeResponse["results"])

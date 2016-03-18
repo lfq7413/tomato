@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"strings"
 	"time"
 
 	"github.com/lfq7413/tomato/config"
@@ -106,6 +107,56 @@ func (w *Write) validateSchema() error {
 }
 
 func (w *Write) handleInstallation() error {
+	if w.response != nil || w.className != "_Installation" {
+		return nil
+	}
+
+	if w.query == nil && w.data["deviceToken"] == nil && w.data["installationId"] == nil {
+		// TODO 设备 id 不能为空
+		return nil
+	}
+
+	if w.query == nil && w.data["deviceType"] == nil {
+		// TODO 设备类型不能为空
+		return nil
+	}
+
+	if w.data["deviceToken"] != nil && len(utils.String(w.data["deviceToken"])) == 64 {
+		w.data["deviceToken"] = strings.ToLower(utils.String(w.data["deviceToken"]))
+	}
+
+	if w.data["installationId"] != nil {
+		w.data["installationId"] = strings.ToLower(utils.String(w.data["installationId"]))
+	}
+
+	var idMatch map[string]interface{}
+
+	if w.query != nil && w.query["objectId"] != nil {
+		results := orm.Find("_Installation", map[string]interface{}{"objectId": w.query["objectId"]}, map[string]interface{}{})
+		if results == nil || len(results) == 0 {
+			// TODO 更新对象未找到
+			return nil
+		}
+		idMatch = utils.MapInterface(results[0])
+		if w.data["installationId"] != nil && idMatch["installationId"] != nil &&
+			w.data["installationId"] != idMatch["installationId"] {
+			//TODO installationId 不能修改
+			return nil
+		}
+		if w.data["deviceToken"] != nil && idMatch["deviceToken"] != nil &&
+			w.data["deviceToken"] != idMatch["deviceToken"] &&
+			w.data["installationId"] == nil && idMatch["installationId"] == nil {
+			//TODO deviceToken 不能修改
+			return nil
+		}
+		if w.data["deviceType"] != nil && idMatch["deviceType"] != nil &&
+			w.data["deviceType"] != idMatch["deviceType"] {
+			//TODO deviceType 不能修改
+			return nil
+		}
+		return nil
+	}
+
 	return nil
 }
 

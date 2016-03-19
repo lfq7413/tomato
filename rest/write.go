@@ -368,7 +368,28 @@ func (w *Write) handleAuthDataValidation(authData map[string]interface{}) error 
 }
 
 func (w *Write) findUsersWithAuthData(authData map[string]interface{}) []interface{} {
-	return nil
+	query := []interface{}{}
+	for k, v := range authData {
+		if v == nil {
+			continue
+		}
+		key := "authData." + k + ".id"
+		provider := utils.MapInterface(v)
+		q := map[string]interface{}{
+			key: provider["id"],
+		}
+		query = append(query, q)
+	}
+
+	findPromise := []interface{}{}
+	if len(query) > 0 {
+		where := map[string]interface{}{
+			"$or": query,
+		}
+		findPromise = orm.Find(w.className, where, map[string]interface{}{})
+	}
+
+	return findPromise
 }
 
 func (w *Write) runBeforeTrigger() error {

@@ -327,6 +327,47 @@ func (w *Write) validateAuthData() error {
 }
 
 func (w *Write) handleAuthData(authData map[string]interface{}) error {
+	w.handleAuthDataValidation(authData)
+	results := w.findUsersWithAuthData(authData)
+	if results != nil && len(results) > 1 {
+		// TODO auth 已经被使用
+		return nil
+	}
+
+	keys := []string{}
+	for k := range authData {
+		keys = append(keys, k)
+	}
+	w.storage["authProvider"] = strings.Join(keys, ",")
+
+	if results == nil || len(results) == 0 {
+		w.data["username"] = utils.CreateToken()
+	} else if w.query == nil {
+		// 登录
+		user := utils.MapInterface(results[0])
+		delete(user, "password")
+		w.response = map[string]interface{}{
+			"response": user,
+			"location": w.location(),
+		}
+		w.data["objectId"] = user["objectId"]
+	} else if w.query != nil && w.query["objectId"] != nil {
+		// 更新
+		user := utils.MapInterface(results[0])
+		if utils.String(user["objectId"]) != utils.String(w.query["objectId"]) {
+			// auth 已经被使用
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (w *Write) handleAuthDataValidation(authData map[string]interface{}) error {
+	return nil
+}
+
+func (w *Write) findUsersWithAuthData(authData map[string]interface{}) []interface{} {
 	return nil
 }
 
@@ -356,4 +397,14 @@ func (w *Write) handleFollowup() error {
 
 func (w *Write) runAfterTrigger() error {
 	return nil
+}
+
+func (w *Write) location() string {
+	var middle string
+	if w.className == "_User" {
+		middle = "/users/"
+	} else {
+		middle = "/classes/" + w.className + "/"
+	}
+	return config.TConfig.ServerURL + middle + utils.String(w.data["objectId"])
 }

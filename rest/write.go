@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lfq7413/tomato/authdatamanager"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/utils"
@@ -355,7 +356,7 @@ func (w *Write) handleAuthData(authData map[string]interface{}) error {
 		// 更新
 		user := utils.MapInterface(results[0])
 		if utils.String(user["objectId"]) != utils.String(w.query["objectId"]) {
-			// auth 已经被使用
+			// TODO auth 已经被使用
 			return nil
 		}
 	}
@@ -364,6 +365,17 @@ func (w *Write) handleAuthData(authData map[string]interface{}) error {
 }
 
 func (w *Write) handleAuthDataValidation(authData map[string]interface{}) error {
+	for k, v := range authData {
+		if v == nil {
+			continue
+		}
+		result := authdatamanager.ValidateAuthData(k, utils.MapInterface(v))
+		if result != nil {
+			// 验证出现问题
+			return nil
+		}
+	}
+
 	return nil
 }
 

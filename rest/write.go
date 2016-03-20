@@ -437,6 +437,17 @@ func (w *Write) runBeforeTrigger() error {
 }
 
 func (w *Write) setRequiredFieldsIfNeeded() error {
+	if w.data != nil {
+		w.data["updatedAt"] = w.updatedAt
+		if w.query == nil {
+			w.data["createdAt"] = w.updatedAt
+
+			if w.data["objectId"] == nil {
+				w.data["objectId"] = utils.CreateObjectID()
+			}
+		}
+	}
+
 	return nil
 }
 

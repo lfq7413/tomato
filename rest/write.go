@@ -405,6 +405,34 @@ func (w *Write) findUsersWithAuthData(authData map[string]interface{}) []interfa
 }
 
 func (w *Write) runBeforeTrigger() error {
+	if w.response != nil {
+		return nil
+	}
+	if TriggerExists(TypeBeforeSave, w.className) == false {
+		return nil
+	}
+
+	updatedObject := map[string]interface{}{}
+	if w.query != nil && w.query["objectId"] != nil {
+		// 如果是更新，则把原始数据添加进来
+		for k, v := range w.originalData {
+			updatedObject[k] = v
+		}
+	}
+	// 把需要更新的数据添加进来
+	for k, v := range w.data {
+		updatedObject[k] = v
+	}
+
+	response := RunTrigger(TypeBeforeSave, w.className, w.auth, updatedObject, w.originalData)
+	if response != nil && response["object"] != nil {
+		w.data = utils.MapInterface(response["object"])
+		w.storage["changedByTrigger"] = true
+		if w.query != nil && w.query["objectId"] != nil {
+			delete(w.data, "objectId")
+		}
+	}
+
 	return nil
 }
 

@@ -14,3 +14,11 @@ func SetEmailVerifyToken(user map[string]interface{}) {
 		user["emailVerified"] = false
 	}
 }
+
+// SendVerificationEmail ...
+func SendVerificationEmail(user map[string]interface{}) {
+	if shouldVerifyEmails() == false {
+		return
+	}
+	// TODO 发送验证邮件
+}

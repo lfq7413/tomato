@@ -639,6 +639,26 @@ func (w *Write) runDatabaseOperation() error {
 }
 
 func (w *Write) handleFollowup() error {
+	if w.storage != nil && w.storage["clearSessions"] != nil {
+		// 修改密码之后，清除 session
+		user := map[string]interface{}{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  w.query["objectId"],
+		}
+		sessionQuery := map[string]interface{}{
+			"user": user,
+		}
+		delete(w.storage, "clearSessions")
+		orm.Destroy("_Session", sessionQuery)
+	}
+
+	if w.storage != nil && w.storage["sendVerificationEmail"] != nil {
+		// 修改邮箱之后需要发送验证邮件
+		delete(w.storage, "sendVerificationEmail")
+		SendVerificationEmail(w.data)
+	}
+
 	return nil
 }
 

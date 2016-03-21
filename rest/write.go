@@ -465,7 +465,7 @@ func (w *Write) transformUser() error {
 		user := map[string]interface{}{
 			"__type":    "Pointer",
 			"className": "_User",
-			"objectId":  w.data["objectId"],
+			"objectId":  w.objectID(),
 		}
 		var authProvider interface{}
 		if w.storage["authProvider"] != nil {
@@ -511,7 +511,7 @@ func (w *Write) transformUser() error {
 		}
 	} else {
 		objectID := map[string]interface{}{
-			"$ne": w.data["objectId"],
+			"$ne": w.objectID(),
 		}
 		where := map[string]interface{}{
 			"username": w.data["username"],
@@ -536,7 +536,7 @@ func (w *Write) transformUser() error {
 			return nil
 		}
 		objectID := map[string]interface{}{
-			"$ne": w.data["objectId"],
+			"$ne": w.objectID(),
 		}
 		where := map[string]interface{}{
 			"email":    w.data["email"],
@@ -644,7 +644,7 @@ func (w *Write) handleFollowup() error {
 		user := map[string]interface{}{
 			"__type":    "Pointer",
 			"className": "_User",
-			"objectId":  w.query["objectId"],
+			"objectId":  w.objectID(),
 		}
 		sessionQuery := map[string]interface{}{
 			"user": user,
@@ -674,4 +674,11 @@ func (w *Write) location() string {
 		middle = "/classes/" + w.className + "/"
 	}
 	return config.TConfig.ServerURL + middle + utils.String(w.data["objectId"])
+}
+
+func (w *Write) objectID() interface{} {
+	if w.data["objectId"] != nil {
+		return w.data["objectId"]
+	}
+	return w.query["objectId"]
 }

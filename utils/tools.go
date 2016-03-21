@@ -1,5 +1,7 @@
 package utils
 
+import "regexp"
+
 // AppendString 连接两个 []string
 func AppendString(slice1 []string, slice2 []string) []string {
 	s := slice1
@@ -33,4 +35,10 @@ func HasResults(response map[string]interface{}) bool {
 		return false
 	}
 	return true
+}
+
+// IsEmail ...
+func IsEmail(email string) bool {
+	b, _ := regexp.MatchString("^.+@.+$", email)
+	return b
 }

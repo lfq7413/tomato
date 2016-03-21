@@ -254,7 +254,7 @@ func (w *Write) handleSession() error {
 	if w.query == nil && w.auth.IsMaster == false {
 		token := "r:" + utils.CreateToken()
 		expiresAt := time.Now().UTC()
-		expiresAt.AddDate(1, 0, 0)
+		expiresAt = expiresAt.AddDate(1, 0, 0)
 		user := map[string]interface{}{
 			"__type":    "Pointer",
 			"className": "_User",
@@ -452,6 +452,110 @@ func (w *Write) setRequiredFieldsIfNeeded() error {
 }
 
 func (w *Write) transformUser() error {
+	if w.className != "_User" {
+		return nil
+	}
+
+	// 如果是创建用户，则先创建 token
+	if w.query == nil {
+		token := "r:" + utils.CreateToken()
+		w.storage["token"] = token
+		expiresAt := time.Now().UTC()
+		expiresAt = expiresAt.AddDate(1, 0, 0)
+		user := map[string]interface{}{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  w.data["objectId"],
+		}
+		var authProvider interface{}
+		if w.storage["authProvider"] != nil {
+			authProvider = w.storage["authProvider"]
+		} else {
+			authProvider = "password"
+		}
+		createdWith := map[string]interface{}{
+			"action":       "login",
+			"authProvider": authProvider,
+		}
+		sessionData := map[string]interface{}{
+			"sessionToken":   token,
+			"user":           user,
+			"createdWith":    createdWith,
+			"restricted":     false,
+			"installationId": w.data["installationId"],
+			"expiresAt":      expiresAt,
+		}
+		if w.response != nil && w.response["response"] != nil {
+			response := utils.MapInterface(w.response["response"])
+			response["sessionToken"] = token
+		}
+		// TODO 处理创建结果
+		NewWrite(Master(), "_Session", nil, sessionData, nil).Execute()
+	}
+
+	// 处理密码，计算 sha256
+	if w.data["password"] == nil {
+
+	} else {
+		if w.query != nil && w.auth.IsMaster == false {
+			w.storage["clearSessions"] = true
+		}
+		w.data["_hashed_password"] = utils.Hash(utils.String(w.data["password"]))
+		delete(w.data, "password")
+	}
+
+	// 处理用户名，检测用户名是否唯一
+	if w.data["username"] == nil {
+		if w.query == nil {
+			w.data["username"] = utils.CreateObjectID()
+		}
+	} else {
+		objectID := map[string]interface{}{
+			"$ne": w.data["objectId"],
+		}
+		where := map[string]interface{}{
+			"username": w.data["username"],
+			"objectId": objectID,
+		}
+		option := map[string]interface{}{
+			"limit": 1,
+		}
+		results := orm.Find(w.className, where, option)
+		if len(results) > 0 {
+			// TODO 用户已经存在
+			return nil
+		}
+	}
+
+	// 处理 email ，检测合法性、检测是否唯一
+	if w.data["email"] == nil {
+
+	} else {
+		if utils.IsEmail(utils.String(w.data["email"])) == false {
+			// TODO email 不合法
+			return nil
+		}
+		objectID := map[string]interface{}{
+			"$ne": w.data["objectId"],
+		}
+		where := map[string]interface{}{
+			"email":    w.data["email"],
+			"objectId": objectID,
+		}
+		option := map[string]interface{}{
+			"limit": 1,
+		}
+		results := orm.Find(w.className, where, option)
+		if len(results) > 0 {
+			// TODO email 已经存在
+			return nil
+		}
+
+		// 更新 email ，需要发送验证邮件
+		w.storage["sendVerificationEmail"] = true
+		SetEmailVerifyToken(w.data)
+	}
+
 	return nil
 }
 

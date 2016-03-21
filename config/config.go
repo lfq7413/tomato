@@ -11,6 +11,7 @@ type Config struct {
 	ClientKey                string
 	AllowClientClassCreation bool
 	EnableAnonymousUsers     bool
+	VerifyUserEmails         bool
 }
 
 var (
@@ -27,6 +28,7 @@ func init() {
 		ClientKey:                "",
 		AllowClientClassCreation: false,
 		EnableAnonymousUsers:     true,
+		VerifyUserEmails:         false,
 	}
 
 	parseConfig()
@@ -40,4 +42,5 @@ func parseConfig() {
 	TConfig.ClientKey = beego.AppConfig.String("clientkey")
 	TConfig.AllowClientClassCreation = beego.AppConfig.DefaultBool("allowclientclasscreation", false)
 	TConfig.EnableAnonymousUsers = beego.AppConfig.DefaultBool("EnableAnonymousUsers", true)
+	TConfig.VerifyUserEmails = beego.AppConfig.DefaultBool("VerifyUserEmails", false)
 }

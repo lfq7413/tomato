@@ -560,10 +560,81 @@ func (w *Write) transformUser() error {
 }
 
 func (w *Write) expandFilesForExistingObjects() error {
+	if w.response != nil && w.response["response"] != nil {
+		// TODO 展开文件对象
+	}
+
 	return nil
 }
 
 func (w *Write) runDatabaseOperation() error {
+	if w.response != nil {
+		return nil
+	}
+
+	if w.className == "_User" && w.query != nil &&
+		w.auth.CouldUpdateUserID(utils.String(w.query["objectId"])) == false {
+		//TODO 不能更新当前用户
+		return nil
+	}
+
+	if w.className == "_Product" && w.data["download"] != nil {
+		download := utils.MapInterface(w.data["download"])
+		w.data["downloadName"] = download["name"]
+	}
+
+	if w.data["ACL"] != nil && utils.MapInterface(w.data["ACL"])["*unresolved"] != nil {
+		// TODO 无效的 ACL
+		return nil
+	}
+
+	if w.query != nil {
+		orm.Update(w.className, w.query, w.data, w.runOptions)
+		// TODO 处理错误
+		resp := map[string]interface{}{
+			"updatedAt": w.updatedAt,
+		}
+		w.response = map[string]interface{}{
+			"response": resp,
+		}
+	} else {
+		// 给新用户设置默认 ACL
+		if w.data["ACL"] == nil && w.className == "_User" {
+			readwrite := map[string]interface{}{
+				"read":  true,
+				"write": true,
+			}
+			onlyread := map[string]interface{}{
+				"read":  true,
+				"write": false,
+			}
+			objectID := utils.String(w.data["objectId"])
+			w.data["ACL"] = map[string]interface{}{
+				objectID: readwrite,
+				"*":      onlyread,
+			}
+		}
+		// 创建对象
+		orm.Create(w.className, w.data, w.runOptions)
+		resp := map[string]interface{}{
+			"objectId":  w.data["objectId"],
+			"createdAt": w.data["createdAt"],
+		}
+		if w.storage["changedByTrigger"] != nil {
+			for k, v := range w.data {
+				resp[k] = v
+			}
+		}
+		if w.storage["token"] != nil {
+			resp["sessionToken"] = w.storage["token"]
+		}
+		w.response = map[string]interface{}{
+			"status":   201,
+			"response": resp,
+			"location": w.location(),
+		}
+	}
+
 	return nil
 }
 

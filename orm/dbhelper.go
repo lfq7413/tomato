@@ -34,7 +34,19 @@ func Count(className string, where map[string]interface{}, options map[string]in
 
 // Destroy ...
 func Destroy(className string, where map[string]interface{}) {
+	// TODO
+}
 
+// Update ...
+func Update(className string, where map[string]interface{}, data map[string]interface{}, options map[string]interface{}) error {
+	// TODO
+	return nil
+}
+
+// Create ...
+func Create(className string, data map[string]interface{}, options map[string]interface{}) error {
+	// TODO
+	return nil
 }
 
 // ValidateObject ...

@@ -70,14 +70,12 @@ func (w *Write) getUserAndRoleACL() error {
 	if w.auth.IsMaster {
 		return nil
 	}
-	w.runOptions["acl"] = []string{"*"}
+	acl := []string{"*"}
 	if w.auth.User != nil {
-		roles := w.auth.GetUserRoles()
-		roles = append(roles, w.auth.User.ID)
-		if v, ok := w.runOptions["acl"].([]string); ok {
-			v = utils.AppendString(v, roles)
-		}
+		acl = append(acl, w.auth.User.ID)
+		acl = append(acl, w.auth.GetUserRoles()...)
 	}
+	w.runOptions["acl"] = acl
 	return nil
 }
 
@@ -194,7 +192,7 @@ func (w *Write) handleInstallation() error {
 			if w.data["appIdentifier"] != nil {
 				delQuery["appIdentifier"] = w.data["appIdentifier"]
 			}
-			orm.Destroy("_Installation", delQuery)
+			orm.Destroy("_Installation", delQuery, nil)
 			objID = ""
 		}
 	} else {
@@ -204,7 +202,7 @@ func (w *Write) handleInstallation() error {
 			delQuery := map[string]interface{}{
 				"objectId": idMatch["objectId"],
 			}
-			orm.Destroy("_Installation", delQuery)
+			orm.Destroy("_Installation", delQuery, nil)
 			objID = utils.String(utils.MapInterface(deviceTokenMatches[0])["objectId"])
 		} else {
 			if w.data["deviceToken"] != nil && idMatch["deviceToken"] != w.data["deviceToken"] {
@@ -219,7 +217,7 @@ func (w *Write) handleInstallation() error {
 				if w.data["appIdentifier"] != nil {
 					delQuery["appIdentifier"] = w.data["appIdentifier"]
 				}
-				orm.Destroy("_Installation", delQuery)
+				orm.Destroy("_Installation", delQuery, nil)
 			}
 			objID = utils.String(idMatch["objectId"])
 		}
@@ -650,7 +648,7 @@ func (w *Write) handleFollowup() error {
 			"user": user,
 		}
 		delete(w.storage, "clearSessions")
-		orm.Destroy("_Session", sessionQuery)
+		orm.Destroy("_Session", sessionQuery, nil)
 	}
 
 	if w.storage != nil && w.storage["sendVerificationEmail"] != nil {

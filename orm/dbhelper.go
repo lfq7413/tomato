@@ -33,7 +33,7 @@ func Count(className string, where map[string]interface{}, options map[string]in
 }
 
 // Destroy ...
-func Destroy(className string, where map[string]interface{}) {
+func Destroy(className string, where map[string]interface{}, options map[string]interface{}) {
 	// TODO
 }
 

@@ -201,7 +201,7 @@ func (q *Query) replaceSelect() error {
 	if selectObject["$in"] != nil &&
 		utils.SliceInterface(selectObject["$in"]) != nil {
 		in := utils.SliceInterface(selectObject["$in"])
-		in = utils.AppendInterface(in, values)
+		selectObject["$in"] = append(in, values...)
 	} else {
 		selectObject["$in"] = values
 	}
@@ -250,8 +250,8 @@ func (q *Query) replaceDontSelect() error {
 	delete(dontSelectObject, "$dontSelect")
 	if dontSelectObject["$nin"] != nil &&
 		utils.SliceInterface(dontSelectObject["$nin"]) != nil {
-		in := utils.SliceInterface(dontSelectObject["$nin"])
-		in = utils.AppendInterface(in, values)
+		nin := utils.SliceInterface(dontSelectObject["$nin"])
+		dontSelectObject["$nin"] = append(nin, values...)
 	} else {
 		dontSelectObject["$nin"] = values
 	}
@@ -296,7 +296,7 @@ func (q *Query) replaceInQuery() error {
 	if inQueryObject["$in"] != nil &&
 		utils.SliceInterface(inQueryObject["$in"]) != nil {
 		in := utils.SliceInterface(inQueryObject["$in"])
-		in = utils.AppendInterface(in, values)
+		inQueryObject["$in"] = append(in, values...)
 	} else {
 		inQueryObject["$in"] = values
 	}
@@ -341,7 +341,7 @@ func (q *Query) replaceNotInQuery() error {
 	if notInQueryObject["$nin"] != nil &&
 		utils.SliceInterface(notInQueryObject["$nin"]) != nil {
 		nin := utils.SliceInterface(notInQueryObject["$nin"])
-		nin = utils.AppendInterface(nin, values)
+		notInQueryObject["$nin"] = append(nin, values...)
 	} else {
 		notInQueryObject["$nin"] = values
 	}
@@ -461,7 +461,7 @@ func findPointers(object interface{}, path []string) []interface{} {
 	if utils.SliceInterface(object) != nil {
 		answer := []interface{}{}
 		for _, v := range utils.SliceInterface(object) {
-			answer = utils.AppendInterface(answer, findPointers(v, path))
+			answer = append(answer, findPointers(v, path)...)
 		}
 		return answer
 	}

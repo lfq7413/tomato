@@ -86,7 +86,7 @@ func (a *Auth) loadRoles() []string {
 	}
 	// 取出角色对应的父角色
 	for _, v := range roleIDs {
-		roleIDs = utils.AppendString(roleIDs, a.getAllRoleNamesForID(v))
+		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v)...)
 	}
 
 	objectID := map[string]interface{}{
@@ -131,7 +131,7 @@ func (a *Auth) getAllRoleNamesForID(roleID string) []string {
 	}
 	// 递归取出角色对应的父角色
 	for _, v := range roleIDs {
-		roleIDs = utils.AppendString(roleIDs, a.getAllRoleNamesForID(v))
+		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v)...)
 	}
 	return roleIDs
 }

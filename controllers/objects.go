@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -62,9 +63,9 @@ func (o *ObjectsController) Prepare() {
 
 }
 
-// Post ...
+// HandleCreate ...
 // @router /:className [post]
-func (o *ObjectsController) Post() {
+func (o *ObjectsController) HandleCreate() {
 
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
@@ -101,10 +102,10 @@ func (o *ObjectsController) Post() {
 	o.ServeJSON()
 }
 
-// Get ...
+// HandleGet ...
 // @router /:className/:objectId [get]
-func (o *ObjectsController) Get() {
-
+func (o *ObjectsController) HandleGet() {
+	fmt.Println("===========>Get()")
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
 	}
@@ -141,9 +142,9 @@ func (o *ObjectsController) Get() {
 	o.ServeJSON()
 }
 
-// Put ...
+// HandleUpdate ...
 // @router /:className/:objectId [put]
-func (o *ObjectsController) Put() {
+func (o *ObjectsController) HandleUpdate() {
 
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
@@ -178,10 +179,10 @@ func (o *ObjectsController) Put() {
 	o.ServeJSON()
 }
 
-// GetAll ...
+// HandleFind ...
 // @router /:className [get]
-func (o *ObjectsController) GetAll() {
-
+func (o *ObjectsController) HandleFind() {
+	fmt.Println("===========>GetAll()")
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
 	}
@@ -250,9 +251,9 @@ func (o *ObjectsController) GetAll() {
 	o.ServeJSON()
 }
 
-// Delete ...
+// HandleDelete ...
 // @router /:className/:objectId [delete]
-func (o *ObjectsController) Delete() {
+func (o *ObjectsController) HandleDelete() {
 
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
@@ -277,4 +278,28 @@ func (o *ObjectsController) Delete() {
 	data := bson.M{}
 	o.Data["json"] = data
 	o.ServeJSON()
+}
+
+// Get ...
+// @router / [get]
+func (o *ObjectsController) Get() {
+	o.Controller.Get()
+}
+
+// Post ...
+// @router / [post]
+func (o *ObjectsController) Post() {
+	o.Controller.Post()
+}
+
+// Delete ...
+// @router / [delete]
+func (o *ObjectsController) Delete() {
+	o.Controller.Delete()
+}
+
+// Put ...
+// @router / [put]
+func (o *ObjectsController) Put() {
+	o.Controller.Put()
 }

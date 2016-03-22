@@ -34,7 +34,7 @@ func NewQuery(
 		className:   className,
 		where:       where,
 		findOptions: map[string]interface{}{},
-		response:    nil,
+		response:    map[string]interface{}{},
 		doCount:     false,
 		include:     [][]string{},
 		keys:        []string{},

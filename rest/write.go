@@ -663,6 +663,28 @@ func (w *Write) handleFollowup() error {
 }
 
 func (w *Write) runAfterTrigger() error {
+	if w.response == nil || w.response["response"] == nil {
+		return nil
+	}
+
+	if TriggerExists(TypeAfterSave, w.className) == false {
+		return nil
+	}
+
+	updatedObject := map[string]interface{}{}
+	if w.query != nil && w.query["objectId"] != nil {
+		// 如果是更新，则把原始数据添加进来
+		for k, v := range w.originalData {
+			updatedObject[k] = v
+		}
+	}
+	// 把需要更新的数据添加进来
+	for k, v := range w.data {
+		updatedObject[k] = v
+	}
+
+	RunTrigger(TypeAfterSave, w.className, w.auth, updatedObject, w.originalData)
+
 	return nil
 }
 

@@ -34,6 +34,34 @@ func init() {
 			[]string{"put"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"],
+		beego.ControllerComments{
+			"HandleLogOut",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"],
+		beego.ControllerComments{
+			"Get",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
 		beego.ControllerComments{
 			"HandleCreate",

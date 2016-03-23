@@ -12,6 +12,7 @@ type Config struct {
 	AllowClientClassCreation bool
 	EnableAnonymousUsers     bool
 	VerifyUserEmails         bool
+	FileAdapter              string
 }
 
 var (
@@ -29,6 +30,7 @@ func init() {
 		AllowClientClassCreation: false,
 		EnableAnonymousUsers:     true,
 		VerifyUserEmails:         false,
+		FileAdapter:              "disk",
 	}
 
 	parseConfig()
@@ -43,4 +45,5 @@ func parseConfig() {
 	TConfig.AllowClientClassCreation = beego.AppConfig.DefaultBool("allowclientclasscreation", false)
 	TConfig.EnableAnonymousUsers = beego.AppConfig.DefaultBool("EnableAnonymousUsers", true)
 	TConfig.VerifyUserEmails = beego.AppConfig.DefaultBool("VerifyUserEmails", false)
+	TConfig.FileAdapter = beego.AppConfig.DefaultString("FileAdapter", "disk")
 }

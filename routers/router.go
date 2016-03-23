@@ -42,6 +42,11 @@ func init() {
 				&controllers.RolesController{},
 			),
 		),
+		beego.NSNamespace("/files",
+			beego.NSInclude(
+				&controllers.FilesController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

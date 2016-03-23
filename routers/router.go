@@ -27,6 +27,11 @@ func init() {
 				&controllers.LogoutController{},
 			),
 		),
+		beego.NSNamespace("/requestPasswordReset",
+			beego.NSInclude(
+				&controllers.ResetController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

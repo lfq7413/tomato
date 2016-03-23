@@ -1,5 +1,8 @@
 package controllers
 
+import "github.com/lfq7413/tomato/rest"
+import "github.com/lfq7413/tomato/utils"
+
 // SessionsController ...
 type SessionsController struct {
 	ObjectsController
@@ -8,25 +11,31 @@ type SessionsController struct {
 // HandleFind ...
 // @router / [get]
 func (s *SessionsController) HandleFind() {
-
+	s.ClassName = "_Session"
+	s.ObjectsController.HandleFind()
 }
 
 // HandleGet ...
 // @router /:objectId [get]
 func (s *SessionsController) HandleGet() {
-
+	s.ClassName = "_Session"
+	s.ObjectID = s.Ctx.Input.Param(":objectId")
+	s.ObjectsController.HandleGet()
 }
 
 // HandleCreate ...
 // @router / [post]
 func (s *SessionsController) HandleCreate() {
-
+	s.ClassName = "_Session"
+	s.ObjectsController.HandleCreate()
 }
 
 // HandleUpdate ...
 // @router /:objectId [put]
 func (s *SessionsController) HandleUpdate() {
-
+	s.ClassName = "_Session"
+	s.ObjectID = s.Ctx.Input.Param(":objectId")
+	s.ObjectsController.HandleUpdate()
 }
 
 // HandleDelete ...
@@ -37,12 +46,29 @@ func (s *SessionsController) HandleDelete() {
 		s.ObjectsController.Delete()
 		return
 	}
+	s.ClassName = "_Session"
+	s.ObjectID = objectID
+	s.ObjectsController.HandleDelete()
 }
 
 // HandleGetMe ...
 // @router /me [get]
 func (s *SessionsController) HandleGetMe() {
-
+	if s.Info == nil || s.Info.SessionToken == "" {
+		// TODO 需要 SessionToken
+		return
+	}
+	where := map[string]interface{}{
+		"sessionToken": s.Info.SessionToken,
+	}
+	response := rest.Find(rest.Master(), "_Session", where, map[string]interface{}{})
+	if utils.HasResults(response) == false {
+		// TODO 未找到 Session
+		return
+	}
+	results := utils.SliceInterface(response["results"])
+	s.Data["json"] = results[0]
+	s.ServeJSON()
 }
 
 // HandleUpdateMe ...

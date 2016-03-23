@@ -74,7 +74,7 @@ func (s *SessionsController) HandleGetMe() {
 // HandleUpdateMe ...
 // @router /me [put]
 func (s *SessionsController) HandleUpdateMe() {
-
+	// TODO
 }
 
 // Put ...

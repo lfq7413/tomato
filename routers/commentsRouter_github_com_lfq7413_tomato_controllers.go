@@ -153,6 +153,55 @@ func init() {
 			[]string{"put"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"],
+		beego.ControllerComments{
+			"HandleFind",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"],
+		beego.ControllerComments{
+			"HandleGet",
+			`/:objectId`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"],
+		beego.ControllerComments{
+			"HandleCreate",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"],
+		beego.ControllerComments{
+			"HandleUpdate",
+			`/:objectId`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"],
+		beego.ControllerComments{
+			"HandleDelete",
+			`/:objectId`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:RolesController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SessionsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SessionsController"],
 		beego.ControllerComments{
 			"HandleFind",
@@ -200,6 +249,20 @@ func init() {
 			"HandleUpdateMe",
 			`/me`,
 			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SessionsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SessionsController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SessionsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SessionsController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
 			nil})
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:UsersController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:UsersController"],

@@ -32,6 +32,11 @@ func init() {
 				&controllers.ResetController{},
 			),
 		),
+		beego.NSNamespace("/sessions",
+			beego.NSInclude(
+				&controllers.SessionsController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

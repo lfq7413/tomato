@@ -1,5 +1,7 @@
 package controllers
 
+import "github.com/lfq7413/tomato/files"
+
 // FilesController ...
 type FilesController struct {
 	ObjectsController
@@ -9,6 +11,11 @@ type FilesController struct {
 // @router /:appId/:filename [get]
 func (f *FilesController) HandleGet() {
 	// TODO
+	filename := f.Ctx.Input.Param(":filename")
+	data := files.GetFileData(filename)
+	f.Ctx.Output.SetStatus(200)
+	f.Ctx.Output.ContentType("")
+	f.Ctx.Output.Body(data)
 }
 
 // HandleCreate ...

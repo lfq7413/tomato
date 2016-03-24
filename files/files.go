@@ -19,14 +19,15 @@ func GetFileData(filename string) []byte {
 }
 
 // CreateFile ...
-func CreateFile(filename string, data []byte, contentType string) map[string]interface{} {
+func CreateFile(filename string, data []byte, contentType string) map[string]string {
 	adapter.createFile(filename, data, contentType)
 	return nil
 }
 
 // DeleteFile ...
-func DeleteFile(filename string) {
+func DeleteFile(filename string) error {
 	adapter.deleteFile(filename)
+	return nil
 }
 
 // ExpandFilesInObject ...

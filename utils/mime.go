@@ -56,7 +56,8 @@ func LookupContentType(filename string) string {
 
 // LookupExtension 查找扩展名
 func LookupExtension(mimeType string) string {
-	exts := extensions[mimeType]
+	mt := strings.ToLower(mimeType)
+	exts := extensions[mt]
 	if exts == nil || len(exts) == 0 {
 		return ""
 	}

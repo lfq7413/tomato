@@ -14,7 +14,7 @@ import (
 type Query struct {
 	auth        *Auth
 	className   string
-	where       map[string]interface{}
+	Where       map[string]interface{}
 	findOptions map[string]interface{}
 	response    map[string]interface{}
 	doCount     bool
@@ -32,7 +32,7 @@ func NewQuery(
 	query := &Query{
 		auth:        auth,
 		className:   className,
-		where:       where,
+		Where:       where,
 		findOptions: map[string]interface{}{},
 		response:    map[string]interface{}{},
 		doCount:     false,
@@ -52,7 +52,7 @@ func NewQuery(
 			}
 			user := map[string]interface{}{"__type": "Pointer", "className": "_User", "objectId": auth.User.ID}
 			and := []interface{}{where, user}
-			query.where = map[string]interface{}{"$and": and}
+			query.Where = map[string]interface{}{"$and": and}
 		}
 	}
 
@@ -112,14 +112,15 @@ func (q *Query) Execute() map[string]interface{} {
 	fmt.Println("findOptions", q.findOptions)
 	fmt.Println("include    ", q.include)
 
-	q.buildRestWhere()
+	q.BuildRestWhere()
 	q.runFind()
 	q.runCount()
 	q.handleInclude()
 	return q.response
 }
 
-func (q *Query) buildRestWhere() error {
+// BuildRestWhere ...
+func (q *Query) BuildRestWhere() error {
 	q.getUserAndRoleACL()
 	q.validateClientClassCreation()
 	q.replaceSelect()
@@ -160,7 +161,7 @@ func (q *Query) validateClientClassCreation() error {
 }
 
 func (q *Query) replaceSelect() error {
-	selectObject := findObjectWithKey(q.where, "$select")
+	selectObject := findObjectWithKey(q.Where, "$select")
 	if selectObject == nil {
 		return nil
 	}
@@ -210,7 +211,7 @@ func (q *Query) replaceSelect() error {
 }
 
 func (q *Query) replaceDontSelect() error {
-	dontSelectObject := findObjectWithKey(q.where, "$dontSelect")
+	dontSelectObject := findObjectWithKey(q.Where, "$dontSelect")
 	if dontSelectObject == nil {
 		return nil
 	}
@@ -260,7 +261,7 @@ func (q *Query) replaceDontSelect() error {
 }
 
 func (q *Query) replaceInQuery() error {
-	inQueryObject := findObjectWithKey(q.where, "$inQuery")
+	inQueryObject := findObjectWithKey(q.Where, "$inQuery")
 	if inQueryObject == nil {
 		return nil
 	}
@@ -305,7 +306,7 @@ func (q *Query) replaceInQuery() error {
 }
 
 func (q *Query) replaceNotInQuery() error {
-	notInQueryObject := findObjectWithKey(q.where, "$notInQuery")
+	notInQueryObject := findObjectWithKey(q.Where, "$notInQuery")
 	if notInQueryObject == nil {
 		return nil
 	}
@@ -350,7 +351,7 @@ func (q *Query) replaceNotInQuery() error {
 }
 
 func (q *Query) runFind() error {
-	response := orm.Find(q.className, q.where, q.findOptions)
+	response := orm.Find(q.className, q.Where, q.findOptions)
 	if q.className == "_User" {
 		for _, v := range response {
 			user := utils.MapInterface(v)
@@ -387,7 +388,7 @@ func (q *Query) runCount() error {
 	q.findOptions["count"] = true
 	delete(q.findOptions, "skip")
 	delete(q.findOptions, "limit")
-	count := orm.Count(q.className, q.where, q.findOptions)
+	count := orm.Count(q.className, q.Where, q.findOptions)
 	q.response["count"] = count
 	return nil
 }

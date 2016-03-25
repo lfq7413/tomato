@@ -14,6 +14,7 @@ type Config struct {
 	VerifyUserEmails         bool
 	FileAdapter              string
 	FileDir                  string
+	PushAdapter              string
 }
 
 var (
@@ -33,6 +34,7 @@ func init() {
 		VerifyUserEmails:         false,
 		FileAdapter:              "disk",
 		FileDir:                  "/Users",
+		PushAdapter:              "tomato",
 	}
 
 	parseConfig()
@@ -49,4 +51,5 @@ func parseConfig() {
 	TConfig.VerifyUserEmails = beego.AppConfig.DefaultBool("VerifyUserEmails", false)
 	TConfig.FileAdapter = beego.AppConfig.DefaultString("FileAdapter", "disk")
 	TConfig.FileDir = beego.AppConfig.DefaultString("FileDir", "/Users")
+	TConfig.PushAdapter = beego.AppConfig.DefaultString("PushAdapter", "tomato")
 }

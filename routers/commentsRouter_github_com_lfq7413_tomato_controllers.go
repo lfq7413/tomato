@@ -216,6 +216,34 @@ func init() {
 			[]string{"put"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"],
+		beego.ControllerComments{
+			"HandlePost",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"],
+		beego.ControllerComments{
+			"Get",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ResetController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ResetController"],
 		beego.ControllerComments{
 			"HandleResetRequest",

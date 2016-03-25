@@ -1,7 +1,9 @@
 package controllers
 
-import "github.com/lfq7413/tomato/files"
-import "github.com/lfq7413/tomato/utils"
+import (
+	"github.com/lfq7413/tomato/files"
+	"github.com/lfq7413/tomato/utils"
+)
 
 // FilesController ...
 type FilesController struct {

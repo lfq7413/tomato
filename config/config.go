@@ -13,6 +13,7 @@ type Config struct {
 	EnableAnonymousUsers     bool
 	VerifyUserEmails         bool
 	FileAdapter              string
+	FileDir                  string
 }
 
 var (
@@ -31,6 +32,7 @@ func init() {
 		EnableAnonymousUsers:     true,
 		VerifyUserEmails:         false,
 		FileAdapter:              "disk",
+		FileDir:                  "/Users",
 	}
 
 	parseConfig()
@@ -46,4 +48,5 @@ func parseConfig() {
 	TConfig.EnableAnonymousUsers = beego.AppConfig.DefaultBool("EnableAnonymousUsers", true)
 	TConfig.VerifyUserEmails = beego.AppConfig.DefaultBool("VerifyUserEmails", false)
 	TConfig.FileAdapter = beego.AppConfig.DefaultString("FileAdapter", "disk")
+	TConfig.FileDir = beego.AppConfig.DefaultString("FileDir", "/Users")
 }

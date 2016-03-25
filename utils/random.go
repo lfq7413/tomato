@@ -9,6 +9,6 @@ func CreateObjectID() string {
 
 // CreateToken ...
 func CreateToken() string {
-	alphabets := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 'A', 'B', 'C', 'D', 'E', 'F'}
+	alphabets := []byte("0123456789ABCDEF")
 	return string(utils.RandomCreateBytes(32, alphabets...))
 }

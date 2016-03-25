@@ -47,6 +47,11 @@ func init() {
 				&controllers.FilesController{},
 			),
 		),
+		beego.NSNamespace("/events",
+			beego.NSInclude(
+				&controllers.AnalyticsController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

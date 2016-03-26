@@ -3,6 +3,8 @@ package push
 import "github.com/lfq7413/tomato/rest"
 import "github.com/lfq7413/tomato/config"
 import "github.com/lfq7413/tomato/utils"
+import "github.com/lfq7413/tomato/orm"
+import "strconv"
 
 var adapter pushAdapter
 
@@ -49,19 +51,13 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 			// TODO badge 值不符合要求
 			return nil
 		}
-		updateWhere = map[string]interface{}{}
-		for k, v := range where {
-			updateWhere[k] = v
-		}
+		updateWhere = utils.CopyMap(where)
 	}
 
 	if op != nil && updateWhere != nil {
 		badgeQuery := rest.NewQuery(auth, "_Installation", updateWhere, map[string]interface{}{})
 		badgeQuery.BuildRestWhere()
-		restWhere := map[string]interface{}{}
-		for k, v := range badgeQuery.Where {
-			restWhere[k] = v
-		}
+		restWhere := utils.CopyMap(badgeQuery.Where)
 		and := utils.SliceInterface(restWhere["$and"])
 		if and == nil {
 			restWhere["$and"] = []interface{}{badgeQuery.Where}
@@ -71,8 +67,49 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 		}
 		and = append(and, tp)
 		restWhere["$and"] = and
-		// TODO 更新 badge
+		orm.UpdateAll("_Installation", restWhere, op, map[string]interface{}{})
 	}
+
+	response := rest.Find(auth, "_Installation", where, map[string]interface{}{})
+	if utils.HasResults(response) == false {
+		return nil
+	}
+	results := utils.SliceInterface(response["results"])
+
+	if data != nil && data["badge"] != nil && utils.String(data["badge"]) == "Increment" {
+		badgeInstallationsMap := map[string]interface{}{}
+		for _, v := range results {
+			installation := utils.MapInterface(v)
+			var badge string
+			if v, ok := installation["badge"].(float64); ok {
+				badge = strconv.Itoa(int(v))
+			} else {
+				continue
+			}
+			if utils.String(installation["deviceType"]) != "ios" {
+				badge = "unsupported"
+			}
+			installations := []interface{}{}
+			if badgeInstallationsMap[badge] != nil {
+				installations = append(installations, utils.SliceInterface(badgeInstallationsMap[badge])...)
+			}
+			installations = append(installations, installation)
+			badgeInstallationsMap[badge] = installations
+		}
+
+		for k, v := range badgeInstallationsMap {
+			payload := utils.CopyMap(body)
+			paydata := utils.MapInterface(payload["data"])
+			if k == "unsupported" {
+				delete(paydata, "badge")
+			} else {
+				paydata["badge"], _ = strconv.Atoi(k)
+			}
+			adapter.send(payload, utils.SliceInterface(v))
+		}
+		return nil
+	}
+	adapter.send(body, results)
 
 	return nil
 }
@@ -86,6 +123,6 @@ func getExpirationTime(body map[string]interface{}) (string, error) {
 }
 
 type pushAdapter interface {
-	send()
+	send(data map[string]interface{}, installations []interface{})
 	getValidPushTypes() []string
 }

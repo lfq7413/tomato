@@ -43,6 +43,12 @@ func Update(className string, where map[string]interface{}, data map[string]inte
 	return nil
 }
 
+// UpdateAll ...
+func UpdateAll(className string, where map[string]interface{}, data map[string]interface{}, options map[string]interface{}) error {
+	// TODO
+	return nil
+}
+
 // Create ...
 func Create(className string, data map[string]interface{}, options map[string]interface{}) error {
 	// TODO

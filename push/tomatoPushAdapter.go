@@ -11,7 +11,7 @@ func newTomatoPush() *tomatoPushAdapter {
 	return t
 }
 
-func (t *tomatoPushAdapter) send() {
+func (t *tomatoPushAdapter) send(data map[string]interface{}, installations []interface{}) {
 
 }
 

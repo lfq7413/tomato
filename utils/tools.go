@@ -42,3 +42,35 @@ func IsEmail(email string) bool {
 	b, _ := regexp.MatchString("^.+@.+$", email)
 	return b
 }
+
+// DeepCopy 简易版的内存复制
+func DeepCopy(i interface{}) interface{} {
+	if i == nil {
+		return nil
+	}
+	if s, ok := i.([]interface{}); ok {
+		return CopySlice(s)
+	}
+	if m, ok := i.(map[string]interface{}); ok {
+		return CopyMap(m)
+	}
+	return i
+}
+
+// CopyMap 复制 map
+func CopyMap(m map[string]interface{}) map[string]interface{} {
+	d := map[string]interface{}{}
+	for k, v := range m {
+		d[k] = DeepCopy(v)
+	}
+	return d
+}
+
+// CopySlice 复制 slice
+func CopySlice(s []interface{}) []interface{} {
+	d := []interface{}{}
+	for _, v := range s {
+		d = append(d, DeepCopy(v))
+	}
+	return d
+}

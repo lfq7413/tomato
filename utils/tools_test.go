@@ -24,3 +24,26 @@ func TestRegexp(t *testing.T) {
 		t.Error(s4, IsEmail(s4))
 	}
 }
+
+func TestDeepCopy(t *testing.T) {
+	var src interface{}
+	src = map[string]interface{}{
+		"a": 1,
+		"b": true,
+		"c": "hello",
+		"d": []string{"hello", "hi"},
+		"e": map[string]interface{}{
+			"f": "haha",
+		},
+	}
+	var dst interface{}
+	dst = DeepCopy(src)
+	if v, ok := src.(map[string]interface{}); ok {
+		e := v["e"]
+		if v1, ok1 := e.(map[string]interface{}); ok1 {
+			v1["g"] = "okok"
+		}
+	}
+	t.Error(src)
+	t.Error(dst)
+}

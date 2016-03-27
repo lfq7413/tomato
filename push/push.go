@@ -115,6 +115,36 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 }
 
 func validatePushType(where map[string]interface{}, validPushTypes []string) error {
+	deviceTypeField := where["deviceType"]
+	if deviceTypeField == nil {
+		return nil
+	}
+	deviceTypes := []string{}
+	if utils.String(deviceTypeField) != "" {
+		deviceTypes = append(deviceTypes, utils.String(deviceTypeField))
+	} else if utils.MapInterface(deviceTypeField) != nil {
+		m := utils.MapInterface(deviceTypeField)
+		if utils.SliceInterface(m["$in"]) != nil {
+			s := utils.SliceInterface(m["$in"])
+			for _, v := range s {
+				deviceTypes = append(deviceTypes, utils.String(v))
+			}
+		}
+	}
+	for _, v := range deviceTypes {
+		b := false
+		for _, t := range validPushTypes {
+			if v == t {
+				b = true
+				break
+			}
+		}
+		if b == false {
+			// TODO 不支持的类型
+			return nil
+		}
+	}
+
 	return nil
 }
 

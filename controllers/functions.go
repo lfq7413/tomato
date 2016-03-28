@@ -19,13 +19,12 @@ func (f *FunctionsController) HandleCloudFunction() {
 	}
 
 	params := map[string]interface{}{}
-	if f.Ctx.Input.RequestBody == nil {
-		return
-	}
-	err := json.Unmarshal(f.Ctx.Input.RequestBody, &params)
-	if err != nil {
-		// TODO 参数错误
-		return
+	if f.Ctx.Input.RequestBody != nil {
+		err := json.Unmarshal(f.Ctx.Input.RequestBody, &params)
+		if err != nil {
+			// TODO 参数错误
+			return
+		}
 	}
 
 	f.Auth.IsMaster = true

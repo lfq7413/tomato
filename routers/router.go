@@ -67,6 +67,11 @@ func init() {
 				&controllers.FunctionsController{},
 			),
 		),
+		beego.NSNamespace("/jobs",
+			beego.NSInclude(
+				&controllers.JobsController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

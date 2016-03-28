@@ -33,6 +33,9 @@ var Triggers triggerMap
 // Functions 函数列表
 var Functions functionMap
 
+// Jobs 定时任务列表
+var Jobs functionMap
+
 func init() {
 	Triggers = triggerMap{
 		TypeBeforeSave:   classeMap{},
@@ -41,11 +44,17 @@ func init() {
 		TypeAfterDelete:  classeMap{},
 	}
 	Functions = functionMap{}
+	Jobs = functionMap{}
 }
 
 // AddFunction ...
 func AddFunction(name string, function TypeFunction) {
 	Functions[name] = function
+}
+
+// AddJob ...
+func AddJob(name string, function TypeFunction) {
+	Jobs[name] = function
 }
 
 // AddTrigger ...
@@ -56,6 +65,11 @@ func AddTrigger(triggerType string, className string, function TypeFunction) {
 // RemoveFunction ...
 func RemoveFunction(name string) {
 	delete(Functions, name)
+}
+
+// RemoveJob ...
+func RemoveJob(name string) {
+	delete(Jobs, name)
 }
 
 // RemoveTrigger ...
@@ -88,6 +102,17 @@ func GetFunction(name string) TypeFunction {
 		return nil
 	}
 	if v, ok := Functions[name]; ok {
+		return v
+	}
+	return nil
+}
+
+// GetJob ...
+func GetJob(name string) TypeFunction {
+	if Jobs == nil {
+		return nil
+	}
+	if v, ok := Jobs[name]; ok {
 		return v
 	}
 	return nil

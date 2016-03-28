@@ -97,6 +97,55 @@ func init() {
 			[]string{"delete"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],
+		beego.ControllerComments{
+			"HandleFind",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],
+		beego.ControllerComments{
+			"HandleGet",
+			`/:objectId`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],
+		beego.ControllerComments{
+			"HandleCreate",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],
+		beego.ControllerComments{
+			"HandleUpdate",
+			`/:objectId`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],
+		beego.ControllerComments{
+			"HandleDelete",
+			`/:objectId`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LoginController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LoginController"],
 		beego.ControllerComments{
 			"HandleLogIn",

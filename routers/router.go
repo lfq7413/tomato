@@ -57,6 +57,11 @@ func init() {
 				&controllers.PushController{},
 			),
 		),
+		beego.NSNamespace("/installations",
+			beego.NSInclude(
+				&controllers.InstallationsController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

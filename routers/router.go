@@ -62,6 +62,11 @@ func init() {
 				&controllers.InstallationsController{},
 			),
 		),
+		beego.NSNamespace("/functions",
+			beego.NSInclude(
+				&controllers.FunctionsController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

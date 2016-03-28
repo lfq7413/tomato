@@ -5,6 +5,7 @@ import "github.com/lfq7413/tomato/config"
 import "github.com/lfq7413/tomato/utils"
 import "github.com/lfq7413/tomato/orm"
 import "strconv"
+import "time"
 
 var adapter pushAdapter
 
@@ -148,8 +149,32 @@ func validatePushType(where map[string]interface{}, validPushTypes []string) err
 	return nil
 }
 
-func getExpirationTime(body map[string]interface{}) (string, error) {
-	return "", nil
+func getExpirationTime(body map[string]interface{}) (interface{}, error) {
+	expirationTimeParam := body["expiration_time"]
+	if expirationTimeParam == nil {
+		return nil, nil
+	}
+
+	var expirationTime time.Time
+	var err error
+	if v, ok := expirationTimeParam.(float64); ok {
+		expirationTime = time.Unix(int64(v), 0)
+	} else if v, ok := expirationTimeParam.(string); ok {
+		expirationTime, err = utils.StringtoTime(v)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// TODO 时间格式错误
+		return nil, nil
+	}
+
+	if expirationTime.Unix() < time.Now().Unix() {
+		// TODO 时间非法
+		return nil, nil
+	}
+
+	return expirationTime.Unix() * 1000, nil
 }
 
 type pushAdapter interface {

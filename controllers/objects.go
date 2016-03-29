@@ -283,23 +283,47 @@ func (o *ObjectsController) HandleDelete() {
 // Get ...
 // @router / [get]
 func (o *ObjectsController) Get() {
-	o.Controller.Get()
+	e := map[string]interface{}{
+		"code":  405,
+		"error": "Method Not Allowed",
+	}
+	o.Ctx.Output.SetStatus(405)
+	o.Data["json"] = e
+	o.ServeJSON()
 }
 
 // Post ...
 // @router / [post]
 func (o *ObjectsController) Post() {
-	o.Controller.Post()
+	e := map[string]interface{}{
+		"code":  405,
+		"error": "Method Not Allowed",
+	}
+	o.Ctx.Output.SetStatus(405)
+	o.Data["json"] = e
+	o.ServeJSON()
 }
 
 // Delete ...
 // @router / [delete]
 func (o *ObjectsController) Delete() {
-	o.Controller.Delete()
+	e := map[string]interface{}{
+		"code":  405,
+		"error": "Method Not Allowed",
+	}
+	o.Ctx.Output.SetStatus(405)
+	o.Data["json"] = e
+	o.ServeJSON()
 }
 
 // Put ...
 // @router / [put]
 func (o *ObjectsController) Put() {
-	o.Controller.Put()
+	e := map[string]interface{}{
+		"code":  405,
+		"error": "Method Not Allowed",
+	}
+	o.Ctx.Output.SetStatus(405)
+	o.Data["json"] = e
+	o.ServeJSON()
 }

@@ -58,17 +58,17 @@ func getQueryCondition(body map[string]interface{}) (map[string]interface{}, err
 // Get ...
 // @router / [get]
 func (p *PushController) Get() {
-	p.Controller.Get()
+	p.ObjectsController.Get()
 }
 
 // Delete ...
 // @router / [delete]
 func (p *PushController) Delete() {
-	p.Controller.Delete()
+	p.ObjectsController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (p *PushController) Put() {
-	p.Controller.Put()
+	p.ObjectsController.Put()
 }

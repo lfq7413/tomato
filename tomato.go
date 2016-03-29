@@ -1,7 +1,7 @@
 package tomato
 
 import (
-	_ "github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/controllers"
 	_ "github.com/lfq7413/tomato/routers"
 
 	"github.com/astaxie/beego"
@@ -18,5 +18,6 @@ func Run() {
 		beego.BConfig.WebConfig.DirectoryIndex = true
 		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
 	}
+	beego.ErrorController(&controllers.ErrorController{})
 	beego.Run()
 }

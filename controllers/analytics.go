@@ -20,23 +20,23 @@ func (a *AnalyticsController) HandleEvent() {
 // Get ...
 // @router / [get]
 func (a *AnalyticsController) Get() {
-	a.Controller.Get()
+	a.ObjectsController.Get()
 }
 
 // Post ...
 // @router / [post]
 func (a *AnalyticsController) Post() {
-	a.Controller.Post()
+	a.ObjectsController.Post()
 }
 
 // Delete ...
 // @router / [delete]
 func (a *AnalyticsController) Delete() {
-	a.Controller.Delete()
+	a.ObjectsController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (a *AnalyticsController) Put() {
-	a.Controller.Put()
+	a.ObjectsController.Put()
 }

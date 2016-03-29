@@ -46,11 +46,11 @@ func (i *InstallationsController) HandleDelete() {
 // Delete ...
 // @router / [delete]
 func (i *InstallationsController) Delete() {
-	i.Controller.Delete()
+	i.ObjectsController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (i *InstallationsController) Put() {
-	i.Controller.Put()
+	i.ObjectsController.Put()
 }

@@ -1,7 +1,5 @@
 package orm
 
-var collectionList = []string{}
-
 // CollectionExists ...
 func CollectionExists(className string) bool {
 	return TomatoDB.collectionExists(className)

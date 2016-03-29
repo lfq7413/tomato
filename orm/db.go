@@ -104,7 +104,7 @@ func (d *Database) collectionExists(className string) bool {
 
 func (d *Database) getCollectionNames() []string {
 	names, err := d.Database.CollectionNames()
-	if err == nil {
+	if err == nil && names != nil {
 		return names
 	}
 	return []string{}

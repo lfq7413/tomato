@@ -5,16 +5,34 @@ type SchemasController struct {
 	ObjectsController
 }
 
-// Get ...
+// HandleFind ...
 // @router / [get]
-func (s *SchemasController) Get() {
+func (s *SchemasController) HandleFind() {
 	s.ObjectsController.Get()
 }
 
-// Post ...
+// HandleGet ...
+// @router /:className [get]
+func (s *SchemasController) HandleGet() {
+	s.ObjectsController.Get()
+}
+
+// HandleCreate ...
 // @router / [post]
-func (s *SchemasController) Post() {
+func (s *SchemasController) HandleCreate() {
 	s.ObjectsController.Post()
+}
+
+// HandleUpdate ...
+// @router /:className [put]
+func (s *SchemasController) HandleUpdate() {
+	s.ObjectsController.Put()
+}
+
+// HandleDelete ...
+// @router /:className [delete]
+func (s *SchemasController) HandleDelete() {
+	s.ObjectsController.Delete()
 }
 
 // Delete ...

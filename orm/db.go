@@ -18,8 +18,9 @@ func init() {
 
 // Database ...
 type Database struct {
-	Session  *mgo.Session
-	Database *mgo.Database
+	Session        *mgo.Session
+	Database       *mgo.Database
+	collectionList []string
 }
 
 // NewDatabase ...
@@ -31,7 +32,11 @@ func NewDatabase(url string) *Database {
 	fmt.Println("connect success")
 	session.SetMode(mgo.Monotonic, true)
 	database := session.DB("")
-	db := &Database{Session: session, Database: database}
+	db := &Database{
+		Session:        session,
+		Database:       database,
+		collectionList: []string{},
+	}
 	return db
 }
 
@@ -75,6 +80,26 @@ func (d *Database) Find(collection string, query interface{}) ([]bson.M, error) 
 func (d *Database) Remove(collection string, selector interface{}) error {
 	err := d.Database.C(collection).Remove(selector)
 	return err
+}
+
+func (d *Database) collectionExists(className string) bool {
+	// 先在内存中查询
+	for _, v := range d.collectionList {
+		if v == className {
+			return true
+		}
+	}
+	// 内存中不存在，则去数据库中查询一次，更新到内存中
+	d.collectionList = d.getCollectionNames()
+	if d.collectionList == nil {
+		d.collectionList = []string{}
+	}
+	for _, v := range d.collectionList {
+		if v == className {
+			return true
+		}
+	}
+	return false
 }
 
 func (d *Database) getCollectionNames() []string {

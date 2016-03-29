@@ -442,16 +442,37 @@ func init() {
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"],
 		beego.ControllerComments{
-			"Get",
+			"HandleFind",
 			`/`,
 			[]string{"get"},
 			nil})
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"],
 		beego.ControllerComments{
-			"Post",
+			"HandleGet",
+			`/:className`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"],
+		beego.ControllerComments{
+			"HandleCreate",
 			`/`,
 			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"],
+		beego.ControllerComments{
+			"HandleUpdate",
+			`/:className`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"],
+		beego.ControllerComments{
+			"HandleDelete",
+			`/:className`,
+			[]string{"delete"},
 			nil})
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"],

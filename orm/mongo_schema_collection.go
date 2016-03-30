@@ -7,7 +7,8 @@ type MongoSchemaCollection struct {
 	collection *MongoCollection
 }
 
-func (m *MongoSchemaCollection) getAllSchemas() ([]bson.M, error) {
+// GetAllSchemas 获取所有 Schema
+func (m *MongoSchemaCollection) GetAllSchemas() ([]bson.M, error) {
 	return m.collection.rawFind(map[string]interface{}{}, map[string]interface{}{})
 }
 

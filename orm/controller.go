@@ -1,5 +1,18 @@
 package orm
 
+var adapter *MongoAdapter
+
+func init() {
+	adapter = &MongoAdapter{
+		collectionList: []string{},
+	}
+}
+
+// SchemaCollection 获取 Schema 表
+func SchemaCollection() *MongoSchemaCollection {
+	return adapter.schemaCollection()
+}
+
 // CollectionExists ...
 func CollectionExists(className string) bool {
 	return TomatoDB.collectionExists(className)

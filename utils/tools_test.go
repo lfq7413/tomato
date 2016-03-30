@@ -44,6 +44,8 @@ func TestDeepCopy(t *testing.T) {
 			v1["g"] = "okok"
 		}
 	}
-	t.Error(src)
-	t.Error(dst)
+	if dst == nil {
+		t.Error(src)
+		t.Error(dst)
+	}
 }

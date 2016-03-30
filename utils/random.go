@@ -1,10 +1,11 @@
 package utils
 
 import "github.com/astaxie/beego/utils"
+import "gopkg.in/mgo.v2/bson"
 
 // CreateObjectID ...
 func CreateObjectID() string {
-	return string(utils.RandomCreateBytes(32))
+	return bson.NewObjectId().Hex()
 }
 
 // CreateToken ...

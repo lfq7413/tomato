@@ -1,5 +1,9 @@
 package controllers
 
+import "github.com/lfq7413/tomato/orm"
+import "github.com/lfq7413/tomato/schema"
+import "gopkg.in/mgo.v2/bson"
+
 // SchemasController ...
 type SchemasController struct {
 	ObjectsController
@@ -8,7 +12,21 @@ type SchemasController struct {
 // HandleFind ...
 // @router / [get]
 func (s *SchemasController) HandleFind() {
-	s.ObjectsController.Get()
+	result, err := orm.SchemaCollection().GetAllSchemas()
+	if err != nil && result == nil {
+		s.Data["json"] = bson.M{
+			"results": []interface{}{},
+		}
+		s.ServeJSON()
+		return
+	}
+	for i, v := range result {
+		result[i] = schema.MongoSchemaToSchemaAPIResponse(v)
+	}
+	s.Data["json"] = bson.M{
+		"results": result,
+	}
+	s.ServeJSON()
 }
 
 // HandleGet ...

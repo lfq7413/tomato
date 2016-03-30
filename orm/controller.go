@@ -1,6 +1,7 @@
 package orm
 
 var adapter *MongoAdapter
+var schemaPromise *Schema
 
 func init() {
 	adapter = &MongoAdapter{
@@ -60,9 +61,24 @@ func ValidateObject(className string, object map[string]interface{}, where map[s
 }
 
 // LoadSchema 加载 Schema
-func LoadSchema() *Schema {
-	// TODO
-	return nil
+func LoadSchema(acceptor func(*Schema) bool) *Schema {
+	if schemaPromise == nil {
+		// TODO 数据库加载
+		collection := SchemaCollection()
+		schemaPromise = Load(collection)
+		return schemaPromise
+	}
+
+	if acceptor == nil {
+		return schemaPromise
+	}
+	if acceptor(schemaPromise) {
+		return schemaPromise
+	}
+
+	collection := SchemaCollection()
+	schemaPromise = Load(collection)
+	return schemaPromise
 }
 
 // CanAddField ...

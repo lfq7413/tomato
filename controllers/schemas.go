@@ -77,7 +77,7 @@ func (s *SchemasController) HandleCreate() {
 		className = bodyClassName
 	}
 
-	schema := orm.LoadSchema()
+	schema := orm.LoadSchema(nil)
 	result := schema.AddClassIfNotExists(className, utils.MapInterface(data["fields"]), utils.MapInterface(data["classLevelPermissions"]))
 
 	s.Data["json"] = orm.MongoSchemaToSchemaAPIResponse(result)

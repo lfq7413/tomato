@@ -59,9 +59,10 @@ func ValidateObject(className string, object map[string]interface{}, where map[s
 	return nil
 }
 
-// LoadSchema ...
-func LoadSchema() {
+// LoadSchema 加载 Schema
+func LoadSchema() *Schema {
 	// TODO
+	return nil
 }
 
 // CanAddField ...

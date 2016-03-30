@@ -1,7 +1,12 @@
 package controllers
 
-import "github.com/lfq7413/tomato/orm"
-import "github.com/lfq7413/tomato/schema"
+import (
+	"encoding/json"
+
+	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/utils"
+)
+
 import "gopkg.in/mgo.v2/bson"
 
 // SchemasController ...
@@ -21,7 +26,7 @@ func (s *SchemasController) HandleFind() {
 		return
 	}
 	for i, v := range result {
-		result[i] = schema.MongoSchemaToSchemaAPIResponse(v)
+		result[i] = orm.MongoSchemaToSchemaAPIResponse(v)
 	}
 	s.Data["json"] = bson.M{
 		"results": result,
@@ -32,13 +37,51 @@ func (s *SchemasController) HandleFind() {
 // HandleGet ...
 // @router /:className [get]
 func (s *SchemasController) HandleGet() {
-	s.ObjectsController.Get()
+	className := s.Ctx.Input.Param(":className")
+	result, err := orm.SchemaCollection().FindSchema(className)
+	if err != nil && result == nil {
+		// TODO 类不存在
+		return
+	}
+	s.Data["json"] = result
+	s.ServeJSON()
 }
 
 // HandleCreate ...
-// @router / [post]
+// @router /:className [post]
 func (s *SchemasController) HandleCreate() {
-	s.ObjectsController.Post()
+	className := s.Ctx.Input.Param(":className")
+	if s.Ctx.Input.RequestBody == nil {
+		// TODO 数据为空
+		return
+	}
+	var data bson.M
+	err := json.Unmarshal(s.Ctx.Input.RequestBody, &data)
+	if err != nil {
+		// TODO 解析错误
+		return
+	}
+	bodyClassName := ""
+	if data["className"] != nil && utils.String(data["className"]) != "" {
+		bodyClassName = utils.String(data["className"])
+	}
+	if className != bodyClassName {
+		// TODO 类名不一致
+		return
+	}
+	if className == "" && bodyClassName == "" {
+		// TODO 类名不能为空
+		return
+	}
+	if className == "" {
+		className = bodyClassName
+	}
+
+	schema := orm.LoadSchema()
+	result := schema.AddClassIfNotExists(className, utils.MapInterface(data["fields"]), utils.MapInterface(data["classLevelPermissions"]))
+
+	s.Data["json"] = orm.MongoSchemaToSchemaAPIResponse(result)
+	s.ServeJSON()
 }
 
 // HandleUpdate ...

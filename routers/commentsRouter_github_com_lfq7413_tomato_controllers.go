@@ -457,7 +457,7 @@ func init() {
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:SchemasController"],
 		beego.ControllerComments{
 			"HandleCreate",
-			`/`,
+			`/:className`,
 			[]string{"post"},
 			nil})
 

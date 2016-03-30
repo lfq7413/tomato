@@ -12,7 +12,8 @@ func (m *MongoSchemaCollection) GetAllSchemas() ([]bson.M, error) {
 	return m.collection.rawFind(map[string]interface{}{}, map[string]interface{}{})
 }
 
-func (m *MongoSchemaCollection) findSchema(name string) (bson.M, error) {
+// FindSchema 查找指定的 Schema
+func (m *MongoSchemaCollection) FindSchema(name string) (bson.M, error) {
 	options := bson.M{
 		"limit": 1,
 	}
@@ -27,7 +28,7 @@ func (m *MongoSchemaCollection) findSchema(name string) (bson.M, error) {
 }
 
 func (m *MongoSchemaCollection) findAndDeleteSchema(name string) (bson.M, error) {
-	result, err := m.findSchema(name)
+	result, err := m.FindSchema(name)
 	if err != nil {
 		return nil, err
 	}

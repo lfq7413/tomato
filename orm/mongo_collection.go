@@ -40,8 +40,28 @@ func (m *MongoCollection) rawFind(query interface{}, options map[string]interfac
 	return result, err
 }
 
-func (m *MongoCollection) count() {
-
+func (m *MongoCollection) count(query interface{}, options map[string]interface{}) int {
+	q := m.collection.Find(query)
+	if options["sort"] != nil {
+		if sort, ok := options["sort"].([]string); ok {
+			q = q.Sort(sort...)
+		}
+	}
+	if options["skip"] != nil {
+		if skip, ok := options["skip"].(float64); ok {
+			q = q.Skip(int(skip))
+		}
+	}
+	if options["limit"] != nil {
+		if limit, ok := options["limit"].(float64); ok {
+			q = q.Limit(int(limit))
+		}
+	}
+	n, err := q.Count()
+	if err != nil {
+		return 0
+	}
+	return n
 }
 
 func (m *MongoCollection) findOneAndUpdate() {

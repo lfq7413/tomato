@@ -63,7 +63,6 @@ func ValidateObject(className string, object map[string]interface{}, where map[s
 // LoadSchema 加载 Schema
 func LoadSchema(acceptor func(*Schema) bool) *Schema {
 	if schemaPromise == nil {
-		// TODO 数据库加载
 		collection := SchemaCollection()
 		schemaPromise = Load(collection)
 		return schemaPromise

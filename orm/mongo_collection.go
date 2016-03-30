@@ -64,34 +64,47 @@ func (m *MongoCollection) count(query interface{}, options map[string]interface{
 	return n
 }
 
-func (m *MongoCollection) findOneAndUpdate() {
-
+// 当前框架 Update 时的 selector 中，只包含 objectid ，所以更新之后再去查找，找到的为同一对象
+func (m *MongoCollection) findOneAndUpdate(selector interface{}, update interface{}) bson.M {
+	err := m.collection.Update(selector, update)
+	if err != nil {
+		return bson.M{}
+	}
+	var result bson.M
+	err = m.collection.Find(selector).One(&result)
+	if err != nil || result == nil {
+		return bson.M{}
+	}
+	return result
 }
 
-func (m *MongoCollection) insertOne() {
-
+func (m *MongoCollection) insertOne(docs interface{}) error {
+	return m.collection.Insert(docs)
 }
 
-func (m *MongoCollection) upsertOne() {
-
+func (m *MongoCollection) upsertOne(selector interface{}, update interface{}) error {
+	_, err := m.collection.Upsert(selector, update)
+	return err
 }
 
-func (m *MongoCollection) updateOne() {
-
+func (m *MongoCollection) updateOne(selector interface{}, update interface{}) error {
+	return m.collection.Update(selector, update)
 }
 
-func (m *MongoCollection) updateMany() {
-
+func (m *MongoCollection) updateMany(selector interface{}, update interface{}) error {
+	_, err := m.collection.UpdateAll(selector, update)
+	return err
 }
 
-func (m *MongoCollection) deleteOne() {
-
+func (m *MongoCollection) deleteOne(selector interface{}) error {
+	return m.collection.Remove(selector)
 }
 
-func (m *MongoCollection) deleteMany() {
-
+func (m *MongoCollection) deleteMany(selector interface{}) error {
+	_, err := m.collection.RemoveAll(selector)
+	return err
 }
 
-func (m *MongoCollection) drop() {
-
+func (m *MongoCollection) drop() error {
+	return m.collection.DropCollection()
 }

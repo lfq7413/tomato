@@ -102,7 +102,42 @@ func MongoSchemaToSchemaAPIResponse(schema bson.M) bson.M {
 	return result
 }
 
+var nonFieldSchemaKeys = []string{"_id", "_metadata", "_client_permissions"}
+
 func mongoSchemaAPIResponseFields(schema bson.M) bson.M {
+	fieldNames := []string{}
+	for k := range schema {
+		t := false
+		for _, v := range nonFieldSchemaKeys {
+			if k == v {
+				t = true
+				break
+			}
+		}
+		if t == false {
+			fieldNames = append(fieldNames, k)
+		}
+	}
+	response := bson.M{}
+	for _, v := range fieldNames {
+		response[v] = mongoFieldTypeToSchemaAPIType(utils.String(schema[v]))
+	}
+	response["ACL"] = bson.M{
+		"type": "ACL",
+	}
+	response["createdAt"] = bson.M{
+		"type": "Date",
+	}
+	response["updatedAt"] = bson.M{
+		"type": "Date",
+	}
+	response["objectId"] = bson.M{
+		"type": "String",
+	}
+	return response
+}
+
+func mongoFieldTypeToSchemaAPIType(t string) bson.M {
 	return nil
 }
 

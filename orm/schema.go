@@ -357,7 +357,65 @@ func fieldNameIsValidForClass(fieldName string, className string) bool {
 }
 
 func schemaAPITypeToMongoFieldType(t bson.M) bson.M {
-	return nil
+	if utils.String(t["type"]) == "" {
+		// TODO type 无效
+		return nil
+	}
+	apiType := utils.String(t["type"])
+
+	if apiType == "Pointer" {
+		if t["targetClass"] == nil {
+			// TODO 需要 targetClass
+			return nil
+		}
+		if utils.String(t["targetClass"]) == "" {
+			// TODO targetClass 无效
+			return nil
+		}
+		targetClass := utils.String(t["targetClass"])
+		if classNameIsValid(targetClass) == false {
+			// TODO 类名无效
+			return nil
+		}
+		return bson.M{"result": "*" + targetClass}
+	}
+	if apiType == "Relation" {
+		if t["targetClass"] == nil {
+			// TODO 需要 targetClass
+			return nil
+		}
+		if utils.String(t["targetClass"]) == "" {
+			// TODO targetClass 无效
+			return nil
+		}
+		targetClass := utils.String(t["targetClass"])
+		if classNameIsValid(targetClass) == false {
+			// TODO 类名无效
+			return nil
+		}
+		return bson.M{"result": "relation<" + targetClass + ">"}
+	}
+	switch apiType {
+	case "Number":
+		return bson.M{"result": "number"}
+	case "String":
+		return bson.M{"result": "string"}
+	case "Boolean":
+		return bson.M{"result": "boolean"}
+	case "Date":
+		return bson.M{"result": "date"}
+	case "Object":
+		return bson.M{"result": "object"}
+	case "Array":
+		return bson.M{"result": "array"}
+	case "GeoPoint":
+		return bson.M{"result": "geopoint"}
+	case "File":
+		return bson.M{"result": "file"}
+	default:
+		// TODO type 不正确
+		return nil
+	}
 }
 
 func validateCLP(classLevelPermissions bson.M) {

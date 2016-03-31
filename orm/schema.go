@@ -3,6 +3,18 @@ package orm
 import "gopkg.in/mgo.v2/bson"
 import "github.com/lfq7413/tomato/utils"
 
+var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
+var defaultClassLevelPermissions bson.M
+
+func init() {
+	defaultClassLevelPermissions = bson.M{}
+	for _, v := range clpValidKeys {
+		defaultClassLevelPermissions[v] = bson.M{
+			"*": true,
+		}
+	}
+}
+
 // Schema ...
 type Schema struct {
 	collection *MongoSchemaCollection
@@ -68,8 +80,29 @@ func (s *Schema) reloadData() {
 }
 
 // MongoSchemaToSchemaAPIResponse ...
-func MongoSchemaToSchemaAPIResponse(bson.M) bson.M {
+func MongoSchemaToSchemaAPIResponse(schema bson.M) bson.M {
 	// TODO
+	result := bson.M{
+		"className": schema["_id"],
+		"fields":    mongoSchemaAPIResponseFields(schema),
+	}
+
+	classLevelPermissions := utils.CopyMap(defaultClassLevelPermissions)
+	if schema["_metadata"] != nil && utils.MapInterface(schema["_metadata"]) != nil {
+		metadata := utils.MapInterface(schema["_metadata"])
+		if metadata["class_permissions"] != nil && utils.MapInterface(metadata["class_permissions"]) != nil {
+			classPermissions := utils.MapInterface(metadata["class_permissions"])
+			for k, v := range classPermissions {
+				classLevelPermissions[k] = v
+			}
+		}
+	}
+	result["classLevelPermissions"] = classLevelPermissions
+
+	return result
+}
+
+func mongoSchemaAPIResponseFields(schema bson.M) bson.M {
 	return nil
 }
 

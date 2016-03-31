@@ -1,6 +1,10 @@
 package orm
 
-import "gopkg.in/mgo.v2/bson"
+import (
+	"regexp"
+
+	"gopkg.in/mgo.v2/bson"
+)
 import "github.com/lfq7413/tomato/utils"
 import "strings"
 
@@ -315,11 +319,27 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, cl
 }
 
 func classNameIsValid(className string) bool {
-	return false
+	return className == "_User" ||
+		className == "_Installation" ||
+		className == "_Session" ||
+		className == "_Role" ||
+		className == "_Product" ||
+		joinClassIsValid(className) ||
+		fieldNameIsValid(className)
 }
 
+var joinClassRegex = `^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+`
+
+func joinClassIsValid(className string) bool {
+	b, _ := regexp.MatchString(joinClassRegex, className)
+	return b
+}
+
+var classAndFieldRegex = `^[A-Za-z][A-Za-z0-9_]*$`
+
 func fieldNameIsValid(fieldName string) bool {
-	return false
+	b, _ := regexp.MatchString(classAndFieldRegex, fieldName)
+	return b
 }
 
 func fieldNameIsValidForClass(fieldName string, className string) bool {

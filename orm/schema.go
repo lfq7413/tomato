@@ -418,7 +418,40 @@ func schemaAPITypeToMongoFieldType(t bson.M) bson.M {
 	}
 }
 
-func validateCLP(classLevelPermissions bson.M) {
+func validateCLP(perms bson.M) {
+	if perms == nil {
+		return
+	}
+
+	for operation, perm := range perms {
+		t := false
+		for _, key := range clpValidKeys {
+			if operation == key {
+				t = true
+				break
+			}
+		}
+		if t == false {
+			// TODO 不是有效操作
+			return
+		}
+
+		for key, p := range utils.MapInterface(perm) {
+			verifyPermissionKey(key)
+			if v, ok := p.(bool); ok {
+				if v == false {
+					// TODO 值无效
+					return
+				}
+			} else {
+				// TODO 值无效
+				return
+			}
+		}
+	}
+}
+
+func verifyPermissionKey(key string) {
 
 }
 

@@ -343,6 +343,16 @@ func fieldNameIsValid(fieldName string) bool {
 }
 
 func fieldNameIsValidForClass(fieldName string, className string) bool {
+	if fieldNameIsValid(fieldName) == false {
+		return false
+	}
+	if defaultColumns["_Default"][fieldName] != nil {
+		return false
+	}
+	if defaultColumns[className] != nil && defaultColumns[className][fieldName] != nil {
+		return false
+	}
+
 	return false
 }
 

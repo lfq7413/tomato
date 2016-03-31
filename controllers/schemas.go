@@ -65,16 +65,18 @@ func (s *SchemasController) HandleCreate() {
 	if data["className"] != nil && utils.String(data["className"]) != "" {
 		bodyClassName = utils.String(data["className"])
 	}
-	if className != bodyClassName {
-		// TODO 类名不一致
-		return
-	}
-	if className == "" && bodyClassName == "" {
-		// TODO 类名不能为空
-		return
+	if className != "" && bodyClassName != "" {
+		if className != bodyClassName {
+			// TODO 类名不一致
+			return
+		}
 	}
 	if className == "" {
 		className = bodyClassName
+	}
+	if className == "" {
+		// TODO 类名不能为空
+		return
 	}
 
 	schema := orm.LoadSchema(nil)

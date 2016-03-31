@@ -6,6 +6,7 @@ import "strings"
 
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
 var defaultClassLevelPermissions bson.M
+var defaultColumns map[string]bson.M
 
 func init() {
 	defaultClassLevelPermissions = bson.M{}
@@ -13,6 +14,54 @@ func init() {
 		defaultClassLevelPermissions[v] = bson.M{
 			"*": true,
 		}
+	}
+	defaultColumns = map[string]bson.M{
+		"_Default": bson.M{
+			"objectId":  bson.M{"type": "String"},
+			"createdAt": bson.M{"type": "Date"},
+			"updatedAt": bson.M{"type": "Date"},
+			"ACL":       bson.M{"type": "ACL"},
+		},
+		"_User": bson.M{
+			"username":      bson.M{"type": "String"},
+			"password":      bson.M{"type": "String"},
+			"authData":      bson.M{"type": "Object"},
+			"email":         bson.M{"type": "String"},
+			"emailVerified": bson.M{"type": "Boolean"},
+		},
+		"_Installation": bson.M{
+			"installationId":   bson.M{"type": "String"},
+			"deviceToken":      bson.M{"type": "String"},
+			"channels":         bson.M{"type": "Array"},
+			"deviceType":       bson.M{"type": "String"},
+			"pushType":         bson.M{"type": "String"},
+			"GCMSenderId":      bson.M{"type": "String"},
+			"timeZone":         bson.M{"type": "String"},
+			"localeIdentifier": bson.M{"type": "String"},
+			"badge":            bson.M{"type": "Number"},
+		},
+		"_Role": bson.M{
+			"name":  bson.M{"type": "String"},
+			"users": bson.M{"type": "Relation", "targetClass": "_User"},
+			"roles": bson.M{"type": "Relation", "targetClass": "_Role"},
+		},
+		"_Session": bson.M{
+			"restricted":     bson.M{"type": "Boolean"},
+			"user":           bson.M{"type": "Pointer", "targetClass": "_User"},
+			"installationId": bson.M{"type": "String"},
+			"sessionToken":   bson.M{"type": "String"},
+			"expiresAt":      bson.M{"type": "Date"},
+			"createdWith":    bson.M{"type": "Object"},
+		},
+		"_Product": bson.M{
+			"productIdentifier": bson.M{"type": "String"},
+			"download":          bson.M{"type": "File"},
+			"downloadName":      bson.M{"type": "String"},
+			"icon":              bson.M{"type": "File"},
+			"order":             bson.M{"type": "Number"},
+			"title":             bson.M{"type": "String"},
+			"subtitle":          bson.M{"type": "String"},
+		},
 	}
 }
 
@@ -82,7 +131,6 @@ func (s *Schema) reloadData() {
 
 // MongoSchemaToSchemaAPIResponse ...
 func MongoSchemaToSchemaAPIResponse(schema bson.M) bson.M {
-	// TODO
 	result := bson.M{
 		"className": schema["_id"],
 		"fields":    mongoSchemaAPIResponseFields(schema),
@@ -194,7 +242,96 @@ func mongoFieldTypeToSchemaAPIType(t string) bson.M {
 }
 
 func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, classLevelPermissions bson.M) bson.M {
+	if classNameIsValid(className) == false {
+		// TODO 无效类名
+		return nil
+	}
+	for fieldName := range fields {
+		if fieldNameIsValid(fieldName) == false {
+			// TODO 无效字段名
+			return nil
+		}
+		if fieldNameIsValidForClass(fieldName, className) == false {
+			// TODO 无法添加字段
+			return nil
+		}
+	}
+
+	mongoObject := bson.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+
+	if defaultColumns[className] != nil {
+		for fieldName := range defaultColumns[className] {
+			validatedField := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
+			if validatedField["result"] == nil {
+				// TODO 转换错误
+				return nil
+			}
+			mongoObject[fieldName] = validatedField["result"]
+		}
+	}
+
+	for fieldName := range fields {
+		validatedField := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
+		if validatedField["result"] == nil {
+			// TODO 转换错误
+			return nil
+		}
+		mongoObject[fieldName] = validatedField["result"]
+	}
+
+	geoPoints := []string{}
+	for k, v := range mongoObject {
+		if utils.String(v) == "geopoint" {
+			geoPoints = append(geoPoints, k)
+		}
+	}
+	if len(geoPoints) > 1 {
+		// TODO 只能有一个 geoPoint
+		return nil
+	}
+
+	validateCLP(classLevelPermissions)
+	var metadata bson.M
+	if mongoObject["_metadata"] == nil && utils.MapInterface(mongoObject["_metadata"]) == nil {
+		metadata = bson.M{}
+	} else {
+		metadata = utils.MapInterface(mongoObject["_metadata"])
+	}
+	if classLevelPermissions == nil {
+		delete(metadata, "class_permissions")
+	} else {
+		metadata["class_permissions"] = classLevelPermissions
+	}
+	mongoObject["_metadata"] = metadata
+
+	return bson.M{
+		"result": mongoObject,
+	}
+}
+
+func classNameIsValid(className string) bool {
+	return false
+}
+
+func fieldNameIsValid(fieldName string) bool {
+	return false
+}
+
+func fieldNameIsValidForClass(fieldName string, className string) bool {
+	return false
+}
+
+func schemaAPITypeToMongoFieldType(t bson.M) bson.M {
 	return nil
+}
+
+func validateCLP(classLevelPermissions bson.M) {
+
 }
 
 // Load 返回一个新的 Schema 结构体

@@ -451,8 +451,27 @@ func validateCLP(perms bson.M) {
 	}
 }
 
-func verifyPermissionKey(key string) {
+// 24 alpha numberic chars + uppercase
+var userIDRegex = `^[a-zA-Z0-9]{24}$`
 
+// Anything that start with role
+var roleRegex = `^role:.*`
+
+// * permission
+var publicRegex = `^\*$`
+
+var permissionKeyRegex = []string{userIDRegex, roleRegex, publicRegex}
+
+func verifyPermissionKey(key string) {
+	result := false
+	for _, v := range permissionKeyRegex {
+		b, _ := regexp.MatchString(v, key)
+		result = result || b
+	}
+	if result == false {
+		// TODO 无效的权限名称
+		return
+	}
 }
 
 // Load 返回一个新的 Schema 结构体

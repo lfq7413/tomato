@@ -13,7 +13,23 @@ type Schema struct {
 // AddClassIfNotExists 添加类定义
 func (s *Schema) AddClassIfNotExists(className string, fields bson.M, classLevelPermissions bson.M) bson.M {
 	// TODO
-	return nil
+	if s.data[className] != nil {
+		// TODO 类已存在
+		return nil
+	}
+
+	mongoObject := mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions)
+	if mongoObject["result"] == nil {
+		// TODO 转换出现问题
+		return nil
+	}
+	err := s.collection.addSchema(className, utils.MapInterface(mongoObject["result"]))
+	if err != nil {
+		// TODO 出现错误
+		return nil
+	}
+
+	return utils.MapInterface(mongoObject["result"])
 }
 
 func (s *Schema) reloadData() {
@@ -54,6 +70,10 @@ func (s *Schema) reloadData() {
 // MongoSchemaToSchemaAPIResponse ...
 func MongoSchemaToSchemaAPIResponse(bson.M) bson.M {
 	// TODO
+	return nil
+}
+
+func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, classLevelPermissions bson.M) bson.M {
 	return nil
 }
 

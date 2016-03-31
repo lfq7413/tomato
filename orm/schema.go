@@ -2,6 +2,7 @@ package orm
 
 import "gopkg.in/mgo.v2/bson"
 import "github.com/lfq7413/tomato/utils"
+import "strings"
 
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
 var defaultClassLevelPermissions bson.M
@@ -138,7 +139,58 @@ func mongoSchemaAPIResponseFields(schema bson.M) bson.M {
 }
 
 func mongoFieldTypeToSchemaAPIType(t string) bson.M {
-	return nil
+	if t[0] == '*' {
+		return bson.M{
+			"type":        "Pointer",
+			"targetClass": string(t[1:]),
+		}
+	}
+	if strings.HasPrefix(t, "relation<") {
+		return bson.M{
+			"type":        "Relation",
+			"targetClass": string(t[len("relation<") : len(t)-1]),
+		}
+	}
+	switch t {
+	case "number":
+		return bson.M{
+			"type": "Number",
+		}
+	case "string":
+		return bson.M{
+			"type": "String",
+		}
+	case "boolean":
+		return bson.M{
+			"type": "Boolean",
+		}
+	case "date":
+		return bson.M{
+			"type": "Date",
+		}
+	case "map":
+		return bson.M{
+			"type": "Object",
+		}
+	case "object":
+		return bson.M{
+			"type": "Object",
+		}
+	case "array":
+		return bson.M{
+			"type": "Array",
+		}
+	case "geopoint":
+		return bson.M{
+			"type": "GeoPoint",
+		}
+	case "file":
+		return bson.M{
+			"type": "File",
+		}
+	}
+
+	return bson.M{}
 }
 
 func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, classLevelPermissions bson.M) bson.M {

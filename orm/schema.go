@@ -78,7 +78,6 @@ type Schema struct {
 
 // AddClassIfNotExists 添加类定义
 func (s *Schema) AddClassIfNotExists(className string, fields bson.M, classLevelPermissions bson.M) bson.M {
-	// TODO
 	if s.data[className] != nil {
 		// TODO 类已存在
 		return nil
@@ -100,7 +99,67 @@ func (s *Schema) AddClassIfNotExists(className string, fields bson.M, classLevel
 
 // UpdateClass 更新类
 func (s *Schema) UpdateClass(className string, submittedFields bson.M, classLevelPermissions bson.M) bson.M {
-	return nil
+	if s.data[className] == nil {
+		// TODO 类不存在
+		return nil
+	}
+	existingFields := utils.CopyMap(utils.MapInterface(s.data[className]))
+	existingFields["_id"] = className
+
+	for name, v := range submittedFields {
+		field := utils.MapInterface(v)
+		op := utils.String(field["__op"])
+		if existingFields[name] != nil && op != "Delete" {
+			// TODO 字段已存在，不能更新
+			return nil
+		}
+		if existingFields[name] == nil && op == "Delete" {
+			// TODO 字不存在，不能删除
+			return nil
+		}
+	}
+
+	newSchema := buildMergedSchemaObject(existingFields, submittedFields)
+	mongoObject := mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions)
+	if mongoObject["result"] == nil {
+		// TODO 生成错误
+		return nil
+	}
+
+	insertedFields := []string{}
+	for name, v := range submittedFields {
+		field := utils.MapInterface(v)
+		op := utils.String(field["__op"])
+		if op == "Delete" {
+			s.deleteField(name, className)
+		} else {
+			insertedFields = append(insertedFields, name)
+		}
+	}
+
+	s.reloadData()
+
+	mongoResult := utils.MapInterface(mongoObject["result"])
+	for _, fieldName := range insertedFields {
+		mongoType := utils.String(mongoResult[fieldName])
+		s.validateField(className, fieldName, mongoType, false)
+	}
+
+	s.setPermissions(className, classLevelPermissions)
+
+	return MongoSchemaToSchemaAPIResponse(mongoResult)
+}
+
+func (s *Schema) deleteField(fieldName string, className string) {
+
+}
+
+func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
+
+}
+
+func (s *Schema) setPermissions(className string, perms bson.M) {
+
 }
 
 func (s *Schema) reloadData() {
@@ -477,6 +536,10 @@ func verifyPermissionKey(key string) {
 		// TODO 无效的权限名称
 		return
 	}
+}
+
+func buildMergedSchemaObject(existingFields bson.M, submittedFields bson.M) bson.M {
+	return nil
 }
 
 // Load 返回一个新的 Schema 结构体

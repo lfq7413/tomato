@@ -98,6 +98,11 @@ func (s *Schema) AddClassIfNotExists(className string, fields bson.M, classLevel
 	return utils.MapInterface(mongoObject["result"])
 }
 
+// UpdateClass 更新类
+func (s *Schema) UpdateClass(className string, submittedFields bson.M, classLevelPermissions bson.M) bson.M {
+	return nil
+}
+
 func (s *Schema) reloadData() {
 	// TODO
 	s.data = bson.M{}

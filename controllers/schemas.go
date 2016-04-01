@@ -89,7 +89,36 @@ func (s *SchemasController) HandleCreate() {
 // HandleUpdate ...
 // @router /:className [put]
 func (s *SchemasController) HandleUpdate() {
-	s.ObjectsController.Put()
+	className := s.Ctx.Input.Param(":className")
+	if s.Ctx.Input.RequestBody == nil {
+		// TODO 数据为空
+		return
+	}
+	var data bson.M
+	err := json.Unmarshal(s.Ctx.Input.RequestBody, &data)
+	if err != nil {
+		// TODO 解析错误
+		return
+	}
+	bodyClassName := ""
+	if data["className"] != nil && utils.String(data["className"]) != "" {
+		bodyClassName = utils.String(data["className"])
+	}
+	if className != bodyClassName {
+		// TODO 类名不一致
+		return
+	}
+
+	submittedFields := bson.M{}
+	if data["fields"] != nil && utils.MapInterface(data["fields"]) != nil {
+		submittedFields = utils.MapInterface(data["fields"])
+	}
+
+	schema := orm.LoadSchema(nil)
+	result := schema.UpdateClass(className, submittedFields, utils.MapInterface(data["classLevelPermissions"]))
+
+	s.Data["json"] = result
+	s.ServeJSON()
 }
 
 // HandleDelete ...

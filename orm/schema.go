@@ -538,8 +538,71 @@ func verifyPermissionKey(key string) {
 	}
 }
 
-func buildMergedSchemaObject(existingFields bson.M, submittedFields bson.M) bson.M {
-	return nil
+func buildMergedSchemaObject(mongoObject bson.M, putRequest bson.M) bson.M {
+	newSchema := bson.M{}
+
+	sysSchemaField := []string{}
+	id := utils.String(mongoObject["_id"])
+	for k, v := range defaultColumns {
+		if k == id {
+			for key := range v {
+				sysSchemaField = append(sysSchemaField, key)
+			}
+			break
+		}
+	}
+
+	for oldField, v := range mongoObject {
+		if oldField != "_id" &&
+			oldField != "ACL" &&
+			oldField != "updatedAt" &&
+			oldField != "createdAt" &&
+			oldField != "objectId" {
+			if len(sysSchemaField) > 0 {
+				t := false
+				for _, s := range sysSchemaField {
+					if s == oldField {
+						t = true
+						break
+					}
+				}
+				if t == true {
+					continue
+				}
+			}
+			fieldIsDeleted := false
+			if putRequest[oldField] != nil {
+				op := utils.MapInterface(putRequest[oldField])
+				if utils.String(op["__op"]) == "Delete" {
+					fieldIsDeleted = true
+				}
+			}
+			if fieldIsDeleted == false {
+				newSchema[oldField] = mongoFieldTypeToSchemaAPIType(utils.String(v))
+			}
+		}
+	}
+
+	for newField, v := range putRequest {
+		op := utils.MapInterface(v)
+		if newField != "objectId" && utils.String(op["__op"]) != "Delete" {
+			if len(sysSchemaField) > 0 {
+				t := false
+				for _, s := range sysSchemaField {
+					if s == newField {
+						t = true
+						break
+					}
+				}
+				if t == true {
+					continue
+				}
+			}
+			newSchema[newField] = v
+		}
+	}
+
+	return newSchema
 }
 
 // Load 返回一个新的 Schema 结构体

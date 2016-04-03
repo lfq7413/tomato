@@ -254,7 +254,15 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 }
 
 func (s *Schema) setPermissions(className string, perms bson.M) {
-
+	validateCLP(perms)
+	metadata := bson.M{
+		"_metadata": bson.M{"class_permissions": perms},
+	}
+	update := bson.M{
+		"$set": metadata,
+	}
+	s.collection.updateSchema(className, update)
+	s.reloadData()
 }
 
 func (s *Schema) hasClass(className string) bool {
@@ -263,7 +271,6 @@ func (s *Schema) hasClass(className string) bool {
 }
 
 func (s *Schema) reloadData() {
-	// TODO
 	s.data = bson.M{}
 	s.perms = bson.M{}
 	results, err := s.collection.GetAllSchemas()

@@ -200,6 +200,56 @@ func (s *Schema) deleteField(fieldName string, className string) {
 }
 
 func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
+	// TODO 检测 key 是否合法
+	transformKey(s, className, key)
+
+	if strings.Index(key, ".") > 0 {
+		key = strings.Split(key, ".")[0]
+		fieldtype = "object"
+	}
+
+	expected := utils.String(utils.MapInterface(s.data[className])[key])
+	if expected != "" {
+		if expected == "map" {
+			expected = "object"
+		}
+		if expected == key {
+			return
+		}
+		// TODO 类型不符
+		return
+	}
+
+	if freeze {
+		// TODO 不能修改
+		return
+	}
+
+	if fieldtype == "" {
+		return
+	}
+
+	if fieldtype == "geopoint" {
+		fields := utils.MapInterface(s.data[className])
+		for _, v := range fields {
+			otherKey := utils.String(v)
+			if otherKey == "geopoint" {
+				// TODO 只能有一个 geopoint
+				return
+			}
+		}
+	}
+
+	query := bson.M{
+		key: bson.M{"$exists": true},
+	}
+	update := bson.M{
+		"$set": bson.M{key: fieldtype},
+	}
+	s.collection.upsertSchema(className, query, update)
+
+	s.reloadData()
+	s.validateField(className, key, fieldtype, true)
 
 }
 

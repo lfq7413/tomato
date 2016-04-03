@@ -48,8 +48,8 @@ func (m *MongoSchemaCollection) updateSchema(name string, update bson.M) error {
 	return m.collection.updateOne(mongoSchemaQueryFromNameQuery(name, nil), update)
 }
 
-func (m *MongoSchemaCollection) upsertSchema(name string, update bson.M) error {
-	return m.collection.upsertOne(mongoSchemaQueryFromNameQuery(name, nil), update)
+func (m *MongoSchemaCollection) upsertSchema(name string, query, update bson.M) error {
+	return m.collection.upsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
 }
 
 func mongoSchemaQueryFromNameQuery(name string, query bson.M) bson.M {

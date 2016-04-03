@@ -9,6 +9,11 @@ func init() {
 	}
 }
 
+// AdaptiveCollection ...
+func AdaptiveCollection(className string) *MongoCollection {
+	return adapter.adaptiveCollection(className)
+}
+
 // SchemaCollection 获取 Schema 表
 func SchemaCollection() *MongoSchemaCollection {
 	return adapter.schemaCollection()
@@ -16,7 +21,12 @@ func SchemaCollection() *MongoSchemaCollection {
 
 // CollectionExists ...
 func CollectionExists(className string) bool {
-	return TomatoDB.collectionExists(className)
+	return adapter.collectionExists(className)
+}
+
+// DropCollection ...
+func DropCollection(className string) error {
+	return adapter.dropCollection(className)
 }
 
 // Find ...

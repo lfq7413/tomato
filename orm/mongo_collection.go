@@ -66,6 +66,7 @@ func (m *MongoCollection) count(query interface{}, options map[string]interface{
 
 // 当前框架 Update 时的 selector 中，只包含 objectid ，所以更新之后再去查找，找到的为同一对象
 func (m *MongoCollection) findOneAndUpdate(selector interface{}, update interface{}) bson.M {
+	// TODO 使用 Apply 实现
 	err := m.collection.Update(selector, update)
 	if err != nil {
 		return bson.M{}

@@ -151,7 +151,52 @@ func (s *Schema) UpdateClass(className string, submittedFields bson.M, classLeve
 }
 
 func (s *Schema) deleteField(fieldName string, className string) {
+	if classNameIsValid(className) == false {
+		// TODO 无效类名
+		return
+	}
+	if fieldNameIsValid(fieldName) == false {
+		// TODO 无效字段名
+		return
+	}
+	if fieldNameIsValidForClass(fieldName, className) == false {
+		// TODO 不能修改默认字段
+		return
+	}
 
+	s.reloadData()
+
+	hasClass := s.hasClass(className)
+	if hasClass == false {
+		// TODO 类不存在
+		return
+	}
+
+	class := utils.MapInterface(s.data[className])
+	if class[fieldName] == nil {
+		// TODO 字段不存在
+		return
+	}
+
+	name := utils.String(class[fieldName])
+	if strings.HasPrefix(name, "relation<") {
+		// 删除 _Join table
+		DropCollection("_Join:" + fieldName + ":" + className)
+	} else {
+		collection := AdaptiveCollection(className)
+		mongoFieldName := fieldName
+		if strings.HasPrefix(name, "*") {
+			mongoFieldName = "_p_" + fieldName
+		}
+		update := bson.M{
+			"$unset": bson.M{mongoFieldName: nil},
+		}
+		collection.updateMany(bson.M{}, update)
+	}
+	update := bson.M{
+		"$unset": bson.M{fieldName: nil},
+	}
+	s.collection.updateSchema(className, update)
 }
 
 func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
@@ -160,6 +205,11 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 
 func (s *Schema) setPermissions(className string, perms bson.M) {
 
+}
+
+func (s *Schema) hasClass(className string) bool {
+	s.reloadData()
+	return s.data[className] != nil
 }
 
 func (s *Schema) reloadData() {

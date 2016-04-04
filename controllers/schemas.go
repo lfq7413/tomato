@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/utils"
@@ -124,7 +125,45 @@ func (s *SchemasController) HandleUpdate() {
 // HandleDelete ...
 // @router /:className [delete]
 func (s *SchemasController) HandleDelete() {
-	s.ObjectsController.Delete()
+	className := s.Ctx.Input.Param(":className")
+	if orm.ClassNameIsValid(className) == false {
+		// TODO 类名无效
+		return
+	}
+
+	exist := orm.CollectionExists(className)
+	if exist == false {
+		return
+	}
+
+	collection := orm.AdaptiveCollection(className)
+	count := collection.Count(bson.M{}, bson.M{})
+	if count > 0 {
+		// TODO 类不为空
+		return
+	}
+	collection.Drop()
+
+	coll := orm.SchemaCollection()
+	document, _ := coll.FindAndDeleteSchema(className)
+	if document != nil {
+		removeJoinTables(document)
+		// TODO 处理错误
+	}
+}
+
+func removeJoinTables(mongoSchema bson.M) error {
+	for field, v := range mongoSchema {
+		fieldType := utils.String(v)
+		if strings.HasPrefix(fieldType, "relation<") {
+			collectionName := "_Join:" + field + ":" + utils.String(mongoSchema["_id"])
+			err := orm.DropCollection(collectionName)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Delete ...

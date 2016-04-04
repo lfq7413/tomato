@@ -40,7 +40,8 @@ func (m *MongoCollection) rawFind(query interface{}, options map[string]interfac
 	return result, err
 }
 
-func (m *MongoCollection) count(query interface{}, options map[string]interface{}) int {
+// Count ...
+func (m *MongoCollection) Count(query interface{}, options map[string]interface{}) int {
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
 		if sort, ok := options["sort"].([]string); ok {
@@ -106,6 +107,7 @@ func (m *MongoCollection) deleteMany(selector interface{}) error {
 	return err
 }
 
-func (m *MongoCollection) drop() error {
+// Drop ...
+func (m *MongoCollection) Drop() error {
 	return m.collection.DropCollection()
 }

@@ -27,7 +27,8 @@ func (m *MongoSchemaCollection) FindSchema(name string) (bson.M, error) {
 	return results[0], nil
 }
 
-func (m *MongoSchemaCollection) findAndDeleteSchema(name string) (bson.M, error) {
+// FindAndDeleteSchema ...
+func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (bson.M, error) {
 	result, err := m.FindSchema(name)
 	if err != nil {
 		return nil, err

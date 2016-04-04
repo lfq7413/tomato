@@ -151,7 +151,7 @@ func (s *Schema) UpdateClass(className string, submittedFields bson.M, classLeve
 }
 
 func (s *Schema) deleteField(fieldName string, className string) {
-	if classNameIsValid(className) == false {
+	if ClassNameIsValid(className) == false {
 		// TODO 无效类名
 		return
 	}
@@ -417,7 +417,7 @@ func mongoFieldTypeToSchemaAPIType(t string) bson.M {
 }
 
 func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, classLevelPermissions bson.M) bson.M {
-	if classNameIsValid(className) == false {
+	if ClassNameIsValid(className) == false {
 		// TODO 无效类名
 		return nil
 	}
@@ -489,7 +489,8 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, cl
 	}
 }
 
-func classNameIsValid(className string) bool {
+// ClassNameIsValid ...
+func ClassNameIsValid(className string) bool {
 	return className == "_User" ||
 		className == "_Installation" ||
 		className == "_Session" ||
@@ -544,7 +545,7 @@ func schemaAPITypeToMongoFieldType(t bson.M) bson.M {
 			return nil
 		}
 		targetClass := utils.String(t["targetClass"])
-		if classNameIsValid(targetClass) == false {
+		if ClassNameIsValid(targetClass) == false {
 			// TODO 类名无效
 			return nil
 		}
@@ -560,7 +561,7 @@ func schemaAPITypeToMongoFieldType(t bson.M) bson.M {
 			return nil
 		}
 		targetClass := utils.String(t["targetClass"])
-		if classNameIsValid(targetClass) == false {
+		if ClassNameIsValid(targetClass) == false {
 			// TODO 类名无效
 			return nil
 		}

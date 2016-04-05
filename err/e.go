@@ -15,14 +15,24 @@ func E(code int, msg string) error {
 var OtherCause = -1
 
 // InternalServerError ...
-// Error code indicating that something has gone wrong with the server.
-// If you get this error code, it is Parse's fault. Contact us at
-// https://parse.com/help
+// Internal server error.
 var InternalServerError = 1
+
+// ServiceUnavailable ...
+// The service is currently unavailable.
+var ServiceUnavailable = 2
+
+// ClientDisconnected ...
+// Connection failure.
+var ClientDisconnected = 4
 
 // ConnectionFailed ...
 // Error code indicating the connection to the Parse servers failed.
 var ConnectionFailed = 100
+
+// UserInvalidLoginParams ...
+// Invalid login parameters.
+var UserInvalidLoginParams = 101
 
 // ObjectNotFound ...
 // Error code indicating the specified object doesn't exist.
@@ -78,13 +88,65 @@ var IncorrectType = 111
 // characters and starts with a letter.
 var InvalidChannelName = 112
 
+// InvalidSubscriptionType ...
+// Bad subscription type.
+var InvalidSubscriptionType = 113
+
+// InvalidDeviceToken ...
+// The provided device token is invalid.
+var InvalidDeviceToken = 114
+
 // PushMisconfigured ...
 // Error code indicating that push is misconfigured.
 var PushMisconfigured = 115
 
+// PushWhereAndChannels ...
+// Can't set channels for a query-targeted push.
+var PushWhereAndChannels = 115
+
+// PushWhereAndType ...
+// Can't set device type for a query-targeted push.
+var PushWhereAndType = 115
+
+// PushMissingData ...
+// Push is missing a 'data' field.
+var PushMissingData = 115
+
+// PushMissingChannels ...
+// Non-query push is missing a 'channels' field.
+var PushMissingChannels = 115
+
+// ClientPushDisabled ...
+// Client-initiated push is not enabled.
+var ClientPushDisabled = 115
+
+// RestPushDisabled ...
+// REST-initiated push is not enabled.
+var RestPushDisabled = 115
+
+// ClientPushWithURI ...
+// Client-initiated push cannot use the "uri" option.
+var ClientPushWithURI = 115
+
+// PushQueryOrPayloadTooLarge ...
+// Your push query or data payload is too large.
+var PushQueryOrPayloadTooLarge = 115
+
 // ObjectTooLarge ...
 // Error code indicating that the object is too large.
 var ObjectTooLarge = 116
+
+// ExceededConfigParamsError ...
+// You have reached the limit of 100 config parameters.
+var ExceededConfigParamsError = 116
+
+// InvalidLimitError ...
+// An invalid value was set for the limit.
+var InvalidLimitError = 117
+
+// InvalidSkipError ...
+// An invalid value was set for skip.
+var InvalidSkipError = 118
 
 // OperationForbidden ...
 // Error code indicating that the operation isn't allowed for clients.
@@ -138,14 +200,46 @@ var FileTooLarge = 129
 // Error code indicating an error saving a file.
 var FileSaveError = 130
 
+// FileDeleteError ...
+// File could not be deleted.
+var FileDeleteError = 131
+
+// InvalidInstallationIDError ...
+// Invalid installation id.
+var InvalidInstallationIDError = 132
+
+// InvalidDeviceTypeError ...
+// Invalid device type.
+var InvalidDeviceTypeError = 133
+
+// InvalidChannelsArrayError ...
+// Invalid channels array value.
+var InvalidChannelsArrayError = 134
+
+// MissingRequiredFieldError ...
+// Required field is missing.
+var MissingRequiredFieldError = 135
+
+// ChangedImmutableFieldError ...
+// An immutable field was changed.
+var ChangedImmutableFieldError = 136
+
 // DuplicateValue ...
 // Error code indicating that a unique field was given a value that is
 // already taken.
 var DuplicateValue = 137
 
+// InvalidExpirationError ...
+// Invalid expiration value.
+var InvalidExpirationError = 138
+
 // InvalidRoleName ...
 // Error code indicating that a role's name is invalid.
 var InvalidRoleName = 139
+
+// ReservedValue ...
+// Field value is reserved.
+var ReservedValue = 139
 
 // ExceededQuota ...
 // Error code indicating that an application quota was exceeded.  Upgrade to
@@ -156,13 +250,61 @@ var ExceededQuota = 140
 // Error code indicating that a Cloud Code script failed.
 var ScriptFailed = 141
 
+// FunctionNotFound ...
+// Cloud function not found.
+var FunctionNotFound = 141
+
+// JobNotFound ...
+// Background job not found.
+var JobNotFound = 141
+
+// SuccessErrorNotCalled ...
+// success/error was not called.
+var SuccessErrorNotCalled = 141
+
+// MultupleSuccessErrorCalls ...
+// Can't call success/error multiple times.
+var MultupleSuccessErrorCalls = 141
+
 // ValidationError ...
 // Error code indicating that a Cloud Code validation failed.
 var ValidationError = 142
 
+// WebhookError ...
+// Webhook error.
+var WebhookError = 143
+
+// ReceiptMissing ...
+// Product purchase receipt is missing.
+var ReceiptMissing = 143
+
+// InvalidPurchaseReceipt ...
+// Product purchase receipt is invalid.
+var InvalidPurchaseReceipt = 144
+
+// PaymentDisabled ...
+// Payment is disabled on this device.
+var PaymentDisabled = 145
+
+// InvalidProductIdentifier ...
+// The product identifier is invalid.
+var InvalidProductIdentifier = 146
+
+// ProductNotFoundInAppStore ...
+// The product is not found in the App Store.
+var ProductNotFoundInAppStore = 147
+
+// InvalidServerResponse ...
+// The Apple server response is not valid.
+var InvalidServerResponse = 148
+
+// ProductDownloadFilesystemError ...
+// The product fails to download due to file system error.
+var ProductDownloadFilesystemError = 149
+
 // InvalidImageData ...
 // Error code indicating that invalid image data was provided.
-var InvalidImageData = 143
+var InvalidImageData = 150
 
 // UnsavedFileError ...
 // Error code indicating an unsaved file.
@@ -172,14 +314,30 @@ var UnsavedFileError = 151
 // Error code indicating an invalid push time.
 var InvalidPushTimeError = 152
 
-// FileDeleteError ...
-// Error code indicating an error deleting a file.
-var FileDeleteError = 153
+// InefficientQueryError ...
+// An inefficient query was rejected by the server.
+var InefficientQueryError = 154
 
 // RequestLimitExceeded ...
 // Error code indicating that the application has exceeded its request
 // limit.
 var RequestLimitExceeded = 155
+
+// MissingPushIDError ...
+// A push id is missing. Deprecated.
+var MissingPushIDError = 156
+
+// MissingDeviceTypeError ...
+// The device type field is missing. Deprecated.
+var MissingDeviceTypeError = 157
+
+// HostingError ...
+// Hosting error.
+var HostingError = 158
+
+// TemporaryRejectionError ...
+// An application's requests are temporary rejected by the server.
+var TemporaryRejectionError = 159
 
 // InvalidEventName ...
 // Error code indicating an invalid event name.
@@ -237,10 +395,74 @@ var LinkedIDMissing = 250
 // has an invalid session.
 var InvalidLinkedSession = 251
 
+// InvalidGeneralAuthData ...
+// Invalid auth data value used.
+var InvalidGeneralAuthData = 251
+
+// BadAnonymousID ...
+// Anonymous id is not a valid lowercase UUID.
+var BadAnonymousID = 251
+
+// FacebookBadToken ...
+// The supplied Facebook session token is expired or invalid.
+var FacebookBadToken = 251
+
+// FacebookBadID ...
+// A user with a linked Facebook account has an invalid session.
+var FacebookBadID = 251
+
+// FacebookWrongAppID ...
+// Unacceptable Facebook application id.
+var FacebookWrongAppID = 251
+
+// TwitterVerificationFailed ...
+//Twitter credential verification failed.
+var TwitterVerificationFailed = 251
+
+// TwitterWrongID ...
+// Submitted Twitter id does not match the id associated with the submitted access token.
+var TwitterWrongID = 251
+
+// TwitterWrongScreenName ...
+// Submitted Twitter handle does not match the handle associated with the submitted access token.
+var TwitterWrongScreenName = 251
+
+// TwitterConnectFailure ...
+// Twitter credentials could not be verified due to problems accessing the Twitter API.
+var TwitterConnectFailure = 251
+
 // UnsupportedService ...
 // Error code indicating that a service being linked (e.g. Facebook or
 // Twitter) is unsupported.
 var UnsupportedService = 252
+
+// UsernameSigninDisabled ...
+// Authentication by username and password is not supported for this application.
+var UsernameSigninDisabled = 252
+
+// AnonymousSigninDisabled ...
+// Anonymous users are not supported for this application.
+var AnonymousSigninDisabled = 252
+
+// FacebookSigninDisabled ...
+// Authentication by Facebook is not supported for this application.
+var FacebookSigninDisabled = 252
+
+// TwitterSigninDisabled ...
+// Authentication by Twitter is not supported for this application.
+var TwitterSigninDisabled = 252
+
+// InvalidAuthDataError ...
+// An invalid authData value was passed.
+var InvalidAuthDataError = 253
+
+// ClassNotEmpty ...
+// Class is not empty and cannot be dropped.
+var ClassNotEmpty = 255
+
+// AppNameInvalid ...
+// App name is invalid.
+var AppNameInvalid = 256
 
 // AggregateError ...
 // Error code indicating that there were multiple errors. Aggregate errors
@@ -258,3 +480,15 @@ var FileReadError = 601
 // Internet Explorer, which strips the body from HTTP responses that have
 // a non-2XX status code.
 var XDomainRequest = 602
+
+// MissingAPIKeyError ...
+// The request is missing an API key.
+var MissingAPIKeyError = 902
+
+// InvalidAPIKeyError ...
+// The request is using an invalid API key.
+var InvalidAPIKeyError = 903
+
+// LinkingNotSupportedError ...
+// Linking to an external account not supported yet with signup_or_login.
+var LinkingNotSupportedError = 999

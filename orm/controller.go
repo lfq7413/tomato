@@ -110,6 +110,17 @@ func addRelation(key, fromClassName, fromID, toID string) {
 	coll.upsertOne(doc, doc)
 }
 
+func removeRelation(key, fromClassName, fromID, toID string) {
+	// TODO 处理错误
+	doc := map[string]interface{}{
+		"relatedId": toID,
+		"owningId":  fromID,
+	}
+	className := "_Join:" + key + ":" + fromClassName
+	coll := AdaptiveCollection(className)
+	coll.deleteOne(doc)
+}
+
 // ValidateObject ...
 func ValidateObject(className string, object, where, options map[string]interface{}) error {
 	// TODO 处理错误

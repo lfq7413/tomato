@@ -88,7 +88,11 @@ func Create(className string, data, options map[string]interface{}) error {
 }
 
 func validateClassName(className string) {
-	// TODO
+	// TODO 处理错误
+	if ClassNameIsValid(className) == false {
+		// TODO 无效类名
+		return
+	}
 }
 
 func handleRelationUpdates(className, objectID string, updatemap map[string]interface{}) {

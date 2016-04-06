@@ -61,9 +61,38 @@ func UpdateAll(className string, where map[string]interface{}, data map[string]i
 }
 
 // Create ...
-func Create(className string, data map[string]interface{}, options map[string]interface{}) error {
-	// TODO
+func Create(className string, data, options map[string]interface{}) error {
+	// TODO 处理错误
+	isMaster := false
+	aclGroup := []string{}
+	if options["acl"] == nil {
+		isMaster = true
+	} else {
+		aclGroup = options["acl"].([]string)
+	}
+
+	validateClassName(className)
+
+	schema := LoadSchema(nil)
+	if isMaster == false {
+		schema.validatePermission(className, aclGroup, "create")
+	}
+
+	handleRelationUpdates(className, "", data)
+
+	coll := AdaptiveCollection(className)
+	mongoObject := transformCreate(schema, className, data)
+	coll.insertOne(mongoObject)
+
 	return nil
+}
+
+func validateClassName(className string) {
+	// TODO
+}
+
+func handleRelationUpdates(className, objectID string, updatemap map[string]interface{}) {
+	// TODO
 }
 
 // ValidateObject ...

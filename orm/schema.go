@@ -200,10 +200,36 @@ func (s *Schema) deleteField(fieldName string, className string) {
 }
 
 func (s *Schema) validateObject(className string, object, query bson.M) {
-	// TODO
+	// TODO 处理错误
+	geocount := 0
+	s.validateClassName(className, false)
+
+	for k, v := range object {
+		if v == nil {
+			continue
+		}
+		expected := getType(v)
+		if expected == "geopoint" {
+			geocount++
+		}
+		if geocount > 1 {
+			// TODO 只能有一个 geopoint
+			return
+		}
+		if expected == "" {
+			continue
+		}
+		thenValidateField(s, className, k, expected)
+	}
+
+	thenValidateRequiredColumns(s, className, object, query)
 }
 
 func (s *Schema) validatePermission(className string, aclGroup []string, operation string) {
+	// TODO
+}
+
+func (s *Schema) validateClassName(className string, freeze bool) {
 	// TODO
 }
 
@@ -310,6 +336,19 @@ func (s *Schema) reloadData() {
 			}
 		}
 	}
+}
+
+func thenValidateField(schema *Schema, className, key, fieldtype string) {
+	schema.validateField(className, key, fieldtype, false)
+}
+
+func thenValidateRequiredColumns(schema *Schema, className string, object, query bson.M) {
+	// TODO
+}
+
+func getType(obj interface{}) string {
+	// TODO
+	return ""
 }
 
 // MongoSchemaToSchemaAPIResponse ...

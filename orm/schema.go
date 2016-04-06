@@ -11,6 +11,7 @@ import "strings"
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
 var defaultClassLevelPermissions bson.M
 var defaultColumns map[string]bson.M
+var requiredColumns map[string][]string
 
 func init() {
 	defaultClassLevelPermissions = bson.M{}
@@ -66,6 +67,10 @@ func init() {
 			"title":             bson.M{"type": "String"},
 			"subtitle":          bson.M{"type": "String"},
 		},
+	}
+	requiredColumns = map[string][]string{
+		"_Product": []string{"productIdentifier", "icon", "order", "title", "subtitle"},
+		"_Role":    []string{"name", "ACL"},
 	}
 }
 
@@ -265,7 +270,32 @@ func (s *Schema) validateClassName(className string, freeze bool) {
 }
 
 func (s *Schema) validateRequiredColumns(className string, object, query bson.M) {
-	// TODO
+	// TODO 处理错误
+	columns := requiredColumns[className]
+	if columns == nil || len(columns) == 0 {
+		return
+	}
+
+	missingColumns := []string{}
+	for _, column := range columns {
+		if query != nil && query["objectId"] != nil {
+			if object[column] != nil && utils.MapInterface(object[column]) != nil {
+				o := utils.MapInterface(object[column])
+				if utils.String(o["__op"]) == "Delete" {
+					missingColumns = append(missingColumns, column)
+				}
+			}
+			continue
+		}
+		if object[column] == nil {
+			missingColumns = append(missingColumns, column)
+		}
+	}
+
+	if len(missingColumns) > 0 {
+		// TODO 缺少字段
+		return
+	}
 }
 
 func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {

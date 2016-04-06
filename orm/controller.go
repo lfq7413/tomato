@@ -99,6 +99,17 @@ func handleRelationUpdates(className, objectID string, updatemap map[string]inte
 	// TODO
 }
 
+func addRelation(key, fromClassName, fromID, toID string) {
+	// TODO 处理错误
+	doc := map[string]interface{}{
+		"relatedId": toID,
+		"owningId":  fromID,
+	}
+	className := "_Join:" + key + ":" + fromClassName
+	coll := AdaptiveCollection(className)
+	coll.upsertOne(doc, doc)
+}
+
 // ValidateObject ...
 func ValidateObject(className string, object, where, options map[string]interface{}) error {
 	// TODO 处理错误

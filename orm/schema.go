@@ -233,6 +233,10 @@ func (s *Schema) validateClassName(className string, freeze bool) {
 	// TODO
 }
 
+func (s *Schema) validateRequiredColumns(className string, object, query bson.M) {
+	// TODO
+}
+
 func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 	// TODO 检测 key 是否合法
 	transformKey(s, className, key)
@@ -343,11 +347,26 @@ func thenValidateField(schema *Schema, className, key, fieldtype string) {
 }
 
 func thenValidateRequiredColumns(schema *Schema, className string, object, query bson.M) {
-	// TODO
+	schema.validateRequiredColumns(className, object, query)
 }
 
 func getType(obj interface{}) string {
-	// TODO
+	switch obj.(type) {
+	case bool:
+		return "boolean"
+	case string:
+		return "string"
+	case float64:
+		return "number"
+	case map[string]interface{}, []interface{}:
+		return getObjectType(obj)
+	default:
+		// TODO 格式无效
+		return ""
+	}
+}
+
+func getObjectType(obj interface{}) string {
 	return ""
 }
 

@@ -250,7 +250,18 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 }
 
 func (s *Schema) validateClassName(className string, freeze bool) {
-	// TODO
+	// TODO 处理错误
+	if s.data[className] != nil {
+		return
+	}
+	if freeze {
+		// TODO 不能添加
+		return
+	}
+	s.collection.addSchema(className, bson.M{})
+	s.reloadData()
+	s.validateClassName(className, true)
+	// TODO 处理上步错误
 }
 
 func (s *Schema) validateRequiredColumns(className string, object, query bson.M) {

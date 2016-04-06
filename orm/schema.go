@@ -367,7 +367,66 @@ func getType(obj interface{}) string {
 }
 
 func getObjectType(obj interface{}) string {
-	return ""
+	if utils.SliceInterface(obj) != nil {
+		return "array"
+	}
+	if utils.MapInterface(obj) != nil {
+		object := utils.MapInterface(obj)
+		if object["__type"] != nil {
+			t := utils.String(object["__type"])
+			switch t {
+			case "Pointer":
+				if object["className"] != nil {
+					return "*" + utils.String(object["className"])
+				}
+			case "File":
+				if object["name"] != nil {
+					return "file"
+				}
+			case "Date":
+				if object["iso"] != nil {
+					return "date"
+				}
+			case "GeoPoint":
+				if object["latitude"] != nil && object["longitude"] != nil {
+					return "geopoint"
+				}
+			case "Bytes":
+				if object["base64"] != nil {
+					return "bytes"
+				}
+			default:
+				// TODO 无效的类型
+				return ""
+			}
+		}
+		if object["$ne"] != nil {
+			return getObjectType(object["$ne"])
+		}
+		if object["__op"] != nil {
+			op := utils.String(object["__op"])
+			switch op {
+			case "Increment":
+				return "number"
+			case "Delete":
+				return ""
+			case "Add", "AddUnique", "Remove":
+				return "array"
+			case "AddRelation", "RemoveRelation":
+				objects := utils.SliceInterface(object["objects"])
+				o := utils.MapInterface(objects[0])
+				return "relation<" + utils.String(o["className"]) + ">"
+			case "Batch":
+				ops := utils.SliceInterface(object["ops"])
+				return getObjectType(ops[0])
+			default:
+				// TODO 无效操作
+				return ""
+			}
+		}
+	}
+
+	return "object"
 }
 
 // MongoSchemaToSchemaAPIResponse ...

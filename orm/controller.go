@@ -1,5 +1,7 @@
 package orm
 
+import "github.com/lfq7413/tomato/utils"
+
 var adapter *MongoAdapter
 var schemaPromise *Schema
 
@@ -104,5 +106,32 @@ func LoadSchema(acceptor func(*Schema) bool) *Schema {
 
 // canAddField ...
 func canAddField(schema *Schema, className string, object map[string]interface{}, acl []string) {
-	// TODO
+	// TODO 处理错误
+	if schema.data[className] == nil {
+		return
+	}
+	classSchema := utils.MapInterface(schema.data[className])
+
+	schemaFields := []string{}
+	for k := range classSchema {
+		schemaFields = append(schemaFields, k)
+	}
+	// 收集新增的字段
+	newKeys := []string{}
+	for k := range object {
+		t := true
+		for _, v := range schemaFields {
+			if k == v {
+				t = false
+				break
+			}
+		}
+		if t {
+			newKeys = append(newKeys, k)
+		}
+	}
+
+	if len(newKeys) > 0 {
+		schema.validatePermission(className, acl, "addField")
+	}
 }

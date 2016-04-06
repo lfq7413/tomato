@@ -65,8 +65,20 @@ func Create(className string, data map[string]interface{}, options map[string]in
 }
 
 // ValidateObject ...
-func ValidateObject(className string, object map[string]interface{}, where map[string]interface{}, options map[string]interface{}) error {
-	// TODO
+func ValidateObject(className string, object, where, options map[string]interface{}) error {
+	// TODO 处理错误
+	schema := LoadSchema(nil)
+	acl := []string{}
+	if options["acl"] != nil {
+		if v, ok := options["acl"].([]string); ok {
+			acl = v
+		}
+	}
+
+	canAddField(schema, className, object, acl)
+
+	schema.validateObject(className, object, where)
+
 	return nil
 }
 
@@ -90,7 +102,7 @@ func LoadSchema(acceptor func(*Schema) bool) *Schema {
 	return schemaPromise
 }
 
-// CanAddField ...
-func CanAddField() {
+// canAddField ...
+func canAddField(schema *Schema, className string, object map[string]interface{}, acl []string) {
 	// TODO
 }

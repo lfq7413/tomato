@@ -199,6 +199,10 @@ func (s *Schema) deleteField(fieldName string, className string) {
 	s.collection.updateSchema(className, update)
 }
 
+func (s *Schema) validateObject(className string, object, query bson.M) {
+	// TODO
+}
+
 func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 	// TODO 检测 key 是否合法
 	transformKey(s, className, key)

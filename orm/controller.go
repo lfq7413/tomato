@@ -95,8 +95,46 @@ func validateClassName(className string) {
 	}
 }
 
-func handleRelationUpdates(className, objectID string, updatemap map[string]interface{}) {
-	// TODO
+func handleRelationUpdates(className, objectID string, update map[string]interface{}) {
+	// TODO 处理错误
+	objID := objectID
+	if utils.String(update["objectId"]) != "" {
+		objID = utils.String(update["objectId"])
+	}
+
+	var process func(op interface{}, key string)
+	process = func(op interface{}, key string) {
+		if op == nil || utils.MapInterface(op) == nil || utils.MapInterface(op)["__op"] == nil {
+			return
+		}
+		opMap := utils.MapInterface(op)
+		p := utils.String(opMap["__op"])
+		if p == "AddRelation" {
+			delete(update, key)
+			objects := utils.SliceInterface(opMap["objects"])
+			for _, object := range objects {
+				relationID := utils.String(utils.MapInterface(object)["objectId"])
+				addRelation(key, className, objID, relationID)
+			}
+		} else if p == "RemoveRelation" {
+			delete(update, key)
+			objects := utils.SliceInterface(opMap["objects"])
+			for _, object := range objects {
+				relationID := utils.String(utils.MapInterface(object)["objectId"])
+				removeRelation(key, className, objID, relationID)
+			}
+		} else if p == "Batch" {
+			ops := utils.SliceInterface(opMap["ops"])
+			for _, x := range ops {
+				process(x, key)
+			}
+		}
+	}
+
+	for k, v := range update {
+		process(v, k)
+	}
+
 }
 
 func addRelation(key, fromClassName, fromID, toID string) {

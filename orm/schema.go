@@ -226,7 +226,27 @@ func (s *Schema) validateObject(className string, object, query bson.M) {
 }
 
 func (s *Schema) validatePermission(className string, aclGroup []string, operation string) {
-	// TODO
+	// TODO 处理错误
+	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
+		return
+	}
+	class := utils.MapInterface(s.perms[className])
+	perms := utils.MapInterface(class[operation])
+	if _, ok := perms["*"]; ok {
+		return
+	}
+
+	found := false
+	for _, v := range aclGroup {
+		if _, ok := perms[v]; ok {
+			found = true
+			break
+		}
+	}
+	if found == false {
+		// TODO 无权限
+		return
+	}
 }
 
 func (s *Schema) validateClassName(className string, freeze bool) {

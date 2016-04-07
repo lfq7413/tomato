@@ -382,6 +382,14 @@ func (s *Schema) hasKeys(className string, keys []string) bool {
 	return true
 }
 
+func (s *Schema) getExpectedType(className, key string) string {
+	if s.data != nil && s.data[className] != nil {
+		cls := utils.MapInterface(s.data[className])
+		return utils.String(cls[key])
+	}
+	return ""
+}
+
 func (s *Schema) reloadData() {
 	s.data = bson.M{}
 	s.perms = bson.M{}

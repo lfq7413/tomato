@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/lfq7413/tomato/utils"
@@ -521,8 +522,55 @@ func addInObjectIdsIds(ids []interface{}, query bson.M) {
 	query["objectId"] = objectID
 }
 
-func reduceInRelation(className string, query bson.M, schema *Schema) {
+func reduceInRelation(className string, query bson.M, schema *Schema) bson.M {
+	if query["$or"] != nil {
+		ors := utils.SliceInterface(query["$or"])
+		for i, v := range ors {
+			aQuery := utils.MapInterface(v)
+			aQuery = reduceInRelation(className, aQuery, schema)
+			ors[i] = aQuery
+		}
+		query["$or"] = ors
+		return query
+	}
+
+	for key, v := range query {
+		op := utils.MapInterface(v)
+		if v != nil && (op["$in"] != nil || utils.String(op["__type"]) == "Pointer") {
+			// 只处理 relation 类型
+			t := schema.getExpectedType(className, key)
+			match := false
+			if t != "" {
+				b, _ := regexp.MatchString("^relation<(.*)>$", t)
+				match = b
+			}
+			if match == false {
+				return query
+			}
+
+			relatedIds := []interface{}{}
+			if op["$in"] != nil {
+				ors := utils.SliceInterface(op["$in"])
+				for _, v := range ors {
+					r := utils.MapInterface(v)
+					relatedIds = append(relatedIds, r["objectId"])
+				}
+			} else {
+				relatedIds = append(relatedIds, op["objectId"])
+			}
+
+			ids := owningIds(className, key, relatedIds)
+			delete(query, key)
+			addInObjectIdsIds(ids, query)
+		}
+	}
+
+	return query
+}
+
+func owningIds(className, key string, relatedIds []interface{}) []interface{} {
 	// TODO
+	return nil
 }
 
 func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject bson.M) bson.M {

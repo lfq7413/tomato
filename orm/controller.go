@@ -470,14 +470,24 @@ func reduceInRelation(className string, query bson.M, schema *Schema) {
 
 func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject bson.M) bson.M {
 	// TODO
-	object := untransformObjectT(schema, className, mongoObject, false)
+	res := untransformObjectT(schema, className, mongoObject, false)
+	object := utils.MapInterface(res)
 	if className != "_User" {
-		return utils.MapInterface(object)
+		return object
 	}
-
+	// 以下单独处理 _User 类
 	if isMaster {
-		return utils.MapInterface(object)
+		return object
 	}
-
-	return nil
+	// 当前用户返回所有信息
+	id := utils.String(object["objectId"])
+	for _, v := range aclGroup {
+		if v == id {
+			return object
+		}
+	}
+	// 其他用户删除相关信息
+	delete(object, "authData")
+	delete(object, "sessionToken")
+	return object
 }

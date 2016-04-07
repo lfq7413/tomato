@@ -370,8 +370,16 @@ func (s *Schema) hasClass(className string) bool {
 }
 
 func (s *Schema) hasKeys(className string, keys []string) bool {
-	// TODO
-	return false
+	for _, key := range keys {
+		if s.data[className] == nil {
+			return false
+		}
+		class := utils.MapInterface(s.data[className])
+		if class[key] == nil {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *Schema) reloadData() {

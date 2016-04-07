@@ -8,7 +8,17 @@ func transformKey(schema *Schema, className, key string) string {
 }
 
 // transformCreate ...
-func transformCreate(schema *Schema, className string, object bson.M) bson.M {
+func transformCreate(schema *Schema, className string, create bson.M) bson.M {
+	// TODO
+	return nil
+}
+
+func transformWhere(schema *Schema, className string, where bson.M) bson.M {
+	// TODO
+	return nil
+}
+
+func transformUpdate(schema *Schema, className string, update bson.M) bson.M {
 	// TODO
 	return nil
 }

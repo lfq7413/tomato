@@ -369,6 +369,11 @@ func (s *Schema) hasClass(className string) bool {
 	return s.data[className] != nil
 }
 
+func (s *Schema) hasKeys(className string, keys []string) bool {
+	// TODO
+	return false
+}
+
 func (s *Schema) reloadData() {
 	s.data = bson.M{}
 	s.perms = bson.M{}

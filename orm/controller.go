@@ -1,6 +1,9 @@
 package orm
 
-import "github.com/lfq7413/tomato/utils"
+import (
+	"github.com/lfq7413/tomato/utils"
+	"gopkg.in/mgo.v2/bson"
+)
 
 var adapter *MongoAdapter
 var schemaPromise *Schema
@@ -49,9 +52,67 @@ func Destroy(className string, where map[string]interface{}, options map[string]
 }
 
 // Update ...
-func Update(className string, where map[string]interface{}, data map[string]interface{}, options map[string]interface{}) error {
-	// TODO
-	return nil
+func Update(className string, where, data, options map[string]interface{}) (bson.M, error) {
+	// TODO 处理错误
+	data = utils.CopyMap(data)
+	acceptor := func(schema *Schema) bool {
+		keys := []string{}
+		for k := range where {
+			keys = append(keys, k)
+		}
+		return schema.hasKeys(className, keys)
+	}
+	isMaster := false
+	aclGroup := []string{}
+	if options["acl"] == nil {
+		isMaster = true
+	} else {
+		aclGroup = options["acl"].([]string)
+	}
+
+	schema := LoadSchema(acceptor)
+	if isMaster == false {
+		schema.validatePermission(className, aclGroup, "create")
+	}
+	handleRelationUpdates(className, utils.String(where["objectId"]), data)
+
+	coll := AdaptiveCollection(className)
+	mongoWhere := transformWhere(schema, className, where)
+	// 组装查询条件，查找可被当前用户修改的对象
+	if options["acl"] != nil {
+		writePerms := []interface{}{}
+		perm := bson.M{
+			"_wperm": bson.M{"$exists": false},
+		}
+		writePerms = append(writePerms, perm)
+		for _, acl := range aclGroup {
+			perm = bson.M{
+				"_wperm": bson.M{"$in": []string{acl}},
+			}
+			writePerms = append(writePerms, perm)
+		}
+
+		mongoWhere = bson.M{
+			"$and": []interface{}{
+				mongoWhere,
+				bson.M{"$or": writePerms},
+			},
+		}
+	}
+	mongoUpdate := transformUpdate(schema, className, data)
+
+	result := coll.findOneAndUpdate(mongoWhere, mongoUpdate)
+	// TODO 处理返回错误
+
+	response := bson.M{}
+	if mongoUpdate["$inc"] != nil && utils.MapInterface(mongoUpdate["$inc"]) != nil {
+		inc := utils.MapInterface(mongoUpdate["$inc"])
+		for k := range inc {
+			response[k] = result[k]
+		}
+	}
+
+	return response, nil
 }
 
 // UpdateAll ...
@@ -63,6 +124,7 @@ func UpdateAll(className string, where map[string]interface{}, data map[string]i
 // Create ...
 func Create(className string, data, options map[string]interface{}) error {
 	// TODO 处理错误
+	data = utils.CopyMap(data)
 	isMaster := false
 	aclGroup := []string{}
 	if options["acl"] == nil {

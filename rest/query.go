@@ -72,15 +72,16 @@ func NewQuery(
 		case "order":
 			if s, ok := v.(string); ok {
 				fields := strings.Split(s, ",")
-				sortMap := map[string]int{}
-				for _, v := range fields {
-					if strings.HasPrefix(v, "-") {
-						sortMap[v[1:]] = -1
-					} else {
-						sortMap[v] = 1
-					}
-				}
-				query.findOptions["sort"] = sortMap
+				// sortMap := map[string]int{}
+				// for _, v := range fields {
+				// 	if strings.HasPrefix(v, "-") {
+				// 		sortMap[v[1:]] = -1
+				// 	} else {
+				// 		sortMap[v] = 1
+				// 	}
+				// }
+				// query.findOptions["sort"] = sortMap
+				query.findOptions["sort"] = fields
 			}
 		case "include":
 			if s, ok := v.(string); ok { // v = "user.session,name.friend"
@@ -388,8 +389,7 @@ func (q *Query) runCount() error {
 	q.findOptions["count"] = true
 	delete(q.findOptions, "skip")
 	delete(q.findOptions, "limit")
-	count := orm.Count(q.className, q.Where, q.findOptions)
-	q.response["count"] = count
+	q.response["count"] = orm.Find(q.className, q.Where, q.findOptions)[0]
 	return nil
 }
 

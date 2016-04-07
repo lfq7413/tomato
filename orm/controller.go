@@ -1,6 +1,8 @@
 package orm
 
 import (
+	"strings"
+
 	"github.com/lfq7413/tomato/utils"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -35,15 +37,104 @@ func DropCollection(className string) error {
 }
 
 // Find ...
-func Find(className string, where map[string]interface{}, options map[string]interface{}) []interface{} {
-	// TODO
-	return []interface{}{}
-}
+func Find(className string, where, options map[string]interface{}) []interface{} {
+	// TODO 处理错误
+	if options == nil {
+		options = bson.M{}
+	}
+	if where == nil {
+		where = bson.M{}
+	}
 
-// Count ...
-func Count(className string, where map[string]interface{}, options map[string]interface{}) int {
-	// TODO
-	return 0
+	mongoOptions := bson.M{}
+	if options["skip"] != nil {
+		mongoOptions["skip"] = options["skip"]
+	}
+	if options["limit"] != nil {
+		mongoOptions["limit"] = options["limit"]
+	}
+	// TODO 修改赋值问题
+	isMaster := false
+	aclGroup := []string{}
+	if options["acl"] == nil {
+		isMaster = true
+	} else {
+		aclGroup = options["acl"].([]string)
+	}
+
+	acceptor := func(schema *Schema) bool {
+		return schema.hasKeys(className, keysForQuery(where))
+	}
+	schema := LoadSchema(acceptor)
+
+	if options["sort"] != nil {
+		sortKeys := []string{}
+		keys := options["sort"].([]string)
+		for _, key := range keys {
+			mongoKey := ""
+			if strings.HasPrefix(key, "-") {
+				mongoKey = "-" + transformKey(schema, className, key[1:])
+			} else {
+				mongoKey = transformKey(schema, className, key)
+			}
+			sortKeys = append(sortKeys, mongoKey)
+		}
+		mongoOptions["sort"] = sortKeys
+	}
+
+	if isMaster == false {
+		op := "find"
+		if len(where) == 1 && where["objectId"] != nil && utils.String(where["objectId"]) != "" {
+			op = "get"
+		}
+		schema.validatePermission(className, aclGroup, op)
+	}
+
+	reduceRelationKeys(className, where)
+	reduceInRelation(className, where, schema)
+
+	coll := AdaptiveCollection(className)
+	mongoWhere := transformWhere(schema, className, where)
+	// 组装查询条件，查找可被当前用户修改的对象
+	if options["acl"] != nil {
+		queryPerms := []interface{}{}
+		perm := bson.M{
+			"_rperm": bson.M{"$exists": false},
+		}
+		queryPerms = append(queryPerms, perm)
+		perm = bson.M{
+			"_rperm": bson.M{"$in": []string{"*"}},
+		}
+		queryPerms = append(queryPerms, perm)
+		for _, acl := range aclGroup {
+			perm = bson.M{
+				"_rperm": bson.M{"$in": []string{acl}},
+			}
+			queryPerms = append(queryPerms, perm)
+		}
+
+		mongoWhere = bson.M{
+			"$and": []interface{}{
+				mongoWhere,
+				bson.M{"$or": queryPerms},
+			},
+		}
+	}
+
+	if options["count"] != nil {
+		delete(mongoOptions, "limit")
+		count := coll.Count(mongoWhere, mongoOptions)
+		return []interface{}{count}
+	}
+
+	mongoResults := coll.find(mongoWhere, mongoOptions)
+	results := []interface{}{}
+	for _, r := range mongoResults {
+		result := untransformObject(schema, isMaster, aclGroup, className, r)
+		results = append(results, result)
+	}
+	return results
+
 }
 
 // Destroy ...
@@ -321,4 +412,22 @@ func canAddField(schema *Schema, className string, object map[string]interface{}
 	if len(newKeys) > 0 {
 		schema.validatePermission(className, acl, "addField")
 	}
+}
+
+func keysForQuery(query bson.M) []string {
+	// TODO
+	return nil
+}
+
+func reduceRelationKeys(className string, query bson.M) {
+	// TODO
+}
+
+func reduceInRelation(className string, query bson.M, schema *Schema) {
+	// TODO
+}
+
+func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject bson.M) bson.M {
+	// TODO
+	return nil
 }

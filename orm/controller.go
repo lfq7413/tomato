@@ -569,8 +569,18 @@ func reduceInRelation(className string, query bson.M, schema *Schema) bson.M {
 }
 
 func owningIds(className, key string, relatedIds []interface{}) []interface{} {
-	// TODO
-	return nil
+	coll := AdaptiveCollection(joinTableName(className, key))
+	query := bson.M{
+		"relatedId": bson.M{
+			"$in": relatedIds,
+		},
+	}
+	results := coll.find(query, bson.M{})
+	ids := []interface{}{}
+	for _, r := range results {
+		ids = append(ids, r["owningId"])
+	}
+	return ids
 }
 
 func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject bson.M) bson.M {

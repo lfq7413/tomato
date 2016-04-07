@@ -470,5 +470,14 @@ func reduceInRelation(className string, query bson.M, schema *Schema) {
 
 func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject bson.M) bson.M {
 	// TODO
+	object := untransformObjectT(schema, className, mongoObject, false)
+	if className != "_User" {
+		return utils.MapInterface(object)
+	}
+
+	if isMaster {
+		return utils.MapInterface(object)
+	}
+
 	return nil
 }

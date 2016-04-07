@@ -22,3 +22,7 @@ func transformUpdate(schema *Schema, className string, update bson.M) bson.M {
 	// TODO
 	return nil
 }
+
+func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) interface{} {
+	return nil
+}

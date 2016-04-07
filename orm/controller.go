@@ -486,7 +486,19 @@ func reduceRelationKeys(className string, query bson.M) {
 
 func relatedIds(className, key, owningID string) []string {
 	// TODO
-	return nil
+	coll := AdaptiveCollection(joinTableName(className, key))
+	results := coll.find(bson.M{"owningId": owningID}, bson.M{})
+	ids := []string{}
+	for _, r := range results {
+		id := utils.String(r["relatedId"])
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+func joinTableName(className, key string) string {
+	// TODO
+	return ""
 }
 
 func addInObjectIdsIds(ids []string, query bson.M) {

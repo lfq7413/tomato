@@ -484,25 +484,41 @@ func reduceRelationKeys(className string, query bson.M) {
 
 }
 
-func relatedIds(className, key, owningID string) []string {
-	// TODO
+func relatedIds(className, key, owningID string) []interface{} {
 	coll := AdaptiveCollection(joinTableName(className, key))
 	results := coll.find(bson.M{"owningId": owningID}, bson.M{})
-	ids := []string{}
+	ids := []interface{}{}
 	for _, r := range results {
-		id := utils.String(r["relatedId"])
+		id := r["relatedId"]
 		ids = append(ids, id)
 	}
 	return ids
 }
 
 func joinTableName(className, key string) string {
-	// TODO
-	return ""
+	return "_Join:" + key + ":" + className
 }
 
-func addInObjectIdsIds(ids []string, query bson.M) {
-	// TODO
+func addInObjectIdsIds(ids []interface{}, query bson.M) {
+	if id, ok := query["objectId"].(string); ok {
+		query["objectId"] = bson.M{"$eq": id}
+	}
+
+	objectID := utils.MapInterface(query["objectId"])
+	if objectID == nil {
+		objectID = bson.M{}
+	}
+
+	queryIn := []interface{}{}
+	if objectID["$in"] != nil && utils.SliceInterface(objectID["$in"]) != nil {
+		in := utils.SliceInterface(objectID["$in"])
+		queryIn = append(queryIn, in...)
+	}
+	if ids != nil {
+		queryIn = append(queryIn, ids...)
+	}
+	objectID["$in"] = queryIn
+	query["objectId"] = objectID
 }
 
 func reduceInRelation(className string, query bson.M, schema *Schema) {

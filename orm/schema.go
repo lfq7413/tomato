@@ -196,7 +196,7 @@ func (s *Schema) deleteField(fieldName string, className string) {
 		update := bson.M{
 			"$unset": bson.M{mongoFieldName: nil},
 		}
-		collection.updateMany(bson.M{}, update)
+		collection.UpdateMany(bson.M{}, update)
 	}
 	update := bson.M{
 		"$unset": bson.M{fieldName: nil},

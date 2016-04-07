@@ -153,12 +153,6 @@ func Update(className string, where, data, options map[string]interface{}) (bson
 	return response, nil
 }
 
-// UpdateAll ...
-func UpdateAll(className string, where map[string]interface{}, data map[string]interface{}, options map[string]interface{}) error {
-	// TODO
-	return nil
-}
-
 // Create ...
 func Create(className string, data, options map[string]interface{}) error {
 	// TODO 处理错误

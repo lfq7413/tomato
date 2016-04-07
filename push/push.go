@@ -68,7 +68,7 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 		}
 		and = append(and, tp)
 		restWhere["$and"] = and
-		orm.UpdateAll("_Installation", restWhere, op, map[string]interface{}{})
+		orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
 	}
 
 	response := rest.Find(auth, "_Installation", where, map[string]interface{}{})

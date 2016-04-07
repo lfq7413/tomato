@@ -93,7 +93,8 @@ func (m *MongoCollection) updateOne(selector interface{}, update interface{}) er
 	return m.collection.Update(selector, update)
 }
 
-func (m *MongoCollection) updateMany(selector interface{}, update interface{}) error {
+// UpdateMany ...
+func (m *MongoCollection) UpdateMany(selector interface{}, update interface{}) error {
 	_, err := m.collection.UpdateAll(selector, update)
 	return err
 }

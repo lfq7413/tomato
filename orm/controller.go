@@ -461,6 +461,35 @@ func keysForQuery(query bson.M) []string {
 }
 
 func reduceRelationKeys(className string, query bson.M) {
+	if query["$or"] != nil {
+		subQuerys := utils.SliceInterface(query["$or"])
+		for _, v := range subQuerys {
+			aQuery := utils.MapInterface(v)
+			reduceRelationKeys(className, aQuery)
+		}
+		return
+	}
+
+	if query["$relatedTo"] != nil {
+		relatedTo := utils.MapInterface(query["$relatedTo"])
+		key := utils.String(relatedTo["key"])
+		object := utils.MapInterface(relatedTo["object"])
+		objClassName := utils.String(object["className"])
+		objID := utils.String(object["objectId"])
+		ids := relatedIds(objClassName, key, objID)
+		delete(query, "$relatedTo")
+		addInObjectIdsIds(ids, query)
+		reduceRelationKeys(className, query)
+	}
+
+}
+
+func relatedIds(className, key, owningID string) []string {
+	// TODO
+	return nil
+}
+
+func addInObjectIdsIds(ids []string, query bson.M) {
 	// TODO
 }
 
@@ -469,7 +498,6 @@ func reduceInRelation(className string, query bson.M, schema *Schema) {
 }
 
 func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject bson.M) bson.M {
-	// TODO
 	res := untransformObjectT(schema, className, mongoObject, false)
 	object := utils.MapInterface(res)
 	if className != "_User" {

@@ -48,7 +48,45 @@ func Count(className string, where map[string]interface{}, options map[string]in
 
 // Destroy ...
 func Destroy(className string, where map[string]interface{}, options map[string]interface{}) {
-	// TODO
+	// TODO 处理错误
+	isMaster := false
+	aclGroup := []string{}
+	if options["acl"] == nil {
+		isMaster = true
+	} else {
+		aclGroup = options["acl"].([]string)
+	}
+
+	schema := LoadSchema(nil)
+	if isMaster == false {
+		schema.validatePermission(className, aclGroup, "delete")
+	}
+
+	coll := AdaptiveCollection(className)
+	mongoWhere := transformWhere(schema, className, where)
+	// 组装查询条件，查找可被当前用户修改的对象
+	if options["acl"] != nil {
+		writePerms := []interface{}{}
+		perm := bson.M{
+			"_wperm": bson.M{"$exists": false},
+		}
+		writePerms = append(writePerms, perm)
+		for _, acl := range aclGroup {
+			perm = bson.M{
+				"_wperm": bson.M{"$in": []string{acl}},
+			}
+			writePerms = append(writePerms, perm)
+		}
+
+		mongoWhere = bson.M{
+			"$and": []interface{}{
+				mongoWhere,
+				bson.M{"$or": writePerms},
+			},
+		}
+	}
+	coll.deleteMany(mongoWhere)
+	// TODO 处理返回错误
 }
 
 // Update ...
@@ -72,7 +110,7 @@ func Update(className string, where, data, options map[string]interface{}) (bson
 
 	schema := LoadSchema(acceptor)
 	if isMaster == false {
-		schema.validatePermission(className, aclGroup, "create")
+		schema.validatePermission(className, aclGroup, "update")
 	}
 	handleRelationUpdates(className, utils.String(where["objectId"]), data)
 

@@ -435,8 +435,29 @@ func canAddField(schema *Schema, className string, object map[string]interface{}
 }
 
 func keysForQuery(query bson.M) []string {
-	// TODO
-	return nil
+	answer := []string{}
+
+	var s interface{}
+	if query["$and"] != nil {
+		s = query["$and"]
+	} else {
+		s = query["$or"]
+	}
+
+	if s != nil {
+		sublist := utils.SliceInterface(s)
+		for _, v := range sublist {
+			subquery := utils.MapInterface(v)
+			answer = append(answer, keysForQuery(subquery)...)
+		}
+		return answer
+	}
+
+	for k := range query {
+		answer = append(answer, k)
+	}
+
+	return answer
 }
 
 func reduceRelationKeys(className string, query bson.M) {

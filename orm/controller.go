@@ -53,11 +53,16 @@ func Find(className string, where, options map[string]interface{}) []interface{}
 	if options["limit"] != nil {
 		mongoOptions["limit"] = options["limit"]
 	}
-	// TODO 修改赋值问题
-	isMaster := false
-	aclGroup := []string{}
-	if options["acl"] == nil {
+
+	var isMaster bool
+	if _, ok := options["acl"]; ok {
+		isMaster = false
+	} else {
 		isMaster = true
+	}
+	var aclGroup []string
+	if options["acl"] == nil {
+		aclGroup = []string{}
 	} else {
 		aclGroup = options["acl"].([]string)
 	}
@@ -140,10 +145,15 @@ func Find(className string, where, options map[string]interface{}) []interface{}
 // Destroy ...
 func Destroy(className string, where map[string]interface{}, options map[string]interface{}) {
 	// TODO 处理错误
-	isMaster := false
-	aclGroup := []string{}
-	if options["acl"] == nil {
+	var isMaster bool
+	if _, ok := options["acl"]; ok {
+		isMaster = false
+	} else {
 		isMaster = true
+	}
+	var aclGroup []string
+	if options["acl"] == nil {
+		aclGroup = []string{}
 	} else {
 		aclGroup = options["acl"].([]string)
 	}
@@ -191,10 +201,15 @@ func Update(className string, where, data, options map[string]interface{}) (bson
 		}
 		return schema.hasKeys(className, keys)
 	}
-	isMaster := false
-	aclGroup := []string{}
-	if options["acl"] == nil {
+	var isMaster bool
+	if _, ok := options["acl"]; ok {
+		isMaster = false
+	} else {
 		isMaster = true
+	}
+	var aclGroup []string
+	if options["acl"] == nil {
+		aclGroup = []string{}
 	} else {
 		aclGroup = options["acl"].([]string)
 	}
@@ -248,10 +263,15 @@ func Update(className string, where, data, options map[string]interface{}) (bson
 func Create(className string, data, options map[string]interface{}) error {
 	// TODO 处理错误
 	data = utils.CopyMap(data)
-	isMaster := false
-	aclGroup := []string{}
-	if options["acl"] == nil {
+	var isMaster bool
+	if _, ok := options["acl"]; ok {
+		isMaster = false
+	} else {
 		isMaster = true
+	}
+	var aclGroup []string
+	if options["acl"] == nil {
+		aclGroup = []string{}
 	} else {
 		aclGroup = options["acl"].([]string)
 	}

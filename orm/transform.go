@@ -4,6 +4,7 @@ import "gopkg.in/mgo.v2/bson"
 import "github.com/lfq7413/tomato/utils"
 import "regexp"
 import "strings"
+import "sort"
 
 // transformKey 把 key 转换为数据库中保存的格式
 func transformKey(schema *Schema, className, key string) string {
@@ -177,8 +178,127 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 }
 
 func transformConstraint(constraint interface{}, inArray bool) interface{} {
-	// TODO
-	return nil
+	// TODO 需要根据 MongoDB 文档修正参数
+	if constraint == nil && utils.MapInterface(constraint) == nil {
+		return cannotTransform()
+	}
+
+	// keys is the constraints in reverse alphabetical order.
+	// This is a hack so that:
+	//   $regex is handled before $options
+	//   $nearSphere is handled before $maxDistance
+	object := utils.MapInterface(constraint)
+	keys := []string{}
+	for k := range object {
+		keys = append(keys, k)
+	}
+	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+	answer := bson.M{}
+
+	for _, key := range keys {
+		switch key {
+		case "$lt", "$lte", "$gt", "$gte", "$exists", "$ne", "$eq":
+			answer[key] = transformAtom(object[key], true, bson.M{"inArray": inArray})
+
+		case "$in", "$nin":
+			arr := utils.SliceInterface(object[key])
+			if arr == nil {
+				// TODO 必须为数组
+				return nil
+			}
+			answerArr := []interface{}{}
+			for _, v := range arr {
+				answerArr = append(answerArr, transformAtom(v, true, bson.M{}))
+			}
+			answer[key] = answerArr
+
+		case "$all":
+			arr := utils.SliceInterface(object[key])
+			if arr == nil {
+				// TODO 必须为数组
+				return nil
+			}
+			answerArr := []interface{}{}
+			for _, v := range arr {
+				answerArr = append(answerArr, transformAtom(v, true, bson.M{"inArray": true}))
+			}
+			answer[key] = answerArr
+
+		case "$regex":
+			s := utils.String(object[key])
+			if s == "" {
+				// TODO 必须为字符串
+				return nil
+			}
+			answer[key] = s
+
+		case "$options":
+			options := utils.String(object[key])
+			if answer["$regex"] == nil || options == "" {
+				// TODO 无效值
+				return nil
+			}
+			b, _ := regexp.MatchString(`^[imxs]+$`, options)
+			if b == false {
+				// TODO 无效值
+				return nil
+			}
+			answer[key] = options
+
+		case "$nearSphere":
+			point := utils.MapInterface(object[key])
+			answer[key] = []interface{}{point["longitude"], point["latitude"]}
+
+		case "$maxDistance":
+			answer[key] = object[key]
+
+			// 以下三项在 SDK 中未使用，但是在 REST API 中使用了
+		case "$maxDistanceInRadians":
+			answer["$maxDistance"] = object[key]
+		case "$maxDistanceInMiles":
+			var distance float64
+			if v, ok := object[key].(float64); ok {
+				distance = v / 3959
+			}
+			answer["$maxDistance"] = distance
+		case "$maxDistanceInKilometers":
+			var distance float64
+			if v, ok := object[key].(float64); ok {
+				distance = v / 6371
+			}
+			answer["$maxDistance"] = distance
+
+		case "$select", "$dontSelect":
+			// TODO 暂时不支持该参数
+			return nil
+
+		case "$within":
+			within := utils.MapInterface(object[key])
+			box := utils.SliceInterface(within["$box"])
+			if box == nil || len(box) != 2 {
+				// TODO 参数不正确
+				return nil
+			}
+			box1 := utils.MapInterface(box[0])
+			box2 := utils.MapInterface(box[1])
+			answer[key] = bson.M{
+				"$box": []interface{}{
+					[]interface{}{box1["longitude"], box1["latitude"]},
+					[]interface{}{box2["longitude"], box2["latitude"]},
+				},
+			}
+
+		default:
+			b, _ := regexp.MatchString(`^\$+`, key)
+			if b {
+				// TODO 无效参数
+				return nil
+			}
+			return cannotTransform()
+		}
+	}
+
+	return answer
 }
 
 func transformAtom(atom interface{}, force bool, options bson.M) interface{} {

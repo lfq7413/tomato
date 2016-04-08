@@ -1,6 +1,7 @@
 package orm
 
 import "gopkg.in/mgo.v2/bson"
+
 import "github.com/lfq7413/tomato/utils"
 import "regexp"
 import "strings"
@@ -177,6 +178,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	return key, normalValue
 }
 
+// transformConstraint 转换查询限制条件
 func transformConstraint(constraint interface{}, inArray bool) interface{} {
 	// TODO 需要根据 MongoDB 文档修正参数
 	if constraint == nil && utils.MapInterface(constraint) == nil {
@@ -302,8 +304,76 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 }
 
 func transformAtom(atom interface{}, force bool, options bson.M) interface{} {
-	// TODO
-	return nil
+	// TODO 处理错误
+	if options == nil {
+		options = bson.M{}
+	}
+	inArray := false
+	inObject := false
+	if v, ok := options["inArray"].(bool); ok {
+		inArray = v
+	}
+	if v, ok := options["inObject"].(bool); ok {
+		inObject = v
+	}
+
+	if _, ok := atom.(string); ok {
+		return atom
+	}
+	if _, ok := atom.(float64); ok {
+		return atom
+	}
+	if _, ok := atom.(bool); ok {
+		return atom
+	}
+
+	if object, ok := atom.(map[string]interface{}); ok {
+		if atom == nil || len(object) == 0 {
+			return atom
+		}
+
+		if utils.String(object["__type"]) == "Pointer" {
+			if inArray == false && inObject == false {
+				return utils.String(object["className"]) + "$" + utils.String(object["objectId"])
+			}
+			return bson.M{
+				"__type":    "Pointer",
+				"className": object["className"],
+				"objectId":  object["objectId"],
+			}
+		}
+
+		d := dateCoder{}
+		if d.isValidJSON(object) {
+			return d.jsonToDatabase(object)
+		}
+		b := bytesCoder{}
+		if b.isValidJSON(object) {
+			return b.jsonToDatabase(object)
+		}
+		g := geoPointCoder{}
+		if g.isValidJSON(object) {
+			if inArray || inObject {
+				return object
+			}
+			return g.jsonToDatabase(object)
+		}
+		f := fileCoder{}
+		if f.isValidJSON(object) {
+			if inArray || inObject {
+				return object
+			}
+			return f.jsonToDatabase(object)
+		}
+
+		if force {
+			// TODO 无效类型
+			return nil
+		}
+		return cannotTransform()
+	}
+
+	return cannotTransform()
 }
 
 func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
@@ -334,4 +404,68 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 
 func cannotTransform() interface{} {
 	return nil
+}
+
+type dateCoder struct{}
+
+func (d dateCoder) jsonToDatabase(json interface{}) interface{} {
+	return nil
+}
+
+func (d dateCoder) isValidJSON(value interface{}) bool {
+	return false
+}
+
+type bytesCoder struct{}
+
+func (b bytesCoder) databaseToJSON(object interface{}) interface{} {
+	return nil
+}
+
+func (b bytesCoder) isValidDatabaseObject(object interface{}) bool {
+	return false
+}
+
+func (b bytesCoder) jsonToDatabase(json interface{}) interface{} {
+	return nil
+}
+
+func (b bytesCoder) isValidJSON(value interface{}) bool {
+	return false
+}
+
+type geoPointCoder struct{}
+
+func (g geoPointCoder) databaseToJSON(object interface{}) interface{} {
+	return nil
+}
+
+func (g geoPointCoder) isValidDatabaseObject(object interface{}) bool {
+	return false
+}
+
+func (g geoPointCoder) jsonToDatabase(json interface{}) interface{} {
+	return nil
+}
+
+func (g geoPointCoder) isValidJSON(value interface{}) bool {
+	return false
+}
+
+type fileCoder struct{}
+
+func (f fileCoder) databaseToJSON(object interface{}) interface{} {
+	return nil
+}
+
+func (f fileCoder) isValidDatabaseObject(object interface{}) bool {
+	return false
+}
+
+func (f fileCoder) jsonToDatabase(json interface{}) interface{} {
+	return nil
+}
+
+func (f fileCoder) isValidJSON(value interface{}) bool {
+	return false
 }

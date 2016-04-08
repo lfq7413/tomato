@@ -378,8 +378,84 @@ func transformAtom(atom interface{}, force bool, options bson.M) interface{} {
 }
 
 func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
-	// TODO
-	return nil
+	// TODO 处理错误
+	operatorMap := utils.MapInterface(operator)
+	if operatorMap == nil || operatorMap["__op"] == nil {
+		return cannotTransform()
+	}
+
+	op := utils.String(operatorMap["__op"])
+	switch op {
+	case "Delete":
+		if flatten {
+			return nil
+		}
+		return bson.M{
+			"__op": "$unset",
+			"arg":  "",
+		}
+
+	case "Increment":
+		if _, ok := operatorMap["amount"].(float64); !ok {
+			// TODO 必须为数字
+			return nil
+		}
+		if flatten {
+			return operatorMap["amount"]
+		}
+		return bson.M{
+			"__op": "$inc",
+			"arg":  operatorMap["amount"],
+		}
+
+	case "Add", "AddUnique":
+		objects := utils.SliceInterface(operatorMap["objects"])
+		if objects == nil {
+			// TODO 必须为数组
+			return nil
+		}
+		toAdd := []interface{}{}
+		for _, obj := range objects {
+			o := transformAtom(obj, true, bson.M{"inArray": true})
+			toAdd = append(toAdd, o)
+		}
+		if flatten {
+			return toAdd
+		}
+		mongoOp := bson.M{
+			"Add":       "$push",
+			"AddUnique": "$addToSet",
+		}[op]
+		return bson.M{
+			"__op": mongoOp,
+			"arg": bson.M{
+				"$each": toAdd,
+			},
+		}
+
+	case "Remove":
+		objects := utils.SliceInterface(operatorMap["objects"])
+		if objects == nil {
+			// TODO 必须为数组
+			return nil
+		}
+		toRemove := []interface{}{}
+		for _, obj := range objects {
+			o := transformAtom(obj, true, bson.M{"inArray": true})
+			toRemove = append(toRemove, o)
+		}
+		if flatten {
+			return []interface{}{}
+		}
+		return bson.M{
+			"__op": "$pullAll",
+			"arg":  toRemove,
+		}
+
+	default:
+		// TODO 不支持的类型
+		return nil
+	}
 }
 
 // transformCreate ...

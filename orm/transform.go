@@ -530,8 +530,51 @@ func transformWhere(schema *Schema, className string, where bson.M) bson.M {
 }
 
 func transformUpdate(schema *Schema, className string, update bson.M) bson.M {
-	// TODO
-	return nil
+	// TODO 处理错误
+	if update == nil {
+		// TODO 更新数据不能为空
+		return nil
+	}
+	if className == "_User" {
+		update = transformAuthData(update)
+	}
+
+	mongoUpdate := bson.M{}
+	acl := transformACL(update)
+	if acl["_rperm"] != nil || acl["_wperm"] != nil {
+		set := bson.M{}
+		if acl["_rperm"] != nil {
+			set["_rperm"] = acl["_rperm"]
+		}
+		if acl["_wperm"] != nil {
+			set["_wperm"] = acl["_wperm"]
+		}
+		mongoUpdate["$set"] = set
+	}
+
+	for k, v := range update {
+		key, value := transformKeyValue(schema, className, k, v, bson.M{"update": true})
+
+		op := utils.MapInterface(value)
+		if op != nil && op["__op"] != nil {
+			opKey := utils.String(op["__op"])
+			opValue := bson.M{}
+			if mongoUpdate[opKey] != nil {
+				opValue = utils.MapInterface(mongoUpdate[opKey])
+			}
+			opValue[key] = op["arg"]
+			mongoUpdate[opKey] = opValue
+		} else {
+			set := bson.M{}
+			if mongoUpdate["$set"] != nil {
+				set = utils.MapInterface(mongoUpdate["$set"])
+			}
+			set[key] = value
+			mongoUpdate["$set"] = set
+		}
+	}
+
+	return mongoUpdate
 }
 
 func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) interface{} {

@@ -460,6 +460,26 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 
 // transformCreate ...
 func transformCreate(schema *Schema, className string, create bson.M) bson.M {
+	// TODO 处理错误
+	if className == "_User" {
+		create = transformAuthData(create)
+	}
+	mongoCreate := transformACL(create)
+	for k, v := range create {
+		k, v = transformKeyValue(schema, className, k, v, bson.M{})
+		if v != nil {
+			mongoCreate[k] = v
+		}
+	}
+	return mongoCreate
+}
+
+func transformAuthData(restObject bson.M) bson.M {
+	// TODO
+	return nil
+}
+
+func transformACL(restObject bson.M) bson.M {
 	// TODO
 	return nil
 }

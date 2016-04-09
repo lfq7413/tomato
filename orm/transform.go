@@ -475,8 +475,14 @@ func transformCreate(schema *Schema, className string, create bson.M) bson.M {
 }
 
 func transformAuthData(restObject bson.M) bson.M {
-	// TODO
-	return nil
+	if restObject["authData"] != nil {
+		authData := utils.MapInterface(restObject["authData"])
+		for provider, v := range authData {
+			restObject["_auth_data_"+provider] = v
+		}
+		delete(restObject, "authData")
+	}
+	return restObject
 }
 
 func transformACL(restObject bson.M) bson.M {

@@ -486,8 +486,28 @@ func transformAuthData(restObject bson.M) bson.M {
 }
 
 func transformACL(restObject bson.M) bson.M {
-	// TODO
-	return nil
+	output := bson.M{}
+	if restObject["ACL"] == nil {
+		return output
+	}
+
+	acl := utils.MapInterface(restObject["ACL"])
+	rperm := []interface{}{}
+	wperm := []interface{}{}
+	for entry, v := range acl {
+		perm := utils.MapInterface(v)
+		if perm["read"] != nil {
+			rperm = append(rperm, entry)
+		}
+		if perm["write"] != nil {
+			wperm = append(wperm, entry)
+		}
+	}
+	output["_rperm"] = rperm
+	output["_wperm"] = wperm
+
+	delete(restObject, "ACL")
+	return output
 }
 
 func transformWhere(schema *Schema, className string, where bson.M) bson.M {

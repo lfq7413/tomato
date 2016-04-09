@@ -466,9 +466,9 @@ func transformCreate(schema *Schema, className string, create bson.M) bson.M {
 	}
 	mongoCreate := transformACL(create)
 	for k, v := range create {
-		k, v = transformKeyValue(schema, className, k, v, bson.M{})
-		if v != nil {
-			mongoCreate[k] = v
+		key, value := transformKeyValue(schema, className, k, v, bson.M{})
+		if value != nil {
+			mongoCreate[key] = value
 		}
 	}
 	return mongoCreate
@@ -511,8 +511,22 @@ func transformACL(restObject bson.M) bson.M {
 }
 
 func transformWhere(schema *Schema, className string, where bson.M) bson.M {
-	// TODO
-	return nil
+	// TODO 处理错误
+	mongoWhere := bson.M{}
+	if where["ACL"] != nil {
+		// TODO 不能查询 ACL
+		return nil
+	}
+	for k, v := range where {
+		options := bson.M{
+			"query":    true,
+			"validate": true,
+		}
+		key, value := transformKeyValue(schema, className, k, v, options)
+		mongoWhere[key] = value
+	}
+
+	return mongoWhere
 }
 
 func transformUpdate(schema *Schema, className string, update bson.M) bson.M {

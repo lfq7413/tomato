@@ -604,6 +604,108 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 		return utils.TimetoString(t)
 	}
 
+	b := bytesCoder{}
+	if b.isValidDatabaseObject(mongoObject) {
+		return b.databaseToJSON(mongoObject)
+	}
+
+	if object, ok := mongoObject.(map[string]interface{}); ok {
+		restObject := untransformACL(object)
+		for key, value := range object {
+			switch key {
+			case "_id":
+				restObject["objectId"] = value
+
+			case "_hashed_password":
+				restObject["password"] = value
+
+			case "_acl", "_email_verify_token", "_perishable_token", "_tombstone":
+
+			case "_session_token":
+				restObject["sessionToken"] = value
+
+			case "updatedAt", "_updated_at":
+				restObject["updatedAt"] = value
+
+			case "createdAt", "_created_at":
+				restObject["createdAt"] = value
+
+			case "expiresAt", "_expiresAt":
+				restObject["expiresAt"] = value
+
+			default:
+				// 处理第三方登录数据
+				authDataMatch, _ := regexp.MatchString(`^_auth_data_([a-zA-Z0-9_]+)$`, key)
+				if authDataMatch {
+					provider := key[len("_auth_data_"):]
+					authData := bson.M{}
+					if restObject["authData"] != nil {
+						authData = utils.MapInterface(restObject["authData"])
+					}
+					authData[provider] = value
+					restObject["authData"] = authData
+					break
+				}
+
+				if strings.HasPrefix(key, "_p_") {
+					newKey := key[3:]
+					expected := schema.getExpectedType(className, newKey)
+					if expected == "" {
+						// 不在 schema 中的指针类型，丢弃
+						break
+					}
+					if expected != "" && strings.HasPrefix(expected, "*") == false {
+						// schema 中对应的位置不是置身类型，丢弃
+						break
+					}
+					if value == nil {
+						break
+					}
+					objData := strings.Split(value.(string), "$")
+					newClass := ""
+					if expected != "" {
+						newClass = expected[1:]
+					} else {
+						newClass = objData[0]
+					}
+					if newClass != objData[0] {
+						// TODO 指向了错误的类
+						return nil
+					}
+					restObject[newKey] = bson.M{
+						"__type":    "Pointer",
+						"className": objData[0],
+						"objectId":  objData[1],
+					}
+					break
+				} else if isNestedObject == false && strings.HasPrefix(key, "_") && key != "__type" {
+					// TODO 转换错误
+					return nil
+				} else {
+					expectedType := schema.getExpectedType(className, key)
+					f := fileCoder{}
+					if expectedType == "file" && f.isValidDatabaseObject(value) {
+						restObject[key] = f.databaseToJSON(value)
+						break
+					}
+					g := geoPointCoder{}
+					if expectedType == "geopoint" && g.isValidDatabaseObject(value) {
+						restObject[key] = g.databaseToJSON(value)
+						break
+					}
+				}
+				restObject[key] = untransformObjectT(schema, className, value, true)
+			}
+		}
+		return restObject
+	}
+
+	// TODO 无法转换
+	return nil
+}
+
+func untransformACL(mongoObject bson.M) bson.M {
+	// TODO
 	return nil
 }
 

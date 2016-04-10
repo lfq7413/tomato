@@ -582,7 +582,7 @@ func transformUpdate(schema *Schema, className string, update bson.M) bson.M {
 }
 
 func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) interface{} {
-	// TODO
+	// TODO 处理错误
 	if mongoObject == nil {
 		return mongoObject
 	}
@@ -705,8 +705,45 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 }
 
 func untransformACL(mongoObject bson.M) bson.M {
-	// TODO
-	return nil
+	output := bson.M{}
+	if mongoObject["_rperm"] == nil && mongoObject["_wperm"] == nil {
+		return output
+	}
+
+	acl := bson.M{}
+	rperm := []interface{}{}
+	wperm := []interface{}{}
+	if mongoObject["_rperm"] != nil {
+		rperm = utils.SliceInterface(mongoObject["_rperm"])
+	}
+	if mongoObject["_wperm"] != nil {
+		wperm = utils.SliceInterface(mongoObject["_wperm"])
+	}
+	for _, v := range rperm {
+		entry := v.(string)
+		if acl[entry] == nil {
+			acl[entry] = bson.M{"read": true}
+		} else {
+			per := utils.MapInterface(acl[entry])
+			per["read"] = true
+			acl[entry] = per
+		}
+	}
+	for _, v := range wperm {
+		entry := v.(string)
+		if acl[entry] == nil {
+			acl[entry] = bson.M{"write": true}
+		} else {
+			per := utils.MapInterface(acl[entry])
+			per["write"] = true
+			acl[entry] = per
+		}
+	}
+	output["ACL"] = acl
+	delete(mongoObject, "_rperm")
+	delete(mongoObject, "_wperm")
+
+	return output
 }
 
 func cannotTransform() interface{} {

@@ -1,6 +1,10 @@
 package orm
 
-import "gopkg.in/mgo.v2/bson"
+import (
+	"time"
+
+	"gopkg.in/mgo.v2/bson"
+)
 
 import "github.com/lfq7413/tomato/utils"
 import "regexp"
@@ -579,6 +583,27 @@ func transformUpdate(schema *Schema, className string, update bson.M) bson.M {
 
 func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) interface{} {
 	// TODO
+	if mongoObject == nil {
+		return mongoObject
+	}
+
+	switch mongoObject.(type) {
+	case string, float64, bool:
+		return mongoObject
+
+	case []interface{}:
+		results := []interface{}{}
+		objs := mongoObject.([]interface{})
+		for _, o := range objs {
+			results = append(results, untransformObjectT(schema, className, o, false))
+		}
+		return results
+
+	case time.Time:
+		t := mongoObject.(time.Time)
+		return utils.TimetoString(t)
+	}
+
 	return nil
 }
 
@@ -600,10 +625,19 @@ func (d dateCoder) isValidJSON(value bson.M) bool {
 type bytesCoder struct{}
 
 func (b bytesCoder) databaseToJSON(object interface{}) interface{} {
-	return nil
+	data := object.([]byte)
+	json := base64.StdEncoding.EncodeToString(data)
+
+	return bson.M{
+		"__type": "Bytes",
+		"base64": json,
+	}
 }
 
 func (b bytesCoder) isValidDatabaseObject(object interface{}) bool {
+	if _, ok := object.([]byte); ok {
+		return true
+	}
 	return false
 }
 
@@ -619,10 +653,20 @@ func (b bytesCoder) isValidJSON(value bson.M) bool {
 type geoPointCoder struct{}
 
 func (g geoPointCoder) databaseToJSON(object interface{}) interface{} {
-	return nil
+	v := object.([]interface{})
+	return bson.M{
+		"__type":    "GeoPoint",
+		"longitude": v[0],
+		"latitude":  v[1],
+	}
 }
 
 func (g geoPointCoder) isValidDatabaseObject(object interface{}) bool {
+	if v, ok := object.([]interface{}); ok {
+		if len(v) == 2 {
+			return true
+		}
+	}
 	return false
 }
 
@@ -637,10 +681,16 @@ func (g geoPointCoder) isValidJSON(value bson.M) bool {
 type fileCoder struct{}
 
 func (f fileCoder) databaseToJSON(object interface{}) interface{} {
-	return nil
+	return bson.M{
+		"__type": "File",
+		"name":   object,
+	}
 }
 
 func (f fileCoder) isValidDatabaseObject(object interface{}) bool {
+	if _, ok := object.(string); ok {
+		return true
+	}
 	return false
 }
 

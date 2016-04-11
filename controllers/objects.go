@@ -66,7 +66,7 @@ func (o *ObjectsController) Prepare() {
 			var object map[string]interface{}
 			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)
 			if err != nil {
-				o.Data["json"] = errs.E(errs.InvalidJSON, "invalid JSON").Error()
+				o.Data["json"] = errs.ErrorMessageToBson(errs.InvalidJSON, "invalid JSON")
 				o.ServeJSON()
 				return
 			}
@@ -112,7 +112,7 @@ func (o *ObjectsController) Prepare() {
 			}
 		} else {
 			// 请求数据中也不存在 APPID 时，返回错误
-			o.Data["json"] = errs.E(403, "unauthorized").Error()
+			o.Data["json"] = errs.ErrorMessageToBson(403, "unauthorized")
 			o.Ctx.Output.SetStatus(403)
 			o.ServeJSON()
 			return
@@ -131,7 +131,7 @@ func (o *ObjectsController) Prepare() {
 
 	// 校验请求权限
 	if info.AppID != config.TConfig.AppID {
-		o.Data["json"] = errs.E(403, "unauthorized").Error()
+		o.Data["json"] = errs.ErrorMessageToBson(403, "unauthorized")
 		o.Ctx.Output.SetStatus(403)
 		o.ServeJSON()
 		return
@@ -141,7 +141,7 @@ func (o *ObjectsController) Prepare() {
 		return
 	}
 	if info.ClientKey != config.TConfig.ClientKey {
-		o.Data["json"] = errs.E(403, "unauthorized").Error()
+		o.Data["json"] = errs.ErrorMessageToBson(403, "unauthorized")
 		o.Ctx.Output.SetStatus(403)
 		o.ServeJSON()
 		return
@@ -152,7 +152,6 @@ func (o *ObjectsController) Prepare() {
 	} else {
 		o.Auth = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
 	}
-
 }
 
 // HandleCreate ...

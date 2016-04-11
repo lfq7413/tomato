@@ -1,30 +1,42 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"strconv"
 	"time"
 
+	"strings"
+
 	"github.com/astaxie/beego"
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/utils"
 	"gopkg.in/mgo.v2/bson"
 )
 
-// ObjectsController ...
+// ObjectsController 对象操作 API 的基础结构
+// Info 当前请求的权限信息
+// Auth 当前请求的用户权限
+// JSONBody 由 JSON 格式转换来的请求数据
+// RawBody 原始请求数据
+// ClassName 要操作的类名
+// ObjectID 要操作的对象 id
 type ObjectsController struct {
 	beego.Controller
 	Info      *RequestInfo
 	Auth      *rest.Auth
+	JSONBody  map[string]interface{}
+	RawBody   []byte
 	ClassName string
 	ObjectID  string
 }
 
-// RequestInfo ...
+// RequestInfo http 请求的权限信息
 type RequestInfo struct {
 	AppID          string
 	MasterKey      string
@@ -33,28 +45,108 @@ type RequestInfo struct {
 	InstallationID string
 }
 
-// Prepare ...
+// Prepare 对请求权限进行处理
+// 1. 从请求头中获取各种 key
+// 2. 尝试按 json 格式转换 body
+// 3. 尝试从 body 中获取各种 key
+// 4. 校验请求权限
+// 5. 生成用户信息
 func (o *ObjectsController) Prepare() {
-	//TODO 1、获取请求头
 	info := &RequestInfo{}
 	info.AppID = o.Ctx.Input.Header("X-Parse-Application-Id")
 	info.MasterKey = o.Ctx.Input.Header("X-Parse-Master-Key")
 	info.ClientKey = o.Ctx.Input.Header("X-Parse-Client-Key")
 	info.SessionToken = o.Ctx.Input.Header("X-Parse-Session-Token")
 	info.InstallationID = o.Ctx.Input.Header("X-Parse-Installation-Id")
+
+	if o.Ctx.Input.RequestBody != nil {
+		contentType := o.Ctx.Input.Header("Content-type")
+		if strings.HasPrefix(contentType, "application/json") {
+			// 请求数据为 json 格式，进行转换，转换出错则返回错误
+			var object map[string]interface{}
+			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)
+			if err != nil {
+				o.Data["json"] = errs.E(errs.InvalidJSON, "invalid JSON").Error()
+				o.ServeJSON()
+				return
+			}
+			o.JSONBody = object
+		} else {
+			// 其他格式的请求数据，仅尝试转换，转换失败不返回错误
+			var object map[string]interface{}
+			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)
+			if err != nil {
+				o.RawBody = o.Ctx.Input.RequestBody
+			} else {
+				o.JSONBody = object
+			}
+		}
+	}
+
+	if o.JSONBody != nil {
+		// Unity SDK sends a _noBody key which needs to be removed.
+		// Unclear at this point if action needs to be taken.
+		delete(o.JSONBody, "_noBody")
+	}
+
+	if info.AppID == "" {
+		// 从请求数据中获取各种 key
+		if o.JSONBody != nil && o.JSONBody["_ApplicationId"] != nil {
+			info.AppID = o.JSONBody["_ApplicationId"].(string)
+			delete(o.JSONBody, "_ApplicationId")
+			if o.JSONBody["_ClientKey"] != nil {
+				info.ClientKey = o.JSONBody["_ClientKey"].(string)
+				delete(o.JSONBody, "_ClientKey")
+			}
+			if o.JSONBody["_InstallationId"] != nil {
+				info.InstallationID = o.JSONBody["_InstallationId"].(string)
+				delete(o.JSONBody, "_InstallationId")
+			}
+			if o.JSONBody["_SessionToken"] != nil {
+				info.SessionToken = o.JSONBody["_SessionToken"].(string)
+				delete(o.JSONBody, "_SessionToken")
+			}
+			if o.JSONBody["_MasterKey"] != nil {
+				info.MasterKey = o.JSONBody["_MasterKey"].(string)
+				delete(o.JSONBody, "_MasterKey")
+			}
+		} else {
+			// 请求数据中也不存在 APPID 时，返回错误
+			o.Data["json"] = errs.E(403, "unauthorized").Error()
+			o.Ctx.Output.SetStatus(403)
+			o.ServeJSON()
+			return
+		}
+	}
+
+	if o.JSONBody != nil && o.JSONBody["base64"] != nil {
+		// 请求数据中存在 base64 字段，表明为文件上传，解码并设置到 RawBody 上
+		data, err := base64.StdEncoding.DecodeString(o.JSONBody["base64"].(string))
+		if err == nil {
+			o.RawBody = data
+		}
+	}
+
 	o.Info = info
-	//TODO 2、校验头部数据
+
+	// 校验请求权限
 	if info.AppID != config.TConfig.AppID {
-		//TODO AppID 不正确
+		o.Data["json"] = errs.E(403, "unauthorized").Error()
+		o.Ctx.Output.SetStatus(403)
+		o.ServeJSON()
+		return
 	}
 	if info.MasterKey == config.TConfig.MasterKey {
 		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: true}
 		return
 	}
 	if info.ClientKey != config.TConfig.ClientKey {
-		//TODO ClientKey 不正确
+		o.Data["json"] = errs.E(403, "unauthorized").Error()
+		o.Ctx.Output.SetStatus(403)
+		o.ServeJSON()
+		return
 	}
-	//TODO 3、生成当前会话用户权限信息
+	// 生成当前会话用户权限信息
 	if info.SessionToken == "" {
 		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: false}
 	} else {

@@ -4,7 +4,7 @@ import (
 	"github.com/lfq7413/tomato/utils"
 )
 
-// Auth ...
+// Auth 保存当前请求的用户权限信息
 type Auth struct {
 	IsMaster       bool
 	InstallationID string
@@ -14,27 +14,27 @@ type Auth struct {
 	RolePromise    []string
 }
 
-// UserInfo ...
+// UserInfo 用户信息
 type UserInfo struct {
 	ID string
 }
 
-// Master ...
+// Master 生成 Master 级别用户
 func Master() *Auth {
 	return &Auth{IsMaster: true}
 }
 
-// Nobody ...
+// Nobody 生成空用户
 func Nobody() *Auth {
 	return &Auth{IsMaster: false}
 }
 
-// GetAuthForSessionToken ...
+// GetAuthForSessionToken 返回 sessionToken 对应的用户权限信息
 func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
 	return &Auth{IsMaster: false, InstallationID: installationID}
 }
 
-// CouldUpdateUserID ...
+// CouldUpdateUserID Master 与当前用户可进行修改
 func (a *Auth) CouldUpdateUserID(objectID string) bool {
 	if a.IsMaster {
 		return true

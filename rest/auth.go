@@ -83,7 +83,7 @@ func (a *Auth) CouldUpdateUserID(objectID string) bool {
 	return false
 }
 
-// GetUserRoles ...
+// GetUserRoles 获取用户所属的角色列表
 func (a *Auth) GetUserRoles() []string {
 	if a.IsMaster || a.User == nil {
 		return []string{}
@@ -98,15 +98,20 @@ func (a *Auth) GetUserRoles() []string {
 	return a.RolePromise
 }
 
+// loadRoles 从数据库加载用户角色列表
 func (a *Auth) loadRoles() []string {
-
+	// _Role 表中的 users 字段为 Relation 类型，应该使用 $relatedTo 去查询
 	users := map[string]interface{}{
 		"__type":    "Pointer",
 		"className": "_User",
 		"objectId":  a.User["objectId"],
 	}
+	relatedTo := bson.M{
+		"object": users,
+		"key":    "users",
+	}
 	where := map[string]interface{}{
-		"users": users,
+		"$relatedTo": relatedTo,
 	}
 	// 取出当前用户直接对应的所有角色
 	response := Find(Master(), "_Role", where, map[string]interface{}{})
@@ -147,14 +152,20 @@ func (a *Auth) loadRoles() []string {
 	return a.UserRoles
 }
 
+// getAllRoleNamesForID 取出角色 id 对应的父角色
 func (a *Auth) getAllRoleNamesForID(roleID string) []string {
+	// _Role 表中的 roles 字段为 Relation 类型，应该使用 $relatedTo 去查询
 	rolePointer := map[string]interface{}{
 		"__type":    "Pointer",
 		"className": "_Role",
 		"objectId":  roleID,
 	}
+	relatedTo := bson.M{
+		"object": rolePointer,
+		"key":    "roles",
+	}
 	where := map[string]interface{}{
-		"roles": rolePointer,
+		"$relatedTo": relatedTo,
 	}
 	// 取出当前角色对应的直接父角色
 	response := Find(Master(), "_Role", where, map[string]interface{}{})

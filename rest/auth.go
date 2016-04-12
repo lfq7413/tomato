@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/lfq7413/tomato/utils"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // Auth 保存当前请求的用户权限信息
@@ -26,7 +27,49 @@ func Nobody() *Auth {
 
 // GetAuthForSessionToken 返回 sessionToken 对应的用户权限信息
 func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
-	return &Auth{IsMaster: false, InstallationID: installationID}
+	// 从缓存获取用户信息
+	cachedUser := usersCache.get(sessionToken)
+	if cachedUser != nil {
+		return &Auth{
+			IsMaster:       false,
+			InstallationID: installationID,
+			User:           cachedUser.(map[string]interface{}),
+		}
+	}
+	// 缓存中不存在时，从数据库中查询
+	restOptions := bson.M{
+		"limit":   1,
+		"include": "user",
+	}
+	restWhere := bson.M{
+		"_session_token": sessionToken,
+	}
+	response := NewQuery(Master(), "_Session", restWhere, restOptions).Execute()
+
+	if response == nil || response["results"] == nil {
+		return Nobody()
+	}
+	results := utils.SliceInterface(response["results"])
+	if results == nil || len(results) != 1 {
+		return Nobody()
+	}
+	result := utils.MapInterface(results[0])
+	if result == nil || result["user"] == nil {
+		return Nobody()
+	}
+
+	user := utils.MapInterface(result["user"])
+	delete(user, "password")
+	user["className"] = "_User"
+	user["sessionToken"] = sessionToken
+	// 写入缓存
+	usersCache.set(sessionToken, user)
+
+	return &Auth{
+		IsMaster:       false,
+		InstallationID: installationID,
+		User:           user,
+	}
 }
 
 // CouldUpdateUserID Master 与当前用户可进行修改

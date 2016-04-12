@@ -8,15 +8,10 @@ import (
 type Auth struct {
 	IsMaster       bool
 	InstallationID string
-	User           *UserInfo
+	User           map[string]interface{}
 	UserRoles      []string
 	FetchedRoles   bool
 	RolePromise    []string
-}
-
-// UserInfo 用户信息
-type UserInfo struct {
-	ID string
 }
 
 // Master 生成 Master 级别用户
@@ -39,7 +34,7 @@ func (a *Auth) CouldUpdateUserID(objectID string) bool {
 	if a.IsMaster {
 		return true
 	}
-	if a.User != nil && a.User.ID == objectID {
+	if a.User != nil && a.User["objectId"].(string) == objectID {
 		return true
 	}
 	return false
@@ -65,7 +60,7 @@ func (a *Auth) loadRoles() []string {
 	users := map[string]interface{}{
 		"__type":    "Pointer",
 		"className": "_User",
-		"objectId":  a.User.ID,
+		"objectId":  a.User["objectId"],
 	}
 	where := map[string]interface{}{
 		"users": users,

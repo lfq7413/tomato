@@ -72,7 +72,7 @@ func (w *Write) getUserAndRoleACL() error {
 	}
 	acl := []string{"*"}
 	if w.auth.User != nil {
-		acl = append(acl, w.auth.User.ID)
+		acl = append(acl, w.auth.User["objectId"].(string))
 		acl = append(acl, w.auth.GetUserRoles()...)
 	}
 	w.runOptions["acl"] = acl
@@ -180,21 +180,20 @@ func (w *Write) handleInstallation() error {
 		} else if w.data["installationId"] == nil {
 			// TODO 当有多个 deviceToken 时，必须指定 installationId
 			return nil
-		} else {
-			// 清理多余数据
-			installationID := map[string]interface{}{
-				"$ne": w.data["installationId"],
-			}
-			delQuery := map[string]interface{}{
-				"deviceToken":    w.data["deviceToken"],
-				"installationId": installationID,
-			}
-			if w.data["appIdentifier"] != nil {
-				delQuery["appIdentifier"] = w.data["appIdentifier"]
-			}
-			orm.Destroy("_Installation", delQuery, nil)
-			objID = ""
 		}
+		// 清理多余数据
+		installationID := map[string]interface{}{
+			"$ne": w.data["installationId"],
+		}
+		delQuery := map[string]interface{}{
+			"deviceToken":    w.data["deviceToken"],
+			"installationId": installationID,
+		}
+		if w.data["appIdentifier"] != nil {
+			delQuery["appIdentifier"] = w.data["appIdentifier"]
+		}
+		orm.Destroy("_Installation", delQuery, nil)
+		objID = ""
 	} else {
 		if deviceTokenMatches != nil && len(deviceTokenMatches) == 1 &&
 			utils.MapInterface(deviceTokenMatches[0])["installationId"] == nil {
@@ -256,7 +255,7 @@ func (w *Write) handleSession() error {
 		user := map[string]interface{}{
 			"__type":    "Pointer",
 			"className": "_User",
-			"objectId":  w.auth.User.ID,
+			"objectId":  w.auth.User["objectId"],
 		}
 		createdWith := map[string]interface{}{
 			"action": "create",

@@ -42,7 +42,7 @@ func NewQuery(
 
 	if auth.IsMaster == false {
 		if auth.User != nil {
-			query.findOptions["acl"] = []string{auth.User.ID}
+			query.findOptions["acl"] = []string{auth.User["objectId"].(string)}
 		} else {
 			query.findOptions["acl"] = nil
 		}
@@ -50,7 +50,7 @@ func NewQuery(
 			if query.findOptions["acl"] == nil {
 				// TODO session 无效
 			}
-			user := map[string]interface{}{"__type": "Pointer", "className": "_User", "objectId": auth.User.ID}
+			user := map[string]interface{}{"__type": "Pointer", "className": "_User", "objectId": auth.User["objectId"]}
 			and := []interface{}{where, user}
 			query.Where = map[string]interface{}{"$and": and}
 		}
@@ -136,7 +136,7 @@ func (q *Query) getUserAndRoleACL() error {
 		return nil
 	}
 	roles := q.auth.GetUserRoles()
-	roles = append(roles, q.auth.User.ID)
+	roles = append(roles, q.auth.User["objectId"].(string))
 	q.findOptions["acl"] = roles
 	return nil
 }

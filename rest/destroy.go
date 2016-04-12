@@ -67,7 +67,7 @@ func (d *Destroy) runDestroy() error {
 	if d.auth.IsMaster == false {
 		acl := []string{"*"}
 		if d.auth.User != nil {
-			acl = append(acl, d.auth.User.ID)
+			acl = append(acl, d.auth.User["objectId"].(string))
 			acl = append(acl, d.auth.UserRoles...)
 		}
 		options["acl"] = acl

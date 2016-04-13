@@ -1,7 +1,10 @@
 package controllers
 
 import "encoding/json"
-import "github.com/lfq7413/tomato/rest"
+import (
+	"github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/types"
+)
 
 // JobsController ...
 type JobsController struct {
@@ -22,7 +25,7 @@ func (j *JobsController) HandleCloudJob() {
 		return
 	}
 
-	params := map[string]interface{}{}
+	params := types.M{}
 	if j.Ctx.Input.RequestBody != nil {
 		err := json.Unmarshal(j.Ctx.Input.RequestBody, &params)
 		if err != nil {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/types"
 )
 
 // FunctionsController ...
@@ -21,7 +22,7 @@ func (f *FunctionsController) HandleCloudFunction() {
 		return
 	}
 
-	params := map[string]interface{}{}
+	params := types.M{}
 	if f.Ctx.Input.RequestBody != nil {
 		err := json.Unmarshal(f.Ctx.Input.RequestBody, &params)
 		if err != nil {

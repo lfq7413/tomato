@@ -11,7 +11,7 @@ type MongoSchemaCollection struct {
 
 // GetAllSchemas 获取所有 Schema
 func (m *MongoSchemaCollection) GetAllSchemas() ([]types.M, error) {
-	return m.collection.rawFind(map[string]interface{}{}, map[string]interface{}{})
+	return m.collection.rawFind(types.M{}, types.M{})
 }
 
 // FindSchema 查找指定的 Schema

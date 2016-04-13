@@ -5,6 +5,7 @@ import (
 
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -27,10 +28,10 @@ func (l *LoginController) HandleLogIn() {
 		return
 	}
 
-	where := map[string]interface{}{
+	where := types.M{
 		"username": username,
 	}
-	results := orm.Find("_User", where, map[string]interface{}{})
+	results := orm.Find("_User", where, types.M{})
 	if results == nil || len(results) == 0 {
 		// TODO 用户名密码错误
 		return
@@ -63,16 +64,16 @@ func (l *LoginController) HandleLogIn() {
 
 	expiresAt := time.Now().UTC()
 	expiresAt = expiresAt.AddDate(1, 0, 0)
-	usr := map[string]interface{}{
+	usr := types.M{
 		"__type":    "Pointer",
 		"className": "_User",
 		"objectId":  user["objectId"],
 	}
-	createdWith := map[string]interface{}{
+	createdWith := types.M{
 		"action":       "login",
 		"authProvider": "password",
 	}
-	sessionData := map[string]interface{}{
+	sessionData := types.M{
 		"sessionToken": token,
 		"user":         usr,
 		"createdWith":  createdWith,

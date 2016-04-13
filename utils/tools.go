@@ -2,10 +2,12 @@ package utils
 
 import (
 	"regexp"
+
+	"github.com/lfq7413/tomato/types"
 )
 
 // HasResults Find() 返回数据中是否有结果
-func HasResults(response map[string]interface{}) bool {
+func HasResults(response types.M) bool {
 	if response == nil ||
 		response["results"] == nil ||
 		SliceInterface(response["results"]) == nil ||

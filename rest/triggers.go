@@ -1,5 +1,7 @@
 package rest
 
+import "github.com/lfq7413/tomato/types"
+
 // TypeBeforeSave ...
 const TypeBeforeSave = "beforeSave"
 
@@ -16,12 +18,12 @@ const TypeAfterDelete = "afterDelete"
 type RequestInfo struct {
 	TriggerType    string
 	Auth           *Auth
-	NewObject      map[string]interface{}
-	OriginalObject map[string]interface{}
+	NewObject      types.M
+	OriginalObject types.M
 }
 
 // TypeFunction ...
-type TypeFunction func(RequestInfo) map[string]interface{}
+type TypeFunction func(RequestInfo) types.M
 
 type classeMap map[string]TypeFunction
 type triggerMap map[string]classeMap
@@ -123,12 +125,12 @@ func RunTrigger(
 	triggerType string,
 	className string,
 	auth *Auth,
-	newObject map[string]interface{},
-	originalObject map[string]interface{},
-) map[string]interface{} {
+	newObject types.M,
+	originalObject types.M,
+) types.M {
 	trigger := GetTrigger(triggerType, className)
 	if trigger == nil {
-		return map[string]interface{}{}
+		return types.M{}
 	}
 	request := RequestInfo{
 		TriggerType:    triggerType,

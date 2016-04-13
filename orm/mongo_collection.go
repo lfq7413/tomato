@@ -10,7 +10,7 @@ type MongoCollection struct {
 	collection *mgo.Collection
 }
 
-func (m *MongoCollection) find(query interface{}, options map[string]interface{}) []types.M {
+func (m *MongoCollection) find(query interface{}, options types.M) []types.M {
 	result, err := m.rawFind(query, options)
 	if err != nil || result == nil {
 		return []types.M{}
@@ -18,7 +18,7 @@ func (m *MongoCollection) find(query interface{}, options map[string]interface{}
 	return result
 }
 
-func (m *MongoCollection) rawFind(query interface{}, options map[string]interface{}) ([]types.M, error) {
+func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M, error) {
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
 		if sort, ok := options["sort"].([]string); ok {
@@ -41,7 +41,7 @@ func (m *MongoCollection) rawFind(query interface{}, options map[string]interfac
 }
 
 // Count ...
-func (m *MongoCollection) Count(query interface{}, options map[string]interface{}) int {
+func (m *MongoCollection) Count(query interface{}, options types.M) int {
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
 		if sort, ok := options["sort"].([]string); ok {

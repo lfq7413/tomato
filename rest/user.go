@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -10,7 +11,7 @@ func shouldVerifyEmails() bool {
 }
 
 // SetEmailVerifyToken ...
-func SetEmailVerifyToken(user map[string]interface{}) {
+func SetEmailVerifyToken(user types.M) {
 	if shouldVerifyEmails() {
 		user["_email_verify_token"] = utils.CreateToken()
 		user["emailVerified"] = false
@@ -18,7 +19,7 @@ func SetEmailVerifyToken(user map[string]interface{}) {
 }
 
 // SendVerificationEmail ...
-func SendVerificationEmail(user map[string]interface{}) {
+func SendVerificationEmail(user types.M) {
 	if shouldVerifyEmails() == false {
 		return
 	}

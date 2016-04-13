@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -66,10 +67,10 @@ func (u *UsersController) HandleMe() {
 		return
 	}
 	sessionToken := u.Info.SessionToken
-	where := map[string]interface{}{
+	where := types.M{
 		"sessionToken": sessionToken,
 	}
-	option := map[string]interface{}{
+	option := types.M{
 		"include": "user",
 	}
 	response := rest.Find(rest.Master(), "_Session", where, option)

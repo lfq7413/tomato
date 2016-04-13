@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/astaxie/beego"
+	"github.com/lfq7413/tomato/types"
 )
 
 // ErrorController ...
@@ -11,7 +12,7 @@ type ErrorController struct {
 
 // Error404 ...
 func (c *ErrorController) Error404() {
-	e := map[string]interface{}{
+	e := types.M{
 		"code":  404,
 		"error": "Method Not Allowed",
 	}
@@ -21,7 +22,7 @@ func (c *ErrorController) Error404() {
 
 // Error405 ...
 func (c *ErrorController) Error405() {
-	e := map[string]interface{}{
+	e := types.M{
 		"code":  405,
 		"error": "Method Not Allowed",
 	}
@@ -31,7 +32,7 @@ func (c *ErrorController) Error405() {
 
 // Error501 ...
 func (c *ErrorController) Error501() {
-	e := map[string]interface{}{
+	e := types.M{
 		"code":  501,
 		"error": "server error",
 	}

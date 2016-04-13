@@ -15,9 +15,9 @@ import (
 type Query struct {
 	auth        *Auth
 	className   string
-	Where       map[string]interface{}
-	findOptions map[string]interface{}
-	response    map[string]interface{}
+	Where       types.M
+	findOptions types.M
+	response    types.M
 	doCount     bool
 	include     [][]string
 	keys        []string
@@ -27,15 +27,15 @@ type Query struct {
 func NewQuery(
 	auth *Auth,
 	className string,
-	where map[string]interface{},
-	options map[string]interface{},
+	where types.M,
+	options types.M,
 ) *Query {
 	query := &Query{
 		auth:        auth,
 		className:   className,
 		Where:       where,
-		findOptions: map[string]interface{}{},
-		response:    map[string]interface{}{},
+		findOptions: types.M{},
+		response:    types.M{},
 		doCount:     false,
 		include:     [][]string{},
 		keys:        []string{},
@@ -51,9 +51,9 @@ func NewQuery(
 			if query.findOptions["acl"] == nil {
 				// TODO session 无效
 			}
-			user := map[string]interface{}{"__type": "Pointer", "className": "_User", "objectId": auth.User["objectId"]}
+			user := types.M{"__type": "Pointer", "className": "_User", "objectId": auth.User["objectId"]}
 			and := types.S{where, user}
-			query.Where = map[string]interface{}{"$and": and}
+			query.Where = types.M{"$and": and}
 		}
 	}
 
@@ -107,7 +107,7 @@ func NewQuery(
 }
 
 // Execute ...
-func (q *Query) Execute() map[string]interface{} {
+func (q *Query) Execute() types.M {
 
 	fmt.Println("keys       ", q.keys)
 	fmt.Println("doCount    ", q.doCount)
@@ -188,7 +188,7 @@ func (q *Query) replaceSelect() error {
 		q.auth,
 		utils.String(queryValue["className"]),
 		utils.MapInterface(queryValue["where"]),
-		map[string]interface{}{}).Execute()
+		types.M{}).Execute()
 	// 组装查询到的对象
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
@@ -238,7 +238,7 @@ func (q *Query) replaceDontSelect() error {
 		q.auth,
 		utils.String(queryValue["className"]),
 		utils.MapInterface(queryValue["where"]),
-		map[string]interface{}{}).Execute()
+		types.M{}).Execute()
 	// 组装查询到的对象
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
@@ -281,12 +281,12 @@ func (q *Query) replaceInQuery() error {
 		q.auth,
 		utils.String(inQueryValue["className"]),
 		utils.MapInterface(inQueryValue["where"]),
-		map[string]interface{}{}).Execute()
+		types.M{}).Execute()
 	// 组装查询到的对象
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
-			pointer := map[string]interface{}{
+			pointer := types.M{
 				"__type":    "Pointer",
 				"className": inQueryValue["className"],
 				"objectId":  result["objectId"],
@@ -326,12 +326,12 @@ func (q *Query) replaceNotInQuery() error {
 		q.auth,
 		utils.String(notInQueryValue["className"]),
 		utils.MapInterface(notInQueryValue["where"]),
-		map[string]interface{}{}).Execute()
+		types.M{}).Execute()
 	// 组装查询到的对象
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
-			pointer := map[string]interface{}{
+			pointer := types.M{
 				"__type":    "Pointer",
 				"className": notInQueryValue["className"],
 				"objectId":  result["objectId"],
@@ -367,7 +367,7 @@ func (q *Query) runFind() error {
 	if len(q.keys) > 0 && len(response) > 0 {
 		for _, v := range response {
 			obj := utils.MapInterface(v)
-			newObj := map[string]interface{}{}
+			newObj := types.M{}
 			for _, s := range q.keys {
 				if obj[s] != nil {
 					newObj[s] = obj[s]
@@ -408,7 +408,7 @@ func (q *Query) handleInclude() error {
 	return nil
 }
 
-func includePath(auth *Auth, response map[string]interface{}, path []string) error {
+func includePath(auth *Auth, response types.M, path []string) error {
 	pointers := findPointers(response["results"], path)
 	if len(pointers) == 0 {
 		return nil
@@ -432,18 +432,18 @@ func includePath(auth *Auth, response map[string]interface{}, path []string) err
 		return nil
 	}
 
-	objectID := map[string]interface{}{
+	objectID := types.M{
 		"$in": objectIDs,
 	}
-	where := map[string]interface{}{
+	where := types.M{
 		"objectId": objectID,
 	}
-	includeResponse := NewQuery(auth, className, where, map[string]interface{}{}).Execute()
+	includeResponse := NewQuery(auth, className, where, types.M{}).Execute()
 	if utils.HasResults(includeResponse) == false {
 		return nil
 	}
 	results := utils.SliceInterface(includeResponse["results"])
-	replace := map[string]interface{}{}
+	replace := types.M{}
 	for _, v := range results {
 		obj := utils.MapInterface(v)
 		if className == "_User" {
@@ -487,7 +487,7 @@ func findPointers(object interface{}, path []string) types.S {
 	return findPointers(subobject, path[1:])
 }
 
-func replacePointers(pointers types.S, replace map[string]interface{}) error {
+func replacePointers(pointers types.S, replace types.M) error {
 	for _, v := range pointers {
 		pointer := utils.MapInterface(v)
 		objectID := utils.String(pointer["objectId"])
@@ -504,7 +504,7 @@ func replacePointers(pointers types.S, replace map[string]interface{}) error {
 }
 
 // 查找带有指定 key 的对象
-func findObjectWithKey(root interface{}, key string) map[string]interface{} {
+func findObjectWithKey(root interface{}, key string) types.M {
 	if s := utils.SliceInterface(root); s != nil {
 		for _, v := range s {
 			answer := findObjectWithKey(v, key)

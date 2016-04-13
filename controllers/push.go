@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/lfq7413/tomato/push"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -15,7 +16,7 @@ type PushController struct {
 // HandlePost ...
 // @router / [post]
 func (p *PushController) HandlePost() {
-	var body map[string]interface{}
+	var body types.M
 	json.Unmarshal(p.Ctx.Input.RequestBody, &body)
 	if body == nil {
 		// TODO
@@ -27,27 +28,27 @@ func (p *PushController) HandlePost() {
 		return
 	}
 	push.SendPush(body, where, p.Auth)
-	p.Data["json"] = map[string]interface{}{
+	p.Data["json"] = types.M{
 		"result": true,
 	}
 	p.ServeJSON()
 }
 
-func getQueryCondition(body map[string]interface{}) (map[string]interface{}, error) {
+func getQueryCondition(body types.M) (types.M, error) {
 	hasWhere := (body["where"] != nil)
 	hasChannels := (body["channels"] != nil)
 
-	var where map[string]interface{}
+	var where types.M
 	if hasWhere && hasChannels {
 		// TODO 不能同时设定
 		return nil, nil
 	} else if hasWhere {
 		where = utils.MapInterface(body["where"])
 	} else if hasChannels {
-		channels := map[string]interface{}{
+		channels := types.M{
 			"$in": body["channels"],
 		}
-		where = map[string]interface{}{
+		where = types.M{
 			"channels": channels,
 		}
 	} else {

@@ -2,22 +2,23 @@ package rest
 
 import (
 	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/types"
 )
 
 // Destroy ...
 type Destroy struct {
 	auth         *Auth
 	className    string
-	query        map[string]interface{}
-	originalData map[string]interface{}
+	query        types.M
+	originalData types.M
 }
 
 // NewDestroy ...
 func NewDestroy(
 	auth *Auth,
 	className string,
-	query map[string]interface{},
-	originalData map[string]interface{},
+	query types.M,
+	originalData types.M,
 ) *Destroy {
 	destroy := &Destroy{
 		auth:         auth,
@@ -29,7 +30,7 @@ func NewDestroy(
 }
 
 // Execute ...
-func (d *Destroy) Execute() map[string]interface{} {
+func (d *Destroy) Execute() types.M {
 	d.handleSession()
 	d.runBeforeTrigger()
 	d.handleUserRoles()
@@ -65,7 +66,7 @@ func (d *Destroy) handleUserRoles() error {
 }
 
 func (d *Destroy) runDestroy() error {
-	options := map[string]interface{}{}
+	options := types.M{}
 	if d.auth.IsMaster == false {
 		acl := []string{"*"}
 		if d.auth.User != nil {

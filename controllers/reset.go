@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"encoding/json"
+
+	"github.com/lfq7413/tomato/types"
 )
 
 // ResetController ...
@@ -12,14 +14,14 @@ type ResetController struct {
 // HandleResetRequest ...
 // @router / [post]
 func (r *ResetController) HandleResetRequest() {
-	var object map[string]interface{}
+	var object types.M
 	json.Unmarshal(r.Ctx.Input.RequestBody, &object)
 	if object == nil && object["email"] == nil {
 		// TODO 需要 email
 		return
 	}
 	// TODO 发送邮件
-	r.Data["json"] = map[string]interface{}{}
+	r.Data["json"] = types.M{}
 	r.ServeJSON()
 }
 

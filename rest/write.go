@@ -15,12 +15,12 @@ import (
 type Write struct {
 	auth         *Auth
 	className    string
-	query        map[string]interface{}
-	data         map[string]interface{}
-	originalData map[string]interface{}
-	storage      map[string]interface{}
-	runOptions   map[string]interface{}
-	response     map[string]interface{}
+	query        types.M
+	data         types.M
+	originalData types.M
+	storage      types.M
+	runOptions   types.M
+	response     types.M
 	updatedAt    time.Time
 }
 
@@ -28,9 +28,9 @@ type Write struct {
 func NewWrite(
 	auth *Auth,
 	className string,
-	query map[string]interface{},
-	data map[string]interface{},
-	originalData map[string]interface{},
+	query types.M,
+	data types.M,
+	originalData types.M,
 ) *Write {
 	if query == nil && data["objectId"] != nil {
 		// TODO objectId 无效
@@ -41,8 +41,8 @@ func NewWrite(
 		query:        query,
 		data:         data,
 		originalData: originalData,
-		storage:      map[string]interface{}{},
-		runOptions:   map[string]interface{}{},
+		storage:      types.M{},
+		runOptions:   types.M{},
 		response:     nil,
 		updatedAt:    time.Now().UTC(),
 	}
@@ -50,7 +50,7 @@ func NewWrite(
 }
 
 // Execute ...
-func (w *Write) Execute() map[string]interface{} {
+func (w *Write) Execute() types.M {
 	w.getUserAndRoleACL()
 	w.validateClientClassCreation()
 	w.validateSchema()
@@ -129,11 +129,11 @@ func (w *Write) handleInstallation() error {
 		w.data["installationId"] = strings.ToLower(utils.String(w.data["installationId"]))
 	}
 
-	var idMatch map[string]interface{}
+	var idMatch types.M
 	var deviceTokenMatches types.S
 
 	if w.query != nil && w.query["objectId"] != nil {
-		results := orm.Find("_Installation", map[string]interface{}{"objectId": w.query["objectId"]}, map[string]interface{}{})
+		results := orm.Find("_Installation", types.M{"objectId": w.query["objectId"]}, types.M{})
 		if results == nil || len(results) == 0 {
 			// TODO 更新对象未找到
 			return nil
@@ -159,13 +159,13 @@ func (w *Write) handleInstallation() error {
 
 	idMatch = nil
 	if w.data["installationId"] != nil {
-		results := orm.Find("_Installation", map[string]interface{}{"installationId": w.data["installationId"]}, map[string]interface{}{})
+		results := orm.Find("_Installation", types.M{"installationId": w.data["installationId"]}, types.M{})
 		if results != nil && len(results) > 0 {
 			idMatch = utils.MapInterface(results[0])
 		}
 	}
 	if w.data["deviceToken"] != nil {
-		results := orm.Find("_Installation", map[string]interface{}{"deviceToken": w.data["deviceToken"]}, map[string]interface{}{})
+		results := orm.Find("_Installation", types.M{"deviceToken": w.data["deviceToken"]}, types.M{})
 		if results != nil {
 			deviceTokenMatches = results
 		}
@@ -183,10 +183,10 @@ func (w *Write) handleInstallation() error {
 			return nil
 		}
 		// 清理多余数据
-		installationID := map[string]interface{}{
+		installationID := types.M{
 			"$ne": w.data["installationId"],
 		}
-		delQuery := map[string]interface{}{
+		delQuery := types.M{
 			"deviceToken":    w.data["deviceToken"],
 			"installationId": installationID,
 		}
@@ -199,7 +199,7 @@ func (w *Write) handleInstallation() error {
 		if deviceTokenMatches != nil && len(deviceTokenMatches) == 1 &&
 			utils.MapInterface(deviceTokenMatches[0])["installationId"] == nil {
 			// 合并
-			delQuery := map[string]interface{}{
+			delQuery := types.M{
 				"objectId": idMatch["objectId"],
 			}
 			orm.Destroy("_Installation", delQuery, nil)
@@ -207,10 +207,10 @@ func (w *Write) handleInstallation() error {
 		} else {
 			if w.data["deviceToken"] != nil && idMatch["deviceToken"] != w.data["deviceToken"] {
 				// 清理多余数据
-				installationID := map[string]interface{}{
+				installationID := types.M{
 					"$ne": w.data["installationId"],
 				}
-				delQuery := map[string]interface{}{
+				delQuery := types.M{
 					"deviceToken":    w.data["deviceToken"],
 					"installationId": installationID,
 				}
@@ -223,7 +223,7 @@ func (w *Write) handleInstallation() error {
 		}
 	}
 	if objID != "" {
-		w.query = map[string]interface{}{
+		w.query = types.M{
 			"objectId": objID,
 		}
 		delete(w.data, "objectId")
@@ -253,15 +253,15 @@ func (w *Write) handleSession() error {
 		token := "r:" + utils.CreateToken()
 		expiresAt := time.Now().UTC()
 		expiresAt = expiresAt.AddDate(1, 0, 0)
-		user := map[string]interface{}{
+		user := types.M{
 			"__type":    "Pointer",
 			"className": "_User",
 			"objectId":  w.auth.User["objectId"],
 		}
-		createdWith := map[string]interface{}{
+		createdWith := types.M{
 			"action": "create",
 		}
-		sessionData := map[string]interface{}{
+		sessionData := types.M{
 			"sessionToken": token,
 			"user":         user,
 			"createdWith":  createdWith,
@@ -274,13 +274,13 @@ func (w *Write) handleSession() error {
 			}
 			sessionData[k] = v
 		}
-		results := NewWrite(Master(), "_Session", nil, sessionData, map[string]interface{}{}).Execute()
+		results := NewWrite(Master(), "_Session", nil, sessionData, types.M{}).Execute()
 		if results["response"] == nil {
 			// TODO 创建 Session 失败
 			return nil
 		}
 		sessionData["objectId"] = utils.MapInterface(results["response"])["objectId"]
-		w.response = map[string]interface{}{
+		w.response = types.M{
 			"status":   201,
 			"location": results["location"],
 			"response": sessionData,
@@ -325,7 +325,7 @@ func (w *Write) validateAuthData() error {
 	return nil
 }
 
-func (w *Write) handleAuthData(authData map[string]interface{}) error {
+func (w *Write) handleAuthData(authData types.M) error {
 	w.handleAuthDataValidation(authData)
 	results := w.findUsersWithAuthData(authData)
 	if results != nil && len(results) > 1 {
@@ -345,7 +345,7 @@ func (w *Write) handleAuthData(authData map[string]interface{}) error {
 		// 登录
 		user := utils.MapInterface(results[0])
 		delete(user, "password")
-		w.response = map[string]interface{}{
+		w.response = types.M{
 			"response": user,
 			"location": w.location(),
 		}
@@ -362,7 +362,7 @@ func (w *Write) handleAuthData(authData map[string]interface{}) error {
 	return nil
 }
 
-func (w *Write) handleAuthDataValidation(authData map[string]interface{}) error {
+func (w *Write) handleAuthDataValidation(authData types.M) error {
 	for k, v := range authData {
 		if v == nil {
 			continue
@@ -377,7 +377,7 @@ func (w *Write) handleAuthDataValidation(authData map[string]interface{}) error 
 	return nil
 }
 
-func (w *Write) findUsersWithAuthData(authData map[string]interface{}) types.S {
+func (w *Write) findUsersWithAuthData(authData types.M) types.S {
 	query := types.S{}
 	for k, v := range authData {
 		if v == nil {
@@ -385,7 +385,7 @@ func (w *Write) findUsersWithAuthData(authData map[string]interface{}) types.S {
 		}
 		key := "authData." + k + ".id"
 		provider := utils.MapInterface(v)
-		q := map[string]interface{}{
+		q := types.M{
 			key: provider["id"],
 		}
 		query = append(query, q)
@@ -393,10 +393,10 @@ func (w *Write) findUsersWithAuthData(authData map[string]interface{}) types.S {
 
 	findPromise := types.S{}
 	if len(query) > 0 {
-		where := map[string]interface{}{
+		where := types.M{
 			"$or": query,
 		}
-		findPromise = orm.Find(w.className, where, map[string]interface{}{})
+		findPromise = orm.Find(w.className, where, types.M{})
 	}
 
 	return findPromise
@@ -410,7 +410,7 @@ func (w *Write) runBeforeTrigger() error {
 		return nil
 	}
 
-	updatedObject := map[string]interface{}{}
+	updatedObject := types.M{}
 	if w.query != nil && w.query["objectId"] != nil {
 		// 如果是更新，则把原始数据添加进来
 		for k, v := range w.originalData {
@@ -460,7 +460,7 @@ func (w *Write) transformUser() error {
 		w.storage["token"] = token
 		expiresAt := time.Now().UTC()
 		expiresAt = expiresAt.AddDate(1, 0, 0)
-		user := map[string]interface{}{
+		user := types.M{
 			"__type":    "Pointer",
 			"className": "_User",
 			"objectId":  w.objectID(),
@@ -471,11 +471,11 @@ func (w *Write) transformUser() error {
 		} else {
 			authProvider = "password"
 		}
-		createdWith := map[string]interface{}{
+		createdWith := types.M{
 			"action":       "login",
 			"authProvider": authProvider,
 		}
-		sessionData := map[string]interface{}{
+		sessionData := types.M{
 			"sessionToken":   token,
 			"user":           user,
 			"createdWith":    createdWith,
@@ -508,14 +508,14 @@ func (w *Write) transformUser() error {
 			w.data["username"] = utils.CreateObjectID()
 		}
 	} else {
-		objectID := map[string]interface{}{
+		objectID := types.M{
 			"$ne": w.objectID(),
 		}
-		where := map[string]interface{}{
+		where := types.M{
 			"username": w.data["username"],
 			"objectId": objectID,
 		}
-		option := map[string]interface{}{
+		option := types.M{
 			"limit": 1,
 		}
 		results := orm.Find(w.className, where, option)
@@ -533,14 +533,14 @@ func (w *Write) transformUser() error {
 			// TODO email 不合法
 			return nil
 		}
-		objectID := map[string]interface{}{
+		objectID := types.M{
 			"$ne": w.objectID(),
 		}
-		where := map[string]interface{}{
+		where := types.M{
 			"email":    w.data["email"],
 			"objectId": objectID,
 		}
-		option := map[string]interface{}{
+		option := types.M{
 			"limit": 1,
 		}
 		results := orm.Find(w.className, where, option)
@@ -589,32 +589,32 @@ func (w *Write) runDatabaseOperation() error {
 	if w.query != nil {
 		orm.Update(w.className, w.query, w.data, w.runOptions)
 		// TODO 处理错误
-		resp := map[string]interface{}{
+		resp := types.M{
 			"updatedAt": w.updatedAt,
 		}
-		w.response = map[string]interface{}{
+		w.response = types.M{
 			"response": resp,
 		}
 	} else {
 		// 给新用户设置默认 ACL
 		if w.data["ACL"] == nil && w.className == "_User" {
-			readwrite := map[string]interface{}{
+			readwrite := types.M{
 				"read":  true,
 				"write": true,
 			}
-			onlyread := map[string]interface{}{
+			onlyread := types.M{
 				"read":  true,
 				"write": false,
 			}
 			objectID := utils.String(w.data["objectId"])
-			w.data["ACL"] = map[string]interface{}{
+			w.data["ACL"] = types.M{
 				objectID: readwrite,
 				"*":      onlyread,
 			}
 		}
 		// 创建对象
 		orm.Create(w.className, w.data, w.runOptions)
-		resp := map[string]interface{}{
+		resp := types.M{
 			"objectId":  w.data["objectId"],
 			"createdAt": w.data["createdAt"],
 		}
@@ -626,7 +626,7 @@ func (w *Write) runDatabaseOperation() error {
 		if w.storage["token"] != nil {
 			resp["sessionToken"] = w.storage["token"]
 		}
-		w.response = map[string]interface{}{
+		w.response = types.M{
 			"status":   201,
 			"response": resp,
 			"location": w.location(),
@@ -639,12 +639,12 @@ func (w *Write) runDatabaseOperation() error {
 func (w *Write) handleFollowup() error {
 	if w.storage != nil && w.storage["clearSessions"] != nil {
 		// 修改密码之后，清除 session
-		user := map[string]interface{}{
+		user := types.M{
 			"__type":    "Pointer",
 			"className": "_User",
 			"objectId":  w.objectID(),
 		}
-		sessionQuery := map[string]interface{}{
+		sessionQuery := types.M{
 			"user": user,
 		}
 		delete(w.storage, "clearSessions")
@@ -669,7 +669,7 @@ func (w *Write) runAfterTrigger() error {
 		return nil
 	}
 
-	updatedObject := map[string]interface{}{}
+	updatedObject := types.M{}
 	if w.query != nil && w.query["objectId"] != nil {
 		// 如果是更新，则把原始数据添加进来
 		for k, v := range w.originalData {

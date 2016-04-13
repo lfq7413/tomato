@@ -13,7 +13,7 @@ func newTomatoPush() *tomatoPushAdapter {
 	return t
 }
 
-func (t *tomatoPushAdapter) send(data map[string]interface{}, installations types.S) {
+func (t *tomatoPushAdapter) send(data types.M, installations types.S) {
 
 }
 

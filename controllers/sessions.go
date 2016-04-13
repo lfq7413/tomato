@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -60,10 +61,10 @@ func (s *SessionsController) HandleGetMe() {
 		// TODO 需要 SessionToken
 		return
 	}
-	where := map[string]interface{}{
+	where := types.M{
 		"sessionToken": s.Info.SessionToken,
 	}
-	response := rest.Find(rest.Master(), "_Session", where, map[string]interface{}{})
+	response := rest.Find(rest.Master(), "_Session", where, types.M{})
 	if utils.HasResults(response) == false {
 		// TODO 未找到 Session
 		return

@@ -62,7 +62,7 @@ func (o *ObjectsController) Prepare() {
 		contentType := o.Ctx.Input.Header("Content-type")
 		if strings.HasPrefix(contentType, "application/json") {
 			// 请求数据为 json 格式，进行转换，转换出错则返回错误
-			var object map[string]interface{}
+			var object types.M
 			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)
 			if err != nil {
 				o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "invalid JSON")
@@ -72,7 +72,7 @@ func (o *ObjectsController) Prepare() {
 			o.JSONBody = object
 		} else {
 			// 其他格式的请求数据，仅尝试转换，转换失败不返回错误
-			var object map[string]interface{}
+			var object types.M
 			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)
 			if err != nil {
 				o.RawBody = o.Ctx.Input.RequestBody
@@ -161,7 +161,7 @@ func (o *ObjectsController) HandleCreate() {
 		o.ClassName = o.Ctx.Input.Param(":className")
 	}
 
-	var object map[string]interface{}
+	var object types.M
 	json.Unmarshal(o.Ctx.Input.RequestBody, &object)
 
 	rest.Create(o.Auth, o.ClassName, object)
@@ -203,8 +203,8 @@ func (o *ObjectsController) HandleGet() {
 		o.ObjectID = o.Ctx.Input.Param(":objectId")
 	}
 
-	options := map[string]interface{}{}
-	where := map[string]interface{}{"objectId": o.ObjectID}
+	options := types.M{}
+	where := types.M{"objectId": o.ObjectID}
 
 	rest.Find(o.Auth, o.ClassName, where, options)
 
@@ -243,7 +243,7 @@ func (o *ObjectsController) HandleUpdate() {
 		o.ObjectID = o.Ctx.Input.Param(":objectId")
 	}
 
-	var object map[string]interface{}
+	var object types.M
 	json.Unmarshal(o.Ctx.Input.RequestBody, &object)
 
 	rest.Update(o.Auth, o.ClassName, o.ObjectID, object)
@@ -278,7 +278,7 @@ func (o *ObjectsController) HandleFind() {
 	}
 
 	// TODO 获取查询参数，并组装
-	options := map[string]interface{}{}
+	options := types.M{}
 	if o.GetString("skip") != "" {
 		if i, err := strconv.Atoi(o.GetString("skip")); err == nil {
 			options["skip"] = i
@@ -308,7 +308,7 @@ func (o *ObjectsController) HandleFind() {
 		options["include"] = o.GetString("include")
 	}
 
-	where := map[string]interface{}{}
+	where := types.M{}
 	if o.GetString("where") != "" {
 		err := json.Unmarshal([]byte(o.GetString("where")), &where)
 		if err != nil {
@@ -373,7 +373,7 @@ func (o *ObjectsController) HandleDelete() {
 // Get ...
 // @router / [get]
 func (o *ObjectsController) Get() {
-	e := map[string]interface{}{
+	e := types.M{
 		"code":  405,
 		"error": "Method Not Allowed",
 	}
@@ -385,7 +385,7 @@ func (o *ObjectsController) Get() {
 // Post ...
 // @router / [post]
 func (o *ObjectsController) Post() {
-	e := map[string]interface{}{
+	e := types.M{
 		"code":  405,
 		"error": "Method Not Allowed",
 	}
@@ -397,7 +397,7 @@ func (o *ObjectsController) Post() {
 // Delete ...
 // @router / [delete]
 func (o *ObjectsController) Delete() {
-	e := map[string]interface{}{
+	e := types.M{
 		"code":  405,
 		"error": "Method Not Allowed",
 	}
@@ -409,7 +409,7 @@ func (o *ObjectsController) Delete() {
 // Put ...
 // @router / [put]
 func (o *ObjectsController) Put() {
-	e := map[string]interface{}{
+	e := types.M{
 		"code":  405,
 		"error": "Method Not Allowed",
 	}

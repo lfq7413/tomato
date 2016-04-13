@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var types map[string]string
+var contentTypes map[string]string
 var extensions map[string][]string
 
 const defaultType = "application/octet-stream"
@@ -14,13 +14,13 @@ const defaultType = "application/octet-stream"
 func init() {
 	err := json.Unmarshal([]byte(typesjson), &extensions)
 	if err != nil {
-		types = map[string]string{}
+		contentTypes = map[string]string{}
 		extensions = map[string][]string{}
 	}
-	types = map[string]string{}
+	contentTypes = map[string]string{}
 	for tp, exts := range extensions {
 		for _, ext := range exts {
-			types[ext] = tp
+			contentTypes[ext] = tp
 		}
 	}
 }
@@ -47,7 +47,7 @@ func IsFileName(filename string) bool {
 // LookupContentType 查找 ContentType
 func LookupContentType(filename string) string {
 	ext := strings.ToLower(ExtName(filename))
-	tp := types[ext]
+	tp := contentTypes[ext]
 	if tp != "" {
 		return tp
 	}

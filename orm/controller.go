@@ -38,7 +38,7 @@ func DropCollection(className string) error {
 }
 
 // Find ...
-func Find(className string, where, options map[string]interface{}) types.S {
+func Find(className string, where, options types.M) types.S {
 	// TODO 处理错误
 	if options == nil {
 		options = types.M{}
@@ -144,7 +144,7 @@ func Find(className string, where, options map[string]interface{}) types.S {
 }
 
 // Destroy ...
-func Destroy(className string, where map[string]interface{}, options map[string]interface{}) {
+func Destroy(className string, where types.M, options types.M) {
 	// TODO 处理错误
 	var isMaster bool
 	if _, ok := options["acl"]; ok {
@@ -192,7 +192,7 @@ func Destroy(className string, where map[string]interface{}, options map[string]
 }
 
 // Update ...
-func Update(className string, where, data, options map[string]interface{}) (types.M, error) {
+func Update(className string, where, data, options types.M) (types.M, error) {
 	// TODO 处理错误
 	data = utils.CopyMap(data)
 	acceptor := func(schema *Schema) bool {
@@ -261,7 +261,7 @@ func Update(className string, where, data, options map[string]interface{}) (type
 }
 
 // Create ...
-func Create(className string, data, options map[string]interface{}) error {
+func Create(className string, data, options types.M) error {
 	// TODO 处理错误
 	data = utils.CopyMap(data)
 	var isMaster bool
@@ -301,7 +301,7 @@ func validateClassName(className string) {
 	}
 }
 
-func handleRelationUpdates(className, objectID string, update map[string]interface{}) {
+func handleRelationUpdates(className, objectID string, update types.M) {
 	// TODO 处理错误
 	objID := objectID
 	if utils.String(update["objectId"]) != "" {
@@ -345,7 +345,7 @@ func handleRelationUpdates(className, objectID string, update map[string]interfa
 
 func addRelation(key, fromClassName, fromID, toID string) {
 	// TODO 处理错误
-	doc := map[string]interface{}{
+	doc := types.M{
 		"relatedId": toID,
 		"owningId":  fromID,
 	}
@@ -356,7 +356,7 @@ func addRelation(key, fromClassName, fromID, toID string) {
 
 func removeRelation(key, fromClassName, fromID, toID string) {
 	// TODO 处理错误
-	doc := map[string]interface{}{
+	doc := types.M{
 		"relatedId": toID,
 		"owningId":  fromID,
 	}
@@ -366,7 +366,7 @@ func removeRelation(key, fromClassName, fromID, toID string) {
 }
 
 // ValidateObject ...
-func ValidateObject(className string, object, where, options map[string]interface{}) error {
+func ValidateObject(className string, object, where, options types.M) error {
 	// TODO 处理错误
 	schema := LoadSchema(nil)
 	acl := []string{}
@@ -404,7 +404,7 @@ func LoadSchema(acceptor func(*Schema) bool) *Schema {
 }
 
 // canAddField ...
-func canAddField(schema *Schema, className string, object map[string]interface{}, acl []string) {
+func canAddField(schema *Schema, className string, object types.M, acl []string) {
 	// TODO 处理错误
 	if schema.data[className] == nil {
 		return

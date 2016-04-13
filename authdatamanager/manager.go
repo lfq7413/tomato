@@ -2,6 +2,7 @@ package authdatamanager
 
 import (
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/types"
 )
 
 var providers map[string]Provider
@@ -13,7 +14,7 @@ func init() {
 }
 
 // ValidateAuthData ...
-func ValidateAuthData(provider string, authData map[string]interface{}) error {
+func ValidateAuthData(provider string, authData types.M) error {
 	if provider == "anonymous" && config.TConfig.EnableAnonymousUsers == false {
 		// TODO 不支持 anonymous
 		return nil
@@ -29,11 +30,11 @@ func ValidateAuthData(provider string, authData map[string]interface{}) error {
 
 type anonymous struct{}
 
-func (a anonymous) ValidateAuthData(authData map[string]interface{}) error {
+func (a anonymous) ValidateAuthData(authData types.M) error {
 	return nil
 }
 
 // Provider ...
 type Provider interface {
-	ValidateAuthData(map[string]interface{}) error
+	ValidateAuthData(types.M) error
 }

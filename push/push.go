@@ -23,7 +23,7 @@ func init() {
 }
 
 // SendPush ...
-func SendPush(body map[string]interface{}, where map[string]interface{}, auth *rest.Auth) error {
+func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 	err := validatePushType(where, adapter.getValidPushTypes())
 	if err != nil {
 		return err
@@ -36,19 +36,19 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 		}
 	}
 
-	var op map[string]interface{}
-	var updateWhere map[string]interface{}
+	var op types.M
+	var updateWhere types.M
 	data := utils.MapInterface(body["data"])
 	if data != nil && data["badge"] != nil {
 		badge := data["badge"]
-		op = map[string]interface{}{}
+		op = types.M{}
 		if utils.String(badge) == "Increment" {
-			inc := map[string]interface{}{
+			inc := types.M{
 				"badge": 1,
 			}
 			op["$inc"] = inc
 		} else if v, ok := badge.(float64); ok {
-			set := map[string]interface{}{
+			set := types.M{
 				"badge": v,
 			}
 			op["$set"] = set
@@ -60,14 +60,14 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 	}
 
 	if op != nil && updateWhere != nil {
-		badgeQuery := rest.NewQuery(auth, "_Installation", updateWhere, map[string]interface{}{})
+		badgeQuery := rest.NewQuery(auth, "_Installation", updateWhere, types.M{})
 		badgeQuery.BuildRestWhere()
 		restWhere := utils.CopyMap(badgeQuery.Where)
 		and := utils.SliceInterface(restWhere["$and"])
 		if and == nil {
 			restWhere["$and"] = types.S{badgeQuery.Where}
 		}
-		tp := map[string]interface{}{
+		tp := types.M{
 			"deviceType": "ios",
 		}
 		and = append(and, tp)
@@ -75,14 +75,14 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 		orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
 	}
 
-	response := rest.Find(auth, "_Installation", where, map[string]interface{}{})
+	response := rest.Find(auth, "_Installation", where, types.M{})
 	if utils.HasResults(response) == false {
 		return nil
 	}
 	results := utils.SliceInterface(response["results"])
 
 	if data != nil && data["badge"] != nil && utils.String(data["badge"]) == "Increment" {
-		badgeInstallationsMap := map[string]interface{}{}
+		badgeInstallationsMap := types.M{}
 		for _, v := range results {
 			installation := utils.MapInterface(v)
 			var badge string
@@ -119,7 +119,7 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 	return nil
 }
 
-func validatePushType(where map[string]interface{}, validPushTypes []string) error {
+func validatePushType(where types.M, validPushTypes []string) error {
 	deviceTypeField := where["deviceType"]
 	if deviceTypeField == nil {
 		return nil
@@ -153,7 +153,7 @@ func validatePushType(where map[string]interface{}, validPushTypes []string) err
 	return nil
 }
 
-func getExpirationTime(body map[string]interface{}) (interface{}, error) {
+func getExpirationTime(body types.M) (interface{}, error) {
 	expirationTimeParam := body["expiration_time"]
 	if expirationTimeParam == nil {
 		return nil, nil
@@ -182,6 +182,6 @@ func getExpirationTime(body map[string]interface{}) (interface{}, error) {
 }
 
 type pushAdapter interface {
-	send(data map[string]interface{}, installations types.S)
+	send(data types.M, installations types.S)
 	getValidPushTypes() []string
 }

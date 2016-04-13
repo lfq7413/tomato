@@ -7,6 +7,7 @@ import (
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -64,7 +65,7 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 		restWhere := utils.CopyMap(badgeQuery.Where)
 		and := utils.SliceInterface(restWhere["$and"])
 		if and == nil {
-			restWhere["$and"] = []interface{}{badgeQuery.Where}
+			restWhere["$and"] = types.S{badgeQuery.Where}
 		}
 		tp := map[string]interface{}{
 			"deviceType": "ios",
@@ -93,7 +94,7 @@ func SendPush(body map[string]interface{}, where map[string]interface{}, auth *r
 			if utils.String(installation["deviceType"]) != "ios" {
 				badge = "unsupported"
 			}
-			installations := []interface{}{}
+			installations := types.S{}
 			if badgeInstallationsMap[badge] != nil {
 				installations = append(installations, utils.SliceInterface(badgeInstallationsMap[badge])...)
 			}
@@ -181,6 +182,6 @@ func getExpirationTime(body map[string]interface{}) (interface{}, error) {
 }
 
 type pushAdapter interface {
-	send(data map[string]interface{}, installations []interface{})
+	send(data map[string]interface{}, installations types.S)
 	getValidPushTypes() []string
 }

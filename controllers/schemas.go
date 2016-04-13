@@ -20,7 +20,7 @@ func (s *SchemasController) HandleFind() {
 	result, err := orm.SchemaCollection().GetAllSchemas()
 	if err != nil && result == nil {
 		s.Data["json"] = types.M{
-			"results": []interface{}{},
+			"results": types.S{},
 		}
 		s.ServeJSON()
 		return

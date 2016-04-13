@@ -1,5 +1,7 @@
 package push
 
+import "github.com/lfq7413/tomato/types"
+
 type tomatoPushAdapter struct {
 	validPushTypes []string
 }
@@ -11,7 +13,7 @@ func newTomatoPush() *tomatoPushAdapter {
 	return t
 }
 
-func (t *tomatoPushAdapter) send(data map[string]interface{}, installations []interface{}) {
+func (t *tomatoPushAdapter) send(data map[string]interface{}, installations types.S) {
 
 }
 

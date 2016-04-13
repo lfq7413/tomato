@@ -7,6 +7,7 @@ import (
 	"github.com/lfq7413/tomato/authdatamanager"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -129,7 +130,7 @@ func (w *Write) handleInstallation() error {
 	}
 
 	var idMatch map[string]interface{}
-	var deviceTokenMatches []interface{}
+	var deviceTokenMatches types.S
 
 	if w.query != nil && w.query["objectId"] != nil {
 		results := orm.Find("_Installation", map[string]interface{}{"objectId": w.query["objectId"]}, map[string]interface{}{})
@@ -376,8 +377,8 @@ func (w *Write) handleAuthDataValidation(authData map[string]interface{}) error 
 	return nil
 }
 
-func (w *Write) findUsersWithAuthData(authData map[string]interface{}) []interface{} {
-	query := []interface{}{}
+func (w *Write) findUsersWithAuthData(authData map[string]interface{}) types.S {
+	query := types.S{}
 	for k, v := range authData {
 		if v == nil {
 			continue
@@ -390,7 +391,7 @@ func (w *Write) findUsersWithAuthData(authData map[string]interface{}) []interfa
 		query = append(query, q)
 	}
 
-	findPromise := []interface{}{}
+	findPromise := types.S{}
 	if len(query) > 0 {
 		where := map[string]interface{}{
 			"$or": query,

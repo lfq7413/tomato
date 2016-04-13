@@ -56,7 +56,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 			// TODO 待转换值必须为数组类型
 			return "", nil
 		}
-		mongoSubqueries := []interface{}{}
+		mongoSubqueries := types.S{}
 		for _, v := range querys {
 			query := transformWhere(schema, className, utils.MapInterface(v))
 			mongoSubqueries = append(mongoSubqueries, query)
@@ -72,7 +72,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 			// TODO 待转换值必须为数组类型
 			return "", nil
 		}
-		mongoSubqueries := []interface{}{}
+		mongoSubqueries := types.S{}
 		for _, v := range querys {
 			query := transformWhere(schema, className, utils.MapInterface(v))
 			mongoSubqueries = append(mongoSubqueries, query)
@@ -129,7 +129,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		}
 	}
 	if inArray && options["query"] != nil && utils.SliceInterface(restValue) == nil {
-		return key, types.M{"$all": []interface{}{restValue}}
+		return key, types.M{"$all": types.S{restValue}}
 	}
 
 	// 处理原子数据
@@ -153,7 +153,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 			// TODO 查询时不能为数组
 			return "", nil
 		}
-		outValue := []interface{}{}
+		outValue := types.S{}
 		for _, restObj := range valueArray {
 			_, v := transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
 			outValue = append(outValue, v)
@@ -212,7 +212,7 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 				// TODO 必须为数组
 				return nil
 			}
-			answerArr := []interface{}{}
+			answerArr := types.S{}
 			for _, v := range arr {
 				answerArr = append(answerArr, transformAtom(v, true, types.M{}))
 			}
@@ -224,7 +224,7 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 				// TODO 必须为数组
 				return nil
 			}
-			answerArr := []interface{}{}
+			answerArr := types.S{}
 			for _, v := range arr {
 				answerArr = append(answerArr, transformAtom(v, true, types.M{"inArray": true}))
 			}
@@ -253,7 +253,7 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 
 		case "$nearSphere":
 			point := utils.MapInterface(object[key])
-			answer[key] = []interface{}{point["longitude"], point["latitude"]}
+			answer[key] = types.S{point["longitude"], point["latitude"]}
 
 		case "$maxDistance":
 			answer[key] = object[key]
@@ -288,9 +288,9 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			box1 := utils.MapInterface(box[0])
 			box2 := utils.MapInterface(box[1])
 			answer[key] = types.M{
-				"$box": []interface{}{
-					[]interface{}{box1["longitude"], box1["latitude"]},
-					[]interface{}{box2["longitude"], box2["latitude"]},
+				"$box": types.S{
+					types.S{box1["longitude"], box1["latitude"]},
+					types.S{box2["longitude"], box2["latitude"]},
 				},
 			}
 
@@ -417,7 +417,7 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 			// TODO 必须为数组
 			return nil
 		}
-		toAdd := []interface{}{}
+		toAdd := types.S{}
 		for _, obj := range objects {
 			o := transformAtom(obj, true, types.M{"inArray": true})
 			toAdd = append(toAdd, o)
@@ -442,13 +442,13 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 			// TODO 必须为数组
 			return nil
 		}
-		toRemove := []interface{}{}
+		toRemove := types.S{}
 		for _, obj := range objects {
 			o := transformAtom(obj, true, types.M{"inArray": true})
 			toRemove = append(toRemove, o)
 		}
 		if flatten {
-			return []interface{}{}
+			return types.S{}
 		}
 		return types.M{
 			"__op": "$pullAll",
@@ -495,8 +495,8 @@ func transformACL(restObject types.M) types.M {
 	}
 
 	acl := utils.MapInterface(restObject["ACL"])
-	rperm := []interface{}{}
-	wperm := []interface{}{}
+	rperm := types.S{}
+	wperm := types.S{}
 	for entry, v := range acl {
 		perm := utils.MapInterface(v)
 		if perm["read"] != nil {
@@ -591,7 +591,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 		return mongoObject
 
 	case []interface{}:
-		results := []interface{}{}
+		results := types.S{}
 		objs := mongoObject.([]interface{})
 		for _, o := range objs {
 			results = append(results, untransformObjectT(schema, className, o, false))
@@ -710,8 +710,8 @@ func untransformACL(mongoObject types.M) types.M {
 	}
 
 	acl := types.M{}
-	rperm := []interface{}{}
-	wperm := []interface{}{}
+	rperm := types.S{}
+	wperm := types.S{}
 	if mongoObject["_rperm"] != nil {
 		rperm = utils.SliceInterface(mongoObject["_rperm"])
 	}
@@ -809,7 +809,7 @@ func (g geoPointCoder) isValidDatabaseObject(object interface{}) bool {
 }
 
 func (g geoPointCoder) jsonToDatabase(json types.M) interface{} {
-	return []interface{}{json["longitude"], json["latitude"]}
+	return types.S{json["longitude"], json["latitude"]}
 }
 
 func (g geoPointCoder) isValidJSON(value types.M) bool {

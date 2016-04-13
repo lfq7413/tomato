@@ -7,6 +7,7 @@ import (
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -51,7 +52,7 @@ func NewQuery(
 				// TODO session 无效
 			}
 			user := map[string]interface{}{"__type": "Pointer", "className": "_User", "objectId": auth.User["objectId"]}
-			and := []interface{}{where, user}
+			and := types.S{where, user}
 			query.Where = map[string]interface{}{"$and": and}
 		}
 	}
@@ -182,7 +183,7 @@ func (q *Query) replaceSelect() error {
 		return nil
 	}
 
-	values := []interface{}{}
+	values := types.S{}
 	response := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
@@ -232,7 +233,7 @@ func (q *Query) replaceDontSelect() error {
 		return nil
 	}
 
-	values := []interface{}{}
+	values := types.S{}
 	response := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
@@ -275,7 +276,7 @@ func (q *Query) replaceInQuery() error {
 		return nil
 	}
 
-	values := []interface{}{}
+	values := types.S{}
 	response := NewQuery(
 		q.auth,
 		utils.String(inQueryValue["className"]),
@@ -320,7 +321,7 @@ func (q *Query) replaceNotInQuery() error {
 		return nil
 	}
 
-	values := []interface{}{}
+	values := types.S{}
 	response := NewQuery(
 		q.auth,
 		utils.String(notInQueryValue["className"]),
@@ -362,7 +363,7 @@ func (q *Query) runFind() error {
 		}
 	}
 	// TODO 取出需要的 key   （TODO：通过数据库直接取key）
-	results := []interface{}{}
+	results := types.S{}
 	if len(q.keys) > 0 && len(response) > 0 {
 		for _, v := range response {
 			obj := utils.MapInterface(v)
@@ -457,10 +458,10 @@ func includePath(auth *Auth, response map[string]interface{}, path []string) err
 }
 
 // 查询路径对应的对象列表
-func findPointers(object interface{}, path []string) []interface{} {
+func findPointers(object interface{}, path []string) types.S {
 	// 如果是对象数组，则遍历每一个对象
 	if utils.SliceInterface(object) != nil {
-		answer := []interface{}{}
+		answer := types.S{}
 		for _, v := range utils.SliceInterface(object) {
 			answer = append(answer, findPointers(v, path)...)
 		}
@@ -469,24 +470,24 @@ func findPointers(object interface{}, path []string) []interface{} {
 
 	obj := utils.MapInterface(object)
 	if obj == nil {
-		return []interface{}{}
+		return types.S{}
 	}
 	// 如果当前是路径最后一个节点，判断是否为 Pointer
 	if len(path) == 0 {
 		if obj["__type"] == "Pointer" {
-			return []interface{}{obj}
+			return types.S{obj}
 		}
-		return []interface{}{}
+		return types.S{}
 	}
 	// 取出下一个路径对应的对象，进行查找
 	subobject := obj[path[0]]
 	if subobject == nil {
-		return []interface{}{}
+		return types.S{}
 	}
 	return findPointers(subobject, path[1:])
 }
 
-func replacePointers(pointers []interface{}, replace map[string]interface{}) error {
+func replacePointers(pointers types.S, replace map[string]interface{}) error {
 	for _, v := range pointers {
 		pointer := utils.MapInterface(v)
 		objectID := utils.String(pointer["objectId"])

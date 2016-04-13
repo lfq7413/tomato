@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"time"
-
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/lfq7413/tomato/config"

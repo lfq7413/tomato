@@ -38,7 +38,7 @@ func DropCollection(className string) error {
 }
 
 // Find ...
-func Find(className string, where, options map[string]interface{}) []interface{} {
+func Find(className string, where, options map[string]interface{}) types.S {
 	// TODO 处理错误
 	if options == nil {
 		options = types.M{}
@@ -103,7 +103,7 @@ func Find(className string, where, options map[string]interface{}) []interface{}
 	mongoWhere := transformWhere(schema, className, where)
 	// 组装查询条件，查找可被当前用户修改的对象
 	if options["acl"] != nil {
-		queryPerms := []interface{}{}
+		queryPerms := types.S{}
 		perm := types.M{
 			"_rperm": types.M{"$exists": false},
 		}
@@ -120,7 +120,7 @@ func Find(className string, where, options map[string]interface{}) []interface{}
 		}
 
 		mongoWhere = types.M{
-			"$and": []interface{}{
+			"$and": types.S{
 				mongoWhere,
 				types.M{"$or": queryPerms},
 			},
@@ -130,11 +130,11 @@ func Find(className string, where, options map[string]interface{}) []interface{}
 	if options["count"] != nil {
 		delete(mongoOptions, "limit")
 		count := coll.Count(mongoWhere, mongoOptions)
-		return []interface{}{count}
+		return types.S{count}
 	}
 
 	mongoResults := coll.find(mongoWhere, mongoOptions)
-	results := []interface{}{}
+	results := types.S{}
 	for _, r := range mongoResults {
 		result := untransformObject(schema, isMaster, aclGroup, className, r)
 		results = append(results, result)
@@ -168,7 +168,7 @@ func Destroy(className string, where map[string]interface{}, options map[string]
 	mongoWhere := transformWhere(schema, className, where)
 	// 组装查询条件，查找可被当前用户修改的对象
 	if options["acl"] != nil {
-		writePerms := []interface{}{}
+		writePerms := types.S{}
 		perm := types.M{
 			"_wperm": types.M{"$exists": false},
 		}
@@ -181,7 +181,7 @@ func Destroy(className string, where map[string]interface{}, options map[string]
 		}
 
 		mongoWhere = types.M{
-			"$and": []interface{}{
+			"$and": types.S{
 				mongoWhere,
 				types.M{"$or": writePerms},
 			},
@@ -225,7 +225,7 @@ func Update(className string, where, data, options map[string]interface{}) (type
 	mongoWhere := transformWhere(schema, className, where)
 	// 组装查询条件，查找可被当前用户修改的对象
 	if options["acl"] != nil {
-		writePerms := []interface{}{}
+		writePerms := types.S{}
 		perm := types.M{
 			"_wperm": types.M{"$exists": false},
 		}
@@ -238,7 +238,7 @@ func Update(className string, where, data, options map[string]interface{}) (type
 		}
 
 		mongoWhere = types.M{
-			"$and": []interface{}{
+			"$and": types.S{
 				mongoWhere,
 				types.M{"$or": writePerms},
 			},
@@ -485,10 +485,10 @@ func reduceRelationKeys(className string, query types.M) {
 
 }
 
-func relatedIds(className, key, owningID string) []interface{} {
+func relatedIds(className, key, owningID string) types.S {
 	coll := AdaptiveCollection(joinTableName(className, key))
 	results := coll.find(types.M{"owningId": owningID}, types.M{})
-	ids := []interface{}{}
+	ids := types.S{}
 	for _, r := range results {
 		id := r["relatedId"]
 		ids = append(ids, id)
@@ -500,7 +500,7 @@ func joinTableName(className, key string) string {
 	return "_Join:" + key + ":" + className
 }
 
-func addInObjectIdsIds(ids []interface{}, query types.M) {
+func addInObjectIdsIds(ids types.S, query types.M) {
 	if id, ok := query["objectId"].(string); ok {
 		query["objectId"] = types.M{"$eq": id}
 	}
@@ -510,7 +510,7 @@ func addInObjectIdsIds(ids []interface{}, query types.M) {
 		objectID = types.M{}
 	}
 
-	queryIn := []interface{}{}
+	queryIn := types.S{}
 	if objectID["$in"] != nil && utils.SliceInterface(objectID["$in"]) != nil {
 		in := utils.SliceInterface(objectID["$in"])
 		queryIn = append(queryIn, in...)
@@ -548,7 +548,7 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 				return query
 			}
 
-			relatedIds := []interface{}{}
+			relatedIds := types.S{}
 			if op["$in"] != nil {
 				ors := utils.SliceInterface(op["$in"])
 				for _, v := range ors {
@@ -568,7 +568,7 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 	return query
 }
 
-func owningIds(className, key string, relatedIds []interface{}) []interface{} {
+func owningIds(className, key string, relatedIds types.S) types.S {
 	coll := AdaptiveCollection(joinTableName(className, key))
 	query := types.M{
 		"relatedId": types.M{
@@ -576,7 +576,7 @@ func owningIds(className, key string, relatedIds []interface{}) []interface{} {
 		},
 	}
 	results := coll.find(query, types.M{})
-	ids := []interface{}{}
+	ids := types.S{}
 	for _, r := range results {
 		ids = append(ids, r["owningId"])
 	}

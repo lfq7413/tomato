@@ -50,7 +50,7 @@ func NewWrite(
 }
 
 // Execute ...
-func (w *Write) Execute() types.M {
+func (w *Write) Execute() (types.M, error) {
 	w.getUserAndRoleACL()
 	w.validateClientClassCreation()
 	w.validateSchema()
@@ -64,7 +64,7 @@ func (w *Write) Execute() types.M {
 	w.runDatabaseOperation()
 	w.handleFollowup()
 	w.runAfterTrigger()
-	return w.response
+	return w.response, nil
 }
 
 func (w *Write) getUserAndRoleACL() error {
@@ -274,7 +274,7 @@ func (w *Write) handleSession() error {
 			}
 			sessionData[k] = v
 		}
-		results := NewWrite(Master(), "_Session", nil, sessionData, types.M{}).Execute()
+		results, _ := NewWrite(Master(), "_Session", nil, sessionData, types.M{}).Execute()
 		if results["response"] == nil {
 			// TODO 创建 Session 失败
 			return nil

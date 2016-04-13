@@ -59,7 +59,7 @@ func Create(
 	auth *Auth,
 	className string,
 	object types.M,
-) types.M {
+) (types.M, error) {
 
 	enforceRoleSecurity("create", className, auth)
 	write := NewWrite(auth, className, nil, object, nil)
@@ -73,7 +73,7 @@ func Update(
 	className string,
 	objectID string,
 	object types.M,
-) types.M {
+) (types.M, error) {
 
 	enforceRoleSecurity("update", className, auth)
 

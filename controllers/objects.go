@@ -154,7 +154,7 @@ func (o *ObjectsController) Prepare() {
 	}
 }
 
-// HandleCreate ...
+// HandleCreate 处理对象创建请求，返回对象 id 与对象位置
 // @router /:className [post]
 func (o *ObjectsController) HandleCreate() {
 
@@ -162,35 +162,24 @@ func (o *ObjectsController) HandleCreate() {
 		o.ClassName = o.Ctx.Input.Param(":className")
 	}
 
-	var object types.M
-	json.Unmarshal(o.Ctx.Input.RequestBody, &object)
-
-	rest.Create(o.Auth, o.ClassName, object)
-
-	className := o.Ctx.Input.Param(":className")
-
-	var cls types.M
-	json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
-
-	objectId := utils.CreateObjectID()
-	now := time.Now().UTC()
-	cls["_id"] = objectId
-	cls["createdAt"] = now
-	cls["updatedAt"] = now
-
-	err := orm.TomatoDB.Insert(className, cls)
-	if err != nil {
-		log.Fatal(err)
+	if o.JSONBody == nil {
+		o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
+		o.ServeJSON()
+		return
 	}
 
-	data := types.M{}
-	data["objectId"] = objectId
-	data["createdAt"] = utils.TimetoString(now)
+	result, err := rest.Create(o.Auth, o.ClassName, o.JSONBody)
+	if err != nil {
+		o.Data["json"] = errs.ErrorToMap(err)
+		o.ServeJSON()
+		return
+	}
 
-	o.Data["json"] = data
+	o.Data["json"] = result["response"]
 	o.Ctx.Output.SetStatus(201)
-	o.Ctx.Output.Header("Location", config.TConfig.ServerURL+"/classes/"+className+"/"+objectId)
+	o.Ctx.Output.Header("Location", result["location"].(string))
 	o.ServeJSON()
+
 }
 
 // HandleGet ...

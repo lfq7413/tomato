@@ -1,7 +1,9 @@
 package rest
 
-import "github.com/lfq7413/tomato/config"
-import "github.com/lfq7413/tomato/utils"
+import (
+	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/utils"
+)
 
 func shouldVerifyEmails() bool {
 	return config.TConfig.VerifyUserEmails

@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var adapter *MongoAdapter
@@ -41,13 +41,13 @@ func DropCollection(className string) error {
 func Find(className string, where, options map[string]interface{}) []interface{} {
 	// TODO 处理错误
 	if options == nil {
-		options = bson.M{}
+		options = types.M{}
 	}
 	if where == nil {
-		where = bson.M{}
+		where = types.M{}
 	}
 
-	mongoOptions := bson.M{}
+	mongoOptions := types.M{}
 	if options["skip"] != nil {
 		mongoOptions["skip"] = options["skip"]
 	}
@@ -104,25 +104,25 @@ func Find(className string, where, options map[string]interface{}) []interface{}
 	// 组装查询条件，查找可被当前用户修改的对象
 	if options["acl"] != nil {
 		queryPerms := []interface{}{}
-		perm := bson.M{
-			"_rperm": bson.M{"$exists": false},
+		perm := types.M{
+			"_rperm": types.M{"$exists": false},
 		}
 		queryPerms = append(queryPerms, perm)
-		perm = bson.M{
-			"_rperm": bson.M{"$in": []string{"*"}},
+		perm = types.M{
+			"_rperm": types.M{"$in": []string{"*"}},
 		}
 		queryPerms = append(queryPerms, perm)
 		for _, acl := range aclGroup {
-			perm = bson.M{
-				"_rperm": bson.M{"$in": []string{acl}},
+			perm = types.M{
+				"_rperm": types.M{"$in": []string{acl}},
 			}
 			queryPerms = append(queryPerms, perm)
 		}
 
-		mongoWhere = bson.M{
+		mongoWhere = types.M{
 			"$and": []interface{}{
 				mongoWhere,
-				bson.M{"$or": queryPerms},
+				types.M{"$or": queryPerms},
 			},
 		}
 	}
@@ -169,21 +169,21 @@ func Destroy(className string, where map[string]interface{}, options map[string]
 	// 组装查询条件，查找可被当前用户修改的对象
 	if options["acl"] != nil {
 		writePerms := []interface{}{}
-		perm := bson.M{
-			"_wperm": bson.M{"$exists": false},
+		perm := types.M{
+			"_wperm": types.M{"$exists": false},
 		}
 		writePerms = append(writePerms, perm)
 		for _, acl := range aclGroup {
-			perm = bson.M{
-				"_wperm": bson.M{"$in": []string{acl}},
+			perm = types.M{
+				"_wperm": types.M{"$in": []string{acl}},
 			}
 			writePerms = append(writePerms, perm)
 		}
 
-		mongoWhere = bson.M{
+		mongoWhere = types.M{
 			"$and": []interface{}{
 				mongoWhere,
-				bson.M{"$or": writePerms},
+				types.M{"$or": writePerms},
 			},
 		}
 	}
@@ -192,7 +192,7 @@ func Destroy(className string, where map[string]interface{}, options map[string]
 }
 
 // Update ...
-func Update(className string, where, data, options map[string]interface{}) (bson.M, error) {
+func Update(className string, where, data, options map[string]interface{}) (types.M, error) {
 	// TODO 处理错误
 	data = utils.CopyMap(data)
 	acceptor := func(schema *Schema) bool {
@@ -226,21 +226,21 @@ func Update(className string, where, data, options map[string]interface{}) (bson
 	// 组装查询条件，查找可被当前用户修改的对象
 	if options["acl"] != nil {
 		writePerms := []interface{}{}
-		perm := bson.M{
-			"_wperm": bson.M{"$exists": false},
+		perm := types.M{
+			"_wperm": types.M{"$exists": false},
 		}
 		writePerms = append(writePerms, perm)
 		for _, acl := range aclGroup {
-			perm = bson.M{
-				"_wperm": bson.M{"$in": []string{acl}},
+			perm = types.M{
+				"_wperm": types.M{"$in": []string{acl}},
 			}
 			writePerms = append(writePerms, perm)
 		}
 
-		mongoWhere = bson.M{
+		mongoWhere = types.M{
 			"$and": []interface{}{
 				mongoWhere,
-				bson.M{"$or": writePerms},
+				types.M{"$or": writePerms},
 			},
 		}
 	}
@@ -249,7 +249,7 @@ func Update(className string, where, data, options map[string]interface{}) (bson
 	result := coll.findOneAndUpdate(mongoWhere, mongoUpdate)
 	// TODO 处理返回错误
 
-	response := bson.M{}
+	response := types.M{}
 	if mongoUpdate["$inc"] != nil && utils.MapInterface(mongoUpdate["$inc"]) != nil {
 		inc := utils.MapInterface(mongoUpdate["$inc"])
 		for k := range inc {
@@ -435,7 +435,7 @@ func canAddField(schema *Schema, className string, object map[string]interface{}
 	}
 }
 
-func keysForQuery(query bson.M) []string {
+func keysForQuery(query types.M) []string {
 	answer := []string{}
 
 	var s interface{}
@@ -461,7 +461,7 @@ func keysForQuery(query bson.M) []string {
 	return answer
 }
 
-func reduceRelationKeys(className string, query bson.M) {
+func reduceRelationKeys(className string, query types.M) {
 	if query["$or"] != nil {
 		subQuerys := utils.SliceInterface(query["$or"])
 		for _, v := range subQuerys {
@@ -487,7 +487,7 @@ func reduceRelationKeys(className string, query bson.M) {
 
 func relatedIds(className, key, owningID string) []interface{} {
 	coll := AdaptiveCollection(joinTableName(className, key))
-	results := coll.find(bson.M{"owningId": owningID}, bson.M{})
+	results := coll.find(types.M{"owningId": owningID}, types.M{})
 	ids := []interface{}{}
 	for _, r := range results {
 		id := r["relatedId"]
@@ -500,14 +500,14 @@ func joinTableName(className, key string) string {
 	return "_Join:" + key + ":" + className
 }
 
-func addInObjectIdsIds(ids []interface{}, query bson.M) {
+func addInObjectIdsIds(ids []interface{}, query types.M) {
 	if id, ok := query["objectId"].(string); ok {
-		query["objectId"] = bson.M{"$eq": id}
+		query["objectId"] = types.M{"$eq": id}
 	}
 
 	objectID := utils.MapInterface(query["objectId"])
 	if objectID == nil {
-		objectID = bson.M{}
+		objectID = types.M{}
 	}
 
 	queryIn := []interface{}{}
@@ -522,7 +522,7 @@ func addInObjectIdsIds(ids []interface{}, query bson.M) {
 	query["objectId"] = objectID
 }
 
-func reduceInRelation(className string, query bson.M, schema *Schema) bson.M {
+func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 	if query["$or"] != nil {
 		ors := utils.SliceInterface(query["$or"])
 		for i, v := range ors {
@@ -570,12 +570,12 @@ func reduceInRelation(className string, query bson.M, schema *Schema) bson.M {
 
 func owningIds(className, key string, relatedIds []interface{}) []interface{} {
 	coll := AdaptiveCollection(joinTableName(className, key))
-	query := bson.M{
-		"relatedId": bson.M{
+	query := types.M{
+		"relatedId": types.M{
 			"$in": relatedIds,
 		},
 	}
-	results := coll.find(query, bson.M{})
+	results := coll.find(query, types.M{})
 	ids := []interface{}{}
 	for _, r := range results {
 		ids = append(ids, r["owningId"])
@@ -583,7 +583,7 @@ func owningIds(className, key string, relatedIds []interface{}) []interface{} {
 	return ids
 }
 
-func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject bson.M) bson.M {
+func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) types.M {
 	res := untransformObjectT(schema, className, mongoObject, false)
 	object := utils.MapInterface(res)
 	if className != "_User" {

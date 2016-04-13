@@ -1,6 +1,8 @@
 package utils
 
-import "regexp"
+import (
+	"regexp"
+)
 
 // AppendString 连接两个 []string
 func AppendString(slice1 []string, slice2 []string) []string {

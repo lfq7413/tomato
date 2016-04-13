@@ -5,10 +5,9 @@ import (
 	"strings"
 
 	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
-
-import "gopkg.in/mgo.v2/bson"
 
 // SchemasController ...
 type SchemasController struct {
@@ -20,7 +19,7 @@ type SchemasController struct {
 func (s *SchemasController) HandleFind() {
 	result, err := orm.SchemaCollection().GetAllSchemas()
 	if err != nil && result == nil {
-		s.Data["json"] = bson.M{
+		s.Data["json"] = types.M{
 			"results": []interface{}{},
 		}
 		s.ServeJSON()
@@ -29,7 +28,7 @@ func (s *SchemasController) HandleFind() {
 	for i, v := range result {
 		result[i] = orm.MongoSchemaToSchemaAPIResponse(v)
 	}
-	s.Data["json"] = bson.M{
+	s.Data["json"] = types.M{
 		"results": result,
 	}
 	s.ServeJSON()
@@ -56,7 +55,7 @@ func (s *SchemasController) HandleCreate() {
 		// TODO 数据为空
 		return
 	}
-	var data bson.M
+	var data types.M
 	err := json.Unmarshal(s.Ctx.Input.RequestBody, &data)
 	if err != nil {
 		// TODO 解析错误
@@ -95,7 +94,7 @@ func (s *SchemasController) HandleUpdate() {
 		// TODO 数据为空
 		return
 	}
-	var data bson.M
+	var data types.M
 	err := json.Unmarshal(s.Ctx.Input.RequestBody, &data)
 	if err != nil {
 		// TODO 解析错误
@@ -110,7 +109,7 @@ func (s *SchemasController) HandleUpdate() {
 		return
 	}
 
-	submittedFields := bson.M{}
+	submittedFields := types.M{}
 	if data["fields"] != nil && utils.MapInterface(data["fields"]) != nil {
 		submittedFields = utils.MapInterface(data["fields"])
 	}
@@ -137,7 +136,7 @@ func (s *SchemasController) HandleDelete() {
 	}
 
 	collection := orm.AdaptiveCollection(className)
-	count := collection.Count(bson.M{}, bson.M{})
+	count := collection.Count(types.M{}, types.M{})
 	if count > 0 {
 		// TODO 类不为空
 		return
@@ -152,7 +151,7 @@ func (s *SchemasController) HandleDelete() {
 	}
 }
 
-func removeJoinTables(mongoSchema bson.M) error {
+func removeJoinTables(mongoSchema types.M) error {
 	for field, v := range mongoSchema {
 		fieldType := utils.String(v)
 		if strings.HasPrefix(fieldType, "relation<") {

@@ -1,6 +1,8 @@
 package controllers
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // ResetController ...
 type ResetController struct {

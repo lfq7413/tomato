@@ -1,6 +1,8 @@
 package utils
 
-import "time"
+import (
+	"time"
+)
 
 // ISO8601 ...
 const ISO8601 = "2006-01-02T15:04:05.000Z"

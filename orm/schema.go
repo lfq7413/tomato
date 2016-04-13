@@ -1,71 +1,72 @@
 package orm
 
-import (
-	"regexp"
+import "regexp"
 
-	"gopkg.in/mgo.v2/bson"
+import (
+	"strings"
+
+	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
-import "github.com/lfq7413/tomato/utils"
-import "strings"
 
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
-var defaultClassLevelPermissions bson.M
-var defaultColumns map[string]bson.M
+var defaultClassLevelPermissions types.M
+var defaultColumns map[string]types.M
 var requiredColumns map[string][]string
 
 func init() {
-	defaultClassLevelPermissions = bson.M{}
+	defaultClassLevelPermissions = types.M{}
 	for _, v := range clpValidKeys {
-		defaultClassLevelPermissions[v] = bson.M{
+		defaultClassLevelPermissions[v] = types.M{
 			"*": true,
 		}
 	}
-	defaultColumns = map[string]bson.M{
-		"_Default": bson.M{
-			"objectId":  bson.M{"type": "String"},
-			"createdAt": bson.M{"type": "Date"},
-			"updatedAt": bson.M{"type": "Date"},
-			"ACL":       bson.M{"type": "ACL"},
+	defaultColumns = map[string]types.M{
+		"_Default": types.M{
+			"objectId":  types.M{"type": "String"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
 		},
-		"_User": bson.M{
-			"username":      bson.M{"type": "String"},
-			"password":      bson.M{"type": "String"},
-			"authData":      bson.M{"type": "Object"},
-			"email":         bson.M{"type": "String"},
-			"emailVerified": bson.M{"type": "Boolean"},
+		"_User": types.M{
+			"username":      types.M{"type": "String"},
+			"password":      types.M{"type": "String"},
+			"authData":      types.M{"type": "Object"},
+			"email":         types.M{"type": "String"},
+			"emailVerified": types.M{"type": "Boolean"},
 		},
-		"_Installation": bson.M{
-			"installationId":   bson.M{"type": "String"},
-			"deviceToken":      bson.M{"type": "String"},
-			"channels":         bson.M{"type": "Array"},
-			"deviceType":       bson.M{"type": "String"},
-			"pushType":         bson.M{"type": "String"},
-			"GCMSenderId":      bson.M{"type": "String"},
-			"timeZone":         bson.M{"type": "String"},
-			"localeIdentifier": bson.M{"type": "String"},
-			"badge":            bson.M{"type": "Number"},
+		"_Installation": types.M{
+			"installationId":   types.M{"type": "String"},
+			"deviceToken":      types.M{"type": "String"},
+			"channels":         types.M{"type": "Array"},
+			"deviceType":       types.M{"type": "String"},
+			"pushType":         types.M{"type": "String"},
+			"GCMSenderId":      types.M{"type": "String"},
+			"timeZone":         types.M{"type": "String"},
+			"localeIdentifier": types.M{"type": "String"},
+			"badge":            types.M{"type": "Number"},
 		},
-		"_Role": bson.M{
-			"name":  bson.M{"type": "String"},
-			"users": bson.M{"type": "Relation", "targetClass": "_User"},
-			"roles": bson.M{"type": "Relation", "targetClass": "_Role"},
+		"_Role": types.M{
+			"name":  types.M{"type": "String"},
+			"users": types.M{"type": "Relation", "targetClass": "_User"},
+			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
 		},
-		"_Session": bson.M{
-			"restricted":     bson.M{"type": "Boolean"},
-			"user":           bson.M{"type": "Pointer", "targetClass": "_User"},
-			"installationId": bson.M{"type": "String"},
-			"sessionToken":   bson.M{"type": "String"},
-			"expiresAt":      bson.M{"type": "Date"},
-			"createdWith":    bson.M{"type": "Object"},
+		"_Session": types.M{
+			"restricted":     types.M{"type": "Boolean"},
+			"user":           types.M{"type": "Pointer", "targetClass": "_User"},
+			"installationId": types.M{"type": "String"},
+			"sessionToken":   types.M{"type": "String"},
+			"expiresAt":      types.M{"type": "Date"},
+			"createdWith":    types.M{"type": "Object"},
 		},
-		"_Product": bson.M{
-			"productIdentifier": bson.M{"type": "String"},
-			"download":          bson.M{"type": "File"},
-			"downloadName":      bson.M{"type": "String"},
-			"icon":              bson.M{"type": "File"},
-			"order":             bson.M{"type": "Number"},
-			"title":             bson.M{"type": "String"},
-			"subtitle":          bson.M{"type": "String"},
+		"_Product": types.M{
+			"productIdentifier": types.M{"type": "String"},
+			"download":          types.M{"type": "File"},
+			"downloadName":      types.M{"type": "String"},
+			"icon":              types.M{"type": "File"},
+			"order":             types.M{"type": "Number"},
+			"title":             types.M{"type": "String"},
+			"subtitle":          types.M{"type": "String"},
 		},
 	}
 	requiredColumns = map[string][]string{
@@ -77,12 +78,12 @@ func init() {
 // Schema ...
 type Schema struct {
 	collection *MongoSchemaCollection
-	data       bson.M
-	perms      bson.M
+	data       types.M
+	perms      types.M
 }
 
 // AddClassIfNotExists 添加类定义
-func (s *Schema) AddClassIfNotExists(className string, fields bson.M, classLevelPermissions bson.M) bson.M {
+func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLevelPermissions types.M) types.M {
 	if s.data[className] != nil {
 		// TODO 类已存在
 		return nil
@@ -103,7 +104,7 @@ func (s *Schema) AddClassIfNotExists(className string, fields bson.M, classLevel
 }
 
 // UpdateClass 更新类
-func (s *Schema) UpdateClass(className string, submittedFields bson.M, classLevelPermissions bson.M) bson.M {
+func (s *Schema) UpdateClass(className string, submittedFields types.M, classLevelPermissions types.M) types.M {
 	if s.data[className] == nil {
 		// TODO 类不存在
 		return nil
@@ -193,18 +194,18 @@ func (s *Schema) deleteField(fieldName string, className string) {
 		if strings.HasPrefix(name, "*") {
 			mongoFieldName = "_p_" + fieldName
 		}
-		update := bson.M{
-			"$unset": bson.M{mongoFieldName: nil},
+		update := types.M{
+			"$unset": types.M{mongoFieldName: nil},
 		}
-		collection.UpdateMany(bson.M{}, update)
+		collection.UpdateMany(types.M{}, update)
 	}
-	update := bson.M{
-		"$unset": bson.M{fieldName: nil},
+	update := types.M{
+		"$unset": types.M{fieldName: nil},
 	}
 	s.collection.updateSchema(className, update)
 }
 
-func (s *Schema) validateObject(className string, object, query bson.M) {
+func (s *Schema) validateObject(className string, object, query types.M) {
 	// TODO 处理错误
 	geocount := 0
 	s.validateClassName(className, false)
@@ -263,13 +264,13 @@ func (s *Schema) validateClassName(className string, freeze bool) {
 		// TODO 不能添加
 		return
 	}
-	s.collection.addSchema(className, bson.M{})
+	s.collection.addSchema(className, types.M{})
 	s.reloadData()
 	s.validateClassName(className, true)
 	// TODO 处理上步错误
 }
 
-func (s *Schema) validateRequiredColumns(className string, object, query bson.M) {
+func (s *Schema) validateRequiredColumns(className string, object, query types.M) {
 	// TODO 处理错误
 	columns := requiredColumns[className]
 	if columns == nil || len(columns) == 0 {
@@ -339,11 +340,11 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 		}
 	}
 
-	query := bson.M{
-		key: bson.M{"$exists": true},
+	query := types.M{
+		key: types.M{"$exists": true},
 	}
-	update := bson.M{
-		"$set": bson.M{key: fieldtype},
+	update := types.M{
+		"$set": types.M{key: fieldtype},
 	}
 	s.collection.upsertSchema(className, query, update)
 
@@ -352,12 +353,12 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 
 }
 
-func (s *Schema) setPermissions(className string, perms bson.M) {
+func (s *Schema) setPermissions(className string, perms types.M) {
 	validateCLP(perms)
-	metadata := bson.M{
-		"_metadata": bson.M{"class_permissions": perms},
+	metadata := types.M{
+		"_metadata": types.M{"class_permissions": perms},
 	}
-	update := bson.M{
+	update := types.M{
 		"$set": metadata,
 	}
 	s.collection.updateSchema(className, update)
@@ -391,15 +392,15 @@ func (s *Schema) getExpectedType(className, key string) string {
 }
 
 func (s *Schema) reloadData() {
-	s.data = bson.M{}
-	s.perms = bson.M{}
+	s.data = types.M{}
+	s.perms = types.M{}
 	results, err := s.collection.GetAllSchemas()
 	if err != nil {
 		return
 	}
 	for _, obj := range results {
 		className := ""
-		classData := bson.M{}
+		classData := types.M{}
 		var permsData interface{}
 
 		for k, v := range obj {
@@ -428,7 +429,7 @@ func thenValidateField(schema *Schema, className, key, fieldtype string) {
 	schema.validateField(className, key, fieldtype, false)
 }
 
-func thenValidateRequiredColumns(schema *Schema, className string, object, query bson.M) {
+func thenValidateRequiredColumns(schema *Schema, className string, object, query types.M) {
 	schema.validateRequiredColumns(className, object, query)
 }
 
@@ -512,8 +513,8 @@ func getObjectType(obj interface{}) string {
 }
 
 // MongoSchemaToSchemaAPIResponse ...
-func MongoSchemaToSchemaAPIResponse(schema bson.M) bson.M {
-	result := bson.M{
+func MongoSchemaToSchemaAPIResponse(schema types.M) types.M {
+	result := types.M{
 		"className": schema["_id"],
 		"fields":    mongoSchemaAPIResponseFields(schema),
 	}
@@ -535,7 +536,7 @@ func MongoSchemaToSchemaAPIResponse(schema bson.M) bson.M {
 
 var nonFieldSchemaKeys = []string{"_id", "_metadata", "_client_permissions"}
 
-func mongoSchemaAPIResponseFields(schema bson.M) bson.M {
+func mongoSchemaAPIResponseFields(schema types.M) types.M {
 	fieldNames := []string{}
 	for k := range schema {
 		t := false
@@ -549,81 +550,81 @@ func mongoSchemaAPIResponseFields(schema bson.M) bson.M {
 			fieldNames = append(fieldNames, k)
 		}
 	}
-	response := bson.M{}
+	response := types.M{}
 	for _, v := range fieldNames {
 		response[v] = mongoFieldTypeToSchemaAPIType(utils.String(schema[v]))
 	}
-	response["ACL"] = bson.M{
+	response["ACL"] = types.M{
 		"type": "ACL",
 	}
-	response["createdAt"] = bson.M{
+	response["createdAt"] = types.M{
 		"type": "Date",
 	}
-	response["updatedAt"] = bson.M{
+	response["updatedAt"] = types.M{
 		"type": "Date",
 	}
-	response["objectId"] = bson.M{
+	response["objectId"] = types.M{
 		"type": "String",
 	}
 	return response
 }
 
-func mongoFieldTypeToSchemaAPIType(t string) bson.M {
+func mongoFieldTypeToSchemaAPIType(t string) types.M {
 	if t[0] == '*' {
-		return bson.M{
+		return types.M{
 			"type":        "Pointer",
 			"targetClass": string(t[1:]),
 		}
 	}
 	if strings.HasPrefix(t, "relation<") {
-		return bson.M{
+		return types.M{
 			"type":        "Relation",
 			"targetClass": string(t[len("relation<") : len(t)-1]),
 		}
 	}
 	switch t {
 	case "number":
-		return bson.M{
+		return types.M{
 			"type": "Number",
 		}
 	case "string":
-		return bson.M{
+		return types.M{
 			"type": "String",
 		}
 	case "boolean":
-		return bson.M{
+		return types.M{
 			"type": "Boolean",
 		}
 	case "date":
-		return bson.M{
+		return types.M{
 			"type": "Date",
 		}
 	case "map":
-		return bson.M{
+		return types.M{
 			"type": "Object",
 		}
 	case "object":
-		return bson.M{
+		return types.M{
 			"type": "Object",
 		}
 	case "array":
-		return bson.M{
+		return types.M{
 			"type": "Array",
 		}
 	case "geopoint":
-		return bson.M{
+		return types.M{
 			"type": "GeoPoint",
 		}
 	case "file":
-		return bson.M{
+		return types.M{
 			"type": "File",
 		}
 	}
 
-	return bson.M{}
+	return types.M{}
 }
 
-func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, classLevelPermissions bson.M) bson.M {
+func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) types.M {
 	if ClassNameIsValid(className) == false {
 		// TODO 无效类名
 		return nil
@@ -639,7 +640,7 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, cl
 		}
 	}
 
-	mongoObject := bson.M{
+	mongoObject := types.M{
 		"_id":       className,
 		"objectId":  "string",
 		"updatedAt": "string",
@@ -678,9 +679,9 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, cl
 	}
 
 	validateCLP(classLevelPermissions)
-	var metadata bson.M
+	var metadata types.M
 	if mongoObject["_metadata"] == nil && utils.MapInterface(mongoObject["_metadata"]) == nil {
-		metadata = bson.M{}
+		metadata = types.M{}
 	} else {
 		metadata = utils.MapInterface(mongoObject["_metadata"])
 	}
@@ -691,7 +692,7 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields bson.M, className string, cl
 	}
 	mongoObject["_metadata"] = metadata
 
-	return bson.M{
+	return types.M{
 		"result": mongoObject,
 	}
 }
@@ -735,7 +736,7 @@ func fieldNameIsValidForClass(fieldName string, className string) bool {
 	return false
 }
 
-func schemaAPITypeToMongoFieldType(t bson.M) bson.M {
+func schemaAPITypeToMongoFieldType(t types.M) types.M {
 	if utils.String(t["type"]) == "" {
 		// TODO type 无效
 		return nil
@@ -756,7 +757,7 @@ func schemaAPITypeToMongoFieldType(t bson.M) bson.M {
 			// TODO 类名无效
 			return nil
 		}
-		return bson.M{"result": "*" + targetClass}
+		return types.M{"result": "*" + targetClass}
 	}
 	if apiType == "Relation" {
 		if t["targetClass"] == nil {
@@ -772,32 +773,32 @@ func schemaAPITypeToMongoFieldType(t bson.M) bson.M {
 			// TODO 类名无效
 			return nil
 		}
-		return bson.M{"result": "relation<" + targetClass + ">"}
+		return types.M{"result": "relation<" + targetClass + ">"}
 	}
 	switch apiType {
 	case "Number":
-		return bson.M{"result": "number"}
+		return types.M{"result": "number"}
 	case "String":
-		return bson.M{"result": "string"}
+		return types.M{"result": "string"}
 	case "Boolean":
-		return bson.M{"result": "boolean"}
+		return types.M{"result": "boolean"}
 	case "Date":
-		return bson.M{"result": "date"}
+		return types.M{"result": "date"}
 	case "Object":
-		return bson.M{"result": "object"}
+		return types.M{"result": "object"}
 	case "Array":
-		return bson.M{"result": "array"}
+		return types.M{"result": "array"}
 	case "GeoPoint":
-		return bson.M{"result": "geopoint"}
+		return types.M{"result": "geopoint"}
 	case "File":
-		return bson.M{"result": "file"}
+		return types.M{"result": "file"}
 	default:
 		// TODO type 不正确
 		return nil
 	}
 }
 
-func validateCLP(perms bson.M) {
+func validateCLP(perms types.M) {
 	if perms == nil {
 		return
 	}
@@ -853,8 +854,8 @@ func verifyPermissionKey(key string) {
 	}
 }
 
-func buildMergedSchemaObject(mongoObject bson.M, putRequest bson.M) bson.M {
-	newSchema := bson.M{}
+func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
+	newSchema := types.M{}
 
 	sysSchemaField := []string{}
 	id := utils.String(mongoObject["_id"])

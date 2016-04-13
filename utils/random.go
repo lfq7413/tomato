@@ -1,7 +1,9 @@
 package utils
 
-import "github.com/astaxie/beego/utils"
-import "gopkg.in/mgo.v2/bson"
+import (
+	"github.com/astaxie/beego/utils"
+	"gopkg.in/mgo.v2/bson"
+)
 
 // CreateObjectID ...
 func CreateObjectID() string {

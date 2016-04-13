@@ -1,15 +1,15 @@
 package rest
 
 import (
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // Auth 保存当前请求的用户权限信息
 type Auth struct {
 	IsMaster       bool
 	InstallationID string
-	User           map[string]interface{}
+	User           types.M
 	UserRoles      []string
 	FetchedRoles   bool
 	RolePromise    []string
@@ -37,11 +37,11 @@ func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
 		}
 	}
 	// 缓存中不存在时，从数据库中查询
-	restOptions := bson.M{
+	restOptions := types.M{
 		"limit":   1,
 		"include": "user",
 	}
-	restWhere := bson.M{
+	restWhere := types.M{
 		"_session_token": sessionToken,
 	}
 	response := NewQuery(Master(), "_Session", restWhere, restOptions).Execute()
@@ -101,20 +101,20 @@ func (a *Auth) GetUserRoles() []string {
 // loadRoles 从数据库加载用户角色列表
 func (a *Auth) loadRoles() []string {
 	// _Role 表中的 users 字段为 Relation 类型，应该使用 $relatedTo 去查询
-	users := map[string]interface{}{
+	users := types.M{
 		"__type":    "Pointer",
 		"className": "_User",
 		"objectId":  a.User["objectId"],
 	}
-	relatedTo := bson.M{
+	relatedTo := types.M{
 		"object": users,
 		"key":    "users",
 	}
-	where := map[string]interface{}{
+	where := types.M{
 		"$relatedTo": relatedTo,
 	}
 	// 取出当前用户直接对应的所有角色
-	response := Find(Master(), "_Role", where, map[string]interface{}{})
+	response := Find(Master(), "_Role", where, types.M{})
 	if utils.HasResults(response) == false {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
@@ -132,14 +132,14 @@ func (a *Auth) loadRoles() []string {
 		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v)...)
 	}
 
-	objectID := map[string]interface{}{
+	objectID := types.M{
 		"$in": roleIDs,
 	}
-	where = map[string]interface{}{
+	where = types.M{
 		"objectId": objectID,
 	}
 	// 取出所有角色名称
-	response = Find(Master(), "_Role", where, map[string]interface{}{})
+	response = Find(Master(), "_Role", where, types.M{})
 	results = utils.SliceInterface(response["results"])
 	a.UserRoles = []string{}
 	for _, v := range results {
@@ -155,20 +155,20 @@ func (a *Auth) loadRoles() []string {
 // getAllRoleNamesForID 取出角色 id 对应的父角色
 func (a *Auth) getAllRoleNamesForID(roleID string) []string {
 	// _Role 表中的 roles 字段为 Relation 类型，应该使用 $relatedTo 去查询
-	rolePointer := map[string]interface{}{
+	rolePointer := types.M{
 		"__type":    "Pointer",
 		"className": "_Role",
 		"objectId":  roleID,
 	}
-	relatedTo := bson.M{
+	relatedTo := types.M{
 		"object": rolePointer,
 		"key":    "roles",
 	}
-	where := map[string]interface{}{
+	where := types.M{
 		"$relatedTo": relatedTo,
 	}
 	// 取出当前角色对应的直接父角色
-	response := Find(Master(), "_Role", where, map[string]interface{}{})
+	response := Find(Master(), "_Role", where, types.M{})
 	if utils.HasResults(response) == false {
 		return []string{}
 	}

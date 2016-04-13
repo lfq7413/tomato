@@ -1,16 +1,15 @@
 package orm
 
 import (
+	"encoding/base64"
+	"regexp"
+	"sort"
+	"strings"
 	"time"
 
-	"gopkg.in/mgo.v2/bson"
+	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
-
-import "github.com/lfq7413/tomato/utils"
-import "regexp"
-import "strings"
-import "sort"
-import "encoding/base64"
 
 // transformKey 把 key 转换为数据库中保存的格式
 func transformKey(schema *Schema, className, key string) string {
@@ -19,9 +18,9 @@ func transformKey(schema *Schema, className, key string) string {
 }
 
 // transformKeyValue 把传入的键值对转换为数据库中保存的格式
-func transformKeyValue(schema *Schema, className, restKey string, restValue interface{}, options bson.M) (string, interface{}) {
+func transformKeyValue(schema *Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}) {
 	if options == nil {
-		options = bson.M{}
+		options = types.M{}
 	}
 
 	// 检测 key 是否为 内置字段
@@ -130,7 +129,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		}
 	}
 	if inArray && options["query"] != nil && utils.SliceInterface(restValue) == nil {
-		return key, bson.M{"$all": []interface{}{restValue}}
+		return key, types.M{"$all": []interface{}{restValue}}
 	}
 
 	// 处理原子数据
@@ -156,7 +155,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		}
 		outValue := []interface{}{}
 		for _, restObj := range valueArray {
-			_, v := transformKeyValue(schema, className, restKey, restObj, bson.M{"inArray": true})
+			_, v := transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
 			outValue = append(outValue, v)
 		}
 		return key, outValue
@@ -175,9 +174,9 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	}
 
 	// 处理正常的对象
-	normalValue := bson.M{}
+	normalValue := types.M{}
 	for subRestKey, subRestValue := range utils.MapInterface(restValue) {
-		k, v := transformKeyValue(schema, className, subRestKey, subRestValue, bson.M{"inObject": true})
+		k, v := transformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
 		normalValue[k] = v
 	}
 	return key, normalValue
@@ -200,12 +199,12 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 		keys = append(keys, k)
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
-	answer := bson.M{}
+	answer := types.M{}
 
 	for _, key := range keys {
 		switch key {
 		case "$lt", "$lte", "$gt", "$gte", "$exists", "$ne", "$eq":
-			answer[key] = transformAtom(object[key], true, bson.M{"inArray": inArray})
+			answer[key] = transformAtom(object[key], true, types.M{"inArray": inArray})
 
 		case "$in", "$nin":
 			arr := utils.SliceInterface(object[key])
@@ -215,7 +214,7 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			}
 			answerArr := []interface{}{}
 			for _, v := range arr {
-				answerArr = append(answerArr, transformAtom(v, true, bson.M{}))
+				answerArr = append(answerArr, transformAtom(v, true, types.M{}))
 			}
 			answer[key] = answerArr
 
@@ -227,7 +226,7 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			}
 			answerArr := []interface{}{}
 			for _, v := range arr {
-				answerArr = append(answerArr, transformAtom(v, true, bson.M{"inArray": true}))
+				answerArr = append(answerArr, transformAtom(v, true, types.M{"inArray": true}))
 			}
 			answer[key] = answerArr
 
@@ -288,7 +287,7 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			}
 			box1 := utils.MapInterface(box[0])
 			box2 := utils.MapInterface(box[1])
-			answer[key] = bson.M{
+			answer[key] = types.M{
 				"$box": []interface{}{
 					[]interface{}{box1["longitude"], box1["latitude"]},
 					[]interface{}{box2["longitude"], box2["latitude"]},
@@ -308,10 +307,10 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 	return answer
 }
 
-func transformAtom(atom interface{}, force bool, options bson.M) interface{} {
+func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 	// TODO 处理错误
 	if options == nil {
-		options = bson.M{}
+		options = types.M{}
 	}
 	inArray := false
 	inObject := false
@@ -341,7 +340,7 @@ func transformAtom(atom interface{}, force bool, options bson.M) interface{} {
 			if inArray == false && inObject == false {
 				return utils.String(object["className"]) + "$" + utils.String(object["objectId"])
 			}
-			return bson.M{
+			return types.M{
 				"__type":    "Pointer",
 				"className": object["className"],
 				"objectId":  object["objectId"],
@@ -394,7 +393,7 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 		if flatten {
 			return nil
 		}
-		return bson.M{
+		return types.M{
 			"__op": "$unset",
 			"arg":  "",
 		}
@@ -407,7 +406,7 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 		if flatten {
 			return operatorMap["amount"]
 		}
-		return bson.M{
+		return types.M{
 			"__op": "$inc",
 			"arg":  operatorMap["amount"],
 		}
@@ -420,19 +419,19 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 		}
 		toAdd := []interface{}{}
 		for _, obj := range objects {
-			o := transformAtom(obj, true, bson.M{"inArray": true})
+			o := transformAtom(obj, true, types.M{"inArray": true})
 			toAdd = append(toAdd, o)
 		}
 		if flatten {
 			return toAdd
 		}
-		mongoOp := bson.M{
+		mongoOp := types.M{
 			"Add":       "$push",
 			"AddUnique": "$addToSet",
 		}[op]
-		return bson.M{
+		return types.M{
 			"__op": mongoOp,
-			"arg": bson.M{
+			"arg": types.M{
 				"$each": toAdd,
 			},
 		}
@@ -445,13 +444,13 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 		}
 		toRemove := []interface{}{}
 		for _, obj := range objects {
-			o := transformAtom(obj, true, bson.M{"inArray": true})
+			o := transformAtom(obj, true, types.M{"inArray": true})
 			toRemove = append(toRemove, o)
 		}
 		if flatten {
 			return []interface{}{}
 		}
-		return bson.M{
+		return types.M{
 			"__op": "$pullAll",
 			"arg":  toRemove,
 		}
@@ -463,14 +462,14 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 }
 
 // transformCreate ...
-func transformCreate(schema *Schema, className string, create bson.M) bson.M {
+func transformCreate(schema *Schema, className string, create types.M) types.M {
 	// TODO 处理错误
 	if className == "_User" {
 		create = transformAuthData(create)
 	}
 	mongoCreate := transformACL(create)
 	for k, v := range create {
-		key, value := transformKeyValue(schema, className, k, v, bson.M{})
+		key, value := transformKeyValue(schema, className, k, v, types.M{})
 		if value != nil {
 			mongoCreate[key] = value
 		}
@@ -478,7 +477,7 @@ func transformCreate(schema *Schema, className string, create bson.M) bson.M {
 	return mongoCreate
 }
 
-func transformAuthData(restObject bson.M) bson.M {
+func transformAuthData(restObject types.M) types.M {
 	if restObject["authData"] != nil {
 		authData := utils.MapInterface(restObject["authData"])
 		for provider, v := range authData {
@@ -489,8 +488,8 @@ func transformAuthData(restObject bson.M) bson.M {
 	return restObject
 }
 
-func transformACL(restObject bson.M) bson.M {
-	output := bson.M{}
+func transformACL(restObject types.M) types.M {
+	output := types.M{}
 	if restObject["ACL"] == nil {
 		return output
 	}
@@ -514,15 +513,15 @@ func transformACL(restObject bson.M) bson.M {
 	return output
 }
 
-func transformWhere(schema *Schema, className string, where bson.M) bson.M {
+func transformWhere(schema *Schema, className string, where types.M) types.M {
 	// TODO 处理错误
-	mongoWhere := bson.M{}
+	mongoWhere := types.M{}
 	if where["ACL"] != nil {
 		// TODO 不能查询 ACL
 		return nil
 	}
 	for k, v := range where {
-		options := bson.M{
+		options := types.M{
 			"query":    true,
 			"validate": true,
 		}
@@ -533,7 +532,7 @@ func transformWhere(schema *Schema, className string, where bson.M) bson.M {
 	return mongoWhere
 }
 
-func transformUpdate(schema *Schema, className string, update bson.M) bson.M {
+func transformUpdate(schema *Schema, className string, update types.M) types.M {
 	// TODO 处理错误
 	if update == nil {
 		// TODO 更新数据不能为空
@@ -543,10 +542,10 @@ func transformUpdate(schema *Schema, className string, update bson.M) bson.M {
 		update = transformAuthData(update)
 	}
 
-	mongoUpdate := bson.M{}
+	mongoUpdate := types.M{}
 	acl := transformACL(update)
 	if acl["_rperm"] != nil || acl["_wperm"] != nil {
-		set := bson.M{}
+		set := types.M{}
 		if acl["_rperm"] != nil {
 			set["_rperm"] = acl["_rperm"]
 		}
@@ -557,19 +556,19 @@ func transformUpdate(schema *Schema, className string, update bson.M) bson.M {
 	}
 
 	for k, v := range update {
-		key, value := transformKeyValue(schema, className, k, v, bson.M{"update": true})
+		key, value := transformKeyValue(schema, className, k, v, types.M{"update": true})
 
 		op := utils.MapInterface(value)
 		if op != nil && op["__op"] != nil {
 			opKey := utils.String(op["__op"])
-			opValue := bson.M{}
+			opValue := types.M{}
 			if mongoUpdate[opKey] != nil {
 				opValue = utils.MapInterface(mongoUpdate[opKey])
 			}
 			opValue[key] = op["arg"]
 			mongoUpdate[opKey] = opValue
 		} else {
-			set := bson.M{}
+			set := types.M{}
 			if mongoUpdate["$set"] != nil {
 				set = utils.MapInterface(mongoUpdate["$set"])
 			}
@@ -638,7 +637,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 				authDataMatch, _ := regexp.MatchString(`^_auth_data_([a-zA-Z0-9_]+)$`, key)
 				if authDataMatch {
 					provider := key[len("_auth_data_"):]
-					authData := bson.M{}
+					authData := types.M{}
 					if restObject["authData"] != nil {
 						authData = utils.MapInterface(restObject["authData"])
 					}
@@ -672,7 +671,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 						// TODO 指向了错误的类
 						return nil
 					}
-					restObject[newKey] = bson.M{
+					restObject[newKey] = types.M{
 						"__type":    "Pointer",
 						"className": objData[0],
 						"objectId":  objData[1],
@@ -704,13 +703,13 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 	return nil
 }
 
-func untransformACL(mongoObject bson.M) bson.M {
-	output := bson.M{}
+func untransformACL(mongoObject types.M) types.M {
+	output := types.M{}
 	if mongoObject["_rperm"] == nil && mongoObject["_wperm"] == nil {
 		return output
 	}
 
-	acl := bson.M{}
+	acl := types.M{}
 	rperm := []interface{}{}
 	wperm := []interface{}{}
 	if mongoObject["_rperm"] != nil {
@@ -722,7 +721,7 @@ func untransformACL(mongoObject bson.M) bson.M {
 	for _, v := range rperm {
 		entry := v.(string)
 		if acl[entry] == nil {
-			acl[entry] = bson.M{"read": true}
+			acl[entry] = types.M{"read": true}
 		} else {
 			per := utils.MapInterface(acl[entry])
 			per["read"] = true
@@ -732,7 +731,7 @@ func untransformACL(mongoObject bson.M) bson.M {
 	for _, v := range wperm {
 		entry := v.(string)
 		if acl[entry] == nil {
-			acl[entry] = bson.M{"write": true}
+			acl[entry] = types.M{"write": true}
 		} else {
 			per := utils.MapInterface(acl[entry])
 			per["write"] = true
@@ -752,12 +751,12 @@ func cannotTransform() interface{} {
 
 type dateCoder struct{}
 
-func (d dateCoder) jsonToDatabase(json bson.M) interface{} {
+func (d dateCoder) jsonToDatabase(json types.M) interface{} {
 	t, _ := utils.StringtoTime(utils.String(json["iso"]))
 	return t
 }
 
-func (d dateCoder) isValidJSON(value bson.M) bool {
+func (d dateCoder) isValidJSON(value types.M) bool {
 	return value != nil && utils.String(value["__type"]) == "Date"
 }
 
@@ -767,7 +766,7 @@ func (b bytesCoder) databaseToJSON(object interface{}) interface{} {
 	data := object.([]byte)
 	json := base64.StdEncoding.EncodeToString(data)
 
-	return bson.M{
+	return types.M{
 		"__type": "Bytes",
 		"base64": json,
 	}
@@ -780,12 +779,12 @@ func (b bytesCoder) isValidDatabaseObject(object interface{}) bool {
 	return false
 }
 
-func (b bytesCoder) jsonToDatabase(json bson.M) interface{} {
+func (b bytesCoder) jsonToDatabase(json types.M) interface{} {
 	by, _ := base64.StdEncoding.DecodeString(utils.String(json["base64"]))
 	return by
 }
 
-func (b bytesCoder) isValidJSON(value bson.M) bool {
+func (b bytesCoder) isValidJSON(value types.M) bool {
 	return value != nil && utils.String(value["__type"]) == "Bytes"
 }
 
@@ -793,7 +792,7 @@ type geoPointCoder struct{}
 
 func (g geoPointCoder) databaseToJSON(object interface{}) interface{} {
 	v := object.([]interface{})
-	return bson.M{
+	return types.M{
 		"__type":    "GeoPoint",
 		"longitude": v[0],
 		"latitude":  v[1],
@@ -809,18 +808,18 @@ func (g geoPointCoder) isValidDatabaseObject(object interface{}) bool {
 	return false
 }
 
-func (g geoPointCoder) jsonToDatabase(json bson.M) interface{} {
+func (g geoPointCoder) jsonToDatabase(json types.M) interface{} {
 	return []interface{}{json["longitude"], json["latitude"]}
 }
 
-func (g geoPointCoder) isValidJSON(value bson.M) bool {
+func (g geoPointCoder) isValidJSON(value types.M) bool {
 	return value != nil && utils.String(value["__type"]) == "GeoPoint"
 }
 
 type fileCoder struct{}
 
 func (f fileCoder) databaseToJSON(object interface{}) interface{} {
-	return bson.M{
+	return types.M{
 		"__type": "File",
 		"name":   object,
 	}
@@ -833,10 +832,10 @@ func (f fileCoder) isValidDatabaseObject(object interface{}) bool {
 	return false
 }
 
-func (f fileCoder) jsonToDatabase(json bson.M) interface{} {
+func (f fileCoder) jsonToDatabase(json types.M) interface{} {
 	return json["name"]
 }
 
-func (f fileCoder) isValidJSON(value bson.M) bool {
+func (f fileCoder) isValidJSON(value types.M) bool {
 	return value != nil && utils.String(value["__type"]) == "File"
 }

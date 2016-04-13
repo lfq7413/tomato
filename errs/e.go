@@ -3,10 +3,10 @@ package errs
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 
 	"github.com/lfq7413/tomato/types"
 )
-import "strconv"
 
 // E 组装 json 格式错误信息：
 // {"code": 105,"error": "invalid field name: bl!ng"}

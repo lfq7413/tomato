@@ -1,6 +1,8 @@
 package rest
 
-import "github.com/lfq7413/tomato/orm"
+import (
+	"github.com/lfq7413/tomato/orm"
+)
 
 // Destroy ...
 type Destroy struct {

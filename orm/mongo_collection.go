@@ -1,8 +1,8 @@
 package orm
 
 import (
+	"github.com/lfq7413/tomato/types"
 	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // MongoCollection ...
@@ -10,15 +10,15 @@ type MongoCollection struct {
 	collection *mgo.Collection
 }
 
-func (m *MongoCollection) find(query interface{}, options map[string]interface{}) []bson.M {
+func (m *MongoCollection) find(query interface{}, options map[string]interface{}) []types.M {
 	result, err := m.rawFind(query, options)
 	if err != nil || result == nil {
-		return []bson.M{}
+		return []types.M{}
 	}
 	return result
 }
 
-func (m *MongoCollection) rawFind(query interface{}, options map[string]interface{}) ([]bson.M, error) {
+func (m *MongoCollection) rawFind(query interface{}, options map[string]interface{}) ([]types.M, error) {
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
 		if sort, ok := options["sort"].([]string); ok {
@@ -35,7 +35,7 @@ func (m *MongoCollection) rawFind(query interface{}, options map[string]interfac
 			q = q.Limit(int(limit))
 		}
 	}
-	var result []bson.M
+	var result []types.M
 	err := q.All(&result)
 	return result, err
 }
@@ -66,16 +66,16 @@ func (m *MongoCollection) Count(query interface{}, options map[string]interface{
 }
 
 // 当前框架 Update 时的 selector 中，只包含 objectid ，所以更新之后再去查找，找到的为同一对象
-func (m *MongoCollection) findOneAndUpdate(selector interface{}, update interface{}) bson.M {
+func (m *MongoCollection) findOneAndUpdate(selector interface{}, update interface{}) types.M {
 	// TODO 使用 Apply 实现
 	err := m.collection.Update(selector, update)
 	if err != nil {
-		return bson.M{}
+		return types.M{}
 	}
-	var result bson.M
+	var result types.M
 	err = m.collection.Find(selector).One(&result)
 	if err != nil || result == nil {
-		return bson.M{}
+		return types.M{}
 	}
 	return result
 }

@@ -1,8 +1,11 @@
 package controllers
 
-import "encoding/json"
-import "github.com/lfq7413/tomato/push"
-import "github.com/lfq7413/tomato/utils"
+import (
+	"encoding/json"
+
+	"github.com/lfq7413/tomato/push"
+	"github.com/lfq7413/tomato/utils"
+)
 
 // PushController ...
 type PushController struct {

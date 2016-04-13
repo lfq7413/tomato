@@ -1,8 +1,11 @@
 package files
 
-import "os"
-import "github.com/astaxie/beego/utils"
-import "github.com/lfq7413/tomato/config"
+import (
+	"os"
+
+	"github.com/astaxie/beego/utils"
+	"github.com/lfq7413/tomato/config"
+)
 
 type diskAdapter struct {
 }

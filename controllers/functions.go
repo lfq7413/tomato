@@ -1,7 +1,10 @@
 package controllers
 
-import "encoding/json"
-import "github.com/lfq7413/tomato/rest"
+import (
+	"encoding/json"
+
+	"github.com/lfq7413/tomato/rest"
+)
 
 // FunctionsController ...
 type FunctionsController struct {

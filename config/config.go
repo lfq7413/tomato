@@ -1,6 +1,8 @@
 package config
 
-import "github.com/astaxie/beego"
+import (
+	"github.com/astaxie/beego"
+)
 
 // Config ...
 type Config struct {

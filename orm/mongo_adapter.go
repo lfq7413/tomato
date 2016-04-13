@@ -1,7 +1,10 @@
 package orm
 
-import "gopkg.in/mgo.v2"
-import "strings"
+import (
+	"strings"
+
+	"gopkg.in/mgo.v2"
+)
 
 const mongoSchemaCollectionName = "_SCHEMA"
 

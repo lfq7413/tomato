@@ -1,6 +1,8 @@
 package orm
 
-import "gopkg.in/mgo.v2/bson"
+import (
+	"github.com/lfq7413/tomato/types"
+)
 
 // MongoSchemaCollection ...
 type MongoSchemaCollection struct {
@@ -8,13 +10,13 @@ type MongoSchemaCollection struct {
 }
 
 // GetAllSchemas 获取所有 Schema
-func (m *MongoSchemaCollection) GetAllSchemas() ([]bson.M, error) {
+func (m *MongoSchemaCollection) GetAllSchemas() ([]types.M, error) {
 	return m.collection.rawFind(map[string]interface{}{}, map[string]interface{}{})
 }
 
 // FindSchema 查找指定的 Schema
-func (m *MongoSchemaCollection) FindSchema(name string) (bson.M, error) {
-	options := bson.M{
+func (m *MongoSchemaCollection) FindSchema(name string) (types.M, error) {
+	options := types.M{
 		"limit": 1,
 	}
 	results, err := m.collection.rawFind(mongoSchemaQueryFromNameQuery(name, nil), options)
@@ -22,13 +24,13 @@ func (m *MongoSchemaCollection) FindSchema(name string) (bson.M, error) {
 		return nil, err
 	}
 	if results == nil || len(results) == 0 {
-		return bson.M{}, nil
+		return types.M{}, nil
 	}
 	return results[0], nil
 }
 
 // FindAndDeleteSchema ...
-func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (bson.M, error) {
+func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (types.M, error) {
 	result, err := m.FindSchema(name)
 	if err != nil {
 		return nil, err
@@ -40,25 +42,25 @@ func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (bson.M, error)
 	return result, nil
 }
 
-func (m *MongoSchemaCollection) addSchema(name string, fields bson.M) error {
+func (m *MongoSchemaCollection) addSchema(name string, fields types.M) error {
 	mongoObject := mongoSchemaObjectFromNameFields(name, fields)
 	return m.collection.insertOne(mongoObject)
 }
 
-func (m *MongoSchemaCollection) updateSchema(name string, update bson.M) error {
+func (m *MongoSchemaCollection) updateSchema(name string, update types.M) error {
 	return m.collection.updateOne(mongoSchemaQueryFromNameQuery(name, nil), update)
 }
 
-func (m *MongoSchemaCollection) upsertSchema(name string, query, update bson.M) error {
+func (m *MongoSchemaCollection) upsertSchema(name string, query, update types.M) error {
 	return m.collection.upsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
 }
 
-func mongoSchemaQueryFromNameQuery(name string, query bson.M) bson.M {
+func mongoSchemaQueryFromNameQuery(name string, query types.M) types.M {
 	return mongoSchemaObjectFromNameFields(name, query)
 }
 
-func mongoSchemaObjectFromNameFields(name string, fields bson.M) bson.M {
-	object := bson.M{
+func mongoSchemaObjectFromNameFields(name string, fields types.M) types.M {
+	object := types.M{
 		"_id": name,
 	}
 	if fields != nil {

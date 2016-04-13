@@ -1,8 +1,10 @@
 package utils
 
-import "crypto/sha256"
-import "io"
-import "fmt"
+import (
+	"crypto/sha256"
+	"fmt"
+	"io"
+)
 
 // Hash ...
 func Hash(password string) string {

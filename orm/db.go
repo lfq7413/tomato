@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/types"
 	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -57,8 +57,8 @@ func (d *Database) Insert(collection string, docs interface{}) error {
 }
 
 // FindOne ...
-func (d *Database) FindOne(collection string, query interface{}) (bson.M, error) {
-	var result bson.M
+func (d *Database) FindOne(collection string, query interface{}) (types.M, error) {
+	var result types.M
 	err := d.Database.C(collection).Find(query).One(&result)
 	return result, err
 }
@@ -70,8 +70,8 @@ func (d *Database) Update(collection string, selector interface{}, update interf
 }
 
 // Find ...
-func (d *Database) Find(collection string, query interface{}) ([]bson.M, error) {
-	var result []bson.M
+func (d *Database) Find(collection string, query interface{}) ([]types.M, error) {
+	var result []types.M
 	err := d.Database.C(collection).Find(query).All(&result)
 	return result, err
 }

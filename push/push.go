@@ -1,11 +1,14 @@
 package push
 
-import "github.com/lfq7413/tomato/rest"
-import "github.com/lfq7413/tomato/config"
-import "github.com/lfq7413/tomato/utils"
-import "github.com/lfq7413/tomato/orm"
-import "strconv"
-import "time"
+import (
+	"strconv"
+	"time"
+
+	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/utils"
+)
 
 var adapter pushAdapter
 

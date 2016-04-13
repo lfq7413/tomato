@@ -71,6 +71,7 @@ func (o *ObjectsController) Prepare() {
 			}
 			o.JSONBody = object
 		} else {
+			// TODO 转换 json 之前，可能需要判断一下数据大小，以确保不会去转换超大数据
 			// 其他格式的请求数据，仅尝试转换，转换失败不返回错误
 			var object types.M
 			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)

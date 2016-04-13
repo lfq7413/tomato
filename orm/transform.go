@@ -597,10 +597,11 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 			results = append(results, untransformObjectT(schema, className, o, false))
 		}
 		return results
+	}
 
-	case time.Time:
-		t := mongoObject.(time.Time)
-		return utils.TimetoString(t)
+	d := dateCoder{}
+	if d.isValidDatabaseObject(mongoObject) {
+		return d.databaseToJSON(mongoObject)
 	}
 
 	b := bytesCoder{}
@@ -750,6 +751,23 @@ func cannotTransform() interface{} {
 }
 
 type dateCoder struct{}
+
+func (d dateCoder) databaseToJSON(object interface{}) interface{} {
+	data := object.(time.Time)
+	json := utils.TimetoString(data)
+
+	return types.M{
+		"__type": "Date",
+		"iso":    json,
+	}
+}
+
+func (d dateCoder) isValidDatabaseObject(object interface{}) bool {
+	if _, ok := object.(time.Time); ok {
+		return true
+	}
+	return false
+}
 
 func (d dateCoder) jsonToDatabase(json types.M) interface{} {
 	t, _ := utils.StringtoTime(utils.String(json["iso"]))

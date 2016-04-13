@@ -223,7 +223,7 @@ func (o *ObjectsController) HandleGet() {
 
 }
 
-// HandleUpdate ...
+// HandleUpdate 处理更新指定对象请求
 // @router /:className/:objectId [put]
 func (o *ObjectsController) HandleUpdate() {
 
@@ -234,30 +234,22 @@ func (o *ObjectsController) HandleUpdate() {
 		o.ObjectID = o.Ctx.Input.Param(":objectId")
 	}
 
-	var object types.M
-	json.Unmarshal(o.Ctx.Input.RequestBody, &object)
-
-	rest.Update(o.Auth, o.ClassName, o.ObjectID, object)
-
-	className := o.Ctx.Input.Param(":className")
-	objectId := o.Ctx.Input.Param(":objectId")
-
-	var cls types.M
-	json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
-
-	now := time.Now().UTC()
-	cls["updatedAt"] = now
-	update := types.M{"$set": cls}
-
-	err := orm.TomatoDB.Update(className, types.M{"_id": objectId}, update)
-	if err != nil {
-		log.Fatal(err)
+	if o.JSONBody == nil {
+		o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
+		o.ServeJSON()
+		return
 	}
 
-	data := types.M{}
-	data["updatedAt"] = utils.TimetoString(now)
-	o.Data["json"] = data
+	result, err := rest.Update(o.Auth, o.ClassName, o.ObjectID, o.JSONBody)
+	if err != nil {
+		o.Data["json"] = errs.ErrorToMap(err)
+		o.ServeJSON()
+		return
+	}
+
+	o.Data["json"] = result["response"]
 	o.ServeJSON()
+
 }
 
 // HandleFind ...

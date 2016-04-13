@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"gopkg.in/mgo.v2/bson"
+	"github.com/lfq7413/tomato/types"
 )
 import "strconv"
 
@@ -15,20 +15,20 @@ func E(code int, msg string) error {
 	return errors.New(text)
 }
 
-// ErrorToBson 把 error 转换为 bson.M 格式，准备返回给客户端
-func ErrorToBson(e error) bson.M {
-	var result bson.M
+// ErrorToMap 把 error 转换为 types.M 格式，准备返回给客户端
+func ErrorToMap(e error) types.M {
+	var result types.M
 	errMsg := e.Error()
 	err := json.Unmarshal([]byte(errMsg), &result)
 	if err != nil {
-		result = bson.M{"code": OtherCause, "error": e.Error()}
+		result = types.M{"code": OtherCause, "error": e.Error()}
 	}
 	return result
 }
 
-// ErrorMessageToBson 把错误转换为 bson.M 格式，准备返回给客户端
-func ErrorMessageToBson(code int, msg string) bson.M {
-	return bson.M{"code": code, "error": msg}
+// ErrorMessageToMap 把错误转换为 types.M 格式，准备返回给客户端
+func ErrorMessageToMap(code int, msg string) types.M {
+	return types.M{"code": code, "error": msg}
 }
 
 // OtherCause ...

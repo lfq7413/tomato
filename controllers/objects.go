@@ -15,8 +15,8 @@ import (
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // ObjectsController 对象操作 API 的基础结构
@@ -30,7 +30,7 @@ type ObjectsController struct {
 	beego.Controller
 	Info      *RequestInfo
 	Auth      *rest.Auth
-	JSONBody  map[string]interface{}
+	JSONBody  types.M
 	RawBody   []byte
 	ClassName string
 	ObjectID  string
@@ -66,7 +66,7 @@ func (o *ObjectsController) Prepare() {
 			var object map[string]interface{}
 			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)
 			if err != nil {
-				o.Data["json"] = errs.ErrorMessageToBson(errs.InvalidJSON, "invalid JSON")
+				o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "invalid JSON")
 				o.ServeJSON()
 				return
 			}
@@ -112,7 +112,7 @@ func (o *ObjectsController) Prepare() {
 			}
 		} else {
 			// 请求数据中也不存在 APPID 时，返回错误
-			o.Data["json"] = errs.ErrorMessageToBson(403, "unauthorized")
+			o.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
 			o.Ctx.Output.SetStatus(403)
 			o.ServeJSON()
 			return
@@ -131,7 +131,7 @@ func (o *ObjectsController) Prepare() {
 
 	// 校验请求权限
 	if info.AppID != config.TConfig.AppID {
-		o.Data["json"] = errs.ErrorMessageToBson(403, "unauthorized")
+		o.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
 		o.Ctx.Output.SetStatus(403)
 		o.ServeJSON()
 		return
@@ -141,7 +141,7 @@ func (o *ObjectsController) Prepare() {
 		return
 	}
 	if info.ClientKey != config.TConfig.ClientKey {
-		o.Data["json"] = errs.ErrorMessageToBson(403, "unauthorized")
+		o.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
 		o.Ctx.Output.SetStatus(403)
 		o.ServeJSON()
 		return
@@ -169,7 +169,7 @@ func (o *ObjectsController) HandleCreate() {
 
 	className := o.Ctx.Input.Param(":className")
 
-	var cls bson.M
+	var cls types.M
 	json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
 
 	objectId := utils.CreateObjectID()
@@ -183,7 +183,7 @@ func (o *ObjectsController) HandleCreate() {
 		log.Fatal(err)
 	}
 
-	data := bson.M{}
+	data := types.M{}
 	data["objectId"] = objectId
 	data["createdAt"] = utils.TimetoString(now)
 
@@ -212,7 +212,7 @@ func (o *ObjectsController) HandleGet() {
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 
-	cls := bson.M{}
+	cls := types.M{}
 	cls["_id"] = objectId
 
 	data, err := orm.TomatoDB.FindOne(className, cls)
@@ -252,19 +252,19 @@ func (o *ObjectsController) HandleUpdate() {
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 
-	var cls bson.M
+	var cls types.M
 	json.Unmarshal(o.Ctx.Input.RequestBody, &cls)
 
 	now := time.Now().UTC()
 	cls["updatedAt"] = now
-	update := bson.M{"$set": cls}
+	update := types.M{"$set": cls}
 
-	err := orm.TomatoDB.Update(className, bson.M{"_id": objectId}, update)
+	err := orm.TomatoDB.Update(className, types.M{"_id": objectId}, update)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	data := bson.M{}
+	data := types.M{}
 	data["updatedAt"] = utils.TimetoString(now)
 	o.Data["json"] = data
 	o.ServeJSON()
@@ -321,7 +321,7 @@ func (o *ObjectsController) HandleFind() {
 
 	className := o.Ctx.Input.Param(":className")
 
-	cls := bson.M{}
+	cls := types.M{}
 
 	data, err := orm.TomatoDB.Find(className, cls)
 	if err != nil {
@@ -338,7 +338,7 @@ func (o *ObjectsController) HandleFind() {
 			v["updatedAt"] = utils.TimetoString(updatedAt.UTC())
 		}
 	}
-	o.Data["json"] = bson.M{"results": data}
+	o.Data["json"] = types.M{"results": data}
 	o.ServeJSON()
 }
 
@@ -358,7 +358,7 @@ func (o *ObjectsController) HandleDelete() {
 	className := o.Ctx.Input.Param(":className")
 	objectId := o.Ctx.Input.Param(":objectId")
 
-	cls := bson.M{}
+	cls := types.M{}
 	cls["_id"] = objectId
 
 	err := orm.TomatoDB.Remove(className, cls)
@@ -366,7 +366,7 @@ func (o *ObjectsController) HandleDelete() {
 		log.Fatal(err)
 	}
 
-	data := bson.M{}
+	data := types.M{}
 	o.Data["json"] = data
 	o.ServeJSON()
 }

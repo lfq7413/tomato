@@ -21,7 +21,7 @@ type Write struct {
 	storage      types.M
 	runOptions   types.M
 	response     types.M
-	updatedAt    time.Time
+	updatedAt    string
 }
 
 // NewWrite 可用于 create 和 update ， create 时 query 为 nil
@@ -44,7 +44,7 @@ func NewWrite(
 		storage:      types.M{},
 		runOptions:   types.M{},
 		response:     nil,
-		updatedAt:    time.Now().UTC(),
+		updatedAt:    utils.TimetoString(time.Now().UTC()),
 	}
 	return write
 }
@@ -266,7 +266,7 @@ func (w *Write) handleSession() error {
 			"user":         user,
 			"createdWith":  createdWith,
 			"restricted":   true,
-			"expiresAt":    expiresAt,
+			"expiresAt":    utils.TimetoString(expiresAt),
 		}
 		for k, v := range w.data {
 			if k == "objectId" {
@@ -481,7 +481,7 @@ func (w *Write) transformUser() error {
 			"createdWith":    createdWith,
 			"restricted":     false,
 			"installationId": w.data["installationId"],
-			"expiresAt":      expiresAt,
+			"expiresAt":      utils.TimetoString(expiresAt),
 		}
 		if w.response != nil && w.response["response"] != nil {
 			response := utils.MapInterface(w.response["response"])

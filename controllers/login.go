@@ -78,7 +78,7 @@ func (l *LoginController) HandleLogIn() {
 		"user":         usr,
 		"createdWith":  createdWith,
 		"restricted":   false,
-		"expiresAt":    expiresAt,
+		"expiresAt":    utils.TimetoString(expiresAt),
 	}
 	if l.Info.InstallationID != "" {
 		sessionData["installationId"] = l.Info.InstallationID

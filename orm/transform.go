@@ -625,13 +625,13 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 				restObject["sessionToken"] = value
 
 			case "updatedAt", "_updated_at":
-				restObject["updatedAt"] = value
+				restObject["updatedAt"] = utils.TimetoString(value.(time.Time))
 
 			case "createdAt", "_created_at":
-				restObject["createdAt"] = value
+				restObject["createdAt"] = utils.TimetoString(value.(time.Time))
 
 			case "expiresAt", "_expiresAt":
-				restObject["expiresAt"] = value
+				restObject["expiresAt"] = utils.TimetoString(value.(time.Time))
 
 			default:
 				// 处理第三方登录数据

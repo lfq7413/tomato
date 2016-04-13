@@ -107,7 +107,7 @@ func NewQuery(
 }
 
 // Execute ...
-func (q *Query) Execute() types.M {
+func (q *Query) Execute() (types.M, error) {
 
 	fmt.Println("keys       ", q.keys)
 	fmt.Println("doCount    ", q.doCount)
@@ -118,7 +118,7 @@ func (q *Query) Execute() types.M {
 	q.runFind()
 	q.runCount()
 	q.handleInclude()
-	return q.response
+	return q.response, nil
 }
 
 // BuildRestWhere ...
@@ -184,7 +184,8 @@ func (q *Query) replaceSelect() error {
 	}
 
 	values := types.S{}
-	response := NewQuery(
+	// TODO 处理错误
+	response, _ := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
 		utils.MapInterface(queryValue["where"]),
@@ -234,7 +235,8 @@ func (q *Query) replaceDontSelect() error {
 	}
 
 	values := types.S{}
-	response := NewQuery(
+	// TODO 处理错误
+	response, _ := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
 		utils.MapInterface(queryValue["where"]),
@@ -277,7 +279,8 @@ func (q *Query) replaceInQuery() error {
 	}
 
 	values := types.S{}
-	response := NewQuery(
+	// TODO 处理错误
+	response, _ := NewQuery(
 		q.auth,
 		utils.String(inQueryValue["className"]),
 		utils.MapInterface(inQueryValue["where"]),
@@ -322,7 +325,8 @@ func (q *Query) replaceNotInQuery() error {
 	}
 
 	values := types.S{}
-	response := NewQuery(
+	// TODO 处理错误
+	response, _ := NewQuery(
 		q.auth,
 		utils.String(notInQueryValue["className"]),
 		utils.MapInterface(notInQueryValue["where"]),
@@ -438,7 +442,8 @@ func includePath(auth *Auth, response types.M, path []string) error {
 	where := types.M{
 		"objectId": objectID,
 	}
-	includeResponse := NewQuery(auth, className, where, types.M{}).Execute()
+	// TODO 处理错误
+	includeResponse, _ := NewQuery(auth, className, where, types.M{}).Execute()
 	if utils.HasResults(includeResponse) == false {
 		return nil
 	}

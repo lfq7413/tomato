@@ -74,8 +74,8 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 		restWhere["$and"] = and
 		orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
 	}
-
-	response := rest.Find(auth, "_Installation", where, types.M{})
+	// TODO 处理错误
+	response, _ := rest.Find(auth, "_Installation", where, types.M{})
 	if utils.HasResults(response) == false {
 		return nil
 	}

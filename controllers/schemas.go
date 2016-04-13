@@ -144,6 +144,7 @@ func (s *SchemasController) HandleDelete() {
 	collection.Drop()
 
 	coll := orm.SchemaCollection()
+	// TODO 处理错误
 	document, _ := coll.FindAndDeleteSchema(className)
 	if document != nil {
 		removeJoinTables(document)

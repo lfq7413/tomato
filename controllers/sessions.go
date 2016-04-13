@@ -64,7 +64,8 @@ func (s *SessionsController) HandleGetMe() {
 	where := types.M{
 		"sessionToken": s.Info.SessionToken,
 	}
-	response := rest.Find(rest.Master(), "_Session", where, types.M{})
+	// TODO 处理错误
+	response, _ := rest.Find(rest.Master(), "_Session", where, types.M{})
 	if utils.HasResults(response) == false {
 		// TODO 未找到 Session
 		return

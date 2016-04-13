@@ -44,7 +44,8 @@ func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
 	restWhere := types.M{
 		"_session_token": sessionToken,
 	}
-	response := NewQuery(Master(), "_Session", restWhere, restOptions).Execute()
+	// TODO 处理错误
+	response, _ := NewQuery(Master(), "_Session", restWhere, restOptions).Execute()
 
 	if response == nil || response["results"] == nil {
 		return Nobody()
@@ -114,7 +115,8 @@ func (a *Auth) loadRoles() []string {
 		"$relatedTo": relatedTo,
 	}
 	// 取出当前用户直接对应的所有角色
-	response := Find(Master(), "_Role", where, types.M{})
+	// TODO 处理错误
+	response, _ := Find(Master(), "_Role", where, types.M{})
 	if utils.HasResults(response) == false {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
@@ -139,7 +141,8 @@ func (a *Auth) loadRoles() []string {
 		"objectId": objectID,
 	}
 	// 取出所有角色名称
-	response = Find(Master(), "_Role", where, types.M{})
+	// TODO 处理错误
+	response, _ = Find(Master(), "_Role", where, types.M{})
 	results = utils.SliceInterface(response["results"])
 	a.UserRoles = []string{}
 	for _, v := range results {
@@ -168,7 +171,8 @@ func (a *Auth) getAllRoleNamesForID(roleID string) []string {
 		"$relatedTo": relatedTo,
 	}
 	// 取出当前角色对应的直接父角色
-	response := Find(Master(), "_Role", where, types.M{})
+	// TODO 处理错误
+	response, _ := Find(Master(), "_Role", where, types.M{})
 	if utils.HasResults(response) == false {
 		return []string{}
 	}

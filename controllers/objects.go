@@ -182,10 +182,9 @@ func (o *ObjectsController) HandleCreate() {
 
 }
 
-// HandleGet ...
+// HandleGet 处理查询指定对象请求，返回查询到的对象
 // @router /:className/:objectId [get]
 func (o *ObjectsController) HandleGet() {
-	fmt.Println("===========>Get()")
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
 	}
@@ -195,31 +194,33 @@ func (o *ObjectsController) HandleGet() {
 
 	options := types.M{}
 	where := types.M{"objectId": o.ObjectID}
+	response, err := rest.Find(o.Auth, o.ClassName, where, options)
 
-	rest.Find(o.Auth, o.ClassName, where, options)
-
-	className := o.Ctx.Input.Param(":className")
-	objectId := o.Ctx.Input.Param(":objectId")
-
-	cls := types.M{}
-	cls["_id"] = objectId
-
-	data, err := orm.TomatoDB.FindOne(className, cls)
 	if err != nil {
-		log.Fatal(err)
+		o.Data["json"] = errs.ErrorToMap(err)
+		o.ServeJSON()
+		return
 	}
 
-	data["objectId"] = data["_id"]
-	delete(data, "_id")
-	if createdAt, ok := data["createdAt"].(time.Time); ok {
-		data["createdAt"] = utils.TimetoString(createdAt.UTC())
-	}
-	if updatedAt, ok := data["updatedAt"].(time.Time); ok {
-		data["updatedAt"] = utils.TimetoString(updatedAt.UTC())
+	results := utils.SliceInterface(response["results"])
+	if results == nil && len(results) == 0 {
+		o.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Object not found.")
+		o.ServeJSON()
+		return
 	}
 
-	o.Data["json"] = data
+	result := utils.MapInterface(results[0])
+	if o.ClassName == "_User" {
+		delete(result, "sessionToken")
+		if o.Auth.User != nil && result["objectId"].(string) == o.Auth.User["objectId"].(string) {
+			// 重新设置 session token
+			result["sessionToken"] = o.Info.SessionToken
+		}
+	}
+
+	o.Data["json"] = result
 	o.ServeJSON()
+
 }
 
 // HandleUpdate ...

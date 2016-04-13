@@ -18,7 +18,8 @@ func (l *LogoutController) HandleLogOut() {
 		where := types.M{
 			"sessionToken": l.Info.SessionToken,
 		}
-		records := rest.Find(rest.Master(), "_Session", where, types.M{})
+		// TODO 处理错误
+		records, _ := rest.Find(rest.Master(), "_Session", where, types.M{})
 		if utils.HasResults(records) {
 			results := utils.SliceInterface(records["results"])
 			obj := utils.MapInterface(results[0])

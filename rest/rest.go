@@ -11,7 +11,7 @@ func Find(
 	className string,
 	where types.M,
 	options types.M,
-) types.M {
+) (types.M, error) {
 
 	enforceRoleSecurity("find", className, auth)
 	query := NewQuery(auth, className, where, options)
@@ -37,7 +37,8 @@ func Delete(
 	if TriggerExists(TypeBeforeDelete, className) ||
 		TriggerExists(TypeAfterDelete, className) ||
 		className == "_Session" {
-		response := Find(auth, className, types.M{"objectId": objectID}, types.M{})
+		// TODO 处理错误
+		response, _ := Find(auth, className, types.M{"objectId": objectID}, types.M{})
 		if utils.HasResults(response) == false {
 			// TODO 未找到要删除的对象
 		}
@@ -82,7 +83,8 @@ func Update(
 	var response types.M
 	if TriggerExists(TypeBeforeSave, className) ||
 		TriggerExists(TypeAfterSave, className) {
-		response = Find(auth, className, types.M{"objectId": objectID}, types.M{})
+		// TODO 处理错误
+		response, _ = Find(auth, className, types.M{"objectId": objectID}, types.M{})
 
 		if utils.HasResults(response) == false {
 			// TODO 未找到要更新的对象

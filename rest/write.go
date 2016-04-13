@@ -274,6 +274,7 @@ func (w *Write) handleSession() error {
 			}
 			sessionData[k] = v
 		}
+		// TODO 处理错误
 		results, _ := NewWrite(Master(), "_Session", nil, sessionData, types.M{}).Execute()
 		if results["response"] == nil {
 			// TODO 创建 Session 失败

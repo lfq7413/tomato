@@ -59,6 +59,7 @@ func (d *diskAdapter) getFileData(filename string) []byte {
 	data := []byte{}
 	buf := make([]byte, 1)
 	for {
+		// TODO 处理错误
 		n, _ := f.Read(buf)
 		if n == 0 {
 			break

@@ -73,7 +73,8 @@ func (u *UsersController) HandleMe() {
 	option := types.M{
 		"include": "user",
 	}
-	response := rest.Find(rest.Master(), "_Session", where, option)
+	// TODO 处理错误
+	response, _ := rest.Find(rest.Master(), "_Session", where, option)
 	if utils.HasResults(response) == false {
 		// TODO SessionToken 无效
 		return

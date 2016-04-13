@@ -136,6 +136,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	value := transformAtom(restValue, false, options)
 	if value != cannotTransform() {
 		if timeField && utils.String(value) != "" {
+			// TODO 处理错误
 			value, _ = utils.StringtoTime(utils.String(value))
 		}
 		return key, value
@@ -770,6 +771,7 @@ func (d dateCoder) isValidDatabaseObject(object interface{}) bool {
 }
 
 func (d dateCoder) jsonToDatabase(json types.M) interface{} {
+	// TODO 处理错误
 	t, _ := utils.StringtoTime(utils.String(json["iso"]))
 	return t
 }
@@ -798,6 +800,7 @@ func (b bytesCoder) isValidDatabaseObject(object interface{}) bool {
 }
 
 func (b bytesCoder) jsonToDatabase(json types.M) interface{} {
+	// TODO 处理错误
 	by, _ := base64.StdEncoding.DecodeString(utils.String(json["base64"]))
 	return by
 }

@@ -3,11 +3,9 @@ package controllers
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/lfq7413/tomato/config"
@@ -252,28 +250,31 @@ func (o *ObjectsController) HandleUpdate() {
 
 }
 
-// HandleFind ...
+// HandleFind 处理查找对象请求
 // @router /:className [get]
 func (o *ObjectsController) HandleFind() {
-	fmt.Println("===========>GetAll()")
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
 	}
 
-	// TODO 获取查询参数，并组装
+	// 获取查询参数，并组装
 	options := types.M{}
 	if o.GetString("skip") != "" {
 		if i, err := strconv.Atoi(o.GetString("skip")); err == nil {
 			options["skip"] = i
 		} else {
-			// TODO return error
+			o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidQuery, "skip should be int")
+			o.ServeJSON()
+			return
 		}
 	}
 	if o.GetString("limit") != "" {
 		if i, err := strconv.Atoi(o.GetString("limit")); err == nil {
 			options["limit"] = i
 		} else {
-			// TODO return error
+			o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidQuery, "limit should be int")
+			o.ServeJSON()
+			return
 		}
 	} else {
 		options["limit"] = 100
@@ -298,32 +299,29 @@ func (o *ObjectsController) HandleFind() {
 	if o.GetString("where") != "" {
 		err := json.Unmarshal([]byte(o.GetString("where")), &where)
 		if err != nil {
-			// TODO return err
+			o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "where should be valid json")
+			o.ServeJSON()
+			return
 		}
 	}
 
-	rest.Find(o.Auth, o.ClassName, where, options)
-
-	className := o.Ctx.Input.Param(":className")
-
-	cls := types.M{}
-
-	data, err := orm.TomatoDB.Find(className, cls)
+	response, err := rest.Find(o.Auth, o.ClassName, where, options)
 	if err != nil {
-		log.Fatal(err)
+		o.Data["json"] = errs.ErrorToMap(err)
+		o.ServeJSON()
+		return
+	}
+	if utils.HasResults(response) {
+		results := utils.SliceInterface(response["results"])
+		for _, v := range results {
+			result := utils.MapInterface(v)
+			if result["sessionToken"] != nil && o.Info.SessionToken != "" {
+				result["sessionToken"] = o.Info.SessionToken
+			}
+		}
 	}
 
-	for _, v := range data {
-		v["objectId"] = v["_id"]
-		delete(v, "_id")
-		if createdAt, ok := v["createdAt"].(time.Time); ok {
-			v["createdAt"] = utils.TimetoString(createdAt.UTC())
-		}
-		if updatedAt, ok := v["updatedAt"].(time.Time); ok {
-			v["updatedAt"] = utils.TimetoString(updatedAt.UTC())
-		}
-	}
-	o.Data["json"] = types.M{"results": data}
+	o.Data["json"] = response
 	o.ServeJSON()
 }
 

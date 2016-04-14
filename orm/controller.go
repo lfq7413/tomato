@@ -403,6 +403,17 @@ func LoadSchema(acceptor func(*Schema) bool) *Schema {
 	return schemaPromise
 }
 
+// RedirectClassNameForKey 返回指定类的字段所对应的类型
+func RedirectClassNameForKey(className, key string) string {
+	schema := LoadSchema(nil)
+	t := schema.getExpectedType(className, key)
+	b, _ := regexp.MatchString(`^relation<(.*)>$`, t)
+	if b {
+		return className[len("relation<"):(len(className) - 1)]
+	}
+	return className
+}
+
 // canAddField ...
 func canAddField(schema *Schema, className string, object types.M, acl []string) {
 	// TODO 处理错误

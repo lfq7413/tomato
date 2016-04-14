@@ -13,14 +13,16 @@ import (
 
 // Query ...
 type Query struct {
-	auth        *Auth
-	className   string
-	Where       types.M
-	findOptions types.M
-	response    types.M
-	doCount     bool
-	include     [][]string
-	keys        []string
+	auth              *Auth
+	className         string
+	Where             types.M
+	findOptions       types.M
+	response          types.M
+	doCount           bool
+	include           [][]string
+	keys              []string
+	redirectKey       string
+	redirectClassName string
 }
 
 // NewQuery ...
@@ -31,14 +33,16 @@ func NewQuery(
 	options types.M,
 ) *Query {
 	query := &Query{
-		auth:        auth,
-		className:   className,
-		Where:       where,
-		findOptions: types.M{},
-		response:    types.M{},
-		doCount:     false,
-		include:     [][]string{},
-		keys:        []string{},
+		auth:              auth,
+		className:         className,
+		Where:             where,
+		findOptions:       types.M{},
+		response:          types.M{},
+		doCount:           false,
+		include:           [][]string{},
+		keys:              []string{},
+		redirectKey:       "",
+		redirectClassName: "",
 	}
 
 	if auth.IsMaster == false {
@@ -99,6 +103,11 @@ func NewQuery(
 					query.include = append(query.include, strings.Split(set, "."))
 				} // query.include = [["name"],["name","friend"],["user"],["user","seeeion"]]
 			}
+		case "redirectClassNameForKey":
+			if s, ok := v.(string); ok {
+				query.redirectKey = s
+				query.redirectClassName = ""
+			}
 		default:
 		}
 	}
@@ -124,6 +133,7 @@ func (q *Query) Execute() (types.M, error) {
 // BuildRestWhere ...
 func (q *Query) BuildRestWhere() error {
 	q.getUserAndRoleACL()
+	q.redirectClassNameForKey()
 	q.validateClientClassCreation()
 	q.replaceSelect()
 	q.replaceDontSelect()
@@ -139,6 +149,18 @@ func (q *Query) getUserAndRoleACL() error {
 	roles := q.auth.GetUserRoles()
 	roles = append(roles, q.auth.User["objectId"].(string))
 	q.findOptions["acl"] = roles
+	return nil
+}
+
+func (q *Query) redirectClassNameForKey() error {
+	if q.redirectKey == "" {
+		return nil
+	}
+
+	newClassName := orm.RedirectClassNameForKey(q.className, q.redirectKey)
+	q.className = newClassName
+	q.redirectClassName = newClassName
+
 	return nil
 }
 

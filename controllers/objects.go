@@ -290,6 +290,9 @@ func (o *ObjectsController) HandleFind() {
 	if o.GetString("include") != "" {
 		options["include"] = o.GetString("include")
 	}
+	if o.GetString("redirectClassNameForKey") != "" {
+		options["redirectClassNameForKey"] = o.GetString("redirectClassNameForKey")
+	}
 
 	where := types.M{}
 	if o.GetString("where") != "" {

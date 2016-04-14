@@ -30,7 +30,7 @@ func NewDestroy(
 }
 
 // Execute ...
-func (d *Destroy) Execute() types.M {
+func (d *Destroy) Execute() error {
 	d.handleSession()
 	d.runBeforeTrigger()
 	d.handleUserRoles()

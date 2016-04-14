@@ -24,7 +24,7 @@ func Delete(
 	auth *Auth,
 	className string,
 	objectID string,
-) types.M {
+) error {
 
 	if className == "_User" && auth.CouldUpdateUserID(objectID) == false {
 		// TODO 权限不足

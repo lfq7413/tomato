@@ -3,14 +3,12 @@ package controllers
 import (
 	"encoding/base64"
 	"encoding/json"
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/astaxie/beego"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -325,7 +323,7 @@ func (o *ObjectsController) HandleFind() {
 	o.ServeJSON()
 }
 
-// HandleDelete ...
+// HandleDelete 处理删除指定对象请求
 // @router /:className/:objectId [delete]
 func (o *ObjectsController) HandleDelete() {
 
@@ -336,68 +334,45 @@ func (o *ObjectsController) HandleDelete() {
 		o.ObjectID = o.Ctx.Input.Param(":objectId")
 	}
 
-	rest.Delete(o.Auth, o.ClassName, o.ObjectID)
-
-	className := o.Ctx.Input.Param(":className")
-	objectId := o.Ctx.Input.Param(":objectId")
-
-	cls := types.M{}
-	cls["_id"] = objectId
-
-	err := orm.TomatoDB.Remove(className, cls)
+	err := rest.Delete(o.Auth, o.ClassName, o.ObjectID)
 	if err != nil {
-		log.Fatal(err)
+		o.Data["json"] = errs.ErrorToMap(err)
+		o.ServeJSON()
+		return
 	}
 
-	data := types.M{}
-	o.Data["json"] = data
+	o.Data["json"] = types.M{}
 	o.ServeJSON()
 }
 
 // Get ...
 // @router / [get]
 func (o *ObjectsController) Get() {
-	e := types.M{
-		"code":  405,
-		"error": "Method Not Allowed",
-	}
 	o.Ctx.Output.SetStatus(405)
-	o.Data["json"] = e
+	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
 	o.ServeJSON()
 }
 
 // Post ...
 // @router / [post]
 func (o *ObjectsController) Post() {
-	e := types.M{
-		"code":  405,
-		"error": "Method Not Allowed",
-	}
 	o.Ctx.Output.SetStatus(405)
-	o.Data["json"] = e
+	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
 	o.ServeJSON()
 }
 
 // Delete ...
 // @router / [delete]
 func (o *ObjectsController) Delete() {
-	e := types.M{
-		"code":  405,
-		"error": "Method Not Allowed",
-	}
 	o.Ctx.Output.SetStatus(405)
-	o.Data["json"] = e
+	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
 	o.ServeJSON()
 }
 
 // Put ...
 // @router / [put]
 func (o *ObjectsController) Put() {
-	e := types.M{
-		"code":  405,
-		"error": "Method Not Allowed",
-	}
 	o.Ctx.Output.SetStatus(405)
-	o.Data["json"] = e
+	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
 	o.ServeJSON()
 }

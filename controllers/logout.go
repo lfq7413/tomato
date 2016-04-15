@@ -1,29 +1,40 @@
 package controllers
 
 import (
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
-// LogoutController ...
+// LogoutController 处理 /logout 接口的请求
 type LogoutController struct {
 	ObjectsController
 }
 
-// HandleLogOut ...
+// HandleLogOut 处理用户退出请求
 // @router / [post]
 func (l *LogoutController) HandleLogOut() {
 	if l.Info != nil && l.Info.SessionToken != "" {
 		where := types.M{
 			"sessionToken": l.Info.SessionToken,
 		}
-		// TODO 处理错误
-		records, _ := rest.Find(rest.Master(), "_Session", where, types.M{})
+		records, err := rest.Find(rest.Master(), "_Session", where, types.M{})
+
+		if err != nil {
+			l.Data["json"] = errs.ErrorToMap(err)
+			l.ServeJSON()
+			return
+		}
 		if utils.HasResults(records) {
 			results := utils.SliceInterface(records["results"])
 			obj := utils.MapInterface(results[0])
-			rest.Delete(rest.Master(), "_Session", utils.String(obj["objectId"]))
+			err := rest.Delete(rest.Master(), "_Session", utils.String(obj["objectId"]))
+			if err != nil {
+				l.Data["json"] = errs.ErrorToMap(err)
+				l.ServeJSON()
+				return
+			}
 		}
 	}
 	l.Data["json"] = types.M{}

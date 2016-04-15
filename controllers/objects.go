@@ -15,6 +15,7 @@ import (
 )
 
 // ObjectsController 对象操作 API 的基础结构
+// 处理 /classes 接口的所有请求，处理内部类的部分请求
 // Info 当前请求的权限信息
 // Auth 当前请求的用户权限
 // JSONBody 由 JSON 格式转换来的请求数据

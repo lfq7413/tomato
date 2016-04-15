@@ -3,28 +3,32 @@ package controllers
 import (
 	"time"
 
+	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/files"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
-// LoginController ...
+// LoginController 处理 /login 接口的请求
 type LoginController struct {
 	ObjectsController
 }
 
-// HandleLogIn ...
+// HandleLogIn 处理登录请求
 // @router / [get]
 func (l *LoginController) HandleLogIn() {
 	username := l.GetString("username")
 	password := l.GetString("password")
 	if username == "" {
-		// TODO 用户名不能为空
+		l.Data["json"] = errs.ErrorMessageToMap(errs.UsernameMissing, "username is required.")
+		l.ServeJSON()
 		return
 	}
 	if password == "" {
-		// TODO 密码不能为空
+		l.Data["json"] = errs.ErrorMessageToMap(errs.PasswordMissing, "password is required.")
+		l.ServeJSON()
 		return
 	}
 
@@ -33,14 +37,17 @@ func (l *LoginController) HandleLogIn() {
 	}
 	results := orm.Find("_User", where, types.M{})
 	if results == nil || len(results) == 0 {
-		// TODO 用户名密码错误
+		l.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Invalid username/password.")
+		l.ServeJSON()
 		return
 	}
 	user := utils.MapInterface(results[0])
 
+	// TODO 换用高强度的加密方式
 	correct := utils.Compare(password, utils.String(user["password"]))
 	if correct == false {
-		// TODO 用户名密码错误
+		l.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Invalid username/password.")
+		l.ServeJSON()
 		return
 	}
 
@@ -60,7 +67,8 @@ func (l *LoginController) HandleLogIn() {
 		}
 	}
 
-	// TODO 展开文件信息
+	// 展开文件信息
+	files.ExpandFilesInObject(user)
 
 	expiresAt := time.Now().UTC()
 	expiresAt = expiresAt.AddDate(1, 0, 0)
@@ -83,8 +91,13 @@ func (l *LoginController) HandleLogIn() {
 	if l.Info.InstallationID != "" {
 		sessionData["installationId"] = l.Info.InstallationID
 	}
-
-	rest.NewWrite(rest.Master(), "_Session", nil, sessionData, nil).Execute()
+	// 为新登录用户创建 sessionToken
+	_, err := rest.NewWrite(rest.Master(), "_Session", nil, sessionData, nil).Execute()
+	if err != nil {
+		l.Data["json"] = errs.ErrorToMap(err)
+		l.ServeJSON()
+		return
+	}
 
 	l.Data["json"] = user
 	l.ServeJSON()

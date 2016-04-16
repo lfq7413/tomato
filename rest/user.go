@@ -6,6 +6,7 @@ import (
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/mail"
+	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -94,10 +95,10 @@ func defaultVerificationEmail(options types.M) types.M {
 	}
 }
 
-// SendPasswordResetEmail ...
+// SendPasswordResetEmail 发送密码重置邮件
 func SendPasswordResetEmail(email string) error {
 	user := setPasswordResetToken(email)
-	if user == nil {
+	if user == nil || len(user) == 0 {
 		return errs.E(errs.EmailMissing, "you must provide an email")
 	}
 	user["className"] = "_User"
@@ -114,8 +115,13 @@ func SendPasswordResetEmail(email string) error {
 }
 
 func setPasswordResetToken(email string) types.M {
-	// TODO
-	return nil
+	token := utils.CreateToken()
+	collection := orm.AdaptiveCollection("_User")
+	where := types.M{"email": email}
+	update := types.M{
+		"$set": types.M{"_perishable_token": token},
+	}
+	return collection.FindOneAndUpdate(where, update)
 }
 
 func defaultResetPasswordEmail(options types.M) types.M {

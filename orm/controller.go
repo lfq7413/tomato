@@ -246,7 +246,7 @@ func Update(className string, where, data, options types.M) (types.M, error) {
 	}
 	mongoUpdate := transformUpdate(schema, className, data)
 
-	result := coll.findOneAndUpdate(mongoWhere, mongoUpdate)
+	result := coll.FindOneAndUpdate(mongoWhere, mongoUpdate)
 	// TODO 处理返回错误
 
 	response := types.M{}

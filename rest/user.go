@@ -114,6 +114,7 @@ func SendPasswordResetEmail(email string) error {
 	return nil
 }
 
+// setPasswordResetToken 设置修改密码 token
 func setPasswordResetToken(email string) types.M {
 	token := utils.CreateToken()
 	collection := orm.AdaptiveCollection("_User")

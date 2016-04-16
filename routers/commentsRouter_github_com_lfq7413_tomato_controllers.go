@@ -335,6 +335,34 @@ func init() {
 			[]string{"put"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"],
+		beego.ControllerComments{
+			"VerifyEmail",
+			`/verify_email`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"],
+		beego.ControllerComments{
+			"ChangePassword",
+			`/choose_password`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"],
+		beego.ControllerComments{
+			"ResetPassword",
+			`/request_password_reset`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"],
+		beego.ControllerComments{
+			"RequestResetPassword",
+			`/request_password_reset`,
+			[]string{"get"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"],
 		beego.ControllerComments{
 			"HandlePost",

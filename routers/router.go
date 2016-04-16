@@ -77,6 +77,11 @@ func init() {
 				&controllers.SchemasController{},
 			),
 		),
+		beego.NSNamespace("/apps",
+			beego.NSInclude(
+				&controllers.PublicController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

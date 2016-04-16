@@ -1,26 +1,32 @@
 package controllers
 
 import (
-	"encoding/json"
-
+	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 )
 
-// ResetController ...
+// ResetController 处理 /requestPasswordReset 接口的请求
 type ResetController struct {
 	ObjectsController
 }
 
-// HandleResetRequest ...
+// HandleResetRequest 处理通过 email 重置迷密码的请求
 // @router / [post]
 func (r *ResetController) HandleResetRequest() {
-	var object types.M
-	json.Unmarshal(r.Ctx.Input.RequestBody, &object)
-	if object == nil && object["email"] == nil {
-		// TODO 需要 email
+	if r.JSONBody == nil && r.JSONBody["email"] == nil {
+		r.Data["json"] = errs.ErrorMessageToMap(errs.EmailMissing, "you must provide an email")
+		r.ServeJSON()
 		return
 	}
-	// TODO 发送邮件
+	email := r.JSONBody["email"].(string)
+	err := rest.SendPasswordResetEmail(email)
+	if err != nil {
+		r.Data["json"] = errs.ErrorToMap(err)
+		r.ServeJSON()
+		return
+	}
+
 	r.Data["json"] = types.M{}
 	r.ServeJSON()
 }

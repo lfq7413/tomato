@@ -25,3 +25,9 @@ func SendVerificationEmail(user types.M) {
 	}
 	// TODO 发送验证邮件
 }
+
+// SendPasswordResetEmail ...
+func SendPasswordResetEmail(email string) error {
+	// TODO
+	return nil
+}

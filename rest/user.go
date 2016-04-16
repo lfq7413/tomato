@@ -39,6 +39,9 @@ func SendVerificationEmail(user types.M) {
 		return
 	}
 	user = getUserIfNeeded(user)
+	if user == nil {
+		return
+	}
 	user["className"] = "_User"
 	token := url.QueryEscape(user["_email_verify_token"].(string))
 	username := url.QueryEscape(user["username"].(string))
@@ -51,9 +54,28 @@ func SendVerificationEmail(user types.M) {
 	adapter.SendMail(defaultVerificationEmail(options))
 }
 
+// getUserIfNeeded 把 user 填充完整，如果无法完成则返回 nil
 func getUserIfNeeded(user types.M) types.M {
-	// TODO
-	return nil
+	if user["username"] != nil && user["email"] != nil {
+		return user
+	}
+	where := types.M{}
+	if user["username"] != nil {
+		where["username"] = user["username"]
+	}
+	if user["email"] != nil {
+		where["email"] = user["email"]
+	}
+
+	response, err := NewQuery(Master(), "_User", where, types.M{}).Execute()
+	if err != nil {
+		return nil
+	}
+	if utils.HasResults(response) == false {
+		return nil
+	}
+
+	return response["results"].([]interface{})[0].(map[string]interface{})
 }
 
 func defaultVerificationEmail(options types.M) types.M {

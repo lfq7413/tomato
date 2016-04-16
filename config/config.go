@@ -6,6 +6,7 @@ import (
 
 // Config ...
 type Config struct {
+	AppName                  string
 	ServerURL                string
 	DatabaseURI              string
 	AppID                    string
@@ -18,6 +19,7 @@ type Config struct {
 	FileDir                  string
 	PushAdapter              string
 	MailAdapter              string
+	VerifyEmailURL           string
 }
 
 var (
@@ -27,6 +29,7 @@ var (
 
 func init() {
 	TConfig = &Config{
+		AppName:                  "",
 		ServerURL:                "http://127.0.0.1:8080/v1",
 		DatabaseURI:              "192.168.99.100:27017/test",
 		AppID:                    "",
@@ -39,12 +42,14 @@ func init() {
 		FileDir:                  "/Users",
 		PushAdapter:              "tomato",
 		MailAdapter:              "smtp",
+		VerifyEmailURL:           "http://127.0.0.1:8080/v1/app/verify_email",
 	}
 
 	parseConfig()
 }
 
 func parseConfig() {
+	TConfig.AppName = beego.AppConfig.String("appname")
 	TConfig.ServerURL = beego.AppConfig.String("serverurl")
 	TConfig.DatabaseURI = beego.AppConfig.String("databaseuri")
 	TConfig.AppID = beego.AppConfig.String("appid")
@@ -57,4 +62,5 @@ func parseConfig() {
 	TConfig.FileDir = beego.AppConfig.DefaultString("FileDir", "/Users")
 	TConfig.PushAdapter = beego.AppConfig.DefaultString("PushAdapter", "tomato")
 	TConfig.MailAdapter = beego.AppConfig.DefaultString("MailAdapter", "smtp")
+	TConfig.VerifyEmailURL = beego.AppConfig.String("VerifyEmailURL")
 }

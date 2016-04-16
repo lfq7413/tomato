@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/mail"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -95,6 +96,29 @@ func defaultVerificationEmail(options types.M) types.M {
 
 // SendPasswordResetEmail ...
 func SendPasswordResetEmail(email string) error {
+	user := setPasswordResetToken(email)
+	if user == nil {
+		return errs.E(errs.EmailMissing, "you must provide an email")
+	}
+	user["className"] = "_User"
+	token := url.QueryEscape(user["_perishable_token"].(string))
+	username := url.QueryEscape(user["username"].(string))
+	link := config.TConfig.RequestResetPasswordURL + "?token=" + token + "&username=" + username
+	options := types.M{
+		"appName": config.TConfig.AppName,
+		"link":    link,
+		"user":    user,
+	}
+	adapter.SendMail(defaultResetPasswordEmail(options))
+	return nil
+}
+
+func setPasswordResetToken(email string) types.M {
+	// TODO
+	return nil
+}
+
+func defaultResetPasswordEmail(options types.M) types.M {
 	// TODO
 	return nil
 }

@@ -17,6 +17,7 @@ type Config struct {
 	FileAdapter              string
 	FileDir                  string
 	PushAdapter              string
+	MailAdapter              string
 }
 
 var (
@@ -37,6 +38,7 @@ func init() {
 		FileAdapter:              "disk",
 		FileDir:                  "/Users",
 		PushAdapter:              "tomato",
+		MailAdapter:              "smtp",
 	}
 
 	parseConfig()
@@ -54,4 +56,5 @@ func parseConfig() {
 	TConfig.FileAdapter = beego.AppConfig.DefaultString("FileAdapter", "disk")
 	TConfig.FileDir = beego.AppConfig.DefaultString("FileDir", "/Users")
 	TConfig.PushAdapter = beego.AppConfig.DefaultString("PushAdapter", "tomato")
+	TConfig.MailAdapter = beego.AppConfig.DefaultString("MailAdapter", "smtp")
 }

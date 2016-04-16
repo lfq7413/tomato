@@ -2,9 +2,21 @@ package rest
 
 import (
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/mail"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
+
+var adapter mail.Adapter
+
+func init() {
+	a := config.TConfig.MailAdapter
+	if a == "smtp" {
+		adapter = mail.NewSMTPAdapter()
+	} else {
+		adapter = mail.NewSMTPAdapter()
+	}
+}
 
 func shouldVerifyEmails() bool {
 	return config.TConfig.VerifyUserEmails

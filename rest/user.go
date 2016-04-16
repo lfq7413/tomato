@@ -79,8 +79,18 @@ func getUserIfNeeded(user types.M) types.M {
 }
 
 func defaultVerificationEmail(options types.M) types.M {
-	// TODO
-	return nil
+	user := utils.MapInterface(options["user"])
+	text := "Hi,\n\n"
+	text += "You are being asked to confirm the e-mail address " + user["email"].(string)
+	text += " with " + options["appName"].(string) + "\n\n"
+	text += "Click here to confirm it:\n" + options["link"].(string)
+	to := user["email"].(string)
+	subject := "Please verify your e-mail for " + options["appName"].(string)
+	return types.M{
+		"text":    text,
+		"to":      to,
+		"subject": subject,
+	}
 }
 
 // SendPasswordResetEmail ...

@@ -161,10 +161,20 @@ func VerifyEmail(username, token string) bool {
 	return true
 }
 
-// CheckResetTokenValidity ...
+// CheckResetTokenValidity 检查要重置密码的用户与 token 是否存在
 func CheckResetTokenValidity(username, token string) bool {
-	// TODO
-	return false
+	collection := orm.AdaptiveCollection("_User")
+	where := types.M{
+		"username":          username,
+		"_perishable_token": token,
+	}
+	option := types.M{"limit": 1}
+	results := collection.Find(where, option)
+	if len(results) != 1 {
+		return false
+	}
+
+	return true
 }
 
 // UpdatePassword ...

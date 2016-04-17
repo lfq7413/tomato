@@ -133,7 +133,7 @@ func Find(className string, where, options types.M) types.S {
 		return types.S{count}
 	}
 
-	mongoResults := coll.find(mongoWhere, mongoOptions)
+	mongoResults := coll.Find(mongoWhere, mongoOptions)
 	results := types.S{}
 	for _, r := range mongoResults {
 		result := untransformObject(schema, isMaster, aclGroup, className, r)
@@ -498,7 +498,7 @@ func reduceRelationKeys(className string, query types.M) {
 
 func relatedIds(className, key, owningID string) types.S {
 	coll := AdaptiveCollection(joinTableName(className, key))
-	results := coll.find(types.M{"owningId": owningID}, types.M{})
+	results := coll.Find(types.M{"owningId": owningID}, types.M{})
 	ids := types.S{}
 	for _, r := range results {
 		id := r["relatedId"]
@@ -586,7 +586,7 @@ func owningIds(className, key string, relatedIds types.S) types.S {
 			"$in": relatedIds,
 		},
 	}
-	results := coll.find(query, types.M{})
+	results := coll.Find(query, types.M{})
 	ids := types.S{}
 	for _, r := range results {
 		ids = append(ids, r["owningId"])

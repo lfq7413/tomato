@@ -10,7 +10,8 @@ type MongoCollection struct {
 	collection *mgo.Collection
 }
 
-func (m *MongoCollection) find(query interface{}, options types.M) []types.M {
+// Find ...
+func (m *MongoCollection) Find(query interface{}, options types.M) []types.M {
 	result, err := m.rawFind(query, options)
 	if err != nil || result == nil {
 		return []types.M{}

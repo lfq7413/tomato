@@ -119,19 +119,22 @@ func (p *PublicController) RequestResetPassword() {
 // InvalidLink 无效链接页面
 // @router /invalid_link [get]
 func (p *PublicController) InvalidLink() {
-
+	p.Ctx.Output.ContentType("text/html")
+	p.Ctx.Output.Body([]byte(invalidLinkPage))
 }
 
 // PasswordResetSuccess 密码重置成功页面
 // @router /password_reset_success [get]
 func (p *PublicController) PasswordResetSuccess() {
-
+	p.Ctx.Output.ContentType("text/html")
+	p.Ctx.Output.Body([]byte(passwordResetSuccessPage))
 }
 
 // VerifyEmailSuccess 验证邮箱成功页面
 // @router /verify_email_success [get]
 func (p *PublicController) VerifyEmailSuccess() {
-
+	p.Ctx.Output.ContentType("text/html")
+	p.Ctx.Output.Body([]byte(verifyEmailSuccessPage))
 }
 
 func (p *PublicController) invalid() {
@@ -143,6 +146,112 @@ func (p *PublicController) missingPublicServerURL() {
 	p.Ctx.Output.SetStatus(404)
 	p.Ctx.Output.Body([]byte("Not found."))
 }
+
+var verifyEmailSuccessPage = `
+<!DOCTYPE html>
+<html>
+  <!-- This page is displayed whenever someone has successfully reset their password.
+       Pro and Enterprise accounts may edit this page and tell Parse to use that custom
+       version in their Parse app. See the App Settigns page for more information.
+       This page will be called with the query param 'username'
+   -->
+  <head>
+  <title>Email Verification</title>
+  <style type='text/css'>
+    h1 {
+      color: #0067AB;
+      display: block;
+      font: inherit;
+      font-family: 'Open Sans', 'Helvetica Neue', Helvetica;
+      font-size: 30px;
+      font-weight: 600;
+      height: 30px;
+      line-height: 30px;
+      margin: 45px 0px 0px 45px;
+      padding: 0px 8px 0px 8px;
+    }
+  </style>
+  <body>
+    <h1>Successfully verified your email!</h1>
+  </body>
+</html>
+`
+
+var passwordResetSuccessPage = `
+<!DOCTYPE html>
+<html>
+  <!-- This page is displayed whenever someone has successfully reset their password.
+       Pro and Enterprise accounts may edit this page and tell Parse to use that custom
+       version in their Parse app. See the App Settigns page for more information.
+       This page will be called with the query param 'username'
+    -->
+  <head>
+  <title>Password Reset</title>
+  <style type='text/css'>
+    h1 {
+      color: #0067AB;
+      display: block;
+      font: inherit;
+      font-family: 'Open Sans', 'Helvetica Neue', Helvetica;
+      font-size: 30px;
+      font-weight: 600;
+      height: 30px;
+      line-height: 30px;
+      margin: 45px 0px 0px 45px;
+      padding: 0px 8px 0px 8px;
+    }
+  </style>
+  <body>
+    <h1>Successfully updated your password!</h1>
+  </body>
+</html>
+`
+
+var invalidLinkPage = `
+<!DOCTYPE html>
+<!-- This page is displayed when someone navigates to a verify email or reset password link
+     but their security token is wrong. This can either mean the user has clicked on a
+     stale link (i.e. re-click on a password reset link after resetting their password) or
+     (rarely) this could be a sign of a malicious user trying to tamper with your app.
+ -->
+<html>
+  <head>
+  <title>Invalid Link</title>
+  <style type='text/css'>
+    .container {
+      border-width: 0px;
+      display: block;
+      font: inherit;
+      font-family: 'Helvetica Neue', Helvetica;
+      font-size: 16px;
+      height: 30px;
+      line-height: 16px;
+      margin: 45px 0px 0px 45px;
+      padding: 0px 8px 0px 8px;
+      position: relative;
+      vertical-align: baseline;
+    }
+
+    h1, h2, h3, h4, h5 {
+      color: #0067AB;
+      display: block;
+      font: inherit;
+      font-family: 'Open Sans', 'Helvetica Neue', Helvetica;
+      font-size: 30px;
+      font-weight: 600;
+      height: 30px;
+      line-height: 30px;
+      margin: 0 0 15px 0;
+      padding: 0 0 0 0;
+    }
+  </style>
+  <body> 
+    <div class="container">
+      <h1>Invalid Link</h1>
+    </div> 
+  </body>
+</html>
+`
 
 var choosePasswordPage = `
 <!DOCTYPE html>

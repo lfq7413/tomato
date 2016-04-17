@@ -144,3 +144,9 @@ func VerifyEmail(username, token string) bool {
 	// TODO
 	return false
 }
+
+// CheckResetTokenValidity ...
+func CheckResetTokenValidity(username, token string) bool {
+	// TODO
+	return false
+}

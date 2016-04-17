@@ -53,7 +53,31 @@ func (p *PublicController) ResetPassword() {
 // 该接口从重置密码邮件内部发起请求，见 rest.SendPasswordResetEmail()
 // @router /request_password_reset [get]
 func (p *PublicController) RequestResetPassword() {
+	token := p.GetString("token")
+	username := p.GetString("username")
 
+	if config.TConfig.ServerURL == "" {
+		p.missingPublicServerURL()
+		return
+	}
+
+	if token == "" || username == "" {
+		p.invalid()
+		return
+	}
+
+	ok := rest.CheckResetTokenValidity(username, token)
+	if ok {
+		p.Ctx.Output.SetStatus(302)
+		location := config.TConfig.ServerURL + "app/choose_password"
+		location += "?token=" + token
+		location += "&id=" + config.TConfig.AppID
+		location += "&username=" + username
+		location += "&app=" + config.TConfig.AppName
+		p.Ctx.Output.Header("location", location)
+	} else {
+		p.invalid()
+	}
 }
 
 // InvalidLink 无效链接页面

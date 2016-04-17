@@ -46,15 +46,43 @@ func (p *PublicController) ChangePassword() {
 		p.missingPublicServerURL()
 		return
 	}
-	data := strings.Replace(choosePassword, "PARSE_SERVER_URL", config.TConfig.ServerURL, -1)
+
+	data := strings.Replace(choosePasswordPage, "PARSE_SERVER_URL", config.TConfig.ServerURL, -1)
 	p.Ctx.Output.ContentType("text/html")
 	p.Ctx.Output.Body([]byte(data))
 }
 
-// ResetPassword ...
+// ResetPassword 处理实际的重置密码请求
 // @router /request_password_reset [post]
 func (p *PublicController) ResetPassword() {
+	if config.TConfig.ServerURL == "" {
+		p.missingPublicServerURL()
+		return
+	}
 
+	username := p.GetString("username")
+	token := p.GetString("token")
+	newPassword := p.GetString("new_password")
+
+	if token == "" || username == "" || newPassword == "" {
+		p.invalid()
+		return
+	}
+
+	err := rest.UpdatePassword(username, token, newPassword)
+	if err == nil {
+		p.Ctx.Output.SetStatus(302)
+		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"app/password_reset_success")
+	} else {
+		p.Ctx.Output.SetStatus(302)
+		location := config.TConfig.ServerURL + "app/choose_password"
+		location += "?token=" + token
+		location += "&id=" + config.TConfig.AppID
+		location += "&username=" + username
+		location += "&error=" + err.Error()
+		location += "&app=" + config.TConfig.AppName
+		p.Ctx.Output.Header("location", location)
+	}
 }
 
 // RequestResetPassword 处理重置密码请求
@@ -116,7 +144,7 @@ func (p *PublicController) missingPublicServerURL() {
 	p.Ctx.Output.Body([]byte("Not found."))
 }
 
-var choosePassword = `
+var choosePasswordPage = `
 <!DOCTYPE html>
 <html>
   <!-- This page is displayed when someone clicks a valid 'reset password' link.

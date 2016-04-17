@@ -150,3 +150,9 @@ func CheckResetTokenValidity(username, token string) bool {
 	// TODO
 	return false
 }
+
+// UpdatePassword ...
+func UpdatePassword(username, token, newPassword string) error {
+	// TODO
+	return nil
+}

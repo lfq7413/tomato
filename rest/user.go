@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"errors"
 	"net/url"
 
 	"github.com/lfq7413/tomato/config"
@@ -177,8 +178,23 @@ func CheckResetTokenValidity(username, token string) bool {
 	return true
 }
 
-// UpdatePassword ...
+// UpdatePassword 更新指定用户的密码
 func UpdatePassword(username, token, newPassword string) error {
-	// TODO
+	if CheckResetTokenValidity(username, token) == false {
+		return errors.New("Invalid token")
+	}
+	query := types.M{
+		"username":          username,
+		"_perishable_token": token,
+	}
+	data := types.M{
+		"password":          newPassword,
+		"_perishable_token": "",
+	}
+	_, err := NewWrite(Master(), "_User", query, data, types.M{}).Execute()
+	if err != nil {
+		return errors.New("Reset password failed")
+	}
+
 	return nil
 }

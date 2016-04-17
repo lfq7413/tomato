@@ -19,8 +19,6 @@ type Config struct {
 	FileDir                  string
 	PushAdapter              string
 	MailAdapter              string
-	VerifyEmailURL           string
-	RequestResetPasswordURL  string
 }
 
 var (
@@ -43,8 +41,6 @@ func init() {
 		FileDir:                  "/Users",
 		PushAdapter:              "tomato",
 		MailAdapter:              "smtp",
-		VerifyEmailURL:           "http://127.0.0.1:8080/v1/app/verify_email",
-		RequestResetPasswordURL:  "http://127.0.0.1:8080/v1/app/request_password_reset",
 	}
 
 	parseConfig()
@@ -64,6 +60,4 @@ func parseConfig() {
 	TConfig.FileDir = beego.AppConfig.DefaultString("FileDir", "/Users")
 	TConfig.PushAdapter = beego.AppConfig.DefaultString("PushAdapter", "tomato")
 	TConfig.MailAdapter = beego.AppConfig.DefaultString("MailAdapter", "smtp")
-	TConfig.VerifyEmailURL = beego.AppConfig.String("VerifyEmailURL")
-	TConfig.RequestResetPasswordURL = beego.AppConfig.String("RequestResetPasswordURL")
 }

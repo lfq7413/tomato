@@ -174,7 +174,7 @@ func (o *ObjectsController) HandleCreate() {
 
 	o.Data["json"] = result["response"]
 	o.Ctx.Output.SetStatus(201)
-	o.Ctx.Output.Header("Location", result["location"].(string))
+	o.Ctx.Output.Header("location", result["location"].(string))
 	o.ServeJSON()
 
 }

@@ -47,7 +47,7 @@ func SendVerificationEmail(user types.M) {
 	user["className"] = "_User"
 	token := url.QueryEscape(user["_email_verify_token"].(string))
 	username := url.QueryEscape(user["username"].(string))
-	link := config.TConfig.VerifyEmailURL + "?token=" + token + "&username=" + username
+	link := config.TConfig.ServerURL + "app/verify_email" + "?token=" + token + "&username=" + username
 	options := types.M{
 		"appName": config.TConfig.AppName,
 		"link":    link,
@@ -104,7 +104,7 @@ func SendPasswordResetEmail(email string) error {
 	user["className"] = "_User"
 	token := url.QueryEscape(user["_perishable_token"].(string))
 	username := url.QueryEscape(user["username"].(string))
-	link := config.TConfig.RequestResetPasswordURL + "?token=" + token + "&username=" + username
+	link := config.TConfig.ServerURL + "app/request_password_reset" + "?token=" + token + "&username=" + username
 	options := types.M{
 		"appName": config.TConfig.AppName,
 		"link":    link,
@@ -137,4 +137,10 @@ func defaultResetPasswordEmail(options types.M) types.M {
 		"to":      to,
 		"subject": subject,
 	}
+}
+
+// VerifyEmail ...
+func VerifyEmail(username, token string) bool {
+	// TODO
+	return false
 }

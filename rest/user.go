@@ -139,10 +139,26 @@ func defaultResetPasswordEmail(options types.M) types.M {
 	}
 }
 
-// VerifyEmail ...
+// VerifyEmail 更新邮箱验证标志
 func VerifyEmail(username, token string) bool {
-	// TODO
-	return false
+	if shouldVerifyEmails() == false {
+		return false
+	}
+
+	collection := orm.AdaptiveCollection("_User")
+	where := types.M{
+		"username":            username,
+		"_email_verify_token": token,
+	}
+	update := types.M{
+		"$set": types.M{"emailVerified": true},
+	}
+	document := collection.FindOneAndUpdate(where, update)
+	if document == nil || len(document) == 0 {
+		return false
+	}
+
+	return true
 }
 
 // CheckResetTokenValidity ...

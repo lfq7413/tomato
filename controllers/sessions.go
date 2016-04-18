@@ -1,24 +1,25 @@
 package controllers
 
 import (
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
-// SessionsController ...
+// SessionsController 处理 /sessions 接口的请求
 type SessionsController struct {
 	ObjectsController
 }
 
-// HandleFind ...
+// HandleFind 处理查找 session 请求
 // @router / [get]
 func (s *SessionsController) HandleFind() {
 	s.ClassName = "_Session"
 	s.ObjectsController.HandleFind()
 }
 
-// HandleGet ...
+// HandleGet 处理获取指定 session 请求
 // @router /:objectId [get]
 func (s *SessionsController) HandleGet() {
 	s.ClassName = "_Session"
@@ -26,14 +27,14 @@ func (s *SessionsController) HandleGet() {
 	s.ObjectsController.HandleGet()
 }
 
-// HandleCreate ...
+// HandleCreate 处理 session 创建请求
 // @router / [post]
 func (s *SessionsController) HandleCreate() {
 	s.ClassName = "_Session"
 	s.ObjectsController.HandleCreate()
 }
 
-// HandleUpdate ...
+// HandleUpdate 处理更新指定 session 请求
 // @router /:objectId [put]
 func (s *SessionsController) HandleUpdate() {
 	s.ClassName = "_Session"
@@ -41,7 +42,7 @@ func (s *SessionsController) HandleUpdate() {
 	s.ObjectsController.HandleUpdate()
 }
 
-// HandleDelete ...
+// HandleDelete 处理删除指定 session 请求
 // @router /:objectId [delete]
 func (s *SessionsController) HandleDelete() {
 	objectID := s.Ctx.Input.Param(":objectId")
@@ -54,20 +55,26 @@ func (s *SessionsController) HandleDelete() {
 	s.ObjectsController.HandleDelete()
 }
 
-// HandleGetMe ...
+// HandleGetMe 处理当前请求 session
 // @router /me [get]
 func (s *SessionsController) HandleGetMe() {
 	if s.Info == nil || s.Info.SessionToken == "" {
-		// TODO 需要 SessionToken
+		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidSessionToken, "Session token required.")
+		s.ServeJSON()
 		return
 	}
 	where := types.M{
-		"sessionToken": s.Info.SessionToken,
+		"_session_token": s.Info.SessionToken,
 	}
-	// TODO 处理错误
-	response, _ := rest.Find(rest.Master(), "_Session", where, types.M{})
+	response, err := rest.Find(rest.Master(), "_Session", where, types.M{})
+	if err != nil {
+		s.Data["json"] = errs.ErrorToMap(err)
+		s.ServeJSON()
+		return
+	}
 	if utils.HasResults(response) == false {
-		// TODO 未找到 Session
+		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidSessionToken, "Session token not found.")
+		s.ServeJSON()
 		return
 	}
 	results := utils.SliceInterface(response["results"])

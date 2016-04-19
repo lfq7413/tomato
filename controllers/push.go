@@ -1,47 +1,45 @@
 package controllers
 
 import (
-	"encoding/json"
-
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/push"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
-// PushController ...
+// PushController 处理 /push 接口的请求
 type PushController struct {
 	ObjectsController
 }
 
-// HandlePost ...
+// HandlePost 处理发送推送消息请求
 // @router / [post]
 func (p *PushController) HandlePost() {
-	var body types.M
-	json.Unmarshal(p.Ctx.Input.RequestBody, &body)
-	if body == nil {
-		// TODO
+	if p.JSONBody == nil {
+		p.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
+		p.ServeJSON()
 		return
 	}
-	where, err := getQueryCondition(body)
+	where, err := getQueryCondition(p.JSONBody)
 	if err != nil {
-		// TODO
+		p.Data["json"] = errs.ErrorToMap(err)
+		p.ServeJSON()
 		return
 	}
-	push.SendPush(body, where, p.Auth)
-	p.Data["json"] = types.M{
-		"result": true,
-	}
+	push.SendPush(p.JSONBody, where, p.Auth)
+	p.Data["json"] = types.M{"result": true}
 	p.ServeJSON()
 }
 
+// getQueryCondition 获取查询条件
 func getQueryCondition(body types.M) (types.M, error) {
 	hasWhere := (body["where"] != nil)
 	hasChannels := (body["channels"] != nil)
 
 	var where types.M
 	if hasWhere && hasChannels {
-		// TODO 不能同时设定
-		return nil, nil
+		// 查询与频道不能同时设定
+		return nil, errs.E(errs.PushMisconfigured, "Channels and query can not be set at the same time.")
 	} else if hasWhere {
 		where = utils.MapInterface(body["where"])
 	} else if hasChannels {
@@ -52,8 +50,7 @@ func getQueryCondition(body types.M) (types.M, error) {
 			"channels": channels,
 		}
 	} else {
-		// TODO 至少有一个
-		return nil, nil
+		return nil, errs.E(errs.PushMisconfigured, "Channels and query should be set at least one.")
 	}
 
 	return where, nil

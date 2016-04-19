@@ -7,6 +7,9 @@ import (
 
 var adapter filesAdapter
 
+// init 初始化文件处理模块
+// 当前只有本地文件存储模块
+// 后续可增加数据库文件存储、第三方网络文件存储模块
 func init() {
 	a := config.TConfig.FileAdapter
 	if a == "disk" {
@@ -16,12 +19,12 @@ func init() {
 	}
 }
 
-// GetFileData ...
+// GetFileData 获取文件数据
 func GetFileData(filename string) []byte {
 	return adapter.getFileData(filename)
 }
 
-// CreateFile ...
+// CreateFile 创建文件，返回文件地址与文件名
 func CreateFile(filename string, data []byte, contentType string) map[string]string {
 	extname := utils.ExtName(filename)
 	if extname == "" && contentType != "" && utils.LookupExtension(contentType) != "" {
@@ -44,12 +47,18 @@ func CreateFile(filename string, data []byte, contentType string) map[string]str
 	}
 }
 
-// DeleteFile ...
+// DeleteFile 删除文件
 func DeleteFile(filename string) error {
 	return adapter.deleteFile(filename)
 }
 
-// ExpandFilesInObject ...
+// ExpandFilesInObject 展开文件对象
+// 展开之后的文件对象如下
+// {
+// 	"__type": "File",
+// 	"url": "http://example.com/pic.jpg",
+// 	"name": "pic.jpg",
+// }
 func ExpandFilesInObject(object interface{}) {
 	if utils.SliceInterface(object) != nil {
 		objs := utils.SliceInterface(object)
@@ -76,6 +85,7 @@ func ExpandFilesInObject(object interface{}) {
 	}
 }
 
+// filesAdapter 规定了文件存储模块需要实现的接口
 type filesAdapter interface {
 	createFile(filename string, data []byte, contentType string) error
 	deleteFile(filename string) error

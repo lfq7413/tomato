@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
@@ -13,6 +14,9 @@ import (
 
 var adapter pushAdapter
 
+// init 初始化推送模块
+// 当前仅有模拟的推送模块，
+// 后续添加 APNS、GCM、以及其他第三方推送模块
 func init() {
 	a := config.TConfig.PushAdapter
 	if a == "tomato" {
@@ -22,8 +26,9 @@ func init() {
 	}
 }
 
-// SendPush ...
+// SendPush 发送推送消息
 func SendPush(body types.M, where types.M, auth *rest.Auth) error {
+	// TODO where 中并不包含 deviceType，此处是否有问题？
 	err := validatePushType(where, adapter.getValidPushTypes())
 	if err != nil {
 		return err
@@ -35,6 +40,8 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 			return err
 		}
 	}
+
+	// TODO 检测通过立即返回，不等待推送发送完成，后续添加
 
 	var op types.M
 	var updateWhere types.M
@@ -53,8 +60,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 			}
 			op["$set"] = set
 		} else {
-			// TODO badge 值不符合要求
-			return nil
+			return errs.E(errs.PushMisconfigured, "Invalid value for badge, expected number or 'Increment'")
 		}
 		updateWhere = utils.CopyMap(where)
 	}
@@ -65,17 +71,25 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 		restWhere := utils.CopyMap(badgeQuery.Where)
 		and := utils.SliceInterface(restWhere["$and"])
 		if and == nil {
-			restWhere["$and"] = types.S{badgeQuery.Where}
+			and = types.S{badgeQuery.Where}
 		}
+		// badge 只有 iOS 支持，所以只发送 iOS 设备，
 		tp := types.M{
 			"deviceType": "ios",
 		}
 		and = append(and, tp)
 		restWhere["$and"] = and
-		orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
+		err := orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
+		if err != nil {
+			return err
+		}
 	}
-	// TODO 处理错误
-	response, _ := rest.Find(auth, "_Installation", where, types.M{})
+
+	// TODO 处理结果大于100的情况
+	response, err := rest.Find(auth, "_Installation", where, types.M{})
+	if err != nil {
+		return err
+	}
 	if utils.HasResults(response) == false {
 		return nil
 	}
@@ -83,6 +97,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 
 	if data != nil && data["badge"] != nil && utils.String(data["badge"]) == "Increment" {
 		badgeInstallationsMap := types.M{}
+		// 按 badge 分组
 		for _, v := range results {
 			installation := utils.MapInterface(v)
 			var badge string
@@ -102,6 +117,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 			badgeInstallationsMap[badge] = installations
 		}
 
+		// 按 badge 分组发送推送
 		for k, v := range badgeInstallationsMap {
 			payload := utils.CopyMap(body)
 			paydata := utils.MapInterface(payload["data"])
@@ -119,10 +135,13 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 	return nil
 }
 
+// validatePushType 校验查询条件中的推送类型
+// where 查询条件
+// validPushTypes 当前推送模块支持的类型
 func validatePushType(where types.M, validPushTypes []string) error {
 	deviceTypeField := where["deviceType"]
 	if deviceTypeField == nil {
-		return nil
+		deviceTypeField = types.M{}
 	}
 	deviceTypes := []string{}
 	if utils.String(deviceTypeField) != "" {
@@ -145,14 +164,14 @@ func validatePushType(where types.M, validPushTypes []string) error {
 			}
 		}
 		if b == false {
-			// TODO 不支持的类型
-			return nil
+			return errs.E(errs.PushMisconfigured, v+" is not supported push type.")
 		}
 	}
 
 	return nil
 }
 
+// getExpirationTime 把过期时间转换为以毫秒为单位的 Unix 时间
 func getExpirationTime(body types.M) (interface{}, error) {
 	expirationTimeParam := body["expiration_time"]
 	if expirationTimeParam == nil {
@@ -169,18 +188,19 @@ func getExpirationTime(body types.M) (interface{}, error) {
 			return nil, err
 		}
 	} else {
-		// TODO 时间格式错误
-		return nil, nil
+		// 时间格式错误
+		return nil, errs.E(errs.PushMisconfigured, "expiration_time is not valid time.")
 	}
 
 	if expirationTime.Unix() < time.Now().Unix() {
-		// TODO 时间非法
-		return nil, nil
+		// 时间非法
+		return nil, errs.E(errs.PushMisconfigured, "expiration_time is not valid time.")
 	}
 
 	return expirationTime.Unix() * 1000, nil
 }
 
+// pushAdapter 推送模块要实现的接口
 type pushAdapter interface {
 	send(data types.M, installations types.S)
 	getValidPushTypes() []string

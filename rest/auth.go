@@ -115,7 +115,7 @@ func (a *Auth) loadRoles() []string {
 		"$relatedTo": relatedTo,
 	}
 	// 取出当前用户直接对应的所有角色
-	// TODO 处理错误
+	// TODO 处理错误，处理结果大于100的情况
 	response, _ := Find(Master(), "_Role", where, types.M{})
 	if utils.HasResults(response) == false {
 		a.UserRoles = []string{}
@@ -141,7 +141,7 @@ func (a *Auth) loadRoles() []string {
 		"objectId": objectID,
 	}
 	// 取出所有角色名称
-	// TODO 处理错误
+	// TODO 处理错误，处理结果大于100的情况
 	response, _ = Find(Master(), "_Role", where, types.M{})
 	results = utils.SliceInterface(response["results"])
 	a.UserRoles = []string{}
@@ -171,7 +171,7 @@ func (a *Auth) getAllRoleNamesForID(roleID string) []string {
 		"$relatedTo": relatedTo,
 	}
 	// 取出当前角色对应的直接父角色
-	// TODO 处理错误
+	// TODO 处理错误，处理结果大于100的情况
 	response, _ := Find(Master(), "_Role", where, types.M{})
 	if utils.HasResults(response) == false {
 		return []string{}

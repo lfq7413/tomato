@@ -1,42 +1,46 @@
 package controllers
 
 import (
-	"encoding/json"
-
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 )
 
-// FunctionsController ...
+// FunctionsController 处理 /functions 接口的请求
 type FunctionsController struct {
 	ObjectsController
 }
 
-// HandleCloudFunction ...
+// HandleCloudFunction 执行指定的云函数
+// 返回数据格式如下：
+// {
+// 	"result":"func res"
+// }
 // @router /:functionName [post]
 func (f *FunctionsController) HandleCloudFunction() {
 	functionName := f.Ctx.Input.Param(":functionName")
 	theFunction := rest.GetFunction(functionName)
 	if theFunction == nil {
-		// TODO 无效函数
+		f.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Invalid function.")
+		f.ServeJSON()
 		return
 	}
 
-	params := types.M{}
-	if f.Ctx.Input.RequestBody != nil {
-		err := json.Unmarshal(f.Ctx.Input.RequestBody, &params)
-		if err != nil {
-			// TODO 参数错误
-			return
-		}
+	if f.JSONBody == nil {
+		f.JSONBody = types.M{}
 	}
 
 	f.Auth.IsMaster = true
 	request := rest.RequestInfo{
 		Auth:      f.Auth,
-		NewObject: params,
+		NewObject: f.JSONBody,
 	}
 	resp := theFunction(request)
+	if resp == nil {
+		f.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Call function fail.")
+		f.ServeJSON()
+		return
+	}
 
 	f.Data["json"] = resp
 	f.ServeJSON()

@@ -1,42 +1,39 @@
 package controllers
 
-import "encoding/json"
 import (
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 )
 
-// JobsController ...
+// JobsController 处理 /jobs 接口的请求
 type JobsController struct {
 	ObjectsController
 }
 
-// HandleCloudJob ...
+// HandleCloudJob 执行后台任务
 // @router /:jobName [post]
 func (j *JobsController) HandleCloudJob() {
 	if j.Auth.IsMaster == false {
-		// TODO 需要 Master 权限
+		j.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "need master key")
+		j.ServeJSON()
 		return
 	}
 	jobName := j.Ctx.Input.Param(":jobName")
 	theJob := rest.GetJob(jobName)
 	if theJob == nil {
-		// TODO 无效函数
+		j.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Invalid job function.")
+		j.ServeJSON()
 		return
 	}
 
-	params := types.M{}
-	if j.Ctx.Input.RequestBody != nil {
-		err := json.Unmarshal(j.Ctx.Input.RequestBody, &params)
-		if err != nil {
-			// TODO 参数错误
-			return
-		}
+	if j.JSONBody == nil {
+		j.JSONBody = types.M{}
 	}
 
 	request := rest.RequestInfo{
 		Auth:      j.Auth,
-		NewObject: params,
+		NewObject: j.JSONBody,
 	}
 	go theJob(request)
 

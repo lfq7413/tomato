@@ -83,31 +83,31 @@ type Schema struct {
 }
 
 // AddClassIfNotExists 添加类定义
-func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLevelPermissions types.M) types.M {
+func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLevelPermissions types.M) (types.M, error) {
 	if s.data[className] != nil {
 		// TODO 类已存在
-		return nil
+		return nil, nil
 	}
 
 	mongoObject := mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions)
 	if mongoObject["result"] == nil {
 		// TODO 转换出现问题
-		return nil
+		return nil, nil
 	}
 	err := s.collection.addSchema(className, utils.MapInterface(mongoObject["result"]))
 	if err != nil {
 		// TODO 出现错误
-		return nil
+		return nil, nil
 	}
 
-	return utils.MapInterface(mongoObject["result"])
+	return utils.MapInterface(mongoObject["result"]), nil
 }
 
 // UpdateClass 更新类
-func (s *Schema) UpdateClass(className string, submittedFields types.M, classLevelPermissions types.M) types.M {
+func (s *Schema) UpdateClass(className string, submittedFields types.M, classLevelPermissions types.M) (types.M, error) {
 	if s.data[className] == nil {
 		// TODO 类不存在
-		return nil
+		return nil, nil
 	}
 	existingFields := utils.CopyMap(utils.MapInterface(s.data[className]))
 	existingFields["_id"] = className
@@ -117,11 +117,11 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 		op := utils.String(field["__op"])
 		if existingFields[name] != nil && op != "Delete" {
 			// TODO 字段已存在，不能更新
-			return nil
+			return nil, nil
 		}
 		if existingFields[name] == nil && op == "Delete" {
 			// TODO 字不存在，不能删除
-			return nil
+			return nil, nil
 		}
 	}
 
@@ -129,7 +129,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	mongoObject := mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions)
 	if mongoObject["result"] == nil {
 		// TODO 生成错误
-		return nil
+		return nil, nil
 	}
 
 	insertedFields := []string{}
@@ -153,7 +153,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 
 	s.setPermissions(className, classLevelPermissions)
 
-	return MongoSchemaToSchemaAPIResponse(mongoResult)
+	return MongoSchemaToSchemaAPIResponse(mongoResult), nil
 }
 
 func (s *Schema) deleteField(fieldName string, className string) {
@@ -706,6 +706,11 @@ func ClassNameIsValid(className string) bool {
 		className == "_Product" ||
 		joinClassIsValid(className) ||
 		fieldNameIsValid(className)
+}
+
+// InvalidClassNameMessage ...
+func InvalidClassNameMessage(className string) string {
+	return "Invalid classname: " + className + ", classnames can only have alphanumeric characters and _, and must start with an alpha character "
 }
 
 var joinClassRegex = `^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+`

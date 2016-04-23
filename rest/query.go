@@ -118,7 +118,7 @@ func NewQuery(
 	return query, nil
 }
 
-// Execute ...
+// Execute 执行查询请求，返回的数据包含 results count 两个字段
 func (q *Query) Execute() (types.M, error) {
 
 	fmt.Println("keys       ", q.keys)
@@ -126,10 +126,22 @@ func (q *Query) Execute() (types.M, error) {
 	fmt.Println("findOptions", q.findOptions)
 	fmt.Println("include    ", q.include)
 
-	q.BuildRestWhere()
-	q.runFind()
-	q.runCount()
-	q.handleInclude()
+	err := q.BuildRestWhere()
+	if err != nil {
+		return nil, err
+	}
+	err = q.runFind()
+	if err != nil {
+		return nil, err
+	}
+	err = q.runCount()
+	if err != nil {
+		return nil, err
+	}
+	err = q.handleInclude()
+	if err != nil {
+		return nil, err
+	}
 	return q.response, nil
 }
 

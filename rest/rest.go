@@ -25,7 +25,10 @@ func Find(
 	if err != nil {
 		return nil, err
 	}
-	query := NewQuery(auth, className, where, options)
+	query, err := NewQuery(auth, className, where, options)
+	if err != nil {
+		return nil, err
+	}
 
 	return query.Execute()
 }

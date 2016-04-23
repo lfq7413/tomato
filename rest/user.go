@@ -70,7 +70,11 @@ func getUserIfNeeded(user types.M) types.M {
 		where["email"] = user["email"]
 	}
 
-	response, err := NewQuery(Master(), "_User", where, types.M{}).Execute()
+	query, err := NewQuery(Master(), "_User", where, types.M{})
+	if err != nil {
+		return nil
+	}
+	response, err := query.Execute()
 	if err != nil {
 		return nil
 	}

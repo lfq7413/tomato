@@ -66,7 +66,10 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 	}
 
 	if op != nil && updateWhere != nil {
-		badgeQuery := rest.NewQuery(auth, "_Installation", updateWhere, types.M{})
+		badgeQuery, err := rest.NewQuery(auth, "_Installation", updateWhere, types.M{})
+		if err != nil {
+			return err
+		}
 		badgeQuery.BuildRestWhere()
 		restWhere := utils.CopyMap(badgeQuery.Where)
 		and := utils.SliceInterface(restWhere["$and"])
@@ -79,7 +82,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 		}
 		and = append(and, tp)
 		restWhere["$and"] = and
-		err := orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
+		err = orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
 		if err != nil {
 			return err
 		}

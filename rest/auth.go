@@ -44,8 +44,15 @@ func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
 	restWhere := types.M{
 		"_session_token": sessionToken,
 	}
-	// TODO 处理错误
-	response, _ := NewQuery(Master(), "_Session", restWhere, restOptions).Execute()
+
+	query, err := NewQuery(Master(), "_Session", restWhere, restOptions)
+	if err != nil {
+		return Nobody()
+	}
+	response, err := query.Execute()
+	if err != nil {
+		return Nobody()
+	}
 
 	if response == nil || response["results"] == nil {
 		return Nobody()

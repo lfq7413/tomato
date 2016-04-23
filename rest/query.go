@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
-// Query ...
+// Query 处理查询请求的结构体
 type Query struct {
 	auth              *Auth
 	className         string
@@ -25,13 +26,13 @@ type Query struct {
 	redirectClassName string
 }
 
-// NewQuery ...
+// NewQuery 组装查询对象
 func NewQuery(
 	auth *Auth,
 	className string,
 	where types.M,
 	options types.M,
-) *Query {
+) (*Query, error) {
 	query := &Query{
 		auth:              auth,
 		className:         className,
@@ -46,6 +47,7 @@ func NewQuery(
 	}
 
 	if auth.IsMaster == false {
+		// 当前权限为 Master 时，findOptions 中不存在 acl 这个 key
 		if auth.User != nil {
 			query.findOptions["acl"] = []string{auth.User["objectId"].(string)}
 		} else {
@@ -53,7 +55,7 @@ func NewQuery(
 		}
 		if className == "_Session" {
 			if query.findOptions["acl"] == nil {
-				// TODO session 无效
+				return nil, errs.E(errs.InvalidSessionToken, "This session token is invalid.")
 			}
 			user := types.M{"__type": "Pointer", "className": "_User", "objectId": auth.User["objectId"]}
 			and := types.S{where, user}
@@ -109,10 +111,11 @@ func NewQuery(
 				query.redirectClassName = ""
 			}
 		default:
+			return nil, errs.E(errs.InvalidJSON, "bad option: "+k)
 		}
 	}
 
-	return query
+	return query, nil
 }
 
 // Execute ...
@@ -206,12 +209,19 @@ func (q *Query) replaceSelect() error {
 	}
 
 	values := types.S{}
-	// TODO 处理错误
-	response, _ := NewQuery(
+
+	query, err := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
 		utils.MapInterface(queryValue["where"]),
-		types.M{}).Execute()
+		types.M{})
+	if err != nil {
+		return err
+	}
+	response, err := query.Execute()
+	if err != nil {
+		return err
+	}
 	// 组装查询到的对象
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
@@ -257,12 +267,19 @@ func (q *Query) replaceDontSelect() error {
 	}
 
 	values := types.S{}
-	// TODO 处理错误
-	response, _ := NewQuery(
+
+	query, err := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
 		utils.MapInterface(queryValue["where"]),
-		types.M{}).Execute()
+		types.M{})
+	if err != nil {
+		return err
+	}
+	response, err := query.Execute()
+	if err != nil {
+		return err
+	}
 	// 组装查询到的对象
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
@@ -301,12 +318,19 @@ func (q *Query) replaceInQuery() error {
 	}
 
 	values := types.S{}
-	// TODO 处理错误
-	response, _ := NewQuery(
+
+	query, err := NewQuery(
 		q.auth,
 		utils.String(inQueryValue["className"]),
 		utils.MapInterface(inQueryValue["where"]),
-		types.M{}).Execute()
+		types.M{})
+	if err != nil {
+		return err
+	}
+	response, err := query.Execute()
+	if err != nil {
+		return err
+	}
 	// 组装查询到的对象
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
@@ -347,12 +371,19 @@ func (q *Query) replaceNotInQuery() error {
 	}
 
 	values := types.S{}
-	// TODO 处理错误
-	response, _ := NewQuery(
+
+	query, err := NewQuery(
 		q.auth,
 		utils.String(notInQueryValue["className"]),
 		utils.MapInterface(notInQueryValue["where"]),
-		types.M{}).Execute()
+		types.M{})
+	if err != nil {
+		return err
+	}
+	response, err := query.Execute()
+	if err != nil {
+		return err
+	}
 	// 组装查询到的对象
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
@@ -464,8 +495,14 @@ func includePath(auth *Auth, response types.M, path []string) error {
 	where := types.M{
 		"objectId": objectID,
 	}
-	// TODO 处理错误
-	includeResponse, _ := NewQuery(auth, className, where, types.M{}).Execute()
+	query, err := NewQuery(auth, className, where, types.M{})
+	if err != nil {
+		return err
+	}
+	includeResponse, err := query.Execute()
+	if err != nil {
+		return err
+	}
 	if utils.HasResults(includeResponse) == false {
 		return nil
 	}

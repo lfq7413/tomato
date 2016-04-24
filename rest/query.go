@@ -145,18 +145,40 @@ func (q *Query) Execute() (types.M, error) {
 	return q.response, nil
 }
 
-// BuildRestWhere ...
+// BuildRestWhere 展开查询参数，组装设置项
 func (q *Query) BuildRestWhere() error {
-	q.getUserAndRoleACL()
-	q.redirectClassNameForKey()
-	q.validateClientClassCreation()
-	q.replaceSelect()
-	q.replaceDontSelect()
-	q.replaceInQuery()
-	q.replaceNotInQuery()
+	err := q.getUserAndRoleACL()
+	if err != nil {
+		return err
+	}
+	err = q.redirectClassNameForKey()
+	if err != nil {
+		return err
+	}
+	err = q.validateClientClassCreation()
+	if err != nil {
+		return err
+	}
+	err = q.replaceSelect()
+	if err != nil {
+		return err
+	}
+	err = q.replaceDontSelect()
+	if err != nil {
+		return err
+	}
+	err = q.replaceInQuery()
+	if err != nil {
+		return err
+	}
+	err = q.replaceNotInQuery()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
+// getUserAndRoleACL 获取当前用户角色信息，以及用户 id，添加到设置项 acl 中
 func (q *Query) getUserAndRoleACL() error {
 	if q.auth.IsMaster || q.auth.User == nil {
 		return nil
@@ -167,6 +189,7 @@ func (q *Query) getUserAndRoleACL() error {
 	return nil
 }
 
+// redirectClassNameForKey 修改 className 为 redirectKey 字段对应的相关类型
 func (q *Query) redirectClassNameForKey() error {
 	if q.redirectKey == "" {
 		return nil
@@ -179,26 +202,53 @@ func (q *Query) redirectClassNameForKey() error {
 	return nil
 }
 
+// validateClientClassCreation 验证当前请求是否能创建类
 func (q *Query) validateClientClassCreation() error {
 	sysClass := []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
+	// 检测配置项是否允许
 	if config.TConfig.AllowClientClassCreation {
 		return nil
 	}
 	if q.auth.IsMaster {
 		return nil
 	}
+	// 允许操作系统表
 	for _, v := range sysClass {
 		if v == q.className {
 			return nil
 		}
 	}
+	// 允许操作已存在的表
 	if orm.CollectionExists(q.className) {
 		return nil
 	}
-	// TODO 无法操作不存在的表
-	return nil
+	// 无法操作不存在的表
+	return errs.E(errs.OperationForbidden, "This user is not allowed to access non-existent class: "+q.className)
 }
 
+// replaceSelect 执行 $select 中的查询语句，把结果放入 $in 中，替换掉 $select
+// 替换前的格式如下：
+// {
+//     "hometown":{
+//         "$select":{
+//             "query":{
+//                 "className":"Team",
+//                 "where":{
+//                     "winPct":{
+//                         "$gt":0.5
+//                     }
+//                 }
+//             },
+//             "key":"city"
+//         }
+//     }
+// }
+// 转换后格式如下
+// {
+//     "hometown":{
+//         "$in":["abc","cba"]
+//     }
+// }
 func (q *Query) replaceSelect() error {
 	selectObject := findObjectWithKey(q.Where, "$select")
 	if selectObject == nil {
@@ -208,24 +258,29 @@ func (q *Query) replaceSelect() error {
 	selectValue := utils.MapInterface(selectObject["$select"])
 	if selectValue == nil ||
 		selectValue["query"] == nil ||
-		selectValue["key"] == nil {
-		// TODO $select 用法不正确
-		return nil
+		selectValue["key"] == nil ||
+		len(selectValue) != 2 {
+		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
 	queryValue := utils.MapInterface(selectValue["query"])
+	// iOS SDK 中不设置 where 时，没有 where 字段，所以此处不检测 where
 	if queryValue == nil ||
-		queryValue["className"] == nil ||
-		queryValue["where"] == nil {
-		// TODO $select 用法不正确
-		return nil
+		queryValue["className"] == nil {
+		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
 
 	values := types.S{}
 
+	var where types.M
+	if queryValue["where"] == nil {
+		where = types.M{}
+	} else {
+		utils.MapInterface(queryValue["where"])
+	}
 	query, err := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
-		utils.MapInterface(queryValue["where"]),
+		where,
 		types.M{})
 	if err != nil {
 		return err
@@ -257,6 +312,8 @@ func (q *Query) replaceSelect() error {
 	return q.replaceSelect()
 }
 
+// replaceDontSelect 执行 $dontSelect 中的查询语句，把结果放入 $nin 中，替换掉 $select
+// 数据结构与 replaceSelect 类似
 func (q *Query) replaceDontSelect() error {
 	dontSelectObject := findObjectWithKey(q.Where, "$dontSelect")
 	if dontSelectObject == nil {
@@ -266,24 +323,28 @@ func (q *Query) replaceDontSelect() error {
 	dontSelectValue := utils.MapInterface(dontSelectObject["$dontSelect"])
 	if dontSelectValue == nil ||
 		dontSelectValue["query"] == nil ||
-		dontSelectValue["key"] == nil {
-		// TODO $dontSelect 用法不正确
-		return nil
+		dontSelectValue["key"] == nil ||
+		len(dontSelectValue) != 2 {
+		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
 	queryValue := utils.MapInterface(dontSelectValue["query"])
 	if queryValue == nil ||
-		queryValue["className"] == nil ||
-		queryValue["where"] == nil {
-		// TODO $dontSelect 用法不正确
-		return nil
+		queryValue["className"] == nil {
+		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
 
 	values := types.S{}
 
+	var where types.M
+	if queryValue["where"] == nil {
+		where = types.M{}
+	} else {
+		utils.MapInterface(queryValue["where"])
+	}
 	query, err := NewQuery(
 		q.auth,
 		utils.String(queryValue["className"]),
-		utils.MapInterface(queryValue["where"]),
+		where,
 		types.M{})
 	if err != nil {
 		return err
@@ -315,6 +376,33 @@ func (q *Query) replaceDontSelect() error {
 	return q.replaceDontSelect()
 }
 
+// replaceInQuery 执行 $inQuery 中的查询语句，把结果放入 $in 中，替换掉 $inQuery
+// 替换前的格式：
+// {
+//     "post":{
+//         "$inQuery":{
+//             "where":{
+//                 "image":{
+//                     "$exists":true
+//                 }
+//             },
+//             "className":"Post"
+//         }
+//     }
+// }
+// 替换后的格式
+// {
+//     "post":{
+//         "$in":[
+// 			{
+// 				"__type":    "Pointer",
+// 				"className": "className",
+// 				"objectId":  "objectId",
+// 			},
+// 			{...}
+// 		]
+//     }
+// }
 func (q *Query) replaceInQuery() error {
 	inQueryObject := findObjectWithKey(q.Where, "$inQuery")
 	if inQueryObject == nil {
@@ -324,9 +412,9 @@ func (q *Query) replaceInQuery() error {
 	inQueryValue := utils.MapInterface(inQueryObject["$inQuery"])
 	if inQueryValue == nil ||
 		inQueryValue["where"] == nil ||
-		inQueryValue["className"] == nil {
-		// TODO $inQuery 用法不正确
-		return nil
+		inQueryValue["className"] == nil ||
+		len(inQueryValue) != 2 {
+		return errs.E(errs.InvalidQuery, "improper usage of $inQuery")
 	}
 
 	values := types.S{}
@@ -368,6 +456,8 @@ func (q *Query) replaceInQuery() error {
 	return q.replaceInQuery()
 }
 
+// replaceNotInQuery 执行 $notInQuery 中的查询语句，把结果放入 $nin 中，替换掉 $notInQuery
+// 数据格式与 replaceInQuery 类似
 func (q *Query) replaceNotInQuery() error {
 	notInQueryObject := findObjectWithKey(q.Where, "$notInQuery")
 	if notInQueryObject == nil {
@@ -377,9 +467,9 @@ func (q *Query) replaceNotInQuery() error {
 	notInQueryValue := utils.MapInterface(notInQueryObject["$notInQuery"])
 	if notInQueryValue == nil ||
 		notInQueryValue["where"] == nil ||
-		notInQueryValue["className"] == nil {
-		// TODO $notInQuery 用法不正确
-		return nil
+		notInQueryValue["className"] == nil ||
+		len(notInQueryValue) != 2 {
+		return errs.E(errs.InvalidQuery, "improper usage of $notInQuery")
 	}
 
 	values := types.S{}

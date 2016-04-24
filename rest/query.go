@@ -7,6 +7,7 @@ import (
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/files"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -511,8 +512,10 @@ func (q *Query) replaceNotInQuery() error {
 	return q.replaceNotInQuery()
 }
 
+// runFind 从数据库查找数据，并处理返回结果
 func (q *Query) runFind() error {
 	response := orm.Find(q.className, q.Where, q.findOptions)
+	// 从 _User 表中删除密码字段
 	if q.className == "_User" {
 		for _, v := range response {
 			user := utils.MapInterface(v)
@@ -521,7 +524,11 @@ func (q *Query) runFind() error {
 			}
 		}
 	}
-	// TODO 取出需要的 key   （TODO：通过数据库直接取key）
+
+	// 展开文件类型
+	files.ExpandFilesInObject(response)
+
+	// 取出需要的 key   （TODO：通过数据库直接取key）
 	results := types.S{}
 	if len(q.keys) > 0 && len(response) > 0 {
 		for _, v := range response {
@@ -536,12 +543,11 @@ func (q *Query) runFind() error {
 		}
 	}
 
-	// TODO 展开文件类型
-
 	q.response["results"] = results
 	return nil
 }
 
+// runCount 查询符合条件的结果数量
 func (q *Query) runCount() error {
 	if q.doCount == false {
 		return nil
@@ -549,15 +555,21 @@ func (q *Query) runCount() error {
 	q.findOptions["count"] = true
 	delete(q.findOptions, "skip")
 	delete(q.findOptions, "limit")
+	// 当需要取 count 时，数据库返回结果的第一个即为 count
 	q.response["count"] = orm.Find(q.className, q.Where, q.findOptions)[0]
 	return nil
 }
 
+// handleInclude 展开 include 对应的内容
 func (q *Query) handleInclude() error {
 	if len(q.include) == 0 {
 		return nil
 	}
-	includePath(q.auth, q.response, q.include[0])
+	// includePath 中会直接更新 q.response
+	err := includePath(q.auth, q.response, q.include[0])
+	if err != nil {
+		return err
+	}
 
 	if len(q.include) > 0 {
 		q.include = q.include[1:]

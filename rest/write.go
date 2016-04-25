@@ -667,13 +667,14 @@ func (w *Write) transformUser() error {
 // expandFilesForExistingObjects 展开文件对象
 func (w *Write) expandFilesForExistingObjects() error {
 	if w.response != nil && w.response["response"] != nil {
-		// TODO 展开文件对象
+		// 展开文件对象
 		files.ExpandFilesInObject(w.response["response"])
 	}
 
 	return nil
 }
 
+// runDatabaseOperation 执行数据库操作
 func (w *Write) runDatabaseOperation() error {
 	if w.response != nil {
 		return nil
@@ -681,8 +682,8 @@ func (w *Write) runDatabaseOperation() error {
 
 	if w.className == "_User" && w.query != nil &&
 		w.auth.CouldUpdateUserID(utils.String(w.query["objectId"])) == false {
-		//TODO 不能更新当前用户
-		return nil
+		// 不能更新该用户，Master 可以更新任意用户，普通用户仅可更新自身
+		return errs.E(errs.SessionMissing, "cannot modify user "+utils.String(w.query["objectId"]))
 	}
 
 	if w.className == "_Product" && w.data["download"] != nil {
@@ -690,22 +691,25 @@ func (w *Write) runDatabaseOperation() error {
 		w.data["downloadName"] = download["name"]
 	}
 
+	// TODO 确保不要出现用户无法访问自身数据的情况
 	if w.data["ACL"] != nil && utils.MapInterface(w.data["ACL"])["*unresolved"] != nil {
-		// TODO 无效的 ACL
-		return nil
+		return errs.E(errs.InvalidAcl, "Invalid ACL.")
 	}
 
 	if w.query != nil {
-		orm.Update(w.className, w.query, w.data, w.runOptions)
-		// TODO 处理错误
-		resp := types.M{
-			"updatedAt": w.updatedAt,
+		// 执行更新
+		resp, err := orm.Update(w.className, w.query, w.data, w.runOptions)
+		if err != nil {
+			return err
 		}
+		resp["updatedAt"] = w.updatedAt
+
 		w.response = types.M{
 			"response": resp,
 		}
 	} else {
 		// 给新用户设置默认 ACL
+		// TODO 为了用户信息安全性，应该禁止其他用户读取
 		if w.data["ACL"] == nil && w.className == "_User" {
 			readwrite := types.M{
 				"read":  true,
@@ -722,16 +726,21 @@ func (w *Write) runDatabaseOperation() error {
 			}
 		}
 		// 创建对象
-		orm.Create(w.className, w.data, w.runOptions)
+		err := orm.Create(w.className, w.data, w.runOptions)
+		if err != nil {
+			return err
+		}
 		resp := types.M{
 			"objectId":  w.data["objectId"],
 			"createdAt": w.data["createdAt"],
 		}
+		// 如果回调函数修改过数据，则将其复制到返回结果中
 		if w.storage["changedByTrigger"] != nil {
 			for k, v := range w.data {
 				resp[k] = v
 			}
 		}
+		// 如果新创建的用户包含 token，则复制到返回结果中
 		if w.storage["token"] != nil {
 			resp["sessionToken"] = w.storage["token"]
 		}
@@ -745,6 +754,7 @@ func (w *Write) runDatabaseOperation() error {
 	return nil
 }
 
+// handleFollowup 处理后续逻辑
 func (w *Write) handleFollowup() error {
 	if w.storage != nil && w.storage["clearSessions"] != nil {
 		// 修改密码之后，清除 session
@@ -757,7 +767,7 @@ func (w *Write) handleFollowup() error {
 			"user": user,
 		}
 		delete(w.storage, "clearSessions")
-		orm.Destroy("_Session", sessionQuery, nil)
+		orm.Destroy("_Session", sessionQuery, types.M{})
 	}
 
 	if w.storage != nil && w.storage["sendVerificationEmail"] != nil {
@@ -769,6 +779,7 @@ func (w *Write) handleFollowup() error {
 	return nil
 }
 
+// runAfterTrigger 运行数据修改后的回调函数
 func (w *Write) runAfterTrigger() error {
 	if w.response == nil || w.response["response"] == nil {
 		return nil
@@ -784,6 +795,7 @@ func (w *Write) runAfterTrigger() error {
 		for k, v := range w.originalData {
 			updatedObject[k] = v
 		}
+		updatedObject["objectId"] = w.query["objectId"]
 	}
 	// 把需要更新的数据添加进来
 	for k, v := range w.data {
@@ -795,6 +807,7 @@ func (w *Write) runAfterTrigger() error {
 	return nil
 }
 
+// location 获取对象路径
 func (w *Write) location() string {
 	var middle string
 	if w.className == "_User" {
@@ -805,6 +818,7 @@ func (w *Write) location() string {
 	return config.TConfig.ServerURL + middle + utils.String(w.data["objectId"])
 }
 
+// objectID 从请求中获取 objectId
 func (w *Write) objectID() interface{} {
 	if w.data["objectId"] != nil {
 		return w.data["objectId"]

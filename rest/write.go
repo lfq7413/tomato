@@ -7,6 +7,7 @@ import (
 	"github.com/lfq7413/tomato/authdatamanager"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/files"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -492,6 +493,7 @@ func (w *Write) findUsersWithAuthData(authData types.M) types.S {
 	return findPromise
 }
 
+// runBeforeTrigger 运行数据修改前的回调函数
 func (w *Write) runBeforeTrigger() error {
 	if w.response != nil {
 		return nil
@@ -506,6 +508,7 @@ func (w *Write) runBeforeTrigger() error {
 		for k, v := range w.originalData {
 			updatedObject[k] = v
 		}
+		updatedObject["objectId"] = w.query["objectId"]
 	}
 	// 把需要更新的数据添加进来
 	for k, v := range w.data {
@@ -514,6 +517,7 @@ func (w *Write) runBeforeTrigger() error {
 
 	response := RunTrigger(TypeBeforeSave, w.className, w.auth, updatedObject, w.originalData)
 	if response != nil && response["object"] != nil {
+		// 运行完回调函数之后，把结果设置回 data ，并标识已被修改
 		w.data = utils.MapInterface(response["object"])
 		w.storage["changedByTrigger"] = true
 		if w.query != nil && w.query["objectId"] != nil {
@@ -524,10 +528,13 @@ func (w *Write) runBeforeTrigger() error {
 	return nil
 }
 
+// setRequiredFieldsIfNeeded 设置必要的字段
 func (w *Write) setRequiredFieldsIfNeeded() error {
 	if w.data != nil {
+		// 添加默认字段
 		w.data["updatedAt"] = w.updatedAt
 		if w.query == nil {
+			// create 请求时，添加 createdAt，创建 objectId
 			w.data["createdAt"] = w.updatedAt
 
 			if w.data["objectId"] == nil {
@@ -539,6 +546,7 @@ func (w *Write) setRequiredFieldsIfNeeded() error {
 	return nil
 }
 
+// transformUser 转换用户数据，仅处理 _User 表
 func (w *Write) transformUser() error {
 	if w.className != "_User" {
 		return nil
@@ -555,6 +563,7 @@ func (w *Write) transformUser() error {
 			"className": "_User",
 			"objectId":  w.objectID(),
 		}
+		// 确定登录方式
 		var authProvider interface{}
 		if w.storage["authProvider"] != nil {
 			authProvider = w.storage["authProvider"]
@@ -574,22 +583,28 @@ func (w *Write) transformUser() error {
 			"expiresAt":      utils.TimetoString(expiresAt),
 		}
 		if w.response != nil && w.response["response"] != nil {
+			// 此时为第三方登录时的情形，w.response 已经有值
 			response := utils.MapInterface(w.response["response"])
 			response["sessionToken"] = token
 		}
-		// TODO 处理创建结果
+
 		write, err := NewWrite(Master(), "_Session", nil, sessionData, nil)
 		if err != nil {
 			return err
 		}
-		write.Execute()
+		_, err = write.Execute()
+		if err != nil {
+			return err
+		}
 	}
 
 	// 处理密码，计算 sha256
+	// TODO 后续需要加盐提高安全性
 	if w.data["password"] == nil {
 
 	} else {
 		if w.query != nil && w.auth.IsMaster == false {
+			// 如果是 update 请求时，标识出需要清理 Sessions
 			w.storage["clearSessions"] = true
 		}
 		w.data["_hashed_password"] = utils.Hash(utils.String(w.data["password"]))
@@ -598,6 +613,7 @@ func (w *Write) transformUser() error {
 
 	// 处理用户名，检测用户名是否唯一
 	if w.data["username"] == nil {
+		// 如果是 create 请求，则生成随机 ID
 		if w.query == nil {
 			w.data["username"] = utils.CreateObjectID()
 		}
@@ -614,8 +630,7 @@ func (w *Write) transformUser() error {
 		}
 		results := orm.Find(w.className, where, option)
 		if len(results) > 0 {
-			// TODO 用户已经存在
-			return nil
+			return errs.E(errs.UsernameTaken, "Account already exists for this username")
 		}
 	}
 
@@ -624,8 +639,7 @@ func (w *Write) transformUser() error {
 
 	} else {
 		if utils.IsEmail(utils.String(w.data["email"])) == false {
-			// TODO email 不合法
-			return nil
+			return errs.E(errs.InvalidEmailAddress, "Email address format is invalid.")
 		}
 		objectID := types.M{
 			"$ne": w.objectID(),
@@ -639,8 +653,7 @@ func (w *Write) transformUser() error {
 		}
 		results := orm.Find(w.className, where, option)
 		if len(results) > 0 {
-			// TODO email 已经存在
-			return nil
+			return errs.E(errs.EmailTaken, "Account already exists for this email address")
 		}
 
 		// 更新 email ，需要发送验证邮件
@@ -651,9 +664,11 @@ func (w *Write) transformUser() error {
 	return nil
 }
 
+// expandFilesForExistingObjects 展开文件对象
 func (w *Write) expandFilesForExistingObjects() error {
 	if w.response != nil && w.response["response"] != nil {
 		// TODO 展开文件对象
+		files.ExpandFilesInObject(w.response["response"])
 	}
 
 	return nil

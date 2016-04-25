@@ -88,7 +88,10 @@ func Create(
 	if err != nil {
 		return nil, err
 	}
-	write := NewWrite(auth, className, nil, object, nil)
+	write, err := NewWrite(auth, className, nil, object, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return write.Execute()
 }
@@ -126,7 +129,10 @@ func Update(
 		}
 	}
 
-	write := NewWrite(auth, className, types.M{"objectId": objectID}, object, originalRestObject)
+	write, err := NewWrite(auth, className, types.M{"objectId": objectID}, object, originalRestObject)
+	if err != nil {
+		return nil, err
+	}
 
 	return write.Execute()
 }

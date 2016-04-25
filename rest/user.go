@@ -195,7 +195,11 @@ func UpdatePassword(username, token, newPassword string) error {
 		"password":          newPassword,
 		"_perishable_token": "",
 	}
-	_, err := NewWrite(Master(), "_User", query, data, types.M{}).Execute()
+	write, err := NewWrite(Master(), "_User", query, data, types.M{})
+	if err != nil {
+		return errors.New("Reset password failed")
+	}
+	_, err = write.Execute()
 	if err != nil {
 		return errors.New("Reset password failed")
 	}

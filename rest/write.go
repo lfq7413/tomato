@@ -6,6 +6,7 @@ import (
 
 	"github.com/lfq7413/tomato/authdatamanager"
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -24,16 +25,20 @@ type Write struct {
 	updatedAt    string
 }
 
-// NewWrite 可用于 create 和 update ， create 时 query 为 nil
+// NewWrite 可用于 create 和 update ， create 时 	query 为 nil
+// query 查询条件，当 update 请求时不为空
+// data 写入数据
+// originalData 原始对象数据，当 update 请求时不为空
 func NewWrite(
 	auth *Auth,
 	className string,
 	query types.M,
 	data types.M,
 	originalData types.M,
-) *Write {
+) (*Write, error) {
+	// 当为 create 请求时，写入数据中不应该包含 objectId
 	if query == nil && data["objectId"] != nil {
-		// TODO objectId 无效
+		return nil, errs.E(errs.InvalidKeyName, "objectId is an invalid field name.")
 	}
 	write := &Write{
 		auth:         auth,
@@ -46,7 +51,7 @@ func NewWrite(
 		response:     nil,
 		updatedAt:    utils.TimetoString(time.Now().UTC()),
 	}
-	return write
+	return write, nil
 }
 
 // Execute ...
@@ -274,8 +279,14 @@ func (w *Write) handleSession() error {
 			}
 			sessionData[k] = v
 		}
-		// TODO 处理错误
-		results, _ := NewWrite(Master(), "_Session", nil, sessionData, types.M{}).Execute()
+		write, err := NewWrite(Master(), "_Session", nil, sessionData, types.M{})
+		if err != nil {
+			return err
+		}
+		results, err := write.Execute()
+		if err != nil {
+			return err
+		}
 		if results["response"] == nil {
 			// TODO 创建 Session 失败
 			return nil
@@ -489,7 +500,11 @@ func (w *Write) transformUser() error {
 			response["sessionToken"] = token
 		}
 		// TODO 处理创建结果
-		NewWrite(Master(), "_Session", nil, sessionData, nil).Execute()
+		write, err := NewWrite(Master(), "_Session", nil, sessionData, nil)
+		if err != nil {
+			return err
+		}
+		write.Execute()
 	}
 
 	// 处理密码，计算 sha256

@@ -302,22 +302,23 @@ func (w *Write) handleInstallation() error {
 	return nil
 }
 
+// handleSession 处理 _Session 表的操作
 func (w *Write) handleSession() error {
 	if w.response != nil || w.className != "_Session" {
 		return nil
 	}
 
 	if w.auth.User == nil && w.auth.IsMaster == false {
-		// TODO 需要 Session token
-		return nil
+		return errs.E(errs.InvalidSessionToken, "Session token required.")
 	}
 
 	if w.data["ACL"] != nil {
-		// TODO Session 不能设置 ACL
-		return nil
+		return errs.E(errs.InvalidKeyName, "Cannot set ACL on a Session.")
 	}
 
+	// 当前为 create 请求，并且不是 Master 权限时
 	if w.query == nil && w.auth.IsMaster == false {
+		// 生成 token ，过期时间为 1 年
 		token := "r:" + utils.CreateToken()
 		expiresAt := time.Now().UTC()
 		expiresAt = expiresAt.AddDate(1, 0, 0)
@@ -336,12 +337,14 @@ func (w *Write) handleSession() error {
 			"restricted":   true,
 			"expiresAt":    utils.TimetoString(expiresAt),
 		}
+		// 添加请求数据中的各字段
 		for k, v := range w.data {
 			if k == "objectId" {
 				continue
 			}
 			sessionData[k] = v
 		}
+		// 以 Master 权限去创建 session
 		write, err := NewWrite(Master(), "_Session", nil, sessionData, types.M{})
 		if err != nil {
 			return err
@@ -351,8 +354,7 @@ func (w *Write) handleSession() error {
 			return err
 		}
 		if results["response"] == nil {
-			// TODO 创建 Session 失败
-			return nil
+			return errs.E(errs.InternalServerError, "Error creating session.")
 		}
 		sessionData["objectId"] = utils.MapInterface(results["response"])["objectId"]
 		w.response = types.M{
@@ -365,22 +367,23 @@ func (w *Write) handleSession() error {
 	return nil
 }
 
+// validateAuthData 校验用户登录数据，仅处理对 _User 表的操作
 func (w *Write) validateAuthData() error {
 	if w.className != "_User" {
 		return nil
 	}
 
+	// 当前 create 请求，并且不存在第三方登录数据时
 	if w.query == nil && w.data["authData"] == nil {
 		if utils.String(w.data["username"]) == "" {
-			// TODO 没有设置 username
-			return nil
+			return errs.E(errs.UsernameMissing, "bad or missing username")
 		}
 		if utils.String(w.data["password"]) == "" {
-			// TODO 没有设置 password
-			return nil
+			return errs.E(errs.PasswordMissing, "password is required")
 		}
 	}
 
+	// 不存在第三方登录数据时，直接返回
 	if w.data["authData"] == nil || len(utils.MapInterface(w.data["authData"])) == 0 {
 		return nil
 	}
@@ -388,26 +391,35 @@ func (w *Write) validateAuthData() error {
 	authData := utils.MapInterface(w.data["authData"])
 	canHandleAuthData := true
 
-	for _, v := range authData {
-		providerAuthData := utils.MapInterface(v)
-		hasToken := (providerAuthData != nil && providerAuthData["id"] != nil)
-		canHandleAuthData = (canHandleAuthData && (hasToken || providerAuthData == nil))
+	if len(authData) > 0 {
+		// authData 中包含 id 时，才需要进行处理
+		for _, v := range authData {
+			providerAuthData := utils.MapInterface(v)
+			hasToken := (providerAuthData != nil && providerAuthData["id"] != nil)
+			canHandleAuthData = (canHandleAuthData && (hasToken || providerAuthData == nil))
+		}
+		if canHandleAuthData {
+			return w.handleAuthData(authData)
+		}
 	}
-	if canHandleAuthData {
-		return w.handleAuthData(authData)
-	}
-	// TODO 这个 authentication 不支持
-	return nil
+	// 这个 authentication 不支持
+	return errs.E(errs.UnsupportedService, "This authentication method is unsupported.")
 }
 
+// handleAuthData 处理第三方登录数据
 func (w *Write) handleAuthData(authData types.M) error {
-	w.handleAuthDataValidation(authData)
+	// 校验第三方数据
+	err := w.handleAuthDataValidation(authData)
+	if err != nil {
+		return err
+	}
 	results := w.findUsersWithAuthData(authData)
 	if results != nil && len(results) > 1 {
-		// TODO auth 已经被使用
-		return nil
+		// auth 已经被多个用户使用
+		return errs.E(errs.AccountAlreadyLinked, "this auth is already used")
 	}
 
+	// 保存登录方式
 	keys := []string{}
 	for k := range authData {
 		keys = append(keys, k)
@@ -415,9 +427,10 @@ func (w *Write) handleAuthData(authData types.M) error {
 	w.storage["authProvider"] = strings.Join(keys, ",")
 
 	if results == nil || len(results) == 0 {
+		// 不存在用户，则创建 username
 		w.data["username"] = utils.CreateToken()
 	} else if w.query == nil {
-		// 登录
+		// 存在一个用户，并且是 create 请求时，进行登录
 		user := utils.MapInterface(results[0])
 		delete(user, "password")
 		w.response = types.M{
@@ -426,32 +439,34 @@ func (w *Write) handleAuthData(authData types.M) error {
 		}
 		w.data["objectId"] = user["objectId"]
 	} else if w.query != nil && w.query["objectId"] != nil {
-		// 更新
+		// 存在一个用户，并且当前为 update 请求，校验 objectId 是否一致
 		user := utils.MapInterface(results[0])
 		if utils.String(user["objectId"]) != utils.String(w.query["objectId"]) {
-			// TODO auth 已经被使用
-			return nil
+			// auth 已经被使用
+			return errs.E(errs.AccountAlreadyLinked, "this auth is already used")
 		}
 	}
 
 	return nil
 }
 
+// handleAuthDataValidation 校验第三方登录数据
 func (w *Write) handleAuthDataValidation(authData types.M) error {
 	for k, v := range authData {
 		if v == nil {
 			continue
 		}
-		result := authdatamanager.ValidateAuthData(k, utils.MapInterface(v))
-		if result != nil {
+		err := authdatamanager.ValidateAuthData(k, utils.MapInterface(v))
+		if err != nil {
 			// 验证出现问题
-			return nil
+			return err
 		}
 	}
 
 	return nil
 }
 
+// findUsersWithAuthData 查找第三方登录数据对应的用户
 func (w *Write) findUsersWithAuthData(authData types.M) types.S {
 	query := types.S{}
 	for k, v := range authData {

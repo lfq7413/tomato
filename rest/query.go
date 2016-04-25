@@ -579,8 +579,14 @@ func (q *Query) handleInclude() error {
 	return nil
 }
 
+// includePath 在 response 中搜索 path 路径中对应的节点，
+// 查询出该节点对应的对象，然后用对象替换该节点
 func includePath(auth *Auth, response types.M, path []string) error {
-	pointers := findPointers(response["results"], path)
+	// 查找路径对应的所有节点
+	pointers, err := findPointers(response["results"], path)
+	if err != nil {
+		return err
+	}
 	if len(pointers) == 0 {
 		return nil
 	}
@@ -588,21 +594,21 @@ func includePath(auth *Auth, response types.M, path []string) error {
 	objectIDs := []string{}
 	for _, v := range pointers {
 		pointer := utils.MapInterface(v)
+		// 所有节点的 className 应该一致
 		if className == "" {
 			className = utils.String(pointer["className"])
 		} else {
 			if className != utils.String(pointer["className"]) {
-				// TODO 对象类型不一致
-				return nil
+				return errs.E(errs.InvalidJSON, "inconsistent type data for include")
 			}
 		}
 		objectIDs = append(objectIDs, utils.String(pointer["objectId"]))
 	}
 	if className == "" {
-		// TODO 无效对象
-		return nil
+		return errs.E(errs.InvalidJSON, "bad pointers")
 	}
 
+	// 获取所有 objectIDs 对应的对象
 	objectID := types.M{
 		"$in": objectIDs,
 	}
@@ -620,51 +626,64 @@ func includePath(auth *Auth, response types.M, path []string) error {
 	if utils.HasResults(includeResponse) == false {
 		return nil
 	}
+
+	// 组装查询到的对象
 	results := utils.SliceInterface(includeResponse["results"])
 	replace := types.M{}
 	for _, v := range results {
 		obj := utils.MapInterface(v)
+		obj["__type"] = "Object"
+		obj["className"] = className
 		if className == "_User" {
 			delete(obj, "sessionToken")
 		}
 		replace[utils.String(obj["objectId"])] = obj
 	}
 
+	// 使用查询到的对象替换对应的节点
 	replacePointers(pointers, replace)
 
 	return nil
 }
 
-// 查询路径对应的对象列表
-func findPointers(object interface{}, path []string) types.S {
+// findPointers 查询路径对应的对象列表，对象必须为 Pointer 类型
+func findPointers(object interface{}, path []string) (types.S, error) {
 	// 如果是对象数组，则遍历每一个对象
 	if utils.SliceInterface(object) != nil {
 		answer := types.S{}
 		for _, v := range utils.SliceInterface(object) {
-			answer = append(answer, findPointers(v, path)...)
+			p, err := findPointers(v, path)
+			if err != nil {
+				return nil, err
+			}
+			answer = append(answer, p...)
 		}
-		return answer
+		return answer, nil
 	}
 
+	// 如果不能转成 map ，则返回错误
 	obj := utils.MapInterface(object)
 	if obj == nil {
-		return types.S{}
+		return nil, errs.E(errs.InvalidJSON, "can only include pointer fields")
 	}
 	// 如果当前是路径最后一个节点，判断是否为 Pointer
 	if len(path) == 0 {
 		if obj["__type"] == "Pointer" {
-			return types.S{obj}
+			return types.S{obj}, nil
 		}
-		return types.S{}
+		return nil, errs.E(errs.InvalidJSON, "can only include pointer fields")
 	}
 	// 取出下一个路径对应的对象，进行查找
 	subobject := obj[path[0]]
 	if subobject == nil {
-		return types.S{}
+		// 对象不存在，则不进行处理
+		return types.S{}, nil
 	}
 	return findPointers(subobject, path[1:])
 }
 
+// replacePointers 把 replace 保存的对象，添加到 pointers 对应的节点中
+// pointers 中保存的是指向 response 的引用，修改 pointers 中的内容，即可同时修改 response 的内容
 func replacePointers(pointers types.S, replace types.M) error {
 	for _, v := range pointers {
 		pointer := utils.MapInterface(v)
@@ -673,16 +692,18 @@ func replacePointers(pointers types.S, replace types.M) error {
 			continue
 		}
 		rpl := utils.MapInterface(replace[objectID])
+		// 把对象中的所有字段写入节点
 		for k, v := range rpl {
 			pointer[k] = v
 		}
-		pointer["__type"] = "Object"
 	}
 	return nil
 }
 
-// 查找带有指定 key 的对象
+// findObjectWithKey 查找带有指定 key 的对象，root 可以是 Slice 或者 map
+// 查找到一个符合条件的对象之后立即返回
 func findObjectWithKey(root interface{}, key string) types.M {
+	// 如果是 Slice 则遍历查找
 	if s := utils.SliceInterface(root); s != nil {
 		for _, v := range s {
 			answer := findObjectWithKey(v, key)
@@ -691,10 +712,13 @@ func findObjectWithKey(root interface{}, key string) types.M {
 			}
 		}
 	}
+
 	if m := utils.MapInterface(root); m != nil {
+		// 当前 map 中存在指定的 key，表示已经找到，立即返回
 		if m[key] != nil {
 			return m
 		}
+		// 不存在指定 key 时，则遍历 map 中各对象进行查找
 		for _, v := range m {
 			answer := findObjectWithKey(v, key)
 			if answer != nil {

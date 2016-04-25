@@ -40,11 +40,13 @@ func NewWrite(
 	if query == nil && data["objectId"] != nil {
 		return nil, errs.E(errs.InvalidKeyName, "objectId is an invalid field name.")
 	}
+	// query,data 可能会被修改，所以先复制出来
+	// response 为最终返回的结果，其中包含三个字段：response、status、location
 	write := &Write{
 		auth:         auth,
 		className:    className,
-		query:        query,
-		data:         data,
+		query:        utils.CopyMap(query),
+		data:         utils.CopyMap(data),
 		originalData: originalData,
 		storage:      types.M{},
 		runOptions:   types.M{},
@@ -54,24 +56,64 @@ func NewWrite(
 	return write, nil
 }
 
-// Execute ...
+// Execute 执行写入操作，并返回结果
 func (w *Write) Execute() (types.M, error) {
-	w.getUserAndRoleACL()
-	w.validateClientClassCreation()
-	w.validateSchema()
-	w.handleInstallation()
-	w.handleSession()
-	w.validateAuthData()
-	w.runBeforeTrigger()
-	w.setRequiredFieldsIfNeeded()
-	w.transformUser()
-	w.expandFilesForExistingObjects()
-	w.runDatabaseOperation()
-	w.handleFollowup()
-	w.runAfterTrigger()
+	err := w.getUserAndRoleACL()
+	if err != nil {
+		return nil, err
+	}
+	err = w.validateClientClassCreation()
+	if err != nil {
+		return nil, err
+	}
+	err = w.validateSchema()
+	if err != nil {
+		return nil, err
+	}
+	err = w.handleInstallation()
+	if err != nil {
+		return nil, err
+	}
+	err = w.handleSession()
+	if err != nil {
+		return nil, err
+	}
+	err = w.validateAuthData()
+	if err != nil {
+		return nil, err
+	}
+	err = w.runBeforeTrigger()
+	if err != nil {
+		return nil, err
+	}
+	err = w.setRequiredFieldsIfNeeded()
+	if err != nil {
+		return nil, err
+	}
+	err = w.transformUser()
+	if err != nil {
+		return nil, err
+	}
+	err = w.expandFilesForExistingObjects()
+	if err != nil {
+		return nil, err
+	}
+	err = w.runDatabaseOperation()
+	if err != nil {
+		return nil, err
+	}
+	err = w.handleFollowup()
+	if err != nil {
+		return nil, err
+	}
+	err = w.runAfterTrigger()
+	if err != nil {
+		return nil, err
+	}
 	return w.response, nil
 }
 
+// getUserAndRoleACL 获取用户角色信息，写入 acl 字段
 func (w *Write) getUserAndRoleACL() error {
 	if w.auth.IsMaster {
 		return nil
@@ -85,6 +127,7 @@ func (w *Write) getUserAndRoleACL() error {
 	return nil
 }
 
+// validateClientClassCreation 检测是否允许创建类
 func (w *Write) validateClientClassCreation() error {
 	sysClass := []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
 	if config.TConfig.AllowClientClassCreation {
@@ -98,11 +141,12 @@ func (w *Write) validateClientClassCreation() error {
 			return nil
 		}
 	}
+	// 允许操作已存在的表
 	if orm.CollectionExists(w.className) {
 		return nil
 	}
-	// TODO 无法操作不存在的表
-	return nil
+	// 无法操作不存在的表
+	return errs.E(errs.OperationForbidden, "This user is not allowed to access non-existent class: "+w.className)
 }
 
 func (w *Write) validateSchema() error {

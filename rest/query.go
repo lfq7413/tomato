@@ -543,6 +543,13 @@ func (q *Query) runFind() error {
 		}
 	}
 
+	if q.redirectClassName != "" {
+		for _, v := range results {
+			r := utils.MapInterface(v)
+			r["className"] = q.redirectClassName
+		}
+	}
+
 	q.response["results"] = results
 	return nil
 }

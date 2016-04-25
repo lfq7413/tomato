@@ -149,27 +149,28 @@ func (w *Write) validateClientClassCreation() error {
 	return errs.E(errs.OperationForbidden, "This user is not allowed to access non-existent class: "+w.className)
 }
 
+// validateSchema 校验数据与权限是否允许进行当前操作
 func (w *Write) validateSchema() error {
-	// TODO 判断是否可以进行操作
-	orm.ValidateObject(w.className, w.data, w.query, w.runOptions)
-	return nil
+	return orm.ValidateObject(w.className, w.data, w.query, w.runOptions)
 }
 
+// handleInstallation 处理 _Installation 表的操作
 func (w *Write) handleInstallation() error {
 	if w.response != nil || w.className != "_Installation" {
 		return nil
 	}
 
 	if w.query == nil && w.data["deviceToken"] == nil && w.data["installationId"] == nil {
-		// TODO 设备 id 不能为空
-		return nil
+		// create 操作时，设备 id 不能为空
+		return errs.E(errs.MissingRequiredFieldError, "at least one ID field (deviceToken, installationId) must be specified in this operation")
 	}
 
 	if w.query == nil && w.data["deviceType"] == nil {
-		// TODO 设备类型不能为空
-		return nil
+		// create 操作时，设备类型不能为空
+		return errs.E(errs.MissingRequiredFieldError, "deviceType must be specified in this operation")
 	}
 
+	// 	如果 deviceToken 为 64 位，则认为是 iOS 设备
 	if w.data["deviceToken"] != nil && len(utils.String(w.data["deviceToken"])) == 64 {
 		w.data["deviceToken"] = strings.ToLower(utils.String(w.data["deviceToken"]))
 	}
@@ -181,35 +182,39 @@ func (w *Write) handleInstallation() error {
 	var idMatch types.M
 	var deviceTokenMatches types.S
 
+	// 如果是 update 操作，并且 objectId 存在，
+	// 校验是否能对 installationId、deviceToken、deviceType 进行修改
 	if w.query != nil && w.query["objectId"] != nil {
 		results := orm.Find("_Installation", types.M{"objectId": w.query["objectId"]}, types.M{})
 		if results == nil || len(results) == 0 {
-			// TODO 更新对象未找到
-			return nil
+			return errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}
+
 		idMatch = utils.MapInterface(results[0])
 		if w.data["installationId"] != nil && idMatch["installationId"] != nil &&
 			w.data["installationId"] != idMatch["installationId"] {
-			//TODO installationId 不能修改
-			return nil
+			// installationId 不能修改
+			return errs.E(errs.ChangedImmutableFieldError, "installationId may not be changed in this operation")
 		}
 		if w.data["deviceToken"] != nil && idMatch["deviceToken"] != nil &&
 			w.data["deviceToken"] != idMatch["deviceToken"] &&
 			w.data["installationId"] == nil && idMatch["installationId"] == nil {
-			//TODO deviceToken 不能修改
-			return nil
+			// deviceToken 不能修改
+			return errs.E(errs.ChangedImmutableFieldError, "deviceToken may not be changed in this operation")
 		}
 		if w.data["deviceType"] != nil && idMatch["deviceType"] != nil &&
 			w.data["deviceType"] != idMatch["deviceType"] {
-			//TODO deviceType 不能修改
-			return nil
+			// deviceType 不能修改
+			return errs.E(errs.ChangedImmutableFieldError, "deviceType may not be changed in this operation")
 		}
 	}
 
+	// 检查是否已经存在 installationId、deviceToken
 	idMatch = nil
 	if w.data["installationId"] != nil {
 		results := orm.Find("_Installation", types.M{"installationId": w.data["installationId"]}, types.M{})
 		if results != nil && len(results) > 0 {
+			// 只取第一个结果
 			idMatch = utils.MapInterface(results[0])
 		}
 	}
@@ -221,41 +226,54 @@ func (w *Write) handleInstallation() error {
 	}
 
 	var objID string
+	// 要更新的 installationId 不存在
 	if idMatch == nil {
 		if deviceTokenMatches == nil || len(deviceTokenMatches) == 0 {
+			// 要更新的 deviceToken 不存在
 			objID = ""
 		} else if len(deviceTokenMatches) == 1 &&
 			(utils.MapInterface(deviceTokenMatches[0])["installationId"] == nil || w.data["installationId"] == nil) {
+			// 要更新的 deviceToken 只存在一个，并且 installationId 不是同时都有
 			objID = utils.String(utils.MapInterface(deviceTokenMatches[0])["objectId"])
 		} else if w.data["installationId"] == nil {
-			// TODO 当有多个 deviceToken 时，必须指定 installationId
-			return nil
+			// 当有多个 deviceToken 时，必须指定 installationId
+			return errs.E(errs.InvalidInstallationIDError, "Must specify installationId when deviceToken matches multiple Installation objects")
+		} else {
+			// 有多个 deviceToken 时，清理多余数据
+			// 或者只有一个 deviceToken，但是同时存在两个 installationId 时，也要清理数据
+			// 清理多余的 deviceToken，保留对应 installationId 的那个
+			// 当前位置为 idMatch == nil ，所以不存在 installationId 对应的记录
+			installationID := types.M{
+				"$ne": w.data["installationId"],
+			}
+			delQuery := types.M{
+				"deviceToken":    w.data["deviceToken"],
+				"installationId": installationID,
+			}
+			if w.data["appIdentifier"] != nil {
+				delQuery["appIdentifier"] = w.data["appIdentifier"]
+			}
+			orm.Destroy("_Installation", delQuery, types.M{})
+			objID = ""
 		}
-		// 清理多余数据
-		installationID := types.M{
-			"$ne": w.data["installationId"],
-		}
-		delQuery := types.M{
-			"deviceToken":    w.data["deviceToken"],
-			"installationId": installationID,
-		}
-		if w.data["appIdentifier"] != nil {
-			delQuery["appIdentifier"] = w.data["appIdentifier"]
-		}
-		orm.Destroy("_Installation", delQuery, nil)
-		objID = ""
 	} else {
+		// 要更新的 installationId 存在
 		if deviceTokenMatches != nil && len(deviceTokenMatches) == 1 &&
 			utils.MapInterface(deviceTokenMatches[0])["installationId"] == nil {
-			// 合并
+			// deviceToken 存在，且只有一条，并且这条记录中的 installationId 为空
+			// 首先清理 idMatch 对应的记录
+			// 然后合并要更新的数据到 deviceToken 对应的记录
 			delQuery := types.M{
 				"objectId": idMatch["objectId"],
 			}
 			orm.Destroy("_Installation", delQuery, nil)
 			objID = utils.String(utils.MapInterface(deviceTokenMatches[0])["objectId"])
 		} else {
+			// deviceToken 不存在，或者有多条，或者存在 installationId 时
 			if w.data["deviceToken"] != nil && idMatch["deviceToken"] != w.data["deviceToken"] {
-				// 清理多余数据
+				// deviceToken 有多条，并且与 idMatch 中的 deviceToken 不一致时
+				// 清理多余数据，只保留 installationId 对应的数据
+				// 合并要更新的数据到 installationId 对应的记录上
 				installationID := types.M{
 					"$ne": w.data["installationId"],
 				}
@@ -271,6 +289,7 @@ func (w *Write) handleInstallation() error {
 			objID = utils.String(idMatch["objectId"])
 		}
 	}
+	// objID 不为空时，转换当前请求为 update 请求
 	if objID != "" {
 		w.query = types.M{
 			"objectId": objID,

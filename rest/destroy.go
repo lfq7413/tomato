@@ -5,7 +5,7 @@ import (
 	"github.com/lfq7413/tomato/types"
 )
 
-// Destroy ...
+// Destroy 删除对象
 type Destroy struct {
 	auth         *Auth
 	className    string
@@ -13,7 +13,7 @@ type Destroy struct {
 	originalData types.M
 }
 
-// NewDestroy ...
+// NewDestroy 组装 Destroy
 func NewDestroy(
 	auth *Auth,
 	className string,
@@ -29,7 +29,7 @@ func NewDestroy(
 	return destroy
 }
 
-// Execute ...
+// Execute 执行删除请求
 func (d *Destroy) Execute() error {
 	d.handleSession()
 	d.runBeforeTrigger()
@@ -39,24 +39,27 @@ func (d *Destroy) Execute() error {
 	return nil
 }
 
+// handleSession 处理 _Session 表的删除操作
 func (d *Destroy) handleSession() error {
 	if d.className != "_Session" {
 		return nil
 	}
 	sessionToken := d.originalData["sessionToken"]
 	if sessionToken != nil {
-		// TODO 从缓存删除对应的 user
+		usersCache.remove(d.originalData["sessionToken"].(string))
 	}
 
 	return nil
 }
 
+// runBeforeTrigger 执行删前回调
 func (d *Destroy) runBeforeTrigger() error {
 	RunTrigger(TypeBeforeDelete, d.className, d.auth, nil, d.originalData)
 
 	return nil
 }
 
+// handleUserRoles 获取用户角色信息
 func (d *Destroy) handleUserRoles() error {
 	if d.auth.IsMaster == false {
 		d.auth.GetUserRoles()
@@ -65,6 +68,7 @@ func (d *Destroy) handleUserRoles() error {
 	return nil
 }
 
+// runDestroy 添加 acl 字段，并执行删除对象操作
 func (d *Destroy) runDestroy() error {
 	options := types.M{}
 	if d.auth.IsMaster == false {
@@ -80,6 +84,7 @@ func (d *Destroy) runDestroy() error {
 	return nil
 }
 
+// runAfterTrigger 执行删后回调
 func (d *Destroy) runAfterTrigger() error {
 	RunTrigger(TypeAfterDelete, d.className, d.auth, nil, d.originalData)
 

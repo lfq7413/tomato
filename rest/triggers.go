@@ -2,19 +2,23 @@ package rest
 
 import "github.com/lfq7413/tomato/types"
 
-// TypeBeforeSave ...
+// TypeBeforeSave 保存前回调
 const TypeBeforeSave = "beforeSave"
 
-// TypeAfterSave ...
+// TypeAfterSave 保存后回调
 const TypeAfterSave = "afterSave"
 
-// TypeBeforeDelete ...
+// TypeBeforeDelete 删除前回调
 const TypeBeforeDelete = "beforeDelete"
 
-// TypeAfterDelete ...
+// TypeAfterDelete 删除后回调
 const TypeAfterDelete = "afterDelete"
 
-// RequestInfo ...
+// RequestInfo 请求参数信息
+// TriggerType 回调类型
+// Auth 当前请求的权限信息
+// NewObject 要保存或修改的数据，也可以时函数的传入参数
+// OriginalObject 原始数据
 type RequestInfo struct {
 	TriggerType    string
 	Auth           *Auth
@@ -22,7 +26,11 @@ type RequestInfo struct {
 	OriginalObject types.M
 }
 
-// TypeFunction ...
+// TypeFunction 函数类型，返回数据封装到 types.M 中，
+// 返回数据格式如下：
+// {
+// 	"object":{...}
+// }
 type TypeFunction func(RequestInfo) types.M
 
 type classeMap map[string]TypeFunction
@@ -49,37 +57,37 @@ func init() {
 	Jobs = functionMap{}
 }
 
-// AddFunction ...
+// AddFunction 添加函数到列表
 func AddFunction(name string, function TypeFunction) {
 	Functions[name] = function
 }
 
-// AddJob ...
+// AddJob 添加任务到列表
 func AddJob(name string, function TypeFunction) {
 	Jobs[name] = function
 }
 
-// AddTrigger ...
+// AddTrigger 添加回调函数
 func AddTrigger(triggerType string, className string, function TypeFunction) {
 	Triggers[triggerType][className] = function
 }
 
-// RemoveFunction ...
+// RemoveFunction 从列表删除函数
 func RemoveFunction(name string) {
 	delete(Functions, name)
 }
 
-// RemoveJob ...
+// RemoveJob 从列表删除定时任务
 func RemoveJob(name string) {
 	delete(Jobs, name)
 }
 
-// RemoveTrigger ...
+// RemoveTrigger 从列表删除回调函数
 func RemoveTrigger(triggerType string, className string) {
 	delete(Triggers[triggerType], className)
 }
 
-// GetTrigger ...
+// GetTrigger 获取回调函数
 func GetTrigger(triggerType string, className string) TypeFunction {
 	if Triggers == nil {
 		return nil
@@ -93,12 +101,12 @@ func GetTrigger(triggerType string, className string) TypeFunction {
 	return nil
 }
 
-// TriggerExists ...
+// TriggerExists 判断指定的回调函数是否存在
 func TriggerExists(triggerType string, className string) bool {
 	return GetTrigger(triggerType, className) != nil
 }
 
-// GetFunction ...
+// GetFunction 获取函数
 func GetFunction(name string) TypeFunction {
 	if Functions == nil {
 		return nil
@@ -109,7 +117,7 @@ func GetFunction(name string) TypeFunction {
 	return nil
 }
 
-// GetJob ...
+// GetJob 获取定时任务
 func GetJob(name string) TypeFunction {
 	if Jobs == nil {
 		return nil
@@ -120,7 +128,7 @@ func GetJob(name string) TypeFunction {
 	return nil
 }
 
-// RunTrigger ...
+// RunTrigger 运行回调
 func RunTrigger(
 	triggerType string,
 	className string,

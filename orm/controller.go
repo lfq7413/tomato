@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -43,7 +44,6 @@ func DropCollection(className string) error {
 // 如果查询的是 count ，结果也会放入 list，并且只有这一个元素
 // options 中的选项包括：skip、limit、sort、count、acl
 func Find(className string, where, options types.M) (types.S, error) {
-	// TODO 处理错误
 	if options == nil {
 		options = types.M{}
 	}
@@ -162,9 +162,8 @@ func Find(className string, where, options types.M) (types.S, error) {
 
 }
 
-// Destroy ...
-func Destroy(className string, where types.M, options types.M) {
-	// TODO 处理错误
+// Destroy 从指定表中删除数据
+func Destroy(className string, where types.M, options types.M) error {
 	var isMaster bool
 	if _, ok := options["acl"]; ok {
 		isMaster = false
@@ -180,19 +179,22 @@ func Destroy(className string, where types.M, options types.M) {
 
 	schema := LoadSchema(nil)
 	if isMaster == false {
-		schema.validatePermission(className, aclGroup, "delete")
+		err := schema.validatePermission(className, aclGroup, "delete")
+		return err
 	}
 
 	coll := AdaptiveCollection(className)
 	mongoWhere := transformWhere(schema, className, where)
-	// 组装查询条件，查找可被当前用户修改的对象
-	if options["acl"] != nil {
+	// 组装 acl 查询条件，查找可被当前用户修改的对象
+	if isMaster == false {
 		writePerms := types.S{}
+		// 可修改 不存在写权限字段的
 		perm := types.M{
 			"_wperm": types.M{"$exists": false},
 		}
 		writePerms = append(writePerms, perm)
 		for _, acl := range aclGroup {
+			// 可修改 写权限包含 当前用户角色与 id 的
 			perm = types.M{
 				"_wperm": types.M{"$in": []string{acl}},
 			}
@@ -206,8 +208,16 @@ func Destroy(className string, where types.M, options types.M) {
 			},
 		}
 	}
-	coll.deleteMany(mongoWhere)
-	// TODO 处理返回错误
+	n, err := coll.deleteMany(mongoWhere)
+	if err != nil {
+		return err
+	}
+	// 排除 _Session，避免在修改密码时因为没有 Session 失败
+	if n == 0 && className != "_Session" {
+		return errs.E(errs.ObjectNotFound, "Object not found.")
+	}
+
+	return nil
 }
 
 // Update ...

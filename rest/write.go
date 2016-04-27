@@ -263,7 +263,10 @@ func (w *Write) handleInstallation() error {
 			if w.data["appIdentifier"] != nil {
 				delQuery["appIdentifier"] = w.data["appIdentifier"]
 			}
-			orm.Destroy("_Installation", delQuery, types.M{})
+			err := orm.Destroy("_Installation", delQuery, types.M{})
+			if err != nil {
+				return err
+			}
 			objID = ""
 		}
 	} else {
@@ -276,7 +279,10 @@ func (w *Write) handleInstallation() error {
 			delQuery := types.M{
 				"objectId": idMatch["objectId"],
 			}
-			orm.Destroy("_Installation", delQuery, nil)
+			err := orm.Destroy("_Installation", delQuery, nil)
+			if err != nil {
+				return err
+			}
 			objID = utils.String(utils.MapInterface(deviceTokenMatches[0])["objectId"])
 		} else {
 			// deviceToken 不存在，或者有多条，或者存在 installationId 时
@@ -294,7 +300,10 @@ func (w *Write) handleInstallation() error {
 				if w.data["appIdentifier"] != nil {
 					delQuery["appIdentifier"] = w.data["appIdentifier"]
 				}
-				orm.Destroy("_Installation", delQuery, nil)
+				err := orm.Destroy("_Installation", delQuery, nil)
+				if err != nil {
+					return err
+				}
 			}
 			objID = utils.String(idMatch["objectId"])
 		}
@@ -789,7 +798,10 @@ func (w *Write) handleFollowup() error {
 			"user": user,
 		}
 		delete(w.storage, "clearSessions")
-		orm.Destroy("_Session", sessionQuery, types.M{})
+		err := orm.Destroy("_Session", sessionQuery, types.M{})
+		if err != nil {
+			return err
+		}
 	}
 
 	if w.storage != nil && w.storage["sendVerificationEmail"] != nil {

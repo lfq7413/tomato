@@ -104,9 +104,13 @@ func (m *MongoCollection) deleteOne(selector interface{}) error {
 	return m.collection.Remove(selector)
 }
 
-func (m *MongoCollection) deleteMany(selector interface{}) error {
-	_, err := m.collection.RemoveAll(selector)
-	return err
+func (m *MongoCollection) deleteMany(selector interface{}) (int, error) {
+	info, err := m.collection.RemoveAll(selector)
+	if err != nil {
+		return 0, err
+	}
+	n := info.Removed
+	return n, nil
 }
 
 // Drop ...

@@ -79,9 +79,7 @@ func (d *Destroy) runDestroy() error {
 		}
 		options["acl"] = acl
 	}
-	orm.Destroy(d.className, d.query, options)
-
-	return nil
+	return orm.Destroy(d.className, d.query, options)
 }
 
 // runAfterTrigger 执行删后回调

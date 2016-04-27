@@ -35,7 +35,12 @@ func (l *LoginController) HandleLogIn() {
 	where := types.M{
 		"username": username,
 	}
-	results := orm.Find("_User", where, types.M{})
+	results, err := orm.Find("_User", where, types.M{})
+	if err != nil {
+		l.Data["json"] = errs.ErrorToMap(err)
+		l.ServeJSON()
+		return
+	}
 	if results == nil || len(results) == 0 {
 		l.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Invalid username/password.")
 		l.ServeJSON()

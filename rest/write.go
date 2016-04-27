@@ -186,7 +186,10 @@ func (w *Write) handleInstallation() error {
 	// 如果是 update 操作，并且 objectId 存在，
 	// 校验是否能对 installationId、deviceToken、deviceType 进行修改
 	if w.query != nil && w.query["objectId"] != nil {
-		results := orm.Find("_Installation", types.M{"objectId": w.query["objectId"]}, types.M{})
+		results, err := orm.Find("_Installation", types.M{"objectId": w.query["objectId"]}, types.M{})
+		if err != nil {
+			return err
+		}
 		if results == nil || len(results) == 0 {
 			return errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}
@@ -213,14 +216,20 @@ func (w *Write) handleInstallation() error {
 	// 检查是否已经存在 installationId、deviceToken
 	idMatch = nil
 	if w.data["installationId"] != nil {
-		results := orm.Find("_Installation", types.M{"installationId": w.data["installationId"]}, types.M{})
+		results, err := orm.Find("_Installation", types.M{"installationId": w.data["installationId"]}, types.M{})
+		if err != nil {
+			return err
+		}
 		if results != nil && len(results) > 0 {
 			// 只取第一个结果
 			idMatch = utils.MapInterface(results[0])
 		}
 	}
 	if w.data["deviceToken"] != nil {
-		results := orm.Find("_Installation", types.M{"deviceToken": w.data["deviceToken"]}, types.M{})
+		results, err := orm.Find("_Installation", types.M{"deviceToken": w.data["deviceToken"]}, types.M{})
+		if err != nil {
+			return err
+		}
 		if results != nil {
 			deviceTokenMatches = results
 		}
@@ -414,7 +423,10 @@ func (w *Write) handleAuthData(authData types.M) error {
 	if err != nil {
 		return err
 	}
-	results := w.findUsersWithAuthData(authData)
+	results, err := w.findUsersWithAuthData(authData)
+	if err != nil {
+		return err
+	}
 	if results != nil && len(results) > 1 {
 		// auth 已经被多个用户使用
 		return errs.E(errs.AccountAlreadyLinked, "this auth is already used")
@@ -468,7 +480,7 @@ func (w *Write) handleAuthDataValidation(authData types.M) error {
 }
 
 // findUsersWithAuthData 查找第三方登录数据对应的用户
-func (w *Write) findUsersWithAuthData(authData types.M) types.S {
+func (w *Write) findUsersWithAuthData(authData types.M) (types.S, error) {
 	query := types.S{}
 	for k, v := range authData {
 		if v == nil {
@@ -487,10 +499,14 @@ func (w *Write) findUsersWithAuthData(authData types.M) types.S {
 		where := types.M{
 			"$or": query,
 		}
-		findPromise = orm.Find(w.className, where, types.M{})
+		var err error
+		findPromise, err = orm.Find(w.className, where, types.M{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return findPromise
+	return findPromise, nil
 }
 
 // runBeforeTrigger 运行数据修改前的回调函数
@@ -628,7 +644,10 @@ func (w *Write) transformUser() error {
 		option := types.M{
 			"limit": 1,
 		}
-		results := orm.Find(w.className, where, option)
+		results, err := orm.Find(w.className, where, option)
+		if err != nil {
+			return err
+		}
 		if len(results) > 0 {
 			return errs.E(errs.UsernameTaken, "Account already exists for this username")
 		}
@@ -651,7 +670,10 @@ func (w *Write) transformUser() error {
 		option := types.M{
 			"limit": 1,
 		}
-		results := orm.Find(w.className, where, option)
+		results, err := orm.Find(w.className, where, option)
+		if err != nil {
+			return err
+		}
 		if len(results) > 0 {
 			return errs.E(errs.EmailTaken, "Account already exists for this email address")
 		}

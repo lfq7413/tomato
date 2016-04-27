@@ -231,15 +231,15 @@ func (s *Schema) validateObject(className string, object, query types.M) {
 	thenValidateRequiredColumns(s, className, object, query)
 }
 
-func (s *Schema) validatePermission(className string, aclGroup []string, operation string) {
+func (s *Schema) validatePermission(className string, aclGroup []string, operation string) error {
 	// TODO 处理错误
 	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
-		return
+		return nil
 	}
 	class := utils.MapInterface(s.perms[className])
 	perms := utils.MapInterface(class[operation])
 	if _, ok := perms["*"]; ok {
-		return
+		return nil
 	}
 
 	found := false
@@ -251,8 +251,10 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	}
 	if found == false {
 		// TODO 无权限
-		return
+		return nil
 	}
+
+	return nil
 }
 
 func (s *Schema) validateClassName(className string, freeze bool) {

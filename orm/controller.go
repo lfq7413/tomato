@@ -1,3 +1,4 @@
+//Package orm 数据库操作模块，当前只对接了 MongoDB
 package orm
 
 import (
@@ -11,13 +12,14 @@ import (
 var adapter *MongoAdapter
 var schemaPromise *Schema
 
+// init 初始化 Mongo 适配器
 func init() {
 	adapter = &MongoAdapter{
 		collectionList: []string{},
 	}
 }
 
-// AdaptiveCollection ...
+// AdaptiveCollection 获取要操作的表，以便后续操作
 func AdaptiveCollection(className string) *MongoCollection {
 	return adapter.adaptiveCollection(className)
 }
@@ -27,18 +29,20 @@ func SchemaCollection() *MongoSchemaCollection {
 	return adapter.schemaCollection()
 }
 
-// CollectionExists ...
+// CollectionExists 检测表是否存在
 func CollectionExists(className string) bool {
 	return adapter.collectionExists(className)
 }
 
-// DropCollection ...
+// DropCollection 删除指定表
 func DropCollection(className string) error {
 	return adapter.dropCollection(className)
 }
 
-// Find ...
-func Find(className string, where, options types.M) types.S {
+// Find 从指定表中查询数据，查询到的数据放入 list 中
+// 如果查询的是 count ，结果也会放入 list，并且只有这一个元素
+// options 中的选项包括：skip、limit、sort、count、acl
+func Find(className string, where, options types.M) (types.S, error) {
 	// TODO 处理错误
 	if options == nil {
 		options = types.M{}
@@ -47,6 +51,7 @@ func Find(className string, where, options types.M) types.S {
 		where = types.M{}
 	}
 
+	// 组装数据库查询设置项
 	mongoOptions := types.M{}
 	if options["skip"] != nil {
 		mongoOptions["skip"] = options["skip"]
@@ -59,6 +64,7 @@ func Find(className string, where, options types.M) types.S {
 	if _, ok := options["acl"]; ok {
 		isMaster = false
 	} else {
+		// 不存在键值 acl 时，即为 Master
 		isMaster = true
 	}
 	var aclGroup []string
@@ -68,6 +74,7 @@ func Find(className string, where, options types.M) types.S {
 		aclGroup = options["acl"].([]string)
 	}
 
+	// 检测查询条件中的 key 在表中是否存在
 	acceptor := func(schema *Schema) bool {
 		return schema.hasKeys(className, keysForQuery(where))
 	}
@@ -78,6 +85,7 @@ func Find(className string, where, options types.M) types.S {
 		keys := options["sort"].([]string)
 		for _, key := range keys {
 			mongoKey := ""
+			// sort 中的 key ，如果是要按倒序排列，则会加前缀 "-" ，所以要对其进行处理
 			if strings.HasPrefix(key, "-") {
 				mongoKey = "-" + transformKey(schema, className, key[1:])
 			} else {
@@ -88,31 +96,40 @@ func Find(className string, where, options types.M) types.S {
 		mongoOptions["sort"] = sortKeys
 	}
 
+	// 校验当前用户是否能对表进行 find 或者 get 操作
 	if isMaster == false {
 		op := "find"
 		if len(where) == 1 && where["objectId"] != nil && utils.String(where["objectId"]) != "" {
 			op = "get"
 		}
-		schema.validatePermission(className, aclGroup, op)
+		err := schema.validatePermission(className, aclGroup, op)
+		if err != nil {
+			return nil, err
+		}
 	}
 
+	// 处理 $relatedTo
 	reduceRelationKeys(className, where)
+	// 处理 relation 字段上的 $in
 	reduceInRelation(className, where, schema)
 
 	coll := AdaptiveCollection(className)
 	mongoWhere := transformWhere(schema, className, where)
-	// 组装查询条件，查找可被当前用户修改的对象
-	if options["acl"] != nil {
+	// 组装 acl 查询条件，查找可被当前用户访问的对象
+	if isMaster == false {
 		queryPerms := types.S{}
+		// 可查询 不存在读权限字段的
 		perm := types.M{
 			"_rperm": types.M{"$exists": false},
 		}
 		queryPerms = append(queryPerms, perm)
+		// 可查询 读权限包含 * 的
 		perm = types.M{
 			"_rperm": types.M{"$in": []string{"*"}},
 		}
 		queryPerms = append(queryPerms, perm)
 		for _, acl := range aclGroup {
+			// 可查询 读权限包含 当前用户角色与 id 的
 			perm = types.M{
 				"_rperm": types.M{"$in": []string{acl}},
 			}
@@ -127,19 +144,21 @@ func Find(className string, where, options types.M) types.S {
 		}
 	}
 
+	// 获取 count
 	if options["count"] != nil {
 		delete(mongoOptions, "limit")
 		count := coll.Count(mongoWhere, mongoOptions)
-		return types.S{count}
+		return types.S{count}, nil
 	}
 
+	// 执行查询操作
 	mongoResults := coll.Find(mongoWhere, mongoOptions)
 	results := types.S{}
 	for _, r := range mongoResults {
 		result := untransformObject(schema, isMaster, aclGroup, className, r)
 		results = append(results, result)
 	}
-	return results
+	return results, nil
 
 }
 

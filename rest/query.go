@@ -514,7 +514,10 @@ func (q *Query) replaceNotInQuery() error {
 
 // runFind 从数据库查找数据，并处理返回结果
 func (q *Query) runFind() error {
-	response := orm.Find(q.className, q.Where, q.findOptions)
+	response, err := orm.Find(q.className, q.Where, q.findOptions)
+	if err != nil {
+		return err
+	}
 	// 从 _User 表中删除密码字段
 	if q.className == "_User" {
 		for _, v := range response {
@@ -563,7 +566,11 @@ func (q *Query) runCount() error {
 	delete(q.findOptions, "skip")
 	delete(q.findOptions, "limit")
 	// 当需要取 count 时，数据库返回结果的第一个即为 count
-	q.response["count"] = orm.Find(q.className, q.Where, q.findOptions)[0]
+	result, err := orm.Find(q.className, q.Where, q.findOptions)
+	if err != nil {
+		return err
+	}
+	q.response["count"] = result[0]
 	return nil
 }
 

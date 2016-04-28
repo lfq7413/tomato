@@ -329,7 +329,10 @@ func Create(className string, data, options types.M) error {
 	}
 
 	// 处理 Relation
-	handleRelationUpdates(className, "", data)
+	err = handleRelationUpdates(className, "", data)
+	if err != nil {
+		return err
+	}
 
 	coll := AdaptiveCollection(className)
 	mongoObject := transformCreate(schema, className, data)
@@ -345,7 +348,7 @@ func validateClassName(className string) error {
 }
 
 // handleRelationUpdates 处理 Relation 相关操作
-func handleRelationUpdates(className, objectID string, update types.M) {
+func handleRelationUpdates(className, objectID string, update types.M) error {
 	objID := objectID
 	if utils.String(update["objectId"]) != "" {
 		objID = utils.String(update["objectId"])
@@ -368,10 +371,10 @@ func handleRelationUpdates(className, objectID string, update types.M) {
 	//         }
 	//       ]
 	// }
-	var process func(op interface{}, key string)
-	process = func(op interface{}, key string) {
+	var process func(op interface{}, key string) error
+	process = func(op interface{}, key string) error {
 		if op == nil || utils.MapInterface(op) == nil || utils.MapInterface(op)["__op"] == nil {
-			return
+			return nil
 		}
 		opMap := utils.MapInterface(op)
 		p := utils.String(opMap["__op"])
@@ -381,7 +384,10 @@ func handleRelationUpdates(className, objectID string, update types.M) {
 			objects := utils.SliceInterface(opMap["objects"])
 			for _, object := range objects {
 				relationID := utils.String(utils.MapInterface(object)["objectId"])
-				addRelation(key, className, objID, relationID)
+				err := addRelation(key, className, objID, relationID)
+				if err != nil {
+					return err
+				}
 			}
 		} else if p == "RemoveRelation" {
 			delete(update, key)
@@ -389,43 +395,53 @@ func handleRelationUpdates(className, objectID string, update types.M) {
 			objects := utils.SliceInterface(opMap["objects"])
 			for _, object := range objects {
 				relationID := utils.String(utils.MapInterface(object)["objectId"])
-				removeRelation(key, className, objID, relationID)
+				err := removeRelation(key, className, objID, relationID)
+				if err != nil {
+					return err
+				}
 			}
 		} else if p == "Batch" {
 			// 批处理 Relation 对象
 			ops := utils.SliceInterface(opMap["ops"])
 			for _, x := range ops {
-				process(x, key)
+				err := process(x, key)
+				if err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 	}
 
 	for k, v := range update {
-		process(v, k)
+		err := process(v, k)
+		if err != nil {
+			return err
+		}
 	}
-
+	return nil
 }
 
-func addRelation(key, fromClassName, fromID, toID string) {
-	// TODO 处理错误
+// addRelation 把对象 id 加入 _Join 表，表名为 _Join:key:fromClassName
+func addRelation(key, fromClassName, fromID, toID string) error {
 	doc := types.M{
 		"relatedId": toID,
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
 	coll := AdaptiveCollection(className)
-	coll.upsertOne(doc, doc)
+	return coll.upsertOne(doc, doc)
 }
 
-func removeRelation(key, fromClassName, fromID, toID string) {
-	// TODO 处理错误
+// removeRelation 把对象 id 从 _Join 表中删除，表名为 _Join:key:fromClassName
+func removeRelation(key, fromClassName, fromID, toID string) error {
 	doc := types.M{
 		"relatedId": toID,
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
 	coll := AdaptiveCollection(className)
-	coll.deleteOne(doc)
+	return coll.deleteOne(doc)
 }
 
 // ValidateObject ...

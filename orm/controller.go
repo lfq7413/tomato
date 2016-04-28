@@ -488,6 +488,7 @@ func LoadSchema(acceptor func(*Schema) bool) *Schema {
 }
 
 // RedirectClassNameForKey 返回指定类的字段所对应的类型
+// 如果 key 字段的属性为 relation<classA> ，则返回 classA
 func RedirectClassNameForKey(className, key string) string {
 	schema := LoadSchema(nil)
 	t := schema.getExpectedType(className, key)
@@ -498,9 +499,8 @@ func RedirectClassNameForKey(className, key string) string {
 	return className
 }
 
-// canAddField ...
+// canAddField 检测是否能添加字段到类上
 func canAddField(schema *Schema, className string, object types.M, acl []string) error {
-	// TODO 处理错误
 	if schema.data[className] == nil {
 		return nil
 	}
@@ -526,7 +526,7 @@ func canAddField(schema *Schema, className string, object types.M, acl []string)
 	}
 
 	if len(newKeys) > 0 {
-		schema.validatePermission(className, acl, "addField")
+		return schema.validatePermission(className, acl, "addField")
 	}
 
 	return nil

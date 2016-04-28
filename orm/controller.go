@@ -336,6 +336,7 @@ func Create(className string, data, options types.M) error {
 	return coll.insertOne(mongoObject)
 }
 
+// validateClassName 校验表名是否合法
 func validateClassName(className string) error {
 	if ClassNameIsValid(className) == false {
 		return errs.E(errs.InvalidClassName, "invalid className: "+className)
@@ -343,13 +344,30 @@ func validateClassName(className string) error {
 	return nil
 }
 
+// handleRelationUpdates 处理 Relation 相关操作
 func handleRelationUpdates(className, objectID string, update types.M) {
-	// TODO 处理错误
 	objID := objectID
 	if utils.String(update["objectId"]) != "" {
 		objID = utils.String(update["objectId"])
 	}
 
+	// 定义处理函数
+	// 传入参数 op 的格式如下
+	// {
+	//       "__op": "AddRelation",
+	//       "objects": [
+	//         {
+	//           "__type": "Pointer",
+	//           "className": "_User",
+	//           "objectId": "8TOXdXf3tz"
+	//         },
+	//         {
+	//           "__type": "Pointer",
+	//           "className": "_User",
+	//           "objectId": "g7y9tkhB7O"
+	//         }
+	//       ]
+	// }
 	var process func(op interface{}, key string)
 	process = func(op interface{}, key string) {
 		if op == nil || utils.MapInterface(op) == nil || utils.MapInterface(op)["__op"] == nil {
@@ -359,6 +377,7 @@ func handleRelationUpdates(className, objectID string, update types.M) {
 		p := utils.String(opMap["__op"])
 		if p == "AddRelation" {
 			delete(update, key)
+			// 添加 Relation 对象
 			objects := utils.SliceInterface(opMap["objects"])
 			for _, object := range objects {
 				relationID := utils.String(utils.MapInterface(object)["objectId"])
@@ -366,12 +385,14 @@ func handleRelationUpdates(className, objectID string, update types.M) {
 			}
 		} else if p == "RemoveRelation" {
 			delete(update, key)
+			// 删除 Relation 对象
 			objects := utils.SliceInterface(opMap["objects"])
 			for _, object := range objects {
 				relationID := utils.String(utils.MapInterface(object)["objectId"])
 				removeRelation(key, className, objID, relationID)
 			}
 		} else if p == "Batch" {
+			// 批处理 Relation 对象
 			ops := utils.SliceInterface(opMap["ops"])
 			for _, x := range ops {
 				process(x, key)

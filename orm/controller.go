@@ -532,6 +532,7 @@ func canAddField(schema *Schema, className string, object types.M, acl []string)
 	return nil
 }
 
+// keysForQuery 从查询条件中查找字段名
 func keysForQuery(query types.M) []string {
 	answer := []string{}
 
@@ -558,6 +559,29 @@ func keysForQuery(query types.M) []string {
 	return answer
 }
 
+// reduceRelationKeys 处理查询条件中的 $relatedTo
+// query 格式如下
+// {
+//     "$relatedTo":{
+//         "object":{
+//             "__type":"Pointer",
+//             "className":"Post",
+//             "objectId":"8TOXdXf3tz"
+//         },
+//         "key":"likes"
+//     }
+// }
+// 表 Post 中的字段 likes 的类型为 relation<classA>
+// 从 _Join:likes:Post 表中查询 Post id 对应的 classA id 列表，并添加到 query 中
+// 替换后格式为
+// {
+//     "objectId":{
+//         "$in":[
+//             "id",
+//             "id2"
+//         ]
+//     }
+// }
 func reduceRelationKeys(className string, query types.M) {
 	if query["$or"] != nil {
 		subQuerys := utils.SliceInterface(query["$or"])
@@ -582,6 +606,7 @@ func reduceRelationKeys(className string, query types.M) {
 
 }
 
+// relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
 func relatedIds(className, key, owningID string) types.S {
 	coll := AdaptiveCollection(joinTableName(className, key))
 	results := coll.Find(types.M{"owningId": owningID}, types.M{})
@@ -593,10 +618,16 @@ func relatedIds(className, key, owningID string) types.S {
 	return ids
 }
 
+// joinTableName 组装用于 relation 的 Join 表
 func joinTableName(className, key string) string {
 	return "_Join:" + key + ":" + className
 }
 
+// addInObjectIdsIds 添加 ids 到查询条件中
+// 替换 $relatedTo 为：
+// "objectId":{"$eq":"id"}
+// 或者
+// "objectId":{"$in":["id","id2"]}
 func addInObjectIdsIds(ids types.S, query types.M) {
 	if id, ok := query["objectId"].(string); ok {
 		query["objectId"] = types.M{"$eq": id}

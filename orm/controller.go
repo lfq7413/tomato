@@ -298,9 +298,9 @@ func Update(className string, where, data, options types.M) (types.M, error) {
 	return response, nil
 }
 
-// Create ...
+// Create 创建对象
 func Create(className string, data, options types.M) error {
-	// TODO 处理错误
+	// 不要对原数据进行修改
 	data = utils.CopyMap(data)
 	var isMaster bool
 	if _, ok := options["acl"]; ok {
@@ -315,28 +315,32 @@ func Create(className string, data, options types.M) error {
 		aclGroup = options["acl"].([]string)
 	}
 
-	validateClassName(className)
+	err := validateClassName(className)
+	if err != nil {
+		return err
+	}
 
 	schema := LoadSchema(nil)
 	if isMaster == false {
-		schema.validatePermission(className, aclGroup, "create")
+		err := schema.validatePermission(className, aclGroup, "create")
+		if err != nil {
+			return err
+		}
 	}
 
+	// 处理 Relation
 	handleRelationUpdates(className, "", data)
 
 	coll := AdaptiveCollection(className)
 	mongoObject := transformCreate(schema, className, data)
-	coll.insertOne(mongoObject)
-
-	return nil
+	return coll.insertOne(mongoObject)
 }
 
-func validateClassName(className string) {
-	// TODO 处理错误
+func validateClassName(className string) error {
 	if ClassNameIsValid(className) == false {
-		// TODO 无效类名
-		return
+		return errs.E(errs.InvalidClassName, "invalid className: "+className)
 	}
+	return nil
 }
 
 func handleRelationUpdates(className, objectID string, update types.M) {

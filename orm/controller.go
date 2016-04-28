@@ -444,9 +444,8 @@ func removeRelation(key, fromClassName, fromID, toID string) error {
 	return coll.deleteOne(doc)
 }
 
-// ValidateObject ...
+// ValidateObject 校验对象是否合法
 func ValidateObject(className string, object, where, options types.M) error {
-	// TODO 处理错误
 	schema := LoadSchema(nil)
 	acl := []string{}
 	if options["acl"] != nil {
@@ -455,14 +454,20 @@ func ValidateObject(className string, object, where, options types.M) error {
 		}
 	}
 
-	canAddField(schema, className, object, acl)
+	err := canAddField(schema, className, object, acl)
+	if err != nil {
+		return err
+	}
 
-	schema.validateObject(className, object, where)
+	err = schema.validateObject(className, object, where)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-// LoadSchema 加载 Schema
+// LoadSchema 加载 Schema，仅加载一次，当 acceptor 返回 false 时，再从数据库读取一次
 func LoadSchema(acceptor func(*Schema) bool) *Schema {
 	if schemaPromise == nil {
 		collection := SchemaCollection()
@@ -494,10 +499,10 @@ func RedirectClassNameForKey(className, key string) string {
 }
 
 // canAddField ...
-func canAddField(schema *Schema, className string, object types.M, acl []string) {
+func canAddField(schema *Schema, className string, object types.M, acl []string) error {
 	// TODO 处理错误
 	if schema.data[className] == nil {
-		return
+		return nil
 	}
 	classSchema := utils.MapInterface(schema.data[className])
 
@@ -523,6 +528,8 @@ func canAddField(schema *Schema, className string, object types.M, acl []string)
 	if len(newKeys) > 0 {
 		schema.validatePermission(className, acl, "addField")
 	}
+
+	return nil
 }
 
 func keysForQuery(query types.M) []string {

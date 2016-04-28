@@ -205,7 +205,7 @@ func (s *Schema) deleteField(fieldName string, className string) {
 	s.collection.updateSchema(className, update)
 }
 
-func (s *Schema) validateObject(className string, object, query types.M) {
+func (s *Schema) validateObject(className string, object, query types.M) error {
 	// TODO 处理错误
 	geocount := 0
 	s.validateClassName(className, false)
@@ -220,7 +220,7 @@ func (s *Schema) validateObject(className string, object, query types.M) {
 		}
 		if geocount > 1 {
 			// TODO 只能有一个 geopoint
-			return
+			return nil
 		}
 		if expected == "" {
 			continue
@@ -229,6 +229,7 @@ func (s *Schema) validateObject(className string, object, query types.M) {
 	}
 
 	thenValidateRequiredColumns(s, className, object, query)
+	return nil
 }
 
 func (s *Schema) validatePermission(className string, aclGroup []string, operation string) error {

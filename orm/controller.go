@@ -220,9 +220,9 @@ func Destroy(className string, where types.M, options types.M) error {
 	return nil
 }
 
-// Update ...
+// Update 更新对象
 func Update(className string, where, data, options types.M) (types.M, error) {
-	// TODO 处理错误
+	// 复制数据，不要修改原数据
 	data = utils.CopyMap(data)
 	acceptor := func(schema *Schema) bool {
 		keys := []string{}
@@ -246,20 +246,26 @@ func Update(className string, where, data, options types.M) (types.M, error) {
 
 	schema := LoadSchema(acceptor)
 	if isMaster == false {
-		schema.validatePermission(className, aclGroup, "update")
+		err := schema.validatePermission(className, aclGroup, "update")
+		if err != nil {
+			return nil, err
+		}
 	}
+	// 处理 Relation
 	handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
 	coll := AdaptiveCollection(className)
 	mongoWhere := transformWhere(schema, className, where)
-	// 组装查询条件，查找可被当前用户修改的对象
-	if options["acl"] != nil {
+	// 组装 acl 查询条件，查找可被当前用户修改的对象
+	if isMaster == false {
 		writePerms := types.S{}
+		// 可修改 不存在写权限字段的
 		perm := types.M{
 			"_wperm": types.M{"$exists": false},
 		}
 		writePerms = append(writePerms, perm)
 		for _, acl := range aclGroup {
+			// 可修改 写权限包含 当前用户角色与 id 的
 			perm = types.M{
 				"_wperm": types.M{"$in": []string{acl}},
 			}
@@ -276,8 +282,11 @@ func Update(className string, where, data, options types.M) (types.M, error) {
 	mongoUpdate := transformUpdate(schema, className, data)
 
 	result := coll.FindOneAndUpdate(mongoWhere, mongoUpdate)
-	// TODO 处理返回错误
+	if result == nil || len(result) == 0 {
+		return nil, errs.E(errs.ObjectNotFound, "Object not found.")
+	}
 
+	// 返回 数值增加的字段
 	response := types.M{}
 	if mongoUpdate["$inc"] != nil && utils.MapInterface(mongoUpdate["$inc"]) != nil {
 		inc := utils.MapInterface(mongoUpdate["$inc"])

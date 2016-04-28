@@ -650,7 +650,11 @@ func addInObjectIdsIds(ids types.S, query types.M) {
 	query["objectId"] = objectID
 }
 
+// reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in 或者等于某对象
+// 例如 classA 中的 字段 key 为 relation<classB> 类型，查找 key 中包含指定 classB 对象的 classA
+// query = {"key":{"$in":[]}}
 func reduceInRelation(className string, query types.M, schema *Schema) types.M {
+	// 处理 $or 数组中的数据，并替换回去
 	if query["$or"] != nil {
 		ors := utils.SliceInterface(query["$or"])
 		for i, v := range ors {
@@ -687,6 +691,7 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 				relatedIds = append(relatedIds, op["objectId"])
 			}
 
+			// 从 Join 表中查找的 ids，替换查询条件
 			ids := owningIds(className, key, relatedIds)
 			delete(query, key)
 			addInObjectIdsIds(ids, query)
@@ -696,6 +701,7 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 	return query
 }
 
+// owningIds 从 Join 表中查询 relatedIds 对应的父对象
 func owningIds(className, key string, relatedIds types.S) types.S {
 	coll := AdaptiveCollection(joinTableName(className, key))
 	query := types.M{
@@ -711,6 +717,7 @@ func owningIds(className, key string, relatedIds types.S) types.S {
 	return ids
 }
 
+// untransformObject 从查询到的数据库对象转换出可返回给客户端的对象，并对 _User 表数据进行特殊处理
 func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) types.M {
 	res := untransformObjectT(schema, className, mongoObject, false)
 	object := utils.MapInterface(res)

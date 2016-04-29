@@ -97,7 +97,13 @@ func (l *LoginController) HandleLogIn() {
 		sessionData["installationId"] = l.Info.InstallationID
 	}
 	// 为新登录用户创建 sessionToken
-	_, err := rest.NewWrite(rest.Master(), "_Session", nil, sessionData, nil).Execute()
+	write, err := rest.NewWrite(rest.Master(), "_Session", nil, sessionData, nil)
+	if err != nil {
+		l.Data["json"] = errs.ErrorToMap(err)
+		l.ServeJSON()
+		return
+	}
+	_, err = write.Execute()
 	if err != nil {
 		l.Data["json"] = errs.ErrorToMap(err)
 		l.ServeJSON()

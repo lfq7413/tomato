@@ -4,26 +4,25 @@ import (
 	"fmt"
 
 	"github.com/lfq7413/tomato/config"
-	"github.com/lfq7413/tomato/types"
 	"gopkg.in/mgo.v2"
 )
 
 var (
-	// TomatoDB ...
+	// TomatoDB 全局可访问的数据库操作结构体
 	TomatoDB *Database
 )
 
 func init() {
 }
 
-// Database ...
+// Database 封装 mongo 数据库对象
 type Database struct {
 	Session        *mgo.Session
 	Database       *mgo.Database
 	collectionList []string
 }
 
-// NewDatabase ...
+// NewDatabase 创建数据库结构体
 func NewDatabase(url string) *Database {
 	session, err := mgo.Dial(url)
 	if err != nil {
@@ -40,68 +39,17 @@ func NewDatabase(url string) *Database {
 	return db
 }
 
-// OpenDB ...
+// OpenDB 打开数据库
 func OpenDB() {
 	TomatoDB = NewDatabase(config.TConfig.DatabaseURI)
 }
 
-// CloseDB ...
+// CloseDB 关闭数据库
 func CloseDB() {
 	TomatoDB.Session.Close()
 }
 
-// Insert ...
-func (d *Database) Insert(collection string, docs interface{}) error {
-	err := d.Database.C(collection).Insert(docs)
-	return err
-}
-
-// FindOne ...
-func (d *Database) FindOne(collection string, query interface{}) (types.M, error) {
-	var result types.M
-	err := d.Database.C(collection).Find(query).One(&result)
-	return result, err
-}
-
-// Update ...
-func (d *Database) Update(collection string, selector interface{}, update interface{}) error {
-	err := d.Database.C(collection).Update(selector, update)
-	return err
-}
-
-// Find ...
-func (d *Database) Find(collection string, query interface{}) ([]types.M, error) {
-	var result []types.M
-	err := d.Database.C(collection).Find(query).All(&result)
-	return result, err
-}
-
-// Remove ...
-func (d *Database) Remove(collection string, selector interface{}) error {
-	err := d.Database.C(collection).Remove(selector)
-	return err
-}
-
-func (d *Database) collectionExists(className string) bool {
-	// 先在内存中查询
-	for _, v := range d.collectionList {
-		if v == className {
-			return true
-		}
-	}
-	// 内存中不存在，则去数据库中查询一次，更新到内存中
-	d.collectionList = d.getCollectionNames()
-	if d.collectionList == nil {
-		d.collectionList = []string{}
-	}
-	for _, v := range d.collectionList {
-		if v == className {
-			return true
-		}
-	}
-	return false
-}
-
+// getCollectionNames 获取数据库中当前已经存在的表名
 func (d *Database) getCollectionNames() []string {
 	names, err := d.Database.CollectionNames()
 	if err == nil && names != nil {

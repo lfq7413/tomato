@@ -5,20 +5,22 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-// MongoCollection ...
+// MongoCollection mongo 表操作对象
 type MongoCollection struct {
 	collection *mgo.Collection
 }
 
-// Find ...
+// Find 执行查找操作，自动添加索引
 func (m *MongoCollection) Find(query interface{}, options types.M) []types.M {
 	result, err := m.rawFind(query, options)
 	if err != nil || result == nil {
 		return []types.M{}
 	}
+	// TODO 添加 geo 索引
 	return result
 }
 
+// rawFind 执行原始查找操作，查找选项包括 sort、skip、limit
 func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M, error) {
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
@@ -41,7 +43,7 @@ func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M
 	return result, err
 }
 
-// Count ...
+// Count 执行 count 操作，
 func (m *MongoCollection) Count(query interface{}, options types.M) int {
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
@@ -66,44 +68,50 @@ func (m *MongoCollection) Count(query interface{}, options types.M) int {
 	return n
 }
 
-// FindOneAndUpdate 当前框架 Update 时的 selector 中，包含 objectid、email ，所以更新之后再去查找，找到的为同一对象
+// FindOneAndUpdate 查找并更新一个对象，返回更新后的对象
 func (m *MongoCollection) FindOneAndUpdate(selector interface{}, update interface{}) types.M {
-	// TODO 使用 Apply 实现
-	err := m.collection.Update(selector, update)
-	if err != nil {
-		return types.M{}
-	}
+
 	var result types.M
-	err = m.collection.Find(selector).One(&result)
-	if err != nil || result == nil {
+	change := mgo.Change{
+		Update:    update,
+		ReturnNew: true,
+	}
+	info, err := m.collection.Find(selector).Apply(change, &result)
+	if err != nil || info.Updated == 0 {
 		return types.M{}
 	}
+
 	return result
 }
 
+// insertOne 插入一个对象
 func (m *MongoCollection) insertOne(docs interface{}) error {
 	return m.collection.Insert(docs)
 }
 
+// upsertOne 更新一个对象，如果要更新的对象不存在，则插入该对象
 func (m *MongoCollection) upsertOne(selector interface{}, update interface{}) error {
 	_, err := m.collection.Upsert(selector, update)
 	return err
 }
 
+// updateOne 更新一个对象
 func (m *MongoCollection) updateOne(selector interface{}, update interface{}) error {
 	return m.collection.Update(selector, update)
 }
 
-// UpdateMany ...
+// UpdateMany 更新多个对象
 func (m *MongoCollection) UpdateMany(selector interface{}, update interface{}) error {
 	_, err := m.collection.UpdateAll(selector, update)
 	return err
 }
 
+// deleteOne 删除一个对象
 func (m *MongoCollection) deleteOne(selector interface{}) error {
 	return m.collection.Remove(selector)
 }
 
+// deleteMany 删除多个对象
 func (m *MongoCollection) deleteMany(selector interface{}) (int, error) {
 	info, err := m.collection.RemoveAll(selector)
 	if err != nil {
@@ -113,7 +121,7 @@ func (m *MongoCollection) deleteMany(selector interface{}) (int, error) {
 	return n, nil
 }
 
-// Drop ...
+// Drop 删除当前表
 func (m *MongoCollection) Drop() error {
 	return m.collection.DropCollection()
 }

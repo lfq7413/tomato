@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -84,26 +85,23 @@ func init() {
 // Schema schema 操作对象
 type Schema struct {
 	collection *MongoSchemaCollection
-	data       types.M // data 保存类的字段信息，格式为数据库中存储的格式
+	data       types.M // data 保存类的字段信息
 	perms      types.M // perms 保存类的操作权限
 }
 
-// AddClassIfNotExists 添加类定义
+// AddClassIfNotExists 添加类定义，包含默认的字段
 func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLevelPermissions types.M) (types.M, error) {
 	if s.data[className] != nil {
-		// TODO 类已存在
-		return nil, nil
+		return nil, errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
 	}
 
-	mongoObject := mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions)
-	if mongoObject["result"] == nil {
-		// TODO 转换出现问题
-		return nil, nil
-	}
-	err := s.collection.addSchema(className, utils.MapInterface(mongoObject["result"]))
+	mongoObject, err := mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions)
 	if err != nil {
-		// TODO 出现错误
-		return nil, nil
+		return nil, err
+	}
+	err = s.collection.addSchema(className, utils.MapInterface(mongoObject["result"]))
+	if err != nil {
+		return nil, err
 	}
 
 	return utils.MapInterface(mongoObject["result"]), nil
@@ -132,10 +130,10 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	}
 
 	newSchema := buildMergedSchemaObject(existingFields, submittedFields)
-	mongoObject := mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions)
-	if mongoObject["result"] == nil {
+	mongoObject, err := mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions)
+	if err != nil {
 		// TODO 生成错误
-		return nil, nil
+		return nil, err
 	}
 
 	insertedFields := []string{}
@@ -634,19 +632,19 @@ func mongoFieldTypeToSchemaAPIType(t string) types.M {
 	return types.M{}
 }
 
-func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) types.M {
+func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) (types.M, error) {
 	if ClassNameIsValid(className) == false {
 		// TODO 无效类名
-		return nil
+		return nil, nil
 	}
 	for fieldName := range fields {
 		if fieldNameIsValid(fieldName) == false {
 			// TODO 无效字段名
-			return nil
+			return nil, nil
 		}
 		if fieldNameIsValidForClass(fieldName, className) == false {
 			// TODO 无法添加字段
-			return nil
+			return nil, nil
 		}
 	}
 
@@ -662,7 +660,7 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 			validatedField := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
 			if validatedField["result"] == nil {
 				// TODO 转换错误
-				return nil
+				return nil, nil
 			}
 			mongoObject[fieldName] = validatedField["result"]
 		}
@@ -672,7 +670,7 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 		validatedField := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
 		if validatedField["result"] == nil {
 			// TODO 转换错误
-			return nil
+			return nil, nil
 		}
 		mongoObject[fieldName] = validatedField["result"]
 	}
@@ -685,7 +683,7 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 	}
 	if len(geoPoints) > 1 {
 		// TODO 只能有一个 geoPoint
-		return nil
+		return nil, nil
 	}
 
 	validateCLP(classLevelPermissions)
@@ -704,7 +702,7 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 
 	return types.M{
 		"result": mongoObject,
-	}
+	}, nil
 }
 
 // ClassNameIsValid ...

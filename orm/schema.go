@@ -1,17 +1,23 @@
 package orm
 
-import "regexp"
-
 import (
+	"regexp"
 	"strings"
 
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
+// clpValidKeys 类级别的权限 列表
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
+
+// defaultClassLevelPermissions 默认的类级别权限
 var defaultClassLevelPermissions types.M
+
+// defaultColumns 所有类的默认字段，以及系统类的默认字段
 var defaultColumns map[string]types.M
+
+// requiredColumns 类必须要有的字段
 var requiredColumns map[string][]string
 
 func init() {
@@ -75,11 +81,11 @@ func init() {
 	}
 }
 
-// Schema ...
+// Schema schema 操作对象
 type Schema struct {
 	collection *MongoSchemaCollection
-	data       types.M
-	perms      types.M
+	data       types.M // data 保存类的字段信息，格式为数据库中存储的格式
+	perms      types.M // perms 保存类的操作权限
 }
 
 // AddClassIfNotExists 添加类定义
@@ -394,6 +400,7 @@ func (s *Schema) getExpectedType(className, key string) string {
 	return ""
 }
 
+// reloadData 从数据库加载表信息
 func (s *Schema) reloadData() {
 	s.data = types.M{}
 	s.perms = types.M{}

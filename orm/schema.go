@@ -632,19 +632,18 @@ func mongoFieldTypeToSchemaAPIType(t string) types.M {
 	return types.M{}
 }
 
+// mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
 func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) (types.M, error) {
+	// 校验类名与字段是否合法
 	if ClassNameIsValid(className) == false {
-		// TODO 无效类名
-		return nil, nil
+		return nil, errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
 	}
 	for fieldName := range fields {
 		if fieldNameIsValid(fieldName) == false {
-			// TODO 无效字段名
-			return nil, nil
+			return nil, errs.E(errs.InvalidKeyName, "invalid field name: "+fieldName)
 		}
 		if fieldNameIsValidForClass(fieldName, className) == false {
-			// TODO 无法添加字段
-			return nil, nil
+			return nil, errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be added")
 		}
 	}
 
@@ -655,26 +654,27 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 		"createdAt": "string",
 	}
 
+	// 添加默认字段
 	if defaultColumns[className] != nil {
 		for fieldName := range defaultColumns[className] {
-			validatedField := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
-			if validatedField["result"] == nil {
-				// TODO 转换错误
-				return nil, nil
+			validatedField, err := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
+			if err != nil {
+				return nil, err
 			}
 			mongoObject[fieldName] = validatedField["result"]
 		}
 	}
 
+	// 添加其他字段
 	for fieldName := range fields {
-		validatedField := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
-		if validatedField["result"] == nil {
-			// TODO 转换错误
-			return nil, nil
+		validatedField, err := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
+		if err != nil {
+			return nil, err
 		}
 		mongoObject[fieldName] = validatedField["result"]
 	}
 
+	// 处理 geopoint
 	geoPoints := []string{}
 	for k, v := range mongoObject {
 		if utils.String(v) == "geopoint" {
@@ -682,11 +682,15 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 		}
 	}
 	if len(geoPoints) > 1 {
-		// TODO 只能有一个 geoPoint
-		return nil, nil
+		return nil, errs.E(errs.IncorrectType, "currently, only one GeoPoint field may exist in an object. Adding "+geoPoints[1]+" when "+geoPoints[0]+" already exists.")
 	}
 
-	validateCLP(classLevelPermissions)
+	// 校验类级别权限
+	err := validateCLP(classLevelPermissions)
+	if err != nil {
+		return nil, err
+	}
+	// 添加 CLP
 	var metadata types.M
 	if mongoObject["_metadata"] == nil && utils.MapInterface(mongoObject["_metadata"]) == nil {
 		metadata = types.M{}
@@ -749,71 +753,71 @@ func fieldNameIsValidForClass(fieldName string, className string) bool {
 	return false
 }
 
-func schemaAPITypeToMongoFieldType(t types.M) types.M {
+func schemaAPITypeToMongoFieldType(t types.M) (types.M, error) {
 	if utils.String(t["type"]) == "" {
 		// TODO type 无效
-		return nil
+		return nil, nil
 	}
 	apiType := utils.String(t["type"])
 
 	if apiType == "Pointer" {
 		if t["targetClass"] == nil {
 			// TODO 需要 targetClass
-			return nil
+			return nil, nil
 		}
 		if utils.String(t["targetClass"]) == "" {
 			// TODO targetClass 无效
-			return nil
+			return nil, nil
 		}
 		targetClass := utils.String(t["targetClass"])
 		if ClassNameIsValid(targetClass) == false {
 			// TODO 类名无效
-			return nil
+			return nil, nil
 		}
-		return types.M{"result": "*" + targetClass}
+		return types.M{"result": "*" + targetClass}, nil
 	}
 	if apiType == "Relation" {
 		if t["targetClass"] == nil {
 			// TODO 需要 targetClass
-			return nil
+			return nil, nil
 		}
 		if utils.String(t["targetClass"]) == "" {
 			// TODO targetClass 无效
-			return nil
+			return nil, nil
 		}
 		targetClass := utils.String(t["targetClass"])
 		if ClassNameIsValid(targetClass) == false {
 			// TODO 类名无效
-			return nil
+			return nil, nil
 		}
-		return types.M{"result": "relation<" + targetClass + ">"}
+		return types.M{"result": "relation<" + targetClass + ">"}, nil
 	}
 	switch apiType {
 	case "Number":
-		return types.M{"result": "number"}
+		return types.M{"result": "number"}, nil
 	case "String":
-		return types.M{"result": "string"}
+		return types.M{"result": "string"}, nil
 	case "Boolean":
-		return types.M{"result": "boolean"}
+		return types.M{"result": "boolean"}, nil
 	case "Date":
-		return types.M{"result": "date"}
+		return types.M{"result": "date"}, nil
 	case "Object":
-		return types.M{"result": "object"}
+		return types.M{"result": "object"}, nil
 	case "Array":
-		return types.M{"result": "array"}
+		return types.M{"result": "array"}, nil
 	case "GeoPoint":
-		return types.M{"result": "geopoint"}
+		return types.M{"result": "geopoint"}, nil
 	case "File":
-		return types.M{"result": "file"}
+		return types.M{"result": "file"}, nil
 	default:
 		// TODO type 不正确
-		return nil
+		return nil, nil
 	}
 }
 
-func validateCLP(perms types.M) {
+func validateCLP(perms types.M) error {
 	if perms == nil {
-		return
+		return nil
 	}
 
 	for operation, perm := range perms {
@@ -826,7 +830,7 @@ func validateCLP(perms types.M) {
 		}
 		if t == false {
 			// TODO 不是有效操作
-			return
+			return nil
 		}
 
 		for key, p := range utils.MapInterface(perm) {
@@ -834,14 +838,15 @@ func validateCLP(perms types.M) {
 			if v, ok := p.(bool); ok {
 				if v == false {
 					// TODO 值无效
-					return
+					return nil
 				}
 			} else {
 				// TODO 值无效
-				return
+				return nil
 			}
 		}
 	}
+	return nil
 }
 
 // 24 alpha numberic chars + uppercase

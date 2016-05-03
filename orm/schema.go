@@ -110,68 +110,83 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 // UpdateClass 更新类
 func (s *Schema) UpdateClass(className string, submittedFields types.M, classLevelPermissions types.M) (types.M, error) {
 	if s.data[className] == nil {
-		// TODO 类不存在
-		return nil, nil
+		return nil, errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
+	// 组装已存在的字段
 	existingFields := utils.CopyMap(utils.MapInterface(s.data[className]))
 	existingFields["_id"] = className
 
+	// 校验对字段的操作是否合法
 	for name, v := range submittedFields {
 		field := utils.MapInterface(v)
 		op := utils.String(field["__op"])
 		if existingFields[name] != nil && op != "Delete" {
-			// TODO 字段已存在，不能更新
-			return nil, nil
+			// 字段已存在，不能更新
+			return nil, errs.E(errs.ClassNotEmpty, "Field "+name+" exists, cannot update.")
 		}
 		if existingFields[name] == nil && op == "Delete" {
-			// TODO 字不存在，不能删除
-			return nil, nil
+			// 字段不存在，不能删除
+			return nil, errs.E(errs.ClassNotEmpty, "Field "+name+" does not exist, cannot delete.")
 		}
 	}
 
+	// 组装写入数据库的数据
 	newSchema := buildMergedSchemaObject(existingFields, submittedFields)
 	mongoObject, err := mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions)
 	if err != nil {
-		// TODO 生成错误
 		return nil, err
 	}
 
+	// 删除指定字段，并统计需要插入的字段
 	insertedFields := []string{}
 	for name, v := range submittedFields {
 		field := utils.MapInterface(v)
 		op := utils.String(field["__op"])
 		if op == "Delete" {
-			s.deleteField(name, className)
+			err := s.deleteField(name, className)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			insertedFields = append(insertedFields, name)
 		}
 	}
 
+	// 重新加载修改过的数据
 	s.reloadData()
 
+	// 校验并插入字段
 	mongoResult := utils.MapInterface(mongoObject["result"])
 	for _, fieldName := range insertedFields {
 		mongoType := utils.String(mongoResult[fieldName])
-		s.validateField(className, fieldName, mongoType, false)
+		err := s.validateField(className, fieldName, mongoType, false)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	s.setPermissions(className, classLevelPermissions)
+	// 设置 CLP
+	err = s.setPermissions(className, classLevelPermissions)
+	if err != nil {
+		return nil, err
+	}
 
+	// 把数据库格式的数据转换为 API 格式，并返回
 	return MongoSchemaToSchemaAPIResponse(mongoResult), nil
 }
 
-func (s *Schema) deleteField(fieldName string, className string) {
+func (s *Schema) deleteField(fieldName string, className string) error {
 	if ClassNameIsValid(className) == false {
 		// TODO 无效类名
-		return
+		return nil
 	}
 	if fieldNameIsValid(fieldName) == false {
 		// TODO 无效字段名
-		return
+		return nil
 	}
 	if fieldNameIsValidForClass(fieldName, className) == false {
 		// TODO 不能修改默认字段
-		return
+		return nil
 	}
 
 	s.reloadData()
@@ -179,13 +194,13 @@ func (s *Schema) deleteField(fieldName string, className string) {
 	hasClass := s.hasClass(className)
 	if hasClass == false {
 		// TODO 类不存在
-		return
+		return nil
 	}
 
 	class := utils.MapInterface(s.data[className])
 	if class[fieldName] == nil {
 		// TODO 字段不存在
-		return
+		return nil
 	}
 
 	name := utils.String(class[fieldName])
@@ -207,6 +222,7 @@ func (s *Schema) deleteField(fieldName string, className string) {
 		"$unset": types.M{fieldName: nil},
 	}
 	s.collection.updateSchema(className, update)
+	return nil
 }
 
 func (s *Schema) validateObject(className string, object, query types.M) error {
@@ -306,7 +322,7 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 	}
 }
 
-func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
+func (s *Schema) validateField(className, key, fieldtype string, freeze bool) error {
 	// TODO 检测 key 是否合法
 	transformKey(s, className, key)
 
@@ -321,19 +337,19 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 			expected = "object"
 		}
 		if expected == key {
-			return
+			return nil
 		}
 		// TODO 类型不符
-		return
+		return nil
 	}
 
 	if freeze {
 		// TODO 不能修改
-		return
+		return nil
 	}
 
 	if fieldtype == "" {
-		return
+		return nil
 	}
 
 	if fieldtype == "geopoint" {
@@ -342,7 +358,7 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 			otherKey := utils.String(v)
 			if otherKey == "geopoint" {
 				// TODO 只能有一个 geopoint
-				return
+				return nil
 			}
 		}
 	}
@@ -357,10 +373,10 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) {
 
 	s.reloadData()
 	s.validateField(className, key, fieldtype, true)
-
+	return nil
 }
 
-func (s *Schema) setPermissions(className string, perms types.M) {
+func (s *Schema) setPermissions(className string, perms types.M) error {
 	validateCLP(perms)
 	metadata := types.M{
 		"_metadata": types.M{"class_permissions": perms},
@@ -370,6 +386,7 @@ func (s *Schema) setPermissions(className string, perms types.M) {
 	}
 	s.collection.updateSchema(className, update)
 	s.reloadData()
+	return nil
 }
 
 func (s *Schema) hasClass(className string) bool {
@@ -820,6 +837,16 @@ func schemaAPITypeToMongoFieldType(t types.M) (types.M, error) {
 }
 
 // validateCLP 校验类级别权限
+// 正常的 perms 格式如下
+// {
+// 	"get":{
+// 		"user24id":true,
+// 		"role:xxx":true,
+// 		"*":true,
+// 	},
+// 	"delete":{...},
+// 	...
+// }
 func validateCLP(perms types.M) error {
 	if perms == nil {
 		return nil

@@ -709,7 +709,8 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 	}, nil
 }
 
-// ClassNameIsValid ...
+// ClassNameIsValid 校验类名，可以是系统内置类、join 类
+// 数字字母组合，以及下划线，但不能以下划线或字母开头
 func ClassNameIsValid(className string) bool {
 	return className == "_User" ||
 		className == "_Installation" ||
@@ -717,7 +718,7 @@ func ClassNameIsValid(className string) bool {
 		className == "_Role" ||
 		className == "_Product" ||
 		joinClassIsValid(className) ||
-		fieldNameIsValid(className)
+		fieldNameIsValid(className) // 类名与字段名的规则相同
 }
 
 // InvalidClassNameMessage ...
@@ -727,6 +728,7 @@ func InvalidClassNameMessage(className string) string {
 
 var joinClassRegex = `^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+`
 
+// joinClassIsValid 校验 join 表名， _Join:abc:abc
 func joinClassIsValid(className string) bool {
 	b, _ := regexp.MatchString(joinClassRegex, className)
 	return b
@@ -734,64 +736,67 @@ func joinClassIsValid(className string) bool {
 
 var classAndFieldRegex = `^[A-Za-z][A-Za-z0-9_]*$`
 
+// fieldNameIsValid 校验字段名或者类名，数字字母下划线，不以数字下划线开头
 func fieldNameIsValid(fieldName string) bool {
 	b, _ := regexp.MatchString(classAndFieldRegex, fieldName)
 	return b
 }
 
+// fieldNameIsValidForClass 校验能否添加指定字段到类中
 func fieldNameIsValidForClass(fieldName string, className string) bool {
+	// 字段名不合法不能添加
 	if fieldNameIsValid(fieldName) == false {
 		return false
 	}
+	// 默认字段不能添加
 	if defaultColumns["_Default"][fieldName] != nil {
 		return false
 	}
+	// 当前类的默认字段不能添加
 	if defaultColumns[className] != nil && defaultColumns[className][fieldName] != nil {
 		return false
 	}
 
-	return false
+	return true
 }
 
+// schemaAPITypeToMongoFieldType 把 API 格式的数据转换成 数据库存储的格式
 func schemaAPITypeToMongoFieldType(t types.M) (types.M, error) {
 	if utils.String(t["type"]) == "" {
-		// TODO type 无效
-		return nil, nil
+		return nil, errs.E(errs.InvalidJSON, "invalid JSON")
 	}
 	apiType := utils.String(t["type"])
 
+	// {"type":"Pointer", "targetClass":"abc"} => {"result":"*abc"}
 	if apiType == "Pointer" {
 		if t["targetClass"] == nil {
-			// TODO 需要 targetClass
-			return nil, nil
+			return nil, errs.E(errs.MissingRequiredFieldError, "type Pointer needs a class name")
 		}
 		if utils.String(t["targetClass"]) == "" {
-			// TODO targetClass 无效
-			return nil, nil
+			return nil, errs.E(errs.InvalidJSON, "invalid targetClass")
 		}
 		targetClass := utils.String(t["targetClass"])
 		if ClassNameIsValid(targetClass) == false {
-			// TODO 类名无效
-			return nil, nil
+			return nil, errs.E(errs.InvalidClassName, InvalidClassNameMessage(targetClass))
 		}
 		return types.M{"result": "*" + targetClass}, nil
 	}
+
+	// {"type":"Relation", "targetClass":"abc"} => {"result":"relation<abc>"}
 	if apiType == "Relation" {
 		if t["targetClass"] == nil {
-			// TODO 需要 targetClass
-			return nil, nil
+			return nil, errs.E(errs.MissingRequiredFieldError, "type Relation needs a class name")
 		}
 		if utils.String(t["targetClass"]) == "" {
-			// TODO targetClass 无效
-			return nil, nil
+			return nil, errs.E(errs.InvalidJSON, "invalid targetClass")
 		}
 		targetClass := utils.String(t["targetClass"])
 		if ClassNameIsValid(targetClass) == false {
-			// TODO 类名无效
-			return nil, nil
+			return nil, errs.E(errs.InvalidClassName, InvalidClassNameMessage(targetClass))
 		}
 		return types.M{"result": "relation<" + targetClass + ">"}, nil
 	}
+
 	switch apiType {
 	case "Number":
 		return types.M{"result": "number"}, nil
@@ -810,8 +815,7 @@ func schemaAPITypeToMongoFieldType(t types.M) (types.M, error) {
 	case "File":
 		return types.M{"result": "file"}, nil
 	default:
-		// TODO type 不正确
-		return nil, nil
+		return nil, errs.E(errs.InvalidJSON, "invalid JSON")
 	}
 }
 

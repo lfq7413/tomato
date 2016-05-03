@@ -819,12 +819,14 @@ func schemaAPITypeToMongoFieldType(t types.M) (types.M, error) {
 	}
 }
 
+// validateCLP 校验类级别权限
 func validateCLP(perms types.M) error {
 	if perms == nil {
 		return nil
 	}
 
 	for operation, perm := range perms {
+		// 校验是否是系统规定的几种操作
 		t := false
 		for _, key := range clpValidKeys {
 			if operation == key {
@@ -833,20 +835,20 @@ func validateCLP(perms types.M) error {
 			}
 		}
 		if t == false {
-			// TODO 不是有效操作
-			return nil
+			return errs.E(errs.InvalidJSON, operation+" is not a valid operation for class level permissions")
 		}
 
 		for key, p := range utils.MapInterface(perm) {
-			verifyPermissionKey(key)
+			err := verifyPermissionKey(key)
+			if err != nil {
+				return err
+			}
 			if v, ok := p.(bool); ok {
 				if v == false {
-					// TODO 值无效
-					return nil
+					return errs.E(errs.InvalidJSON, "false is not a valid value for class level permissions "+operation+":"+key+":false")
 				}
 			} else {
-				// TODO 值无效
-				return nil
+				return errs.E(errs.InvalidJSON, "this perm is not a valid value for class level permissions "+operation+":"+key+":perm")
 			}
 		}
 	}
@@ -864,16 +866,18 @@ var publicRegex = `^\*$`
 
 var permissionKeyRegex = []string{userIDRegex, roleRegex, publicRegex}
 
-func verifyPermissionKey(key string) {
+// verifyPermissionKey 校验 CLP 中各种操作包含的角色名是否合法
+// 可以是24位的用户 ID，可以是角色名 role:abc ,可以是公共权限 *
+func verifyPermissionKey(key string) error {
 	result := false
 	for _, v := range permissionKeyRegex {
 		b, _ := regexp.MatchString(v, key)
 		result = result || b
 	}
 	if result == false {
-		// TODO 无效的权限名称
-		return
+		return errs.E(errs.InvalidJSON, key+" is not a valid key for class level permissions")
 	}
+	return nil
 }
 
 func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {

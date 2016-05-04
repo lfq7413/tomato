@@ -175,54 +175,59 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	return MongoSchemaToSchemaAPIResponse(mongoResult), nil
 }
 
+// deleteField 从类定义中删除指定的字段，并删除对象中的数据
 func (s *Schema) deleteField(fieldName string, className string) error {
 	if ClassNameIsValid(className) == false {
-		// TODO 无效类名
-		return nil
+		return errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
 	}
 	if fieldNameIsValid(fieldName) == false {
-		// TODO 无效字段名
-		return nil
+		return errs.E(errs.InvalidKeyName, "invalid field name: "+fieldName)
 	}
 	if fieldNameIsValidForClass(fieldName, className) == false {
-		// TODO 不能修改默认字段
-		return nil
+		return errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be changed")
 	}
 
 	s.reloadData()
 
 	hasClass := s.hasClass(className)
 	if hasClass == false {
-		// TODO 类不存在
-		return nil
+		return errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
 
 	class := utils.MapInterface(s.data[className])
 	if class[fieldName] == nil {
-		// TODO 字段不存在
-		return nil
+		return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
 	}
 
+	// 根据字段属性进行相应 对象数据 删除操作
 	name := utils.String(class[fieldName])
 	if strings.HasPrefix(name, "relation<") {
-		// 删除 _Join table
-		DropCollection("_Join:" + fieldName + ":" + className)
+		// 删除 _Join table 数据
+		err := DropCollection("_Join:" + fieldName + ":" + className)
+		if err != nil {
+			return err
+		}
 	} else {
+		// 删除其他类型字段 对应的对象数据
 		collection := AdaptiveCollection(className)
 		mongoFieldName := fieldName
 		if strings.HasPrefix(name, "*") {
+			// Pointer 类型的字段名要添加前缀 _p_
 			mongoFieldName = "_p_" + fieldName
 		}
 		update := types.M{
 			"$unset": types.M{mongoFieldName: nil},
 		}
-		collection.UpdateMany(types.M{}, update)
+		err := collection.UpdateMany(types.M{}, update)
+		if err != nil {
+			return err
+		}
 	}
+	// 从 _SCHEMA 表中删除相应字段
 	update := types.M{
 		"$unset": types.M{fieldName: nil},
 	}
-	s.collection.updateSchema(className, update)
-	return nil
+	return s.collection.updateSchema(className, update)
 }
 
 func (s *Schema) validateObject(className string, object, query types.M) error {
@@ -911,7 +916,7 @@ func verifyPermissionKey(key string) error {
 }
 
 // buildMergedSchemaObject 组装数据库类型的 mongoObject 与 API 类型的 putRequest，
-// 返回值中不包含默认字段
+// 返回值中不包含默认字段，返回的是 API 类型的数据
 func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 	newSchema := types.M{}
 

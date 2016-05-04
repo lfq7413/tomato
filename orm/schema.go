@@ -85,7 +85,7 @@ func init() {
 // Schema schema 操作对象
 type Schema struct {
 	collection *MongoSchemaCollection
-	data       types.M // data 保存类的字段信息
+	data       types.M // data 保存类的字段信息，类型为数据库中保存的类型
 	perms      types.M // perms 保存类的操作权限
 }
 
@@ -907,12 +907,15 @@ func verifyPermissionKey(key string) error {
 	return nil
 }
 
+// buildMergedSchemaObject 组装数据库类型的 mongoObject 与 API 类型的 putRequest，
+// 返回值中不包含默认字段
 func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 	newSchema := types.M{}
 
 	sysSchemaField := []string{}
 	id := utils.String(mongoObject["_id"])
 	for k, v := range defaultColumns {
+		// 如果是系统预定义的表，则取出默认字段
 		if k == id {
 			for key := range v {
 				sysSchemaField = append(sysSchemaField, key)
@@ -921,12 +924,15 @@ func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 		}
 	}
 
+	// 处理已经存在的字段
 	for oldField, v := range mongoObject {
+		// 仅处理以下五种字段以外的字段
 		if oldField != "_id" &&
 			oldField != "ACL" &&
 			oldField != "updatedAt" &&
 			oldField != "createdAt" &&
 			oldField != "objectId" {
+			// 不处理系统默认字段
 			if len(sysSchemaField) > 0 {
 				t := false
 				for _, s := range sysSchemaField {
@@ -939,6 +945,7 @@ func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 					continue
 				}
 			}
+			// 处理要删除的字段，要删除的字段不加入返回数据中
 			fieldIsDeleted := false
 			if putRequest[oldField] != nil {
 				op := utils.MapInterface(putRequest[oldField])
@@ -952,8 +959,10 @@ func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 		}
 	}
 
+	// 处理需要更新的字段
 	for newField, v := range putRequest {
 		op := utils.MapInterface(v)
+		// 不处理 objectId，不处理要删除的字段，跳过系统默认字段，其余字段加入返回数据中
 		if newField != "objectId" && utils.String(op["__op"]) != "Delete" {
 			if len(sysSchemaField) > 0 {
 				t := false

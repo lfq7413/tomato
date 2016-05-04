@@ -594,13 +594,16 @@ func mongoSchemaAPIResponseFields(schema types.M) types.M {
 	return response
 }
 
+// mongoFieldTypeToSchemaAPIType 把数据库格式的字段类型转换为 API 格式
 func mongoFieldTypeToSchemaAPIType(t string) types.M {
+	// *abc ==> {"type":"Pointer", "targetClass":"abc"}
 	if t[0] == '*' {
 		return types.M{
 			"type":        "Pointer",
 			"targetClass": string(t[1:]),
 		}
 	}
+	// relation<abc> ==> {"type":"Relation", "targetClass":"abc"}
 	if strings.HasPrefix(t, "relation<") {
 		return types.M{
 			"type":        "Relation",

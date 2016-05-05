@@ -397,15 +397,22 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) er
 	return nil
 }
 
+// setPermissions 给指定类设置权限
 func (s *Schema) setPermissions(className string, perms types.M) error {
-	validateCLP(perms)
+	err := validateCLP(perms)
+	if err != nil {
+		return err
+	}
 	metadata := types.M{
 		"_metadata": types.M{"class_permissions": perms},
 	}
 	update := types.M{
 		"$set": metadata,
 	}
-	s.collection.updateSchema(className, update)
+	err = s.collection.updateSchema(className, update)
+	if err != nil {
+		return err
+	}
 	s.reloadData()
 	return nil
 }

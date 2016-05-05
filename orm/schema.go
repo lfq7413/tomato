@@ -348,40 +348,52 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) er
 		if expected == key {
 			return nil
 		}
-		// TODO 类型不符
-		return nil
+		// 类型不符
+		return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+key+"; expected "+expected+" but got "+fieldtype)
 	}
 
 	if freeze {
-		// TODO 不能修改
-		return nil
+		// 不能修改
+		return errs.E(errs.InvalidJSON, "schema is frozen, cannot add "+key+" field")
 	}
 
+	// 没有当前要添加的字段，当字段类型为空时，不做更新
 	if fieldtype == "" {
 		return nil
 	}
 
 	if fieldtype == "geopoint" {
+		// 只能有一个 geopoint
 		fields := utils.MapInterface(s.data[className])
 		for _, v := range fields {
 			otherKey := utils.String(v)
 			if otherKey == "geopoint" {
-				// TODO 只能有一个 geopoint
-				return nil
+				return errs.E(errs.IncorrectType, "there can only be one geopoint field in a class")
 			}
 		}
 	}
 
+	// 当前没有该字段，更新 schema
 	query := types.M{
-		key: types.M{"$exists": true},
+		key: types.M{"$exists": false},
 	}
 	update := types.M{
 		"$set": types.M{key: fieldtype},
 	}
-	s.collection.upsertSchema(className, query, update)
+	err = s.collection.upsertSchema(className, query, update)
+	if err != nil {
+		// 失败时也需要重新加载数据，因为这时候可能有其他客户端更新了字段
+		s.reloadData()
+		return err
+	}
 
 	s.reloadData()
-	s.validateField(className, key, fieldtype, true)
+	// 再次尝试校验字段，本次不做更新
+	err = s.validateField(className, key, fieldtype, true)
+	if err != nil {
+		// 字段依然无法校验通过
+		return errs.E(errs.InvalidJSON, "schema key will not revalidate")
+	}
 	return nil
 }
 

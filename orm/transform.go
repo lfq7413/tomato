@@ -12,13 +12,16 @@ import (
 )
 
 // transformKey 把 key 转换为数据库中保存的格式
-func transformKey(schema *Schema, className, key string) string {
-	k, _ := transformKeyValue(schema, className, key, nil, nil)
-	return k
+func transformKey(schema *Schema, className, key string) (string, error) {
+	k, _, err := transformKeyValue(schema, className, key, nil, nil)
+	if err != nil {
+		return "", err
+	}
+	return k, nil
 }
 
 // transformKeyValue 把传入的键值对转换为数据库中保存的格式
-func transformKeyValue(schema *Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}) {
+func transformKeyValue(schema *Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -45,56 +48,56 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		key = "_expiresAt"
 		timeField = true
 	case "_rperm", "_wperm":
-		return key, restValue
+		return key, restValue, nil
 	case "$or":
 		if options["query"] == nil {
 			// TODO 只有查询时才能使用 or
-			return "", nil
+			return "", nil, nil
 		}
 		querys := utils.SliceInterface(restValue)
 		if querys == nil {
 			// TODO 待转换值必须为数组类型
-			return "", nil
+			return "", nil, nil
 		}
 		mongoSubqueries := types.S{}
 		for _, v := range querys {
 			query := transformWhere(schema, className, utils.MapInterface(v))
 			mongoSubqueries = append(mongoSubqueries, query)
 		}
-		return "$or", mongoSubqueries
+		return "$or", mongoSubqueries, nil
 	case "$and":
 		if options["query"] == nil {
 			// TODO 只有查询时才能使用 and
-			return "", nil
+			return "", "", nil
 		}
 		querys := utils.SliceInterface(restValue)
 		if querys == nil {
 			// TODO 待转换值必须为数组类型
-			return "", nil
+			return "", nil, nil
 		}
 		mongoSubqueries := types.S{}
 		for _, v := range querys {
 			query := transformWhere(schema, className, utils.MapInterface(v))
 			mongoSubqueries = append(mongoSubqueries, query)
 		}
-		return "$and", mongoSubqueries
+		return "$and", mongoSubqueries, nil
 	default:
 		// 处理第三方 auth 数据
 		authDataMatch, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key)
 		if authDataMatch {
 			if options["query"] != nil {
 				provider := key[len("authData."):(len(key) - len(".id"))]
-				return "_auth_data_" + provider + ".id", restKey
+				return "_auth_data_" + provider + ".id", restKey, nil
 			}
 			// TODO 只能将其应用查询操作
-			return "", nil
+			return "", nil, nil
 		}
 		// 默认处理
 		if options["validate"] != nil {
 			keyMatch, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_\.]*$`, key)
 			if keyMatch == false {
 				// TODO 无效的键名
-				return "", nil
+				return "", nil, nil
 			}
 		}
 	}
@@ -125,11 +128,11 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	if options["query"] != nil {
 		value := transformConstraint(restValue, inArray)
 		if value != cannotTransform() {
-			return key, value
+			return key, value, nil
 		}
 	}
 	if inArray && options["query"] != nil && utils.SliceInterface(restValue) == nil {
-		return key, types.M{"$all": types.S{restValue}}
+		return key, types.M{"$all": types.S{restValue}}, nil
 	}
 
 	// 处理原子数据
@@ -139,27 +142,30 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 			// TODO 处理错误
 			value, _ = utils.StringtoTime(utils.String(value))
 		}
-		return key, value
+		return key, value, nil
 	}
 
 	// ACL 在此之前处理，如果依然出现，则返回错误
 	if key == "ACL" {
 		// TODO 不能在此转换 ACL
-		return "", nil
+		return "", "", nil
 	}
 
 	// 处理数组类型
 	if valueArray, ok := restValue.([]interface{}); ok {
 		if options["query"] != nil {
 			// TODO 查询时不能为数组
-			return "", nil
+			return "", "", nil
 		}
 		outValue := types.S{}
 		for _, restObj := range valueArray {
-			_, v := transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
+			_, v, err := transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
+			if err != nil {
+				return "", nil, err
+			}
 			outValue = append(outValue, v)
 		}
-		return key, outValue
+		return key, outValue, nil
 	}
 
 	// 处理更新操作
@@ -171,16 +177,19 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	}
 	value = transformUpdateOperator(restValue, flatten)
 	if value != cannotTransform() {
-		return key, value
+		return key, value, nil
 	}
 
 	// 处理正常的对象
 	normalValue := types.M{}
 	for subRestKey, subRestValue := range utils.MapInterface(restValue) {
-		k, v := transformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
+		k, v, err := transformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
+		if err != nil {
+			return "", nil, err
+		}
 		normalValue[k] = v
 	}
-	return key, normalValue
+	return key, normalValue, nil
 }
 
 // transformConstraint 转换查询限制条件
@@ -463,19 +472,22 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 }
 
 // transformCreate ...
-func transformCreate(schema *Schema, className string, create types.M) types.M {
+func transformCreate(schema *Schema, className string, create types.M) (types.M, error) {
 	// TODO 处理错误
 	if className == "_User" {
 		create = transformAuthData(create)
 	}
 	mongoCreate := transformACL(create)
 	for k, v := range create {
-		key, value := transformKeyValue(schema, className, k, v, types.M{})
+		key, value, err := transformKeyValue(schema, className, k, v, types.M{})
+		if err != nil {
+			return nil, err
+		}
 		if value != nil {
 			mongoCreate[key] = value
 		}
 	}
-	return mongoCreate
+	return mongoCreate, nil
 }
 
 func transformAuthData(restObject types.M) types.M {

@@ -327,9 +327,13 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 	}
 }
 
+// validateField 校验并插入字段，freeze 为 true 时不进行修改
 func (s *Schema) validateField(className, key, fieldtype string, freeze bool) error {
-	// TODO 检测 key 是否合法
-	transformKey(s, className, key)
+	// 检测 key 是否合法
+	_, err := transformKey(s, className, key)
+	if err != nil {
+		return err
+	}
 
 	if strings.Index(key, ".") > 0 {
 		key = strings.Split(key, ".")[0]

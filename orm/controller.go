@@ -87,9 +87,17 @@ func Find(className string, where, options types.M) (types.S, error) {
 			mongoKey := ""
 			// sort 中的 key ，如果是要按倒序排列，则会加前缀 "-" ，所以要对其进行处理
 			if strings.HasPrefix(key, "-") {
-				mongoKey = "-" + transformKey(schema, className, key[1:])
+				k, err := transformKey(schema, className, key[1:])
+				if err != nil {
+					return nil, err
+				}
+				mongoKey = "-" + key
 			} else {
-				mongoKey = transformKey(schema, className, key)
+				k, err := transformKey(schema, className, key)
+				if err != nil {
+					return nil, err
+				}
+				mongoKey = k
 			}
 			sortKeys = append(sortKeys, mongoKey)
 		}
@@ -335,7 +343,10 @@ func Create(className string, data, options types.M) error {
 	}
 
 	coll := AdaptiveCollection(className)
-	mongoObject := transformCreate(schema, className, data)
+	mongoObject, err := transformCreate(schema, className, data)
+	if err != nil {
+		return err
+	}
 	return coll.insertOne(mongoObject)
 }
 

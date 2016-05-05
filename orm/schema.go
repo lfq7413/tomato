@@ -399,6 +399,9 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) er
 
 // setPermissions 给指定类设置权限
 func (s *Schema) setPermissions(className string, perms types.M) error {
+	if perms == nil {
+		return nil
+	}
 	err := validateCLP(perms)
 	if err != nil {
 		return err
@@ -565,13 +568,14 @@ func getObjectType(obj interface{}) string {
 	return "object"
 }
 
-// MongoSchemaToSchemaAPIResponse ...
+// MongoSchemaToSchemaAPIResponse 把数据库格式的数据转换为 API 格式
 func MongoSchemaToSchemaAPIResponse(schema types.M) types.M {
 	result := types.M{
 		"className": schema["_id"],
 		"fields":    mongoSchemaAPIResponseFields(schema),
 	}
 
+	// 复制 schema["_metadata"]["class_permissions"] 到 classLevelPermissions 中
 	classLevelPermissions := utils.CopyMap(defaultClassLevelPermissions)
 	if schema["_metadata"] != nil && utils.MapInterface(schema["_metadata"]) != nil {
 		metadata := utils.MapInterface(schema["_metadata"])
@@ -589,10 +593,12 @@ func MongoSchemaToSchemaAPIResponse(schema types.M) types.M {
 
 var nonFieldSchemaKeys = []string{"_id", "_metadata", "_client_permissions"}
 
+// mongoSchemaAPIResponseFields 转换数据库格式的字段到 API类型，排除掉 nonFieldSchemaKeys 中的字段
 func mongoSchemaAPIResponseFields(schema types.M) types.M {
 	fieldNames := []string{}
 	for k := range schema {
 		t := false
+		// 排除 nonFieldSchemaKeys
 		for _, v := range nonFieldSchemaKeys {
 			if k == v {
 				t = true
@@ -604,9 +610,11 @@ func mongoSchemaAPIResponseFields(schema types.M) types.M {
 		}
 	}
 	response := types.M{}
+	// 转换普通字段
 	for _, v := range fieldNames {
 		response[v] = mongoFieldTypeToSchemaAPIType(utils.String(schema[v]))
 	}
+	// 转换默认字段
 	response["ACL"] = types.M{
 		"type": "ACL",
 	}

@@ -230,30 +230,43 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	return s.collection.updateSchema(className, update)
 }
 
+// validateObject 校验对象是否合法
 func (s *Schema) validateObject(className string, object, query types.M) error {
-	// TODO 处理错误
 	geocount := 0
-	s.validateClassName(className, false)
+	err := s.validateClassName(className, false)
+	if err != nil {
+		return err
+	}
 
 	for k, v := range object {
 		if v == nil {
 			continue
 		}
-		expected := getType(v)
+		expected, err := getType(v)
+		if err != nil {
+			return err
+		}
 		if expected == "geopoint" {
 			geocount++
 		}
 		if geocount > 1 {
-			// TODO 只能有一个 geopoint
-			return nil
+			// 只能有一个 geopoint
+			return errs.E(errs.IncorrectType, "there can only be one geopoint field in a class")
 		}
 		if expected == "" {
 			continue
 		}
-		thenValidateField(s, className, k, expected)
+		// 校验字段与字段类型
+		err = thenValidateField(s, className, k, expected)
+		if err != nil {
+			return err
+		}
 	}
 
-	thenValidateRequiredColumns(s, className, object, query)
+	err = thenValidateRequiredColumns(s, className, object, query)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -283,31 +296,33 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	return nil
 }
 
-func (s *Schema) validateClassName(className string, freeze bool) {
+func (s *Schema) validateClassName(className string, freeze bool) error {
 	// TODO 处理错误
 	if s.data[className] != nil {
-		return
+		return nil
 	}
 	if freeze {
 		// TODO 不能添加
-		return
+		return nil
 	}
 	s.collection.addSchema(className, types.M{})
 	s.reloadData()
 	s.validateClassName(className, true)
 	// TODO 处理上步错误
+	return nil
 }
 
-func (s *Schema) validateRequiredColumns(className string, object, query types.M) {
-	// TODO 处理错误
+// validateRequiredColumns 校验必须的字段
+func (s *Schema) validateRequiredColumns(className string, object, query types.M) error {
 	columns := requiredColumns[className]
 	if columns == nil || len(columns) == 0 {
-		return
+		return nil
 	}
 
 	missingColumns := []string{}
 	for _, column := range columns {
 		if query != nil && query["objectId"] != nil {
+			// 类必须的字段，不能进行删除操作
 			if object[column] != nil && utils.MapInterface(object[column]) != nil {
 				o := utils.MapInterface(object[column])
 				if utils.String(o["__op"]) == "Delete" {
@@ -316,15 +331,16 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 			}
 			continue
 		}
+		// 不能缺少必须的字段
 		if object[column] == nil {
 			missingColumns = append(missingColumns, column)
 		}
 	}
 
 	if len(missingColumns) > 0 {
-		// TODO 缺少字段
-		return
+		return errs.E(errs.IncorrectType, missingColumns[0]+" is required.")
 	}
+	return nil
 }
 
 // validateField 校验并插入字段，freeze 为 true 时不进行修改
@@ -481,33 +497,36 @@ func (s *Schema) reloadData() {
 	}
 }
 
-func thenValidateField(schema *Schema, className, key, fieldtype string) {
-	schema.validateField(className, key, fieldtype, false)
+// thenValidateField 校验字段，并且不对 schema 进行修改
+func thenValidateField(schema *Schema, className, key, fieldtype string) error {
+	return schema.validateField(className, key, fieldtype, true)
 }
 
-func thenValidateRequiredColumns(schema *Schema, className string, object, query types.M) {
-	schema.validateRequiredColumns(className, object, query)
+// thenValidateRequiredColumns 校验必须的字段
+func thenValidateRequiredColumns(schema *Schema, className string, object, query types.M) error {
+	return schema.validateRequiredColumns(className, object, query)
 }
 
-func getType(obj interface{}) string {
+// getType 获取对象的格式
+func getType(obj interface{}) (string, error) {
 	switch obj.(type) {
 	case bool:
-		return "boolean"
+		return "boolean", nil
 	case string:
-		return "string"
+		return "string", nil
 	case float64:
-		return "number"
+		return "number", nil
 	case map[string]interface{}, []interface{}:
 		return getObjectType(obj)
 	default:
-		// TODO 格式无效
-		return ""
+		return "", errs.E(errs.IncorrectType, "bad obj. can not get type")
 	}
 }
 
-func getObjectType(obj interface{}) string {
+// getObjectType 获取对象格式 仅处理 slice 与 map
+func getObjectType(obj interface{}) (string, error) {
 	if utils.SliceInterface(obj) != nil {
-		return "array"
+		return "array", nil
 	}
 	if utils.MapInterface(obj) != nil {
 		object := utils.MapInterface(obj)
@@ -516,27 +535,27 @@ func getObjectType(obj interface{}) string {
 			switch t {
 			case "Pointer":
 				if object["className"] != nil {
-					return "*" + utils.String(object["className"])
+					return "*" + utils.String(object["className"]), nil
 				}
 			case "File":
 				if object["name"] != nil {
-					return "file"
+					return "file", nil
 				}
 			case "Date":
 				if object["iso"] != nil {
-					return "date"
+					return "date", nil
 				}
 			case "GeoPoint":
 				if object["latitude"] != nil && object["longitude"] != nil {
-					return "geopoint"
+					return "geopoint", nil
 				}
 			case "Bytes":
 				if object["base64"] != nil {
-					return "bytes"
+					return "bytes", nil
 				}
 			default:
-				// TODO 无效的类型
-				return ""
+				// 无效的类型
+				return "", errs.E(errs.IncorrectType, "This is not a valid "+t)
 			}
 		}
 		if object["$ne"] != nil {
@@ -546,26 +565,26 @@ func getObjectType(obj interface{}) string {
 			op := utils.String(object["__op"])
 			switch op {
 			case "Increment":
-				return "number"
+				return "number", nil
 			case "Delete":
-				return ""
+				return "", nil
 			case "Add", "AddUnique", "Remove":
-				return "array"
+				return "array", nil
 			case "AddRelation", "RemoveRelation":
 				objects := utils.SliceInterface(object["objects"])
 				o := utils.MapInterface(objects[0])
-				return "relation<" + utils.String(o["className"]) + ">"
+				return "relation<" + utils.String(o["className"]) + ">", nil
 			case "Batch":
 				ops := utils.SliceInterface(object["ops"])
 				return getObjectType(ops[0])
 			default:
-				// TODO 无效操作
-				return ""
+				// 无效操作
+				return "", errs.E(errs.IncorrectType, "unexpected op: "+op)
 			}
 		}
 	}
 
-	return "object"
+	return "object", nil
 }
 
 // MongoSchemaToSchemaAPIResponse 把数据库格式的数据转换为 API 格式

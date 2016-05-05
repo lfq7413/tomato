@@ -297,19 +297,25 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	return nil
 }
 
+// validateClassName 校验类名 freeze 为 true 时，不进行更新
 func (s *Schema) validateClassName(className string, freeze bool) error {
-	// TODO 处理错误
 	if s.data[className] != nil {
 		return nil
 	}
 	if freeze {
-		// TODO 不能添加
-		return nil
+		return errs.E(errs.InvalidJSON, "schema is frozen, cannot add: "+className)
 	}
-	s.collection.addSchema(className, types.M{})
+
+	// 添加不存在的类定义
+	err := s.collection.addSchema(className, types.M{})
+	if err != nil {
+
+	}
 	s.reloadData()
-	s.validateClassName(className, true)
-	// TODO 处理上步错误
+	err = s.validateClassName(className, true)
+	if err != nil {
+		return errs.E(errs.InvalidJSON, "schema class name does not revalidate")
+	}
 	return nil
 }
 
@@ -400,8 +406,8 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) er
 	err = s.collection.upsertSchema(className, query, update)
 	if err != nil {
 		// 失败时也需要重新加载数据，因为这时候可能有其他客户端更新了字段
-		s.reloadData()
-		return err
+		// s.reloadData()
+		// return err
 	}
 
 	s.reloadData()

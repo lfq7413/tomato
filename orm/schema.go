@@ -443,11 +443,13 @@ func (s *Schema) setPermissions(className string, perms types.M) error {
 	return nil
 }
 
+// hasClass Schema 中是否存在类定义
 func (s *Schema) hasClass(className string) bool {
 	s.reloadData()
 	return s.data[className] != nil
 }
 
+// hasKeys 指定类中是否存在指定字段
 func (s *Schema) hasKeys(className string, keys []string) bool {
 	for _, key := range keys {
 		if s.data[className] == nil {
@@ -461,6 +463,7 @@ func (s *Schema) hasKeys(className string, keys []string) bool {
 	return true
 }
 
+// getExpectedType 获取期望的字段类型
 func (s *Schema) getExpectedType(className, key string) string {
 	if s.data != nil && s.data[className] != nil {
 		cls := utils.MapInterface(s.data[className])

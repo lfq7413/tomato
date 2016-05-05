@@ -270,17 +270,19 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 	return nil
 }
 
+// validatePermission 校验对指定类的操作权限
 func (s *Schema) validatePermission(className string, aclGroup []string, operation string) error {
-	// TODO 处理错误
 	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
 		return nil
 	}
 	class := utils.MapInterface(s.perms[className])
 	perms := utils.MapInterface(class[operation])
+	// 当前操作的权限是公开的
 	if _, ok := perms["*"]; ok {
 		return nil
 	}
 
+	// 查找 acl 中的角色信息是否在权限列表中，找到一个即可
 	found := false
 	for _, v := range aclGroup {
 		if _, ok := perms[v]; ok {
@@ -289,8 +291,7 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 		}
 	}
 	if found == false {
-		// TODO 无权限
-		return nil
+		return errs.E(errs.ObjectNotFound, "Permission denied for this action.")
 	}
 
 	return nil

@@ -61,7 +61,10 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		}
 		mongoSubqueries := types.S{}
 		for _, v := range querys {
-			query := transformWhere(schema, className, utils.MapInterface(v))
+			query, err := transformWhere(schema, className, utils.MapInterface(v))
+			if err != nil {
+				return "", nil, err
+			}
 			mongoSubqueries = append(mongoSubqueries, query)
 		}
 		return "$or", mongoSubqueries, nil
@@ -77,7 +80,10 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		}
 		mongoSubqueries := types.S{}
 		for _, v := range querys {
-			query := transformWhere(schema, className, utils.MapInterface(v))
+			query, err := transformWhere(schema, className, utils.MapInterface(v))
+			if err != nil {
+				return "", nil, err
+			}
 			mongoSubqueries = append(mongoSubqueries, query)
 		}
 		return "$and", mongoSubqueries, nil
@@ -526,30 +532,33 @@ func transformACL(restObject types.M) types.M {
 	return output
 }
 
-func transformWhere(schema *Schema, className string, where types.M) types.M {
+func transformWhere(schema *Schema, className string, where types.M) (types.M, error) {
 	// TODO 处理错误
 	mongoWhere := types.M{}
 	if where["ACL"] != nil {
 		// TODO 不能查询 ACL
-		return nil
+		return nil, nil
 	}
 	for k, v := range where {
 		options := types.M{
 			"query":    true,
 			"validate": true,
 		}
-		key, value := transformKeyValue(schema, className, k, v, options)
+		key, value, err := transformKeyValue(schema, className, k, v, options)
+		if err != nil {
+			return nil, err
+		}
 		mongoWhere[key] = value
 	}
 
-	return mongoWhere
+	return mongoWhere, nil
 }
 
-func transformUpdate(schema *Schema, className string, update types.M) types.M {
+func transformUpdate(schema *Schema, className string, update types.M) (types.M, error) {
 	// TODO 处理错误
 	if update == nil {
 		// TODO 更新数据不能为空
-		return nil
+		return nil, nil
 	}
 	if className == "_User" {
 		update = transformAuthData(update)
@@ -569,7 +578,10 @@ func transformUpdate(schema *Schema, className string, update types.M) types.M {
 	}
 
 	for k, v := range update {
-		key, value := transformKeyValue(schema, className, k, v, types.M{"update": true})
+		key, value, err := transformKeyValue(schema, className, k, v, types.M{"update": true})
+		if err != nil {
+			return nil, err
+		}
 
 		op := utils.MapInterface(value)
 		if op != nil && op["__op"] != nil {
@@ -590,7 +602,7 @@ func transformUpdate(schema *Schema, className string, update types.M) types.M {
 		}
 	}
 
-	return mongoUpdate
+	return mongoUpdate, nil
 }
 
 func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) interface{} {

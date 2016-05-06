@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -21,6 +22,14 @@ func transformKey(schema *Schema, className, key string) (string, error) {
 }
 
 // transformKeyValue 把传入的键值对转换为数据库中保存的格式
+// restKey API 格式的字段名
+// restValue API 格式的值
+// options 设置项
+// options 有以下几种选择：
+// query: true 表示 restValue 中包含类似 $lt 的查询限制条件
+// update: true 表示 restValue 中包含 __op 操作，类似 Add、Delete，需要进行转换
+// validate: true 表示需要校验字段名
+// 返回转换成 数据库格式的字段名与值
 func transformKeyValue(schema *Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
 	if options == nil {
 		options = types.M{}
@@ -51,15 +60,16 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		return key, restValue, nil
 	case "$or":
 		if options["query"] == nil {
-			// TODO 只有查询时才能使用 or
-			return "", nil, nil
+			// 只有查询时才能使用 $or
+			return "", nil, errs.E(errs.InvalidKeyName, "you can only use $or in queries")
 		}
 		querys := utils.SliceInterface(restValue)
 		if querys == nil {
-			// TODO 待转换值必须为数组类型
-			return "", nil, nil
+			// 待转换值必须为数组类型
+			return "", nil, errs.E(errs.InvalidQuery, "bad $or format - use an array value")
 		}
 		mongoSubqueries := types.S{}
+		// 转换 where 查询条件
 		for _, v := range querys {
 			query, err := transformWhere(schema, className, utils.MapInterface(v))
 			if err != nil {
@@ -70,15 +80,16 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		return "$or", mongoSubqueries, nil
 	case "$and":
 		if options["query"] == nil {
-			// TODO 只有查询时才能使用 and
-			return "", "", nil
+			// 只有查询时才能使用 and
+			return "", "", errs.E(errs.InvalidKeyName, "you can only use $and in queries")
 		}
 		querys := utils.SliceInterface(restValue)
 		if querys == nil {
-			// TODO 待转换值必须为数组类型
-			return "", nil, nil
+			// 待转换值必须为数组类型
+			return "", nil, errs.E(errs.InvalidQuery, "bad $and format - use an array value")
 		}
 		mongoSubqueries := types.S{}
+		// 转换 where 查询条件
 		for _, v := range querys {
 			query, err := transformWhere(schema, className, utils.MapInterface(v))
 			if err != nil {
@@ -88,35 +99,40 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		}
 		return "$and", mongoSubqueries, nil
 	default:
-		// 处理第三方 auth 数据
+		// 处理第三方 auth 数据，key 的格式为： authData.xxx.id
 		authDataMatch, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key)
 		if authDataMatch {
 			if options["query"] != nil {
+				// 取出 authData.xxx.id 中的 xxx ，转换为 _auth_data_.xxx.id
 				provider := key[len("authData."):(len(key) - len(".id"))]
-				return "_auth_data_" + provider + ".id", restKey, nil
+				return "_auth_data_" + provider + ".id", restValue, nil
 			}
-			// TODO 只能将其应用查询操作
-			return "", nil, nil
+			// 只能将其应用查询操作
+			return "", nil, errs.E(errs.InvalidKeyName, "can only query on "+key)
 		}
-		// 默认处理
+
+		// 校验字段名
 		if options["validate"] != nil {
 			keyMatch, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_\.]*$`, key)
 			if keyMatch == false {
-				// TODO 无效的键名
-				return "", nil, nil
+				// 无效的键名
+				return "", nil, errs.E(errs.InvalidKeyName, "invalid key name: "+key)
 			}
 		}
+		// 其他字段名不做处理
 	}
 
-	// 处理特殊键值
+	// 处理特殊字段名
 	expected := ""
 	if schema != nil {
 		expected = schema.getExpectedType(className, key)
 	}
-	// 处理指向其他对象的字段
+
+	// 期望类型为 *xxx
 	if expected != "" && strings.HasPrefix(expected, "*") {
 		key = "_p_" + key
 	}
+	// 期望类型不存在，但是 restValue 中存在 "__type":"Pointer"
 	if expected == "" && restValue != nil {
 		op := utils.MapInterface(restValue)
 		if op != nil && op["__type"] != nil {
@@ -127,41 +143,48 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	}
 
 	inArray := false
+	// 期望类型为 array
 	if expected == "array" {
 		inArray = true
 	}
-	// 处理查询操作
+
+	// 处理查询操作，转换限制条件
 	if options["query"] != nil {
 		value := transformConstraint(restValue, inArray)
 		if value != cannotTransform() {
 			return key, value, nil
 		}
 	}
+
+	// 期望类型为 array，并且转换限制条件失败，并且 restValue 不为 array 类型时，转换为 $all
 	if inArray && options["query"] != nil && utils.SliceInterface(restValue) == nil {
 		return key, types.M{"$all": types.S{restValue}}, nil
 	}
 
-	// 处理原子数据
+	// 转换原子数据
 	value := transformAtom(restValue, false, options)
 	if value != cannotTransform() {
 		if timeField && utils.String(value) != "" {
-			// TODO 处理错误
-			value, _ = utils.StringtoTime(utils.String(value))
+			var err error
+			value, err = utils.StringtoTime(utils.String(value))
+			if err != nil {
+				return "", nil, errs.E(errs.InvalidJSON, "Invalid Date value.")
+			}
 		}
 		return key, value, nil
 	}
 
-	// ACL 在此之前处理，如果依然出现，则返回错误
+	// ACL 应该在此之前处理，如果依然出现，则返回错误
 	if key == "ACL" {
-		// TODO 不能在此转换 ACL
-		return "", "", nil
+		// 不能在此转换 ACL
+		return "", "", errs.E(errs.InvalidKeyName, "There was a problem transforming an ACL.")
 	}
 
-	// 处理数组类型
+	// 转换数组类型
 	if valueArray, ok := restValue.([]interface{}); ok {
 		if options["query"] != nil {
-			// TODO 查询时不能为数组
-			return "", "", nil
+			// 查询时不能为数组
+			return "", "", errs.E(errs.InvalidJSON, "cannot use array as query param")
 		}
 		outValue := types.S{}
 		for _, restObj := range valueArray {
@@ -181,7 +204,11 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	} else {
 		flatten = false
 	}
-	value = transformUpdateOperator(restValue, flatten)
+	// 处理更新操作中的 "_op"
+	value, err := transformUpdateOperator(restValue, flatten)
+	if err != nil {
+		return "", nil, err
+	}
 	if value != cannotTransform() {
 		return key, value, nil
 	}
@@ -396,42 +423,42 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 	return cannotTransform()
 }
 
-func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
+func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, error) {
 	// TODO 处理错误
 	operatorMap := utils.MapInterface(operator)
 	if operatorMap == nil || operatorMap["__op"] == nil {
-		return cannotTransform()
+		return cannotTransform(), nil
 	}
 
 	op := utils.String(operatorMap["__op"])
 	switch op {
 	case "Delete":
 		if flatten {
-			return nil
+			return nil, nil
 		}
 		return types.M{
 			"__op": "$unset",
 			"arg":  "",
-		}
+		}, nil
 
 	case "Increment":
 		if _, ok := operatorMap["amount"].(float64); !ok {
 			// TODO 必须为数字
-			return nil
+			return nil, nil
 		}
 		if flatten {
-			return operatorMap["amount"]
+			return operatorMap["amount"], nil
 		}
 		return types.M{
 			"__op": "$inc",
 			"arg":  operatorMap["amount"],
-		}
+		}, nil
 
 	case "Add", "AddUnique":
 		objects := utils.SliceInterface(operatorMap["objects"])
 		if objects == nil {
 			// TODO 必须为数组
-			return nil
+			return nil, nil
 		}
 		toAdd := types.S{}
 		for _, obj := range objects {
@@ -439,7 +466,7 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 			toAdd = append(toAdd, o)
 		}
 		if flatten {
-			return toAdd
+			return toAdd, nil
 		}
 		mongoOp := types.M{
 			"Add":       "$push",
@@ -450,13 +477,13 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 			"arg": types.M{
 				"$each": toAdd,
 			},
-		}
+		}, nil
 
 	case "Remove":
 		objects := utils.SliceInterface(operatorMap["objects"])
 		if objects == nil {
 			// TODO 必须为数组
-			return nil
+			return nil, nil
 		}
 		toRemove := types.S{}
 		for _, obj := range objects {
@@ -464,16 +491,16 @@ func transformUpdateOperator(operator interface{}, flatten bool) interface{} {
 			toRemove = append(toRemove, o)
 		}
 		if flatten {
-			return types.S{}
+			return types.S{}, nil
 		}
 		return types.M{
 			"__op": "$pullAll",
 			"arg":  toRemove,
-		}
+		}, nil
 
 	default:
 		// TODO 不支持的类型
-		return nil
+		return nil, nil
 	}
 }
 

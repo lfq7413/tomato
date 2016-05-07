@@ -225,10 +225,11 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	return key, normalValue, nil
 }
 
-// transformConstraint 转换查询限制条件
+// transformConstraint 转换查询限制条件，处理的操作符类似 "$lt", "$gt" 等
+// inArray 表示该字段是否为数组类型
 func transformConstraint(constraint interface{}, inArray bool) interface{} {
 	// TODO 需要根据 MongoDB 文档修正参数
-	if constraint == nil && utils.MapInterface(constraint) == nil {
+	if constraint == nil || utils.MapInterface(constraint) == nil {
 		return cannotTransform()
 	}
 
@@ -246,14 +247,16 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 
 	for _, key := range keys {
 		switch key {
+		// 转换 小于、大于、存在、等于、不等于 操作符
 		case "$lt", "$lte", "$gt", "$gte", "$exists", "$ne", "$eq":
 			answer[key] = transformAtom(object[key], true, types.M{"inArray": inArray})
 
+		// 转换 包含、不包含 操作符
 		case "$in", "$nin":
 			arr := utils.SliceInterface(object[key])
 			if arr == nil {
-				// TODO 必须为数组
-				return nil
+				// 必须为数组
+				return errs.E(errs.InvalidJSON, "bad "+key+" value")
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
@@ -261,11 +264,12 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			}
 			answer[key] = answerArr
 
+		// 转换 包含所有 操作符，用于数组类型的字段
 		case "$all":
 			arr := utils.SliceInterface(object[key])
 			if arr == nil {
-				// TODO 必须为数组
-				return nil
+				// 必须为数组
+				return errs.E(errs.InvalidJSON, "bad "+key+" value")
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
@@ -273,35 +277,39 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			}
 			answer[key] = answerArr
 
+		// 转换 正则 操作符
 		case "$regex":
 			s := utils.String(object[key])
 			if s == "" {
-				// TODO 必须为字符串
-				return nil
+				// 必须为字符串
+				return errs.E(errs.InvalidJSON, "bad regex")
 			}
 			answer[key] = s
 
+		// 转换 $options 操作符
 		case "$options":
 			options := utils.String(object[key])
 			if answer["$regex"] == nil || options == "" {
-				// TODO 无效值
-				return nil
+				// 无效值
+				return errs.E(errs.InvalidQuery, "got a bad $options")
 			}
 			b, _ := regexp.MatchString(`^[imxs]+$`, options)
 			if b == false {
-				// TODO 无效值
-				return nil
+				// 无效值
+				return errs.E(errs.InvalidQuery, "got a bad $options")
 			}
 			answer[key] = options
 
+		// 转换 附近 操作符
 		case "$nearSphere":
 			point := utils.MapInterface(object[key])
 			answer[key] = types.S{point["longitude"], point["latitude"]}
 
+		// 转换 最大距离 操作符，单位是弧度
 		case "$maxDistance":
 			answer[key] = object[key]
 
-			// 以下三项在 SDK 中未使用，但是在 REST API 中使用了
+		// 以下三项在 SDK 中未使用，但是在 REST API 中使用了
 		case "$maxDistanceInRadians":
 			answer["$maxDistance"] = object[key]
 		case "$maxDistanceInMiles":
@@ -318,19 +326,20 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			answer["$maxDistance"] = distance
 
 		case "$select", "$dontSelect":
-			// TODO 暂时不支持该参数
-			return nil
+			// 暂时不支持该参数
+			return errs.E(errs.CommandUnavailable, "the "+key+" constraint is not supported yet")
 
 		case "$within":
 			within := utils.MapInterface(object[key])
 			box := utils.SliceInterface(within["$box"])
 			if box == nil || len(box) != 2 {
-				// TODO 参数不正确
-				return nil
+				// 参数不正确
+				return errs.E(errs.InvalidJSON, "malformatted $within arg")
 			}
 			box1 := utils.MapInterface(box[0])
 			box2 := utils.MapInterface(box[1])
-			answer[key] = types.M{
+			// MongoDB 2.4 中 $within 替换为了 $geoWithin
+			answer["$geoWithin"] = types.M{
 				"$box": types.S{
 					types.S{box1["longitude"], box1["latitude"]},
 					types.S{box2["longitude"], box2["latitude"]},
@@ -340,8 +349,8 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 		default:
 			b, _ := regexp.MatchString(`^\$+`, key)
 			if b {
-				// TODO 无效参数
-				return nil
+				// 其他以 $ 开头的操作符为无效参数
+				return errs.E(errs.InvalidJSON, "bad constraint: "+key)
 			}
 			return cannotTransform()
 		}

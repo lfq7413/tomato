@@ -359,8 +359,11 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 	return answer
 }
 
+// transformAtom 转换原子数据
+// options.inArray 为 true，则不进行相应转换
+// options.inObject 为 true，则不进行相应转换
+// force 是否强制转换，true 时如果转换失败则返回错误
 func transformAtom(atom interface{}, force bool, options types.M) interface{} {
-	// TODO 处理错误
 	if options == nil {
 		options = types.M{}
 	}
@@ -373,6 +376,7 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 		inObject = v
 	}
 
+	// 字符串、数字、布尔类型直接返回
 	if _, ok := atom.(string); ok {
 		return atom
 	}
@@ -383,11 +387,19 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 		return atom
 	}
 
+	// 转换 "__type" 声明的类型
 	if object, ok := atom.(map[string]interface{}); ok {
 		if atom == nil || len(object) == 0 {
 			return atom
 		}
 
+		// Pointer 类型
+		// {
+		// 	"__type": "Pointer",
+		// 	"className": "abc",
+		// 	"objectId": "123"
+		// }
+		// ==> abc$123
 		if utils.String(object["__type"]) == "Pointer" {
 			if inArray == false && inObject == false {
 				return utils.String(object["className"]) + "$" + utils.String(object["objectId"])
@@ -399,14 +411,35 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 			}
 		}
 
+		// Date 类型
+		// {
+		// 	"__type": "Date",
+		// 	"iso": "2015-03-01T15:59:11-07:00"
+		// }
+		// ==> 143123456789...
 		d := dateCoder{}
 		if d.isValidJSON(object) {
 			return d.jsonToDatabase(object)
 		}
+
+		// Bytes 类型
+		// {
+		// 	"__type": "Bytes",
+		// 	"base64": "aGVsbG8="
+		// }
+		// ==> hello
 		b := bytesCoder{}
 		if b.isValidJSON(object) {
 			return b.jsonToDatabase(object)
 		}
+
+		// GeoPoint 类型
+		// {
+		// 	"__type": "GeoPoint",
+		//  "longitude": -30.0,
+		//	"latitude": 40.0
+		// }
+		// ==> [-30.0, 40.0]
 		g := geoPointCoder{}
 		if g.isValidJSON(object) {
 			if inArray || inObject {
@@ -414,6 +447,13 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 			}
 			return g.jsonToDatabase(object)
 		}
+
+		// File 类型
+		// {
+		// 	"__type": "File",
+		// 	"name": "...hello.png"
+		// }
+		// ==> ...hello.png
 		f := fileCoder{}
 		if f.isValidJSON(object) {
 			if inArray || inObject {
@@ -423,13 +463,14 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 		}
 
 		if force {
-			// TODO 无效类型
-			return nil
+			// 无效类型，"__type" 的值不支持
+			return errs.E(errs.InvalidJSON, "bad atom.")
 		}
 		return cannotTransform()
 	}
 
-	return cannotTransform()
+	// 其他类型无法转换
+	return errs.E(errs.InternalServerError, "really did not expect value: atom")
 }
 
 func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, error) {

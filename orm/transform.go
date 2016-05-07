@@ -559,13 +559,14 @@ func transformACL(restObject types.M) types.M {
 	return output
 }
 
+// transformWhere 转换 where 查询数据，返回数据库格式的数据
 func transformWhere(schema *Schema, className string, where types.M) (types.M, error) {
-	// TODO 处理错误
 	mongoWhere := types.M{}
 	if where["ACL"] != nil {
-		// TODO 不能查询 ACL
-		return nil, nil
+		// 不能查询 ACL
+		return nil, errs.E(errs.InvalidQuery, "Cannot query on ACL.")
 	}
+
 	for k, v := range where {
 		options := types.M{
 			"query":    true,

@@ -150,7 +150,10 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 
 	// 处理查询操作，转换限制条件
 	if options["query"] != nil {
-		value := transformConstraint(restValue, inArray)
+		value, err := transformConstraint(restValue, inArray)
+		if err != nil {
+			return "", nil, err
+		}
 		if value != cannotTransform() {
 			return key, value, nil
 		}
@@ -162,7 +165,10 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	}
 
 	// 转换原子数据
-	value := transformAtom(restValue, false, options)
+	value, err := transformAtom(restValue, false, options)
+	if err != nil {
+		return "", nil, err
+	}
 	if value != cannotTransform() {
 		if timeField && utils.String(value) != "" {
 			var err error
@@ -205,7 +211,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		flatten = false
 	}
 	// 处理更新操作中的 "_op"
-	value, err := transformUpdateOperator(restValue, flatten)
+	value, err = transformUpdateOperator(restValue, flatten)
 	if err != nil {
 		return "", nil, err
 	}
@@ -227,10 +233,10 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 
 // transformConstraint 转换查询限制条件，处理的操作符类似 "$lt", "$gt" 等
 // inArray 表示该字段是否为数组类型
-func transformConstraint(constraint interface{}, inArray bool) interface{} {
+func transformConstraint(constraint interface{}, inArray bool) (interface{}, error) {
 	// TODO 需要根据 MongoDB 文档修正参数
 	if constraint == nil || utils.MapInterface(constraint) == nil {
-		return cannotTransform()
+		return cannotTransform(), nil
 	}
 
 	// keys is the constraints in reverse alphabetical order.
@@ -249,18 +255,26 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 		switch key {
 		// 转换 小于、大于、存在、等于、不等于 操作符
 		case "$lt", "$lte", "$gt", "$gte", "$exists", "$ne", "$eq":
-			answer[key] = transformAtom(object[key], true, types.M{"inArray": inArray})
+			var err error
+			answer[key], err = transformAtom(object[key], true, types.M{"inArray": inArray})
+			if err != nil {
+				return nil, err
+			}
 
 		// 转换 包含、不包含 操作符
 		case "$in", "$nin":
 			arr := utils.SliceInterface(object[key])
 			if arr == nil {
 				// 必须为数组
-				return errs.E(errs.InvalidJSON, "bad "+key+" value")
+				return nil, errs.E(errs.InvalidJSON, "bad "+key+" value")
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
-				answerArr = append(answerArr, transformAtom(v, true, types.M{}))
+				obj, err := transformAtom(v, true, types.M{})
+				if err != nil {
+					return nil, err
+				}
+				answerArr = append(answerArr, obj)
 			}
 			answer[key] = answerArr
 
@@ -269,11 +283,15 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			arr := utils.SliceInterface(object[key])
 			if arr == nil {
 				// 必须为数组
-				return errs.E(errs.InvalidJSON, "bad "+key+" value")
+				return nil, errs.E(errs.InvalidJSON, "bad "+key+" value")
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
-				answerArr = append(answerArr, transformAtom(v, true, types.M{"inArray": true}))
+				obj, err := transformAtom(v, true, types.M{"inArray": true})
+				if err != nil {
+					return nil, err
+				}
+				answerArr = append(answerArr, obj)
 			}
 			answer[key] = answerArr
 
@@ -282,7 +300,7 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			s := utils.String(object[key])
 			if s == "" {
 				// 必须为字符串
-				return errs.E(errs.InvalidJSON, "bad regex")
+				return nil, errs.E(errs.InvalidJSON, "bad regex")
 			}
 			answer[key] = s
 
@@ -291,12 +309,12 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			options := utils.String(object[key])
 			if answer["$regex"] == nil || options == "" {
 				// 无效值
-				return errs.E(errs.InvalidQuery, "got a bad $options")
+				return nil, errs.E(errs.InvalidQuery, "got a bad $options")
 			}
 			b, _ := regexp.MatchString(`^[imxs]+$`, options)
 			if b == false {
 				// 无效值
-				return errs.E(errs.InvalidQuery, "got a bad $options")
+				return nil, errs.E(errs.InvalidQuery, "got a bad $options")
 			}
 			answer[key] = options
 
@@ -327,14 +345,14 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 
 		case "$select", "$dontSelect":
 			// 暂时不支持该参数
-			return errs.E(errs.CommandUnavailable, "the "+key+" constraint is not supported yet")
+			return nil, errs.E(errs.CommandUnavailable, "the "+key+" constraint is not supported yet")
 
 		case "$within":
 			within := utils.MapInterface(object[key])
 			box := utils.SliceInterface(within["$box"])
 			if box == nil || len(box) != 2 {
 				// 参数不正确
-				return errs.E(errs.InvalidJSON, "malformatted $within arg")
+				return nil, errs.E(errs.InvalidJSON, "malformatted $within arg")
 			}
 			box1 := utils.MapInterface(box[0])
 			box2 := utils.MapInterface(box[1])
@@ -350,20 +368,20 @@ func transformConstraint(constraint interface{}, inArray bool) interface{} {
 			b, _ := regexp.MatchString(`^\$+`, key)
 			if b {
 				// 其他以 $ 开头的操作符为无效参数
-				return errs.E(errs.InvalidJSON, "bad constraint: "+key)
+				return nil, errs.E(errs.InvalidJSON, "bad constraint: "+key)
 			}
-			return cannotTransform()
+			return cannotTransform(), nil
 		}
 	}
 
-	return answer
+	return answer, nil
 }
 
 // transformAtom 转换原子数据
 // options.inArray 为 true，则不进行相应转换
 // options.inObject 为 true，则不进行相应转换
 // force 是否强制转换，true 时如果转换失败则返回错误
-func transformAtom(atom interface{}, force bool, options types.M) interface{} {
+func transformAtom(atom interface{}, force bool, options types.M) (interface{}, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -378,19 +396,19 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 
 	// 字符串、数字、布尔类型直接返回
 	if _, ok := atom.(string); ok {
-		return atom
+		return atom, nil
 	}
 	if _, ok := atom.(float64); ok {
-		return atom
+		return atom, nil
 	}
 	if _, ok := atom.(bool); ok {
-		return atom
+		return atom, nil
 	}
 
 	// 转换 "__type" 声明的类型
 	if object, ok := atom.(map[string]interface{}); ok {
 		if atom == nil || len(object) == 0 {
-			return atom
+			return atom, nil
 		}
 
 		// Pointer 类型
@@ -402,13 +420,13 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 		// ==> abc$123
 		if utils.String(object["__type"]) == "Pointer" {
 			if inArray == false && inObject == false {
-				return utils.String(object["className"]) + "$" + utils.String(object["objectId"])
+				return utils.String(object["className"]) + "$" + utils.String(object["objectId"]), nil
 			}
 			return types.M{
 				"__type":    "Pointer",
 				"className": object["className"],
 				"objectId":  object["objectId"],
-			}
+			}, nil
 		}
 
 		// Date 类型
@@ -419,7 +437,7 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 		// ==> 143123456789...
 		d := dateCoder{}
 		if d.isValidJSON(object) {
-			return d.jsonToDatabase(object)
+			return d.jsonToDatabase(object), nil
 		}
 
 		// Bytes 类型
@@ -430,7 +448,7 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 		// ==> hello
 		b := bytesCoder{}
 		if b.isValidJSON(object) {
-			return b.jsonToDatabase(object)
+			return b.jsonToDatabase(object), nil
 		}
 
 		// GeoPoint 类型
@@ -443,9 +461,9 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 		g := geoPointCoder{}
 		if g.isValidJSON(object) {
 			if inArray || inObject {
-				return object
+				return object, nil
 			}
-			return g.jsonToDatabase(object)
+			return g.jsonToDatabase(object), nil
 		}
 
 		// File 类型
@@ -457,20 +475,20 @@ func transformAtom(atom interface{}, force bool, options types.M) interface{} {
 		f := fileCoder{}
 		if f.isValidJSON(object) {
 			if inArray || inObject {
-				return object
+				return object, nil
 			}
-			return f.jsonToDatabase(object)
+			return f.jsonToDatabase(object), nil
 		}
 
 		if force {
 			// 无效类型，"__type" 的值不支持
-			return errs.E(errs.InvalidJSON, "bad atom.")
+			return nil, errs.E(errs.InvalidJSON, "bad atom.")
 		}
-		return cannotTransform()
+		return cannotTransform(), nil
 	}
 
 	// 其他类型无法转换
-	return errs.E(errs.InternalServerError, "really did not expect value: atom")
+	return nil, errs.E(errs.InternalServerError, "really did not expect value: atom")
 }
 
 func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, error) {
@@ -512,7 +530,10 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 		}
 		toAdd := types.S{}
 		for _, obj := range objects {
-			o := transformAtom(obj, true, types.M{"inArray": true})
+			o, err := transformAtom(obj, true, types.M{"inArray": true})
+			if err != nil {
+				return nil, err
+			}
 			toAdd = append(toAdd, o)
 		}
 		if flatten {
@@ -537,7 +558,10 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 		}
 		toRemove := types.S{}
 		for _, obj := range objects {
-			o := transformAtom(obj, true, types.M{"inArray": true})
+			o, err := transformAtom(obj, true, types.M{"inArray": true})
+			if err != nil {
+				return nil, err
+			}
 			toRemove = append(toRemove, o)
 		}
 		if flatten {

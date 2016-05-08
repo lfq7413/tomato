@@ -491,8 +491,10 @@ func transformAtom(atom interface{}, force bool, options types.M) (interface{}, 
 	return nil, errs.E(errs.InternalServerError, "really did not expect value: atom")
 }
 
+// transformUpdateOperator 转换更新请求中的操作
+// flatten 为 true 时，不再组装，直接返回实际数据
 func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, error) {
-	// TODO 处理错误
+	// 具体操作放在 "__op" 中
 	operatorMap := utils.MapInterface(operator)
 	if operatorMap == nil || operatorMap["__op"] == nil {
 		return cannotTransform(), nil
@@ -500,6 +502,7 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 
 	op := utils.String(operatorMap["__op"])
 	switch op {
+	// 删除字段操作
 	case "Delete":
 		if flatten {
 			return nil, nil
@@ -509,10 +512,11 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 			"arg":  "",
 		}, nil
 
+	// 数值增加操作
 	case "Increment":
 		if _, ok := operatorMap["amount"].(float64); !ok {
-			// TODO 必须为数字
-			return nil, nil
+			// 必须为数字
+			return nil, errs.E(errs.InvalidJSON, "incrementing must provide a number")
 		}
 		if flatten {
 			return operatorMap["amount"], nil
@@ -522,11 +526,12 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 			"arg":  operatorMap["amount"],
 		}, nil
 
+	// 增加对象操作
 	case "Add", "AddUnique":
 		objects := utils.SliceInterface(operatorMap["objects"])
 		if objects == nil {
-			// TODO 必须为数组
-			return nil, nil
+			// 必须为数组
+			return nil, errs.E(errs.InvalidJSON, "objects to add must be an array")
 		}
 		toAdd := types.S{}
 		for _, obj := range objects {
@@ -550,11 +555,12 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 			},
 		}, nil
 
+	// 删除对象操作
 	case "Remove":
 		objects := utils.SliceInterface(operatorMap["objects"])
 		if objects == nil {
-			// TODO 必须为数组
-			return nil, nil
+			// 必须为数组
+			return nil, errs.E(errs.InvalidJSON, "objects to remove must be an array")
 		}
 		toRemove := types.S{}
 		for _, obj := range objects {
@@ -573,8 +579,8 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 		}, nil
 
 	default:
-		// TODO 不支持的类型
-		return nil, nil
+		// 不支持的类型
+		return nil, errs.E(errs.CommandUnavailable, "the "+op+" op is not supported yet")
 	}
 }
 

@@ -590,9 +590,10 @@ func transformCreate(schema *Schema, className string, create types.M) (types.M,
 	if className == "_User" {
 		create = transformAuthData(create)
 	}
-	// 转换权限数据
+	// 转换权限数据，转换完成之后仅包含权限信息
 	mongoCreate := transformACL(create)
 
+	// 转换其他字段并添加
 	for k, v := range create {
 		key, value, err := transformKeyValue(schema, className, k, v, types.M{})
 		if err != nil {
@@ -626,6 +627,27 @@ func transformAuthData(restObject types.M) types.M {
 	return restObject
 }
 
+// transformACL 转换生成权限信息，并删除源数据中的 ACL 字段
+// {
+// 	"ACL":{
+// 		"userid":{
+// 			"read":true,
+// 			"write":true
+// 		},
+// 		"role:xxx":{
+// 			"read":true,
+// 			"write":true
+// 		}
+// 		"*":{
+// 			"read":true
+// 		}
+// 	}
+// }
+// ==>
+// {
+// 	"_rperm":["userid","role:xxx","*"],
+// 	"_wperm":["userid","role:xxx"]
+// }
 func transformACL(restObject types.M) types.M {
 	output := types.M{}
 	if restObject["ACL"] == nil {

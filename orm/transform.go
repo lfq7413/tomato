@@ -445,7 +445,7 @@ func transformAtom(atom interface{}, force bool, options types.M) (interface{}, 
 		// ==> 143123456789...
 		d := dateCoder{}
 		if d.isValidJSON(object) {
-			return d.jsonToDatabase(object), nil
+			return d.jsonToDatabase(object)
 		}
 
 		// Bytes 类型
@@ -456,7 +456,7 @@ func transformAtom(atom interface{}, force bool, options types.M) (interface{}, 
 		// ==> hello
 		b := bytesCoder{}
 		if b.isValidJSON(object) {
-			return b.jsonToDatabase(object), nil
+			return b.jsonToDatabase(object)
 		}
 
 		// GeoPoint 类型
@@ -471,7 +471,7 @@ func transformAtom(atom interface{}, force bool, options types.M) (interface{}, 
 			if inArray || inObject {
 				return object, nil
 			}
-			return g.jsonToDatabase(object), nil
+			return g.jsonToDatabase(object)
 		}
 
 		// File 类型
@@ -485,7 +485,7 @@ func transformAtom(atom interface{}, force bool, options types.M) (interface{}, 
 			if inArray || inObject {
 				return object, nil
 			}
-			return f.jsonToDatabase(object), nil
+			return f.jsonToDatabase(object)
 		}
 
 		if force {
@@ -1066,6 +1066,7 @@ func cannotTransform() interface{} {
 	return nil
 }
 
+// dateCoder Date 类型数据处理
 type dateCoder struct{}
 
 func (d dateCoder) databaseToJSON(object interface{}) interface{} {
@@ -1085,16 +1086,19 @@ func (d dateCoder) isValidDatabaseObject(object interface{}) bool {
 	return false
 }
 
-func (d dateCoder) jsonToDatabase(json types.M) interface{} {
-	// TODO 处理错误
-	t, _ := utils.StringtoTime(utils.String(json["iso"]))
-	return t
+func (d dateCoder) jsonToDatabase(json types.M) (interface{}, error) {
+	t, err := utils.StringtoTime(utils.String(json["iso"]))
+	if err != nil {
+		return nil, errs.E(errs.InvalidJSON, "invalid iso")
+	}
+	return t, nil
 }
 
 func (d dateCoder) isValidJSON(value types.M) bool {
-	return value != nil && utils.String(value["__type"]) == "Date"
+	return value != nil && utils.String(value["__type"]) == "Date" && utils.String(value["iso"]) != ""
 }
 
+// bytesCoder Bytes 类型处理
 type bytesCoder struct{}
 
 func (b bytesCoder) databaseToJSON(object interface{}) interface{} {
@@ -1114,16 +1118,19 @@ func (b bytesCoder) isValidDatabaseObject(object interface{}) bool {
 	return false
 }
 
-func (b bytesCoder) jsonToDatabase(json types.M) interface{} {
-	// TODO 处理错误
-	by, _ := base64.StdEncoding.DecodeString(utils.String(json["base64"]))
-	return by
+func (b bytesCoder) jsonToDatabase(json types.M) (interface{}, error) {
+	by, err := base64.StdEncoding.DecodeString(utils.String(json["base64"]))
+	if err != nil {
+		return nil, errs.E(errs.InvalidJSON, "invalid base64")
+	}
+	return by, nil
 }
 
 func (b bytesCoder) isValidJSON(value types.M) bool {
-	return value != nil && utils.String(value["__type"]) == "Bytes"
+	return value != nil && utils.String(value["__type"]) == "Bytes" && utils.String(value["base64"]) != ""
 }
 
+// geoPointCoder GeoPoint 类型处理
 type geoPointCoder struct{}
 
 func (g geoPointCoder) databaseToJSON(object interface{}) interface{} {
@@ -1144,14 +1151,21 @@ func (g geoPointCoder) isValidDatabaseObject(object interface{}) bool {
 	return false
 }
 
-func (g geoPointCoder) jsonToDatabase(json types.M) interface{} {
-	return types.S{json["longitude"], json["latitude"]}
+func (g geoPointCoder) jsonToDatabase(json types.M) (interface{}, error) {
+	if _, ok := json["longitude"].(float64); ok == false {
+		return nil, errs.E(errs.InvalidJSON, "invalid longitude")
+	}
+	if _, ok := json["latitude"].(float64); ok == false {
+		return nil, errs.E(errs.InvalidJSON, "invalid latitude")
+	}
+	return types.S{json["longitude"], json["latitude"]}, nil
 }
 
 func (g geoPointCoder) isValidJSON(value types.M) bool {
-	return value != nil && utils.String(value["__type"]) == "GeoPoint"
+	return value != nil && utils.String(value["__type"]) == "GeoPoint" && value["longitude"] != nil && value["latitude"] != nil
 }
 
+// fileCoder File 类型处理
 type fileCoder struct{}
 
 func (f fileCoder) databaseToJSON(object interface{}) interface{} {
@@ -1168,10 +1182,10 @@ func (f fileCoder) isValidDatabaseObject(object interface{}) bool {
 	return false
 }
 
-func (f fileCoder) jsonToDatabase(json types.M) interface{} {
-	return json["name"]
+func (f fileCoder) jsonToDatabase(json types.M) (interface{}, error) {
+	return json["name"], nil
 }
 
 func (f fileCoder) isValidJSON(value types.M) bool {
-	return value != nil && utils.String(value["__type"]) == "File"
+	return value != nil && utils.String(value["__type"]) == "File" && utils.String(value["name"]) != ""
 }

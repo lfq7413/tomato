@@ -167,7 +167,6 @@ func (s *SchemasController) HandleDelete() {
 
 	// 从 _SCHEMA 表中删除类信息，清除相关的 _Join 表
 	coll := orm.SchemaCollection()
-	// TODO 处理错误
 	document, err := coll.FindAndDeleteSchema(className)
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)

@@ -166,7 +166,10 @@ func Find(className string, where, options types.M) (types.S, error) {
 	mongoResults := coll.Find(mongoWhere, mongoOptions)
 	results := types.S{}
 	for _, r := range mongoResults {
-		result := untransformObject(schema, isMaster, aclGroup, className, r)
+		result, err := untransformObject(schema, isMaster, aclGroup, className, r)
+		if err != nil {
+			return nil, err
+		}
 		results = append(results, result)
 	}
 	return results, nil
@@ -741,25 +744,28 @@ func owningIds(className, key string, relatedIds types.S) types.S {
 }
 
 // untransformObject 从查询到的数据库对象转换出可返回给客户端的对象，并对 _User 表数据进行特殊处理
-func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) types.M {
-	res := untransformObjectT(schema, className, mongoObject, false)
+func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
+	res, err := untransformObjectT(schema, className, mongoObject, false)
+	if err != nil {
+		return nil, err
+	}
 	object := utils.MapInterface(res)
 	if className != "_User" {
-		return object
+		return object, nil
 	}
 	// 以下单独处理 _User 类
 	if isMaster {
-		return object
+		return object, nil
 	}
 	// 当前用户返回所有信息
 	id := utils.String(object["objectId"])
 	for _, v := range aclGroup {
 		if v == id {
-			return object
+			return object, nil
 		}
 	}
 	// 其他用户删除相关信息
 	delete(object, "authData")
 	delete(object, "sessionToken")
-	return object
+	return object, nil
 }

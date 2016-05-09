@@ -819,23 +819,27 @@ func transformUpdate(schema *Schema, className string, update types.M) (types.M,
 }
 
 // untransformObjectT  把数据库类型数据转换为 API 格式
-func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) interface{} {
+func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error) {
 	if mongoObject == nil {
-		return mongoObject
+		return mongoObject, nil
 	}
 
 	// 转换基本类型
 	switch mongoObject.(type) {
 	case string, float64, bool:
-		return mongoObject
+		return mongoObject, nil
 
 	case []interface{}:
 		results := types.S{}
 		objs := mongoObject.([]interface{})
 		for _, o := range objs {
-			results = append(results, untransformObjectT(schema, className, o, false))
+			res, err := untransformObjectT(schema, className, o, false)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, res)
 		}
-		return results
+		return results, nil
 	}
 
 	// 日期格式
@@ -845,7 +849,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 	// }
 	d := dateCoder{}
 	if d.isValidDatabaseObject(mongoObject) {
-		return d.databaseToJSON(mongoObject)
+		return d.databaseToJSON(mongoObject), nil
 	}
 
 	// byte 数组
@@ -855,7 +859,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 	// }
 	b := bytesCoder{}
 	if b.isValidDatabaseObject(mongoObject) {
-		return b.databaseToJSON(mongoObject)
+		return b.databaseToJSON(mongoObject), nil
 	}
 
 	// 转换对象类型
@@ -942,7 +946,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 					}
 					if newClass != objData[0] {
 						// 指向了错误的类
-						return errs.E(errs.InternalServerError, "pointer to incorrect className")
+						return nil, errs.E(errs.InternalServerError, "pointer to incorrect className")
 					}
 					restObject[newKey] = types.M{
 						"__type":    "Pointer",
@@ -952,7 +956,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 					break
 				} else if isNestedObject == false && strings.HasPrefix(key, "_") && key != "__type" {
 					// 转换错误
-					return errs.E(errs.InternalServerError, "bad key in untransform: "+key)
+					return nil, errs.E(errs.InternalServerError, "bad key in untransform: "+key)
 				} else {
 					// TODO 此处可能会有问题，isNestedObject == true 时，即子对象也会进来
 					// 但是拿子对象的 key 无法从 className 中查询有效的类型
@@ -981,16 +985,21 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 					}
 				}
 				// 转换子对象
-				restObject[key] = untransformObjectT(schema, className, value, true)
+				res, err := untransformObjectT(schema, className, value, true)
+				if err != nil {
+					return nil, err
+				}
+				restObject[key] = res
 			}
 		}
-		return restObject
+		return restObject, nil
 	}
 
 	// 无法转换
-	return errs.E(errs.InternalServerError, "unknown object type")
+	return nil, errs.E(errs.InternalServerError, "unknown object type")
 }
 
+// untransformACL 把数据库格式的权限信息转换为 API 格式
 func untransformACL(mongoObject types.M) types.M {
 	output := types.M{}
 	if mongoObject["_rperm"] == nil && mongoObject["_wperm"] == nil {

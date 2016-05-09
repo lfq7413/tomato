@@ -1000,6 +1000,26 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 }
 
 // untransformACL 把数据库格式的权限信息转换为 API 格式
+// {
+// 	"_rperm":["userid","role:xxx","*"],
+// 	"_wperm":["userid","role:xxx"]
+// }
+// ==>
+// {
+// 	"ACL":{
+// 		"userid":{
+// 			"read":true,
+// 			"write":true
+// 		},
+// 		"role:xxx":{
+// 			"read":true,
+// 			"write":true
+// 		}
+// 		"*":{
+// 			"read":true
+// 		}
+// 	}
+// }
 func untransformACL(mongoObject types.M) types.M {
 	output := types.M{}
 	if mongoObject["_rperm"] == nil && mongoObject["_wperm"] == nil {

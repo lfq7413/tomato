@@ -584,13 +584,15 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 	}
 }
 
-// transformCreate ...
+// transformCreate 转换 create 数据
 func transformCreate(schema *Schema, className string, create types.M) (types.M, error) {
-	// TODO 处理错误
+	// 转换第三方登录数据
 	if className == "_User" {
 		create = transformAuthData(create)
 	}
+	// 转换权限数据
 	mongoCreate := transformACL(create)
+
 	for k, v := range create {
 		key, value, err := transformKeyValue(schema, className, k, v, types.M{})
 		if err != nil {
@@ -603,6 +605,16 @@ func transformCreate(schema *Schema, className string, create types.M) (types.M,
 	return mongoCreate, nil
 }
 
+// transformAuthData 转换第三方登录数据
+// {
+// 	"authData": {
+// 		"facebook": {...}
+// 	}
+// }
+// ==>
+// {
+// 	"_auth_data_facebook": {...}
+// }
 func transformAuthData(restObject types.M) types.M {
 	if restObject["authData"] != nil {
 		authData := utils.MapInterface(restObject["authData"])

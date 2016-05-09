@@ -696,17 +696,19 @@ func transformWhere(schema *Schema, className string, where types.M) (types.M, e
 	return mongoWhere, nil
 }
 
+// transformUpdate 转换 update 数据
 func transformUpdate(schema *Schema, className string, update types.M) (types.M, error) {
-	// TODO 处理错误
 	if update == nil {
-		// TODO 更新数据不能为空
-		return nil, nil
+		// 更新数据不能为空
+		return nil, errs.E(errs.InvalidJSON, "got empty restUpdate")
 	}
+	// 处理第三方登录数据
 	if className == "_User" {
 		update = transformAuthData(update)
 	}
 
 	mongoUpdate := types.M{}
+	// 转换并设置权限信息
 	acl := transformACL(update)
 	if acl["_rperm"] != nil || acl["_wperm"] != nil {
 		set := types.M{}
@@ -719,6 +721,7 @@ func transformUpdate(schema *Schema, className string, update types.M) (types.M,
 		mongoUpdate["$set"] = set
 	}
 
+	// 转换 update 中的其他数据
 	for k, v := range update {
 		key, value, err := transformKeyValue(schema, className, k, v, types.M{"update": true})
 		if err != nil {
@@ -727,6 +730,19 @@ func transformUpdate(schema *Schema, className string, update types.M) (types.M,
 
 		op := utils.MapInterface(value)
 		if op != nil && op["__op"] != nil {
+			// 处理带 "__op" 的数据，如下：
+			// {
+			// 	"size":{
+			// 		"__op":"$inc",
+			// 		"arg":3
+			// 	}
+			// }
+			// ==>
+			// {
+			// 	"$inc":{
+			// 		"size",3
+			// 	}
+			// }
 			opKey := utils.String(op["__op"])
 			opValue := types.M{}
 			if mongoUpdate[opKey] != nil {
@@ -735,6 +751,16 @@ func transformUpdate(schema *Schema, className string, update types.M) (types.M,
 			opValue[key] = op["arg"]
 			mongoUpdate[opKey] = opValue
 		} else {
+			// 转换其他数据
+			// {
+			// 	"name":"joe"
+			// }
+			// ==>
+			// {
+			// 	"$set":{
+			// 		"name":"joe"
+			// 	}
+			// }
 			set := types.M{}
 			if mongoUpdate["$set"] != nil {
 				set = utils.MapInterface(mongoUpdate["$set"])

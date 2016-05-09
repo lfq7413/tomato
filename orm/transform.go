@@ -100,6 +100,13 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		return "$and", mongoSubqueries, nil
 	default:
 		// 处理第三方 auth 数据，key 的格式为： authData.xxx.id
+		// {
+		// 	"authData.facebook.id":"abc123"
+		// }
+		// ==>
+		// {
+		// 	"_auth_data_.facebook.id":"abc123"
+		// }
 		authDataMatch, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key)
 		if authDataMatch {
 			if options["query"] != nil {
@@ -129,6 +136,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	}
 
 	// 期望类型为 *xxx
+	// post ==> _p_post
 	if expected != "" && strings.HasPrefix(expected, "*") {
 		key = "_p_" + key
 	}
@@ -503,6 +511,14 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 	op := utils.String(operatorMap["__op"])
 	switch op {
 	// 删除字段操作
+	// {
+	// 	"__op":"Delete"
+	// }
+	// ==>
+	// {
+	// 	"__op": "$unset",
+	// 	"arg":  ""
+	// }
 	case "Delete":
 		if flatten {
 			return nil, nil
@@ -513,6 +529,15 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 		}, nil
 
 	// 数值增加操作
+	// {
+	// 	"__op":"Increment",
+	// 	"amount":10
+	// }
+	// ==>
+	// {
+	// 	"__op": "$inc",
+	// 	"arg":10
+	// }
 	case "Increment":
 		if _, ok := operatorMap["amount"].(float64); !ok {
 			// 必须为数字
@@ -527,6 +552,17 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 		}, nil
 
 	// 增加对象操作
+	// {
+	// 	"__op":"Add"
+	// 	"objects":[{...},{...}]
+	// }
+	// ==>
+	// {
+	// 	"__op":"$push",
+	// 	"arg":{
+	// 		"$each":[{...},{...}]
+	// 	}
+	// }
 	case "Add", "AddUnique":
 		objects := utils.SliceInterface(operatorMap["objects"])
 		if objects == nil {
@@ -556,6 +592,15 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 		}, nil
 
 	// 删除对象操作
+	// {
+	// 	"__op":"Remove",
+	// 	"objects":[{...},{...}]
+	// }
+	// ==>
+	// {
+	// 	"__op": "$pullAll",
+	// 	"arg":[{...},{...}]
+	// }
 	case "Remove":
 		objects := utils.SliceInterface(operatorMap["objects"])
 		if objects == nil {

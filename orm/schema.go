@@ -21,6 +21,9 @@ var defaultColumns map[string]types.M
 // requiredColumns 类必须要有的字段
 var requiredColumns map[string][]string
 
+// SystemClasses 系统表
+var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
+
 func init() {
 	defaultClassLevelPermissions = types.M{}
 	for _, v := range clpValidKeys {
@@ -74,6 +77,21 @@ func init() {
 			"order":             types.M{"type": "Number"},
 			"title":             types.M{"type": "String"},
 			"subtitle":          types.M{"type": "String"},
+		},
+		"_PushStatus": types.M{
+			"pushTime":      types.M{"type": "String"},
+			"source":        types.M{"type": "String"}, // rest or webui
+			"query":         types.M{"type": "String"}, // the stringified JSON query
+			"payload":       types.M{"type": "Object"}, // the JSON payload,
+			"title":         types.M{"type": "String"},
+			"expiry":        types.M{"type": "Number"},
+			"status":        types.M{"type": "String"},
+			"numSent":       types.M{"type": "Number"},
+			"numFailed":     types.M{"type": "Number"},
+			"pushHash":      types.M{"type": "String"},
+			"errorMessage":  types.M{"type": "Object"},
+			"sentPerType":   types.M{"type": "Object"},
+			"failedPerType": types.M{"type": "Object"},
 		},
 	}
 	requiredColumns = map[string][]string{
@@ -797,11 +815,12 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 // ClassNameIsValid 校验类名，可以是系统内置类、join 类
 // 数字字母组合，以及下划线，但不能以下划线或字母开头
 func ClassNameIsValid(className string) bool {
-	return className == "_User" ||
-		className == "_Installation" ||
-		className == "_Session" ||
-		className == "_Role" ||
-		className == "_Product" ||
+	for _, k := range SystemClasses {
+		if className == k {
+			return true
+		}
+	}
+	return className == "_SCHEMA" ||
 		joinClassIsValid(className) ||
 		fieldNameIsValid(className) // 类名与字段名的规则相同
 }

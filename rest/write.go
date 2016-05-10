@@ -131,7 +131,7 @@ func (w *Write) getUserAndRoleACL() error {
 
 // validateClientClassCreation 检测是否允许创建类
 func (w *Write) validateClientClassCreation() error {
-	sysClass := []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
+	sysClass := orm.SystemClasses
 	if config.TConfig.AllowClientClassCreation {
 		return nil
 	}

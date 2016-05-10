@@ -205,7 +205,7 @@ func (q *Query) redirectClassNameForKey() error {
 
 // validateClientClassCreation 验证当前请求是否能创建类
 func (q *Query) validateClientClassCreation() error {
-	sysClass := []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
+	sysClass := orm.SystemClasses
 	// 检测配置项是否允许
 	if config.TConfig.AllowClientClassCreation {
 		return nil

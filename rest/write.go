@@ -737,6 +737,15 @@ func (w *Write) runDatabaseOperation() error {
 		}
 		resp["updatedAt"] = w.updatedAt
 
+		// 如果回调函数修改过数据，把 w.data 中存在但 resp 中不存在的字段复制到返回结果中
+		if w.storage["changedByTrigger"] != nil {
+			for k, v := range w.data {
+				if resp[k] == nil {
+					resp[k] = v
+				}
+			}
+		}
+
 		w.response = types.M{
 			"response": resp,
 		}

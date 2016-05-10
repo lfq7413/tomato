@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"regexp"
 	"strings"
 	"time"
 
@@ -536,7 +537,7 @@ func (w *Write) runBeforeTrigger() error {
 		updatedObject["objectId"] = w.query["objectId"]
 	}
 	// 把需要更新的数据添加进来
-	for k, v := range w.data {
+	for k, v := range w.sanitizedData() {
 		updatedObject[k] = v
 	}
 
@@ -832,7 +833,7 @@ func (w *Write) runAfterTrigger() error {
 		updatedObject["objectId"] = w.query["objectId"]
 	}
 	// 把需要更新的数据添加进来
-	for k, v := range w.data {
+	for k, v := range w.sanitizedData() {
 		updatedObject[k] = v
 	}
 
@@ -858,4 +859,17 @@ func (w *Write) objectID() interface{} {
 		return w.data["objectId"]
 	}
 	return w.query["objectId"]
+}
+
+// sanitizedData 删除无效字段，如 _auth_data, _hashed_password...
+func (w *Write) sanitizedData() types.M {
+	data := utils.CopyMap(w.data)
+	for k := range data {
+		// 以字母开头，包含数字字母或下划线的为有效字段
+		b, _ := regexp.MatchString("^[A-Za-z][0-9A-Za-z_]*$", k)
+		if b == false {
+			delete(data, k)
+		}
+	}
+	return data
 }

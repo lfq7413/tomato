@@ -239,6 +239,7 @@ func Destroy(className string, where types.M, options types.M) error {
 
 // Update 更新对象
 func Update(className string, where, data, options types.M) (types.M, error) {
+	originalUpdate := data
 	// 复制数据，不要修改原数据
 	data = utils.CopyMap(data)
 	acceptor := func(schema *Schema) bool {
@@ -309,16 +310,34 @@ func Update(className string, where, data, options types.M) (types.M, error) {
 		return nil, errs.E(errs.ObjectNotFound, "Object not found.")
 	}
 
-	// 返回 数值增加的字段
+	// 返回经过修改的字段
+	response := sanitizeDatabaseResult(originalUpdate, result)
+
+	return response, nil
+}
+
+// sanitizeDatabaseResult 处理数据库返回结果
+func sanitizeDatabaseResult(originalObject, result types.M) types.M {
 	response := types.M{}
-	if mongoUpdate["$inc"] != nil && utils.MapInterface(mongoUpdate["$inc"]) != nil {
-		inc := utils.MapInterface(mongoUpdate["$inc"])
-		for k := range inc {
-			response[k] = result[k]
+	if result == nil {
+		return response
+	}
+
+	// 检测是否是对字段的操作
+	for key, value := range originalObject {
+		if value != nil && utils.MapInterface(value) != nil {
+			keyUpdate := utils.MapInterface(value)
+			if keyUpdate["__op"] != nil {
+				op := utils.String(keyUpdate["__op"])
+				if op == "Add" || op == "AddUnique" || op == "Remove" || op == "Increment" {
+					// 只把操作的字段放入返回结果中
+					response[key] = result[key]
+				}
+			}
 		}
 	}
 
-	return response, nil
+	return response
 }
 
 // Create 创建对象

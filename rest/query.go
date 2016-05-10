@@ -270,6 +270,10 @@ func (q *Query) replaceSelect() error {
 		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
 
+	additionalOptions := types.M{
+		"redirectClassNameForKey": queryValue["redirectClassNameForKey"],
+	}
+
 	values := types.S{}
 
 	var where types.M
@@ -282,7 +286,7 @@ func (q *Query) replaceSelect() error {
 		q.auth,
 		utils.String(queryValue["className"]),
 		where,
-		types.M{})
+		additionalOptions)
 	if err != nil {
 		return err
 	}
@@ -334,6 +338,10 @@ func (q *Query) replaceDontSelect() error {
 		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
 
+	additionalOptions := types.M{
+		"redirectClassNameForKey": queryValue["redirectClassNameForKey"],
+	}
+
 	values := types.S{}
 
 	var where types.M
@@ -346,7 +354,7 @@ func (q *Query) replaceDontSelect() error {
 		q.auth,
 		utils.String(queryValue["className"]),
 		where,
-		types.M{})
+		additionalOptions)
 	if err != nil {
 		return err
 	}
@@ -418,13 +426,17 @@ func (q *Query) replaceInQuery() error {
 		return errs.E(errs.InvalidQuery, "improper usage of $inQuery")
 	}
 
+	additionalOptions := types.M{
+		"redirectClassNameForKey": inQueryValue["redirectClassNameForKey"],
+	}
+
 	values := types.S{}
 
 	query, err := NewQuery(
 		q.auth,
 		utils.String(inQueryValue["className"]),
 		utils.MapInterface(inQueryValue["where"]),
-		types.M{})
+		additionalOptions)
 	if err != nil {
 		return err
 	}
@@ -438,7 +450,7 @@ func (q *Query) replaceInQuery() error {
 			result := utils.MapInterface(v)
 			pointer := types.M{
 				"__type":    "Pointer",
-				"className": inQueryValue["className"],
+				"className": query.className,
 				"objectId":  result["objectId"],
 			}
 			values = append(values, pointer)
@@ -473,13 +485,17 @@ func (q *Query) replaceNotInQuery() error {
 		return errs.E(errs.InvalidQuery, "improper usage of $notInQuery")
 	}
 
+	additionalOptions := types.M{
+		"redirectClassNameForKey": notInQueryValue["redirectClassNameForKey"],
+	}
+
 	values := types.S{}
 
 	query, err := NewQuery(
 		q.auth,
 		utils.String(notInQueryValue["className"]),
 		utils.MapInterface(notInQueryValue["where"]),
-		types.M{})
+		additionalOptions)
 	if err != nil {
 		return err
 	}
@@ -493,7 +509,7 @@ func (q *Query) replaceNotInQuery() error {
 			result := utils.MapInterface(v)
 			pointer := types.M{
 				"__type":    "Pointer",
-				"className": notInQueryValue["className"],
+				"className": query.className,
 				"objectId":  result["objectId"],
 			}
 			values = append(values, pointer)

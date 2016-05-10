@@ -381,7 +381,7 @@ func Create(className string, data, options types.M) error {
 	if err != nil {
 		return err
 	}
-	return coll.insertOne(mongoObject)
+	return coll.InsertOne(mongoObject)
 }
 
 // validateClassName 校验表名是否合法

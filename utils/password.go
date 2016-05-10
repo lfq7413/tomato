@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/md5"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -21,4 +22,12 @@ func Compare(password string, hashedPassword string) bool {
 		return true
 	}
 	return false
+}
+
+// MD5Hash ...
+func MD5Hash(s string) string {
+	h := md5.New()
+	io.WriteString(h, s)
+	r := fmt.Sprintf("%x", h.Sum(nil))
+	return r
 }

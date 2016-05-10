@@ -84,8 +84,8 @@ func (m *MongoCollection) FindOneAndUpdate(selector interface{}, update interfac
 	return result
 }
 
-// insertOne 插入一个对象
-func (m *MongoCollection) insertOne(docs interface{}) error {
+// InsertOne 插入一个对象
+func (m *MongoCollection) InsertOne(docs interface{}) error {
 	return m.collection.Insert(docs)
 }
 
@@ -95,8 +95,8 @@ func (m *MongoCollection) upsertOne(selector interface{}, update interface{}) er
 	return err
 }
 
-// updateOne 更新一个对象
-func (m *MongoCollection) updateOne(selector interface{}, update interface{}) error {
+// UpdateOne 更新一个对象
+func (m *MongoCollection) UpdateOne(selector interface{}, update interface{}) error {
 	return m.collection.Update(selector, update)
 }
 

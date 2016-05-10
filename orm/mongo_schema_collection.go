@@ -53,12 +53,12 @@ func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (types.M, error
 // addSchema 添加一个表定义
 func (m *MongoSchemaCollection) addSchema(name string, fields types.M) error {
 	mongoObject := mongoSchemaObjectFromNameFields(name, fields)
-	return m.collection.insertOne(mongoObject)
+	return m.collection.InsertOne(mongoObject)
 }
 
 // updateSchema 更新一个表定义
 func (m *MongoSchemaCollection) updateSchema(name string, update types.M) error {
-	return m.collection.updateOne(mongoSchemaQueryFromNameQuery(name, nil), update)
+	return m.collection.UpdateOne(mongoSchemaQueryFromNameQuery(name, nil), update)
 }
 
 // upsertSchema 更新或者插入一个表定义

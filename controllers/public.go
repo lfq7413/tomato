@@ -33,7 +33,7 @@ func (p *PublicController) VerifyEmail() {
 	ok := rest.VerifyEmail(username, token)
 	if ok {
 		p.Ctx.Output.SetStatus(302)
-		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"app/verify_email_success")
+		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"app/verify_email_success?username="+username)
 	} else {
 		p.invalid()
 	}

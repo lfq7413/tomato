@@ -625,6 +625,11 @@ func (w *Write) transformUser() error {
 		}
 	}
 
+	// 如果是正在更新 _User ，则清除相应用户的 session 缓存
+	if w.query != nil && w.auth.User != nil && w.auth.User["sessionToken"] {
+		usersCache.remove(w.auth.User["sessionToken"].(string))
+	}
+
 	// 处理密码，计算 sha256
 	// TODO 后续需要加盐提高安全性
 	if w.data["password"] == nil {

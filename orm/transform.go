@@ -665,7 +665,13 @@ func transformAuthData(restObject types.M) types.M {
 	if restObject["authData"] != nil {
 		authData := utils.MapInterface(restObject["authData"])
 		for provider, v := range authData {
-			restObject["_auth_data_"+provider] = v
+			if v == nil || utils.MapInterface(v) == nil || len(utils.MapInterface(v)) == 0 {
+				restObject["_auth_data_"+provider] = types.M{
+					"__op": "Delete",
+				}
+			} else {
+				restObject["_auth_data_"+provider] = v
+			}
 		}
 		delete(restObject, "authData")
 	}

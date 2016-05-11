@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -53,6 +54,7 @@ func Delete(
 	// 如果存在删前回调、或者删后回调、或者要删除的属于 _Session 类，则需要获取到要删除的对象数据
 	if TriggerExists(TypeBeforeDelete, className) ||
 		TriggerExists(TypeAfterDelete, className) ||
+		(config.TConfig.LiveQuery != nil && config.TConfig.LiveQuery.HasLiveQuery(className)) ||
 		className == "_Session" {
 		response, err := Find(auth, className, types.M{"objectId": objectID}, types.M{})
 		if err != nil || utils.HasResults(response) == false {
@@ -64,6 +66,7 @@ func Delete(
 		if inflatedObject == nil {
 			return errs.E(errs.ObjectNotFound, "Object not found for delete.")
 		}
+		inflatedObject["className"] = className
 	}
 
 	destroy := NewDestroy(auth, className, types.M{"objectId": objectID}, inflatedObject)
@@ -115,7 +118,8 @@ func Update(
 	// 如果存在删前回调、或者删后回调，则需要获取到要删除的对象数据
 	var response types.M
 	if TriggerExists(TypeBeforeSave, className) ||
-		TriggerExists(TypeAfterSave, className) {
+		TriggerExists(TypeAfterSave, className) ||
+		(config.TConfig.LiveQuery != nil && config.TConfig.LiveQuery.HasLiveQuery(className)) {
 
 		response, err = Find(auth, className, types.M{"objectId": objectID}, types.M{})
 		if err != nil || utils.HasResults(response) == false {

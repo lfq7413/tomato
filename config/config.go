@@ -1,7 +1,10 @@
 package config
 
 import (
+	"strings"
+
 	"github.com/astaxie/beego"
+	"github.com/lfq7413/tomato/livequery"
 )
 
 // Config ...
@@ -19,6 +22,7 @@ type Config struct {
 	FileDir                  string
 	PushAdapter              string
 	MailAdapter              string
+	LiveQuery                *livequery.LiveQuery
 }
 
 var (
@@ -60,4 +64,9 @@ func parseConfig() {
 	TConfig.FileDir = beego.AppConfig.DefaultString("FileDir", "/Users")
 	TConfig.PushAdapter = beego.AppConfig.DefaultString("PushAdapter", "tomato")
 	TConfig.MailAdapter = beego.AppConfig.DefaultString("MailAdapter", "smtp")
+
+	// LiveQuery 支持的类列表，格式： classeA|classeB|classeC
+	classeNames := beego.AppConfig.DefaultString("LiveQuery", "")
+	liveQuery := strings.Split(classeNames, "|")
+	TConfig.LiveQuery = livequery.NewLiveQuery(liveQuery)
 }

@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 )
@@ -54,6 +55,9 @@ func (d *Destroy) handleSession() error {
 
 // runBeforeTrigger 执行删前回调
 func (d *Destroy) runBeforeTrigger() error {
+
+	config.TConfig.LiveQuery.OnAfterDelete(d.className, d.originalData, nil)
+
 	RunTrigger(TypeBeforeDelete, d.className, d.auth, nil, d.originalData)
 
 	return nil

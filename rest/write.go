@@ -626,7 +626,7 @@ func (w *Write) transformUser() error {
 	}
 
 	// 如果是正在更新 _User ，则清除相应用户的 session 缓存
-	if w.query != nil && w.auth.User != nil && w.auth.User["sessionToken"] {
+	if w.query != nil && w.auth.User != nil && w.auth.User["sessionToken"] != nil {
 		usersCache.remove(w.auth.User["sessionToken"].(string))
 	}
 
@@ -835,11 +835,13 @@ func (w *Write) runAfterTrigger() error {
 		return nil
 	}
 
-	if TriggerExists(TypeAfterSave, w.className) == false {
+	hasAfterSaveHook := TriggerExists(TypeAfterSave, w.className)
+	hasLiveQuery := config.TConfig.LiveQuery.HasLiveQuery(w.className)
+	if hasAfterSaveHook == false && hasLiveQuery == false {
 		return nil
 	}
 
-	updatedObject := types.M{}
+	updatedObject := types.M{"className": w.className}
 	if w.query != nil && w.query["objectId"] != nil {
 		// 如果是更新，则把原始数据添加进来
 		for k, v := range w.originalData {
@@ -851,6 +853,9 @@ func (w *Write) runAfterTrigger() error {
 	for k, v := range w.sanitizedData() {
 		updatedObject[k] = v
 	}
+
+	// 尝试通知 LiveQueryServer
+	config.TConfig.LiveQuery.OnAfterSave(w.className, updatedObject, w.originalData)
 
 	RunTrigger(TypeAfterSave, w.className, w.auth, updatedObject, w.originalData)
 

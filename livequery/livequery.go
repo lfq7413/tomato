@@ -31,8 +31,8 @@ func (l *LiveQuery) OnAfterDelete(className string, currentObject, originalObjec
 }
 
 // HasLiveQuery ...
-func (l *LiveQuery) HasLiveQuery(className string) {
-
+func (l *LiveQuery) HasLiveQuery(className string) bool {
+	return false
 }
 
 func (l *LiveQuery) makePublisherRequest(currentObject, originalObject types.M) types.M {

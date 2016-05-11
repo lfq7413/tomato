@@ -67,6 +67,8 @@ func parseConfig() {
 
 	// LiveQuery 支持的类列表，格式： classeA|classeB|classeC
 	classeNames := beego.AppConfig.DefaultString("LiveQuery", "")
+	pubType := beego.AppConfig.DefaultString("PubType", "")
+	pubURL := beego.AppConfig.DefaultString("pubURL", "")
 	liveQuery := strings.Split(classeNames, "|")
-	TConfig.LiveQuery = livequery.NewLiveQuery(liveQuery)
+	TConfig.LiveQuery = livequery.NewLiveQuery(liveQuery, pubType, pubURL)
 }

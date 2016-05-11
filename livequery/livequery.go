@@ -9,14 +9,14 @@ type LiveQuery struct {
 }
 
 // NewLiveQuery 初始化 LiveQuery
-func NewLiveQuery(classNames []string) *LiveQuery {
+func NewLiveQuery(classNames []string, pubType, pubURL string) *LiveQuery {
 	liveQuery := &LiveQuery{}
 	if classNames == nil && len(classNames) == 0 {
 		liveQuery.classNames = []string{}
 	} else {
 		liveQuery.classNames = classNames
 	}
-	liveQuery.liveQueryPublisher = newCloudCodePublisher()
+	liveQuery.liveQueryPublisher = newCloudCodePublisher(pubType, pubURL)
 
 	return liveQuery
 }

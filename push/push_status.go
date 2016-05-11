@@ -84,8 +84,7 @@ func (p *pushStatus) complete(results []types.M) {
 	sentPerType := map[string]int{}
 	failedPerType := map[string]int{}
 
-	for _, v := range results {
-		result := utils.MapInterface(v)
+	for _, result := range results {
 		if result["device"] == nil {
 			continue
 		}
@@ -125,3 +124,5 @@ func (p *pushStatus) complete(results []types.M) {
 	}
 	p.collection().UpdateOne(where, types.M{"$set": update})
 }
+
+// TODO 添加处理推送失败的情况

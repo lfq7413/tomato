@@ -27,7 +27,11 @@ func init() {
 }
 
 // SendPush 发送推送消息
-func SendPush(body types.M, where types.M, auth *rest.Auth) error {
+// wait 是否等待发送完成
+func SendPush(body types.M, where types.M, auth *rest.Auth, wait bool) error {
+
+	status := &pushStatus{}
+
 	// TODO where 中并不包含 deviceType，此处是否有问题？
 	err := validatePushType(where, adapter.getValidPushTypes())
 	if err != nil {
@@ -65,6 +69,8 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 		updateWhere = utils.CopyMap(where)
 	}
 
+	status.setInitial(body, where, nil)
+
 	if op != nil && updateWhere != nil {
 		badgeQuery, err := rest.NewQuery(auth, "_Installation", updateWhere, types.M{})
 		if err != nil {
@@ -88,6 +94,8 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 		}
 	}
 
+	status.setRunning()
+
 	// TODO 处理结果大于100的情况
 	response, err := rest.Find(auth, "_Installation", where, types.M{})
 	if err != nil {
@@ -98,10 +106,19 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 	}
 	results := utils.SliceInterface(response["results"])
 
+	res := sendToAdapter(body, results, status)
+	status.complete(res)
+
+	return nil
+}
+
+// sendToAdapter 发送推送消息
+func sendToAdapter(body types.M, installations []interface{}, status *pushStatus) []types.M {
+	data := utils.MapInterface(body["data"])
 	if data != nil && data["badge"] != nil && utils.String(data["badge"]) == "Increment" {
 		badgeInstallationsMap := types.M{}
 		// 按 badge 分组
-		for _, v := range results {
+		for _, v := range installations {
 			installation := utils.MapInterface(v)
 			var badge string
 			if v, ok := installation["badge"].(float64); ok {
@@ -120,6 +137,8 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 			badgeInstallationsMap[badge] = installations
 		}
 
+		var results = []types.M{}
+
 		// 按 badge 分组发送推送
 		for k, v := range badgeInstallationsMap {
 			payload := utils.CopyMap(body)
@@ -129,13 +148,13 @@ func SendPush(body types.M, where types.M, auth *rest.Auth) error {
 			} else {
 				paydata["badge"], _ = strconv.Atoi(k)
 			}
-			adapter.send(payload, utils.SliceInterface(v))
+			result := adapter.send(payload, utils.SliceInterface(v), status)
+			results = append(results, result...)
 		}
-		return nil
+		return results
 	}
-	adapter.send(body, results)
 
-	return nil
+	return adapter.send(body, installations, status)
 }
 
 // validatePushType 校验查询条件中的推送类型
@@ -204,7 +223,8 @@ func getExpirationTime(body types.M) (interface{}, error) {
 }
 
 // pushAdapter 推送模块要实现的接口
+// send() 中的 status 参数暂时没有使用
 type pushAdapter interface {
-	send(data types.M, installations types.S)
+	send(data types.M, installations types.S, status *pushStatus) []types.M
 	getValidPushTypes() []string
 }

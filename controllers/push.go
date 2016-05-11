@@ -26,7 +26,7 @@ func (p *PushController) HandlePost() {
 		p.ServeJSON()
 		return
 	}
-	push.SendPush(p.JSONBody, where, p.Auth)
+	push.SendPush(p.JSONBody, where, p.Auth, false)
 	p.Data["json"] = types.M{"result": true}
 	p.ServeJSON()
 }

@@ -11,6 +11,7 @@ type cloudCodePublisher struct {
 }
 
 func newCloudCodePublisher(pubType, pubURL string) *cloudCodePublisher {
+	// TODO 后期添加真实的 Publisher
 	return &cloudCodePublisher{
 		publisher: createPublisher(pubType, pubURL),
 	}

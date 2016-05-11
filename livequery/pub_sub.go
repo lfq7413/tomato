@@ -1,11 +1,17 @@
 package livequery
 
 func createPublisher(pubType, pubURL string) publisher {
-	return nil
+	if useRedis(pubType) {
+		return createEventEmitterPublisher()
+	}
+	return createEventEmitterPublisher()
 }
 
-func createSubscriber(pubType, pubURL string) subscriber {
-	return nil
+func createSubscriber(subType, subURL string) subscriber {
+	if useRedis(subType) {
+		return createEventEmitterSubscriber()
+	}
+	return createEventEmitterSubscriber()
 }
 
 func useRedis(pubType string) bool {

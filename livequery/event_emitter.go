@@ -2,7 +2,7 @@ package livequery
 
 import "unsafe"
 
-// EventEmitter ...
+// EventEmitter 事件发射器
 type EventEmitter struct {
 	events map[string][]HandlerType
 }
@@ -17,7 +17,7 @@ func NewEventEmitter() *EventEmitter {
 	}
 }
 
-// Emit ...
+// Emit 向指定通道中的所有订阅者发送事件消息
 func (e *EventEmitter) Emit(messageType string, args ...string) bool {
 	if e.events == nil {
 		e.events = map[string][]HandlerType{}
@@ -28,14 +28,15 @@ func (e *EventEmitter) Emit(messageType string, args ...string) bool {
 			return false
 		}
 		for _, listener := range handler {
-			listener(args...)
+			// TODO 完善多线程发送逻辑
+			go listener(args...)
 		}
 		return true
 	}
 	return false
 }
 
-// AddListener ...
+// AddListener 向指定通道添加订阅者的消息监听器
 func (e *EventEmitter) AddListener(messageType string, listener HandlerType) *EventEmitter {
 	if e.events == nil {
 		e.events = map[string][]HandlerType{}
@@ -51,15 +52,16 @@ func (e *EventEmitter) AddListener(messageType string, listener HandlerType) *Ev
 	return e
 }
 
-// On ...
+// On 向指定通道添加订阅者的消息监听器，同 AddListener
 func (e *EventEmitter) On(messageType string, listener HandlerType) *EventEmitter {
 	return e.AddListener(messageType, listener)
 }
 
-// Once ...
+// Once 添加只执行一次的监听器
 func (e *EventEmitter) Once(messageType string, listener HandlerType) *EventEmitter {
 	fired := false
 
+	// 包装订阅者的监听器，当包装监听器得到执行时，立即删除自身，并执行订阅者的监听器
 	var wrapListener HandlerType
 	wrapListener = func(args ...string) {
 		e.RemoveListener(messageType, wrapListener)
@@ -72,7 +74,7 @@ func (e *EventEmitter) Once(messageType string, listener HandlerType) *EventEmit
 	return e
 }
 
-// RemoveListener ...
+// RemoveListener 删除指定通道上的指定监听器
 func (e *EventEmitter) RemoveListener(messageType string, listener HandlerType) *EventEmitter {
 	if e.events == nil {
 		return e
@@ -94,7 +96,7 @@ func (e *EventEmitter) RemoveListener(messageType string, listener HandlerType) 
 			delete(e.events, messageType)
 		} else {
 			handler[position] = handler[len(handler)-1]
-			handler[len(handler)-1] = nil
+			handler[len(handler)-1] = nil // 置空，防止内存泄漏
 			handler = handler[:len(handler)-1]
 		}
 	}
@@ -102,7 +104,7 @@ func (e *EventEmitter) RemoveListener(messageType string, listener HandlerType) 
 	return e
 }
 
-// RemoveAllListeners ...
+// RemoveAllListeners 删除指定通道上类所有监听器，当不指定时，删除所有通道上的所有监听器
 func (e *EventEmitter) RemoveAllListeners(messageType string) *EventEmitter {
 	if e.events == nil {
 		return e
@@ -118,7 +120,7 @@ func (e *EventEmitter) RemoveAllListeners(messageType string) *EventEmitter {
 
 	listeners := e.events[messageType]
 	for key := range listeners {
-		listeners[key] = nil
+		listeners[key] = nil // 置空，防止内存泄漏
 	}
 	delete(e.events, messageType)
 
@@ -141,6 +143,7 @@ func (e *EventEmitter) ListenerCount(messageType string) int {
 	return len(e.events[messageType])
 }
 
+// equal 判断两个闭包函数地址是否相同
 func equal(f, s HandlerType) bool {
 	addrF := *(*int)(unsafe.Pointer(&f))
 	addrS := *(*int)(unsafe.Pointer(&s))

@@ -2,6 +2,7 @@ package livequery
 
 var emitter = NewEventEmitter()
 
+// eventEmitterPublisher 使用 EventEmitter 实现的发布者
 type eventEmitterPublisher struct {
 	emitter *EventEmitter
 }
@@ -10,6 +11,7 @@ func (p *eventEmitterPublisher) publish(channel, message string) {
 	p.emitter.Emit(channel, message)
 }
 
+// eventEmitterPublisher 使用 EventEmitter 实现的订阅者
 type eventEmitterSubscriber struct {
 	EventEmitter
 	emitter       *EventEmitter

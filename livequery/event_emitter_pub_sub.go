@@ -35,6 +35,10 @@ func (s *eventEmitterSubscriber) unsubscribe(channel string) {
 	}
 }
 
+func (s *eventEmitterSubscriber) on(channel string, listener HandlerType) {
+	s.On(channel, listener)
+}
+
 func createEventEmitterPublisher() *eventEmitterPublisher {
 	return &eventEmitterPublisher{
 		emitter: emitter,

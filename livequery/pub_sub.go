@@ -33,4 +33,5 @@ type publisher interface {
 type subscriber interface {
 	subscribe(channel string)
 	unsubscribe(channel string)
+	on(channel string, listener HandlerType)
 }

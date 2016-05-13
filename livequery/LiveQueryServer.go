@@ -62,7 +62,29 @@ func (l *liveQueryServer) onConnect(ws *websocket.Conn) {
 
 // onMessage 当接收到客户端发来的消息时调用
 func (l *liveQueryServer) onMessage(ws *websocket.Conn, msg interface{}) {
+	var request M
+	if message, ok := msg.(string); ok {
+		err := json.Unmarshal([]byte(message), &request)
+		if err != nil {
+			return
+		}
+	}
 
+	op := request["op"].(string)
+	if op == "" {
+		return
+	}
+
+	switch op {
+	case "connect":
+		l.handleConnect(ws, request)
+	case "subscribe":
+		l.handleSubscribe(ws, request)
+	case "unsubscribe":
+		l.handleUnsubscribe(ws, request)
+	default:
+
+	}
 }
 
 // onDisconnect 当客户端断开时调用
@@ -82,5 +104,20 @@ func (l *liveQueryServer) onAfterDelete(message M) {
 
 // onAfterSave 有对象保存时调用
 func (l *liveQueryServer) onAfterSave(message M) {
+
+}
+
+// handleConnect 处理客户端 Connect 操作
+func (l *liveQueryServer) handleConnect(ws *websocket.Conn, request M) {
+
+}
+
+// handleSubscribe 处理客户端 Subscribe 操作
+func (l *liveQueryServer) handleSubscribe(ws *websocket.Conn, request M) {
+
+}
+
+// handleUnsubscribe 处理客户端 Unsubscribe 操作
+func (l *liveQueryServer) handleUnsubscribe(ws *websocket.Conn, request M) {
 
 }

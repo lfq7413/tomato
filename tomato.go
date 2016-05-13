@@ -21,3 +21,8 @@ func Run() {
 	beego.ErrorController(&controllers.ErrorController{})
 	beego.Run()
 }
+
+// RunLiveQueryServer 运行 LiveQuery 服务
+func RunLiveQueryServer() {
+
+}

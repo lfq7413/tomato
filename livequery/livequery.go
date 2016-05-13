@@ -1,6 +1,7 @@
 package livequery
 
-import "github.com/lfq7413/tomato/types"
+// M ...
+type M map[string]interface{}
 
 // LiveQuery 接收指定类的对象保存与对象删除的通知，发送对象数据到发布者，由发布者通知订阅者，订阅者实时接收数据
 type LiveQuery struct {
@@ -25,7 +26,7 @@ func NewLiveQuery(classNames []string, pubType, pubURL string) *LiveQuery {
 }
 
 // OnAfterSave 保存对象之后调用
-func (l *LiveQuery) OnAfterSave(className string, currentObject, originalObject types.M) {
+func (l *LiveQuery) OnAfterSave(className string, currentObject, originalObject map[string]interface{}) {
 	if l.HasLiveQuery(className) == false {
 		return
 	}
@@ -34,7 +35,7 @@ func (l *LiveQuery) OnAfterSave(className string, currentObject, originalObject 
 }
 
 // OnAfterDelete 删除对象之后调用
-func (l *LiveQuery) OnAfterDelete(className string, currentObject, originalObject types.M) {
+func (l *LiveQuery) OnAfterDelete(className string, currentObject, originalObject map[string]interface{}) {
 	if l.HasLiveQuery(className) == false {
 		return
 	}
@@ -57,8 +58,8 @@ func (l *LiveQuery) HasLiveQuery(className string) bool {
 // 	"object": {...},
 // 	"original": {...}
 // }
-func (l *LiveQuery) makePublisherRequest(currentObject, originalObject types.M) types.M {
-	req := types.M{
+func (l *LiveQuery) makePublisherRequest(currentObject, originalObject M) M {
+	req := M{
 		"object": currentObject,
 	}
 	if currentObject != nil {

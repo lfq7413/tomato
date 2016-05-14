@@ -1,10 +1,6 @@
 package livequery
 
-import (
-	"encoding/json"
-
-	"golang.org/x/net/websocket"
-)
+import "encoding/json"
 
 var server *liveQueryServer
 
@@ -56,12 +52,12 @@ func (l *liveQueryServer) run() {
 }
 
 // onConnect 当有客户端连接成功时调用
-func (l *liveQueryServer) onConnect(ws *websocket.Conn) {
+func (l *liveQueryServer) onConnect(ws *webSocket) {
 
 }
 
 // onMessage 当接收到客户端发来的消息时调用
-func (l *liveQueryServer) onMessage(ws *websocket.Conn, msg interface{}) {
+func (l *liveQueryServer) onMessage(ws *webSocket, msg interface{}) {
 	var request M
 	if message, ok := msg.(string); ok {
 		err := json.Unmarshal([]byte(message), &request)
@@ -88,7 +84,7 @@ func (l *liveQueryServer) onMessage(ws *websocket.Conn, msg interface{}) {
 }
 
 // onDisconnect 当客户端断开时调用
-func (l *liveQueryServer) onDisconnect(ws *websocket.Conn) {
+func (l *liveQueryServer) onDisconnect(ws *webSocket) {
 
 }
 
@@ -108,16 +104,16 @@ func (l *liveQueryServer) onAfterSave(message M) {
 }
 
 // handleConnect 处理客户端 Connect 操作
-func (l *liveQueryServer) handleConnect(ws *websocket.Conn, request M) {
+func (l *liveQueryServer) handleConnect(ws *webSocket, request M) {
 
 }
 
 // handleSubscribe 处理客户端 Subscribe 操作
-func (l *liveQueryServer) handleSubscribe(ws *websocket.Conn, request M) {
+func (l *liveQueryServer) handleSubscribe(ws *webSocket, request M) {
 
 }
 
 // handleUnsubscribe 处理客户端 Unsubscribe 操作
-func (l *liveQueryServer) handleUnsubscribe(ws *websocket.Conn, request M) {
+func (l *liveQueryServer) handleUnsubscribe(ws *webSocket, request M) {
 
 }

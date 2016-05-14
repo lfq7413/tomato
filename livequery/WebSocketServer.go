@@ -7,9 +7,9 @@ import (
 )
 
 type webSocketHandler interface {
-	onConnect(ws *websocket.Conn)
-	onMessage(ws *websocket.Conn, msg interface{})
-	onDisconnect(ws *websocket.Conn)
+	onConnect(ws *webSocket)
+	onMessage(ws *webSocket, msg interface{})
+	onDisconnect(ws *webSocket)
 }
 
 var handler webSocketHandler
@@ -24,22 +24,31 @@ func runWebSocketServer(pattern, addr string, h webSocketHandler) {
 }
 
 func httpHandler(ws *websocket.Conn) {
-	handler.onConnect(ws)
+	socket := &webSocket{
+		ws:       ws,
+		clientID: 0,
+	}
+	handler.onConnect(socket)
 	var v string
 	for {
-		err := receive(ws, &v)
+		err := socket.receive(&v)
 		if err != nil {
-			handler.onDisconnect(ws)
+			handler.onDisconnect(socket)
 			return
 		}
-		handler.onMessage(ws, v)
+		handler.onMessage(socket, v)
 	}
 }
 
-func receive(ws *websocket.Conn, v interface{}) error {
-	return websocket.Message.Receive(ws, v)
+type webSocket struct {
+	ws       *websocket.Conn
+	clientID int
 }
 
-func send(ws *websocket.Conn, v interface{}) error {
-	return websocket.Message.Send(ws, v)
+func (w *webSocket) receive(v interface{}) error {
+	return websocket.Message.Receive(w.ws, v)
+}
+
+func (w *webSocket) send(v interface{}) error {
+	return websocket.Message.Send(w.ws, v)
 }

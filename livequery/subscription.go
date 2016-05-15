@@ -1,5 +1,11 @@
 package livequery
 
+type subscriptionInfo struct {
+	subscription *subscription
+	sessionToken string
+	fields       []string
+}
+
 type subscription struct {
 	query            M
 	className        string

@@ -12,15 +12,43 @@ func Run(args map[string]string) {
 }
 
 type liveQueryServer struct {
-	pattern    string
-	addr       string
-	subscriber subscriber
+	pattern       string
+	addr          string
+	clientID      int
+	clients       map[int]*client
+	subscriptions map[string]map[string]*subscription // className -> (queryHash -> subscription)
+	keyPairs      map[string]string
+	subscriber    subscriber
 }
 
 // initServer 初始化 liveQuery 服务
 func (l *liveQueryServer) initServer(args map[string]string) {
 	l.pattern = args["pattern"]
 	l.addr = args["addr"]
+
+	l.clientID = 1
+	l.clients = map[int]*client{}
+	l.subscriptions = map[string]map[string]*subscription{}
+
+	// 设置日志级别
+	if level, ok := args["logLevel"]; ok {
+		TLog.level = level
+	} else {
+		TLog.level = "NONE"
+	}
+
+	// 设置 keyPairs ，用于校验客户端
+	if k, ok := args["keyPairs"]; ok {
+		var keyPairs map[string]string
+		err := json.Unmarshal([]byte(k), &keyPairs)
+		if err != nil {
+			l.keyPairs = map[string]string{}
+		}
+		l.keyPairs = keyPairs
+	} else {
+		l.keyPairs = map[string]string{}
+	}
+	TLog.verbose("Support key pairs", l.keyPairs)
 
 	l.subscriber = createSubscriber("", "")
 	l.subscriber.subscribe("afterSave")

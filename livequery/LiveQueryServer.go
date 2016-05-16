@@ -127,7 +127,33 @@ func (l *liveQueryServer) onMessage(ws *webSocket, msg interface{}) {
 
 // onDisconnect 当客户端断开时调用
 func (l *liveQueryServer) onDisconnect(ws *webSocket) {
+	TLog.log("Client disconnect:", ws.clientID)
 
+	clientID := ws.clientID
+	if _, ok := l.clients[clientID]; ok == false {
+		TLog.error("Can not find client", clientID, "on disconnect")
+		return
+	}
+
+	client := l.clients[clientID]
+	delete(l.clients, clientID)
+
+	for requestID, subscriptionInfo := range client.subscriptionInfos {
+		subscription := subscriptionInfo.subscription
+		subscription.deleteClientSubscription(clientID, requestID)
+
+		classSubscriptions := l.subscriptions[subscription.className]
+		if subscription.hasSubscribingClient() == false {
+			delete(classSubscriptions, subscription.hash)
+		}
+
+		if len(classSubscriptions) == 0 {
+			delete(l.subscriptions, subscription.className)
+		}
+	}
+
+	TLog.verbose("Current clients", len(l.clients))
+	TLog.verbose("Current subscriptions", len(l.subscriptions))
 }
 
 // inflateParseObject 展开对象

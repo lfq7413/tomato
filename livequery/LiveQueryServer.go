@@ -1,6 +1,7 @@
 package livequery
 
 import "encoding/json"
+import "strconv"
 
 var server *liveQueryServer
 
@@ -344,7 +345,44 @@ func (l *liveQueryServer) handleSubscribe(ws *webSocket, request M) {
 
 // handleUnsubscribe 处理客户端 Unsubscribe 操作
 func (l *liveQueryServer) handleUnsubscribe(ws *webSocket, request M) {
+	if ws.clientID == 0 {
+		pushError(ws, 2, "Can not find this client, make sure you connect to server before unsubscribing", true)
+		TLog.error("Can not find this client, make sure you connect to server before unsubscribing")
+		return
+	}
 
+	requestID := int(request["requestId"].(float64))
+
+	client := l.clients[ws.clientID]
+	if client == nil {
+		pushError(ws, 2, "Cannot find client with clientId "+strconv.Itoa(ws.clientID)+". Make sure you connect to live query server before unsubscribing.", true)
+		TLog.error("Can not find this client", ws.clientID)
+		return
+	}
+
+	subscriptionInfo := client.getSubscriptionInfo(requestID)
+	if subscriptionInfo == nil {
+		pushError(ws, 2, "Cannot find subscription with clientId "+strconv.Itoa(ws.clientID)+" subscriptionId "+strconv.Itoa(requestID)+". Make sure you subscribe to live query server before unsubscribing.", true)
+		TLog.error("Can not find subscription with clientId", ws.clientID, "subscriptionId", requestID)
+		return
+	}
+
+	client.deleteSubscriptionInfo(requestID)
+
+	subscription := subscriptionInfo.subscription
+	className := subscription.className
+	subscription.deleteClientSubscription(ws.clientID, requestID)
+
+	classSubscriptions := l.subscriptions[className]
+	if subscription.hasSubscribingClient() == false {
+		delete(classSubscriptions, subscription.hash)
+	}
+
+	if len(classSubscriptions) == 0 {
+		delete(l.subscriptions, className)
+	}
+
+	client.pushUnsubscribe(requestID, nil)
 }
 
 func (l *liveQueryServer) matchesSubscription(object M, subscription *subscription) bool {

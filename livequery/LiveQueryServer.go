@@ -53,13 +53,16 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 	l.subscriber = createSubscriber("", "")
 	l.subscriber.subscribe("afterSave")
 	l.subscriber.subscribe("afterDelete")
+	// 向 subscriber 订阅 "message" ，当有对象操作消息时，以下处理函数将会被调起
 	var h HandlerType
 	h = func(args ...string) {
 		channel := args[0]
 		messageStr := args[1]
+		TLog.verbose("Subscribe messsage", messageStr)
 		var message M
 		err := json.Unmarshal([]byte(messageStr), &message)
 		if err != nil {
+			TLog.error("json.Unmarshal error")
 			return
 		}
 		l.inflateParseObject(message)
@@ -68,7 +71,7 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 		} else if channel == "afterDelete" {
 			l.onAfterDelete(message)
 		} else {
-
+			TLog.error("Get message", message, "from unknown channel", channel)
 		}
 	}
 	l.subscriber.on("message", h)
@@ -123,12 +126,120 @@ func (l *liveQueryServer) inflateParseObject(message M) {
 
 // onAfterDelete 有对象删除时调用
 func (l *liveQueryServer) onAfterDelete(message M) {
+	TLog.verbose("afterDelete is triggered")
 
+	deletedParseObject := message["currentParseObject"].(M)
+	className := deletedParseObject["className"].(string)
+	TLog.verbose("ClassName:", className, "| ObjectId:", deletedParseObject["objectId"])
+	TLog.verbose("Current client number :", len(l.clients))
+
+	classSubscriptions := l.subscriptions[className]
+	if classSubscriptions == nil {
+		TLog.error("Can not find subscriptions under this class", className)
+		return
+	}
+	for _, subscription := range classSubscriptions {
+		isSubscriptionMatched := l.matchesSubscription(deletedParseObject, subscription)
+		if isSubscriptionMatched == false {
+			continue
+		}
+		for clientID, requestIDs := range subscription.clientRequestIDs {
+			client := l.clients[clientID]
+			if client == nil {
+				continue
+			}
+			for _, requestID := range requestIDs {
+				acl := deletedParseObject["ACL"].(M)
+				isMatched, err := l.matchesACL(acl, client, requestID)
+				if err != nil {
+					TLog.error("Matching ACL error :", err)
+				}
+				if isMatched == false {
+					return
+				}
+				client.pushDelete(requestID, deletedParseObject)
+			}
+		}
+	}
 }
 
 // onAfterSave 有对象保存时调用
 func (l *liveQueryServer) onAfterSave(message M) {
+	TLog.verbose("afterSave is triggered")
 
+	var originalParseObject M
+	if message["originalParseObject"] != nil {
+		originalParseObject = message["originalParseObject"].(M)
+	}
+	currentParseObject := message["currentParseObject"].(M)
+	className := currentParseObject["className"].(string)
+	TLog.verbose("ClassName:", className, "| ObjectId:", currentParseObject["objectId"])
+	TLog.verbose("Current client number :", len(l.clients))
+
+	classSubscriptions := l.subscriptions[className]
+	if classSubscriptions == nil {
+		TLog.error("Can not find subscriptions under this class", className)
+		return
+	}
+
+	for _, subscription := range classSubscriptions {
+		isOriginalSubscriptionMatched := l.matchesSubscription(originalParseObject, subscription)
+		isCurrentSubscriptionMatched := l.matchesSubscription(currentParseObject, subscription)
+		for clientID, requestIDs := range subscription.clientRequestIDs {
+			client := l.clients[clientID]
+			if client == nil {
+				continue
+			}
+			for _, requestID := range requestIDs {
+				var err error
+				var isOriginalMatched bool
+				if isOriginalSubscriptionMatched == false {
+					isOriginalMatched = false
+				} else {
+					var originalACL M
+					if originalParseObject != nil {
+						originalACL = originalParseObject["ACL"].(M)
+					}
+					isOriginalMatched, err = l.matchesACL(originalACL, client, requestID)
+					if err != nil {
+						TLog.error("Matching ACL error :", err)
+						continue
+					}
+				}
+
+				var isCurrentMatched bool
+				if isCurrentSubscriptionMatched == false {
+					isCurrentMatched = false
+				} else {
+					currentACL := currentParseObject["ACL"].(M)
+					isCurrentMatched, err = l.matchesACL(currentACL, client, requestID)
+					if err != nil {
+						TLog.error("Matching ACL error :", err)
+						continue
+					}
+				}
+
+				TLog.verbose("Original", originalParseObject,
+					"| Current", currentParseObject,
+					"| Match:", isOriginalSubscriptionMatched, isCurrentSubscriptionMatched, isOriginalMatched, isCurrentMatched,
+					"| Query:", subscription.hash)
+
+				if isOriginalMatched && isCurrentMatched {
+					client.pushUpdate(requestID, currentParseObject)
+				} else if isOriginalMatched && !isCurrentMatched {
+					client.pushLeave(requestID, currentParseObject)
+				} else if !isOriginalMatched && isCurrentMatched {
+					if originalParseObject != nil {
+						client.pushEnter(requestID, currentParseObject)
+					} else {
+						client.pushCreate(requestID, currentParseObject)
+					}
+				} else {
+					continue
+				}
+			}
+		}
+	}
 }
 
 // handleConnect 处理客户端 Connect 操作
@@ -144,4 +255,12 @@ func (l *liveQueryServer) handleSubscribe(ws *webSocket, request M) {
 // handleUnsubscribe 处理客户端 Unsubscribe 操作
 func (l *liveQueryServer) handleUnsubscribe(ws *webSocket, request M) {
 
+}
+
+func (l *liveQueryServer) matchesSubscription(object M, subscription *subscription) bool {
+	return false
+}
+
+func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool, error) {
+	return false, nil
 }

@@ -394,5 +394,20 @@ func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool
 }
 
 func (l *liveQueryServer) validateKeys(request M, validKeyPairs map[string]string) bool {
-	return false
+	if validKeyPairs == nil || len(validKeyPairs) == 0 {
+		return true
+	}
+	isValid := false
+	for key, secret := range validKeyPairs {
+		if request[key] == nil {
+			continue
+		}
+		if request[key].(string) != secret {
+			continue
+		}
+		isValid = true
+		break
+	}
+
+	return isValid
 }

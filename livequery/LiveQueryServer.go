@@ -13,13 +13,14 @@ func Run(args map[string]string) {
 }
 
 type liveQueryServer struct {
-	pattern       string
-	addr          string
-	clientID      int
-	clients       map[int]*client
-	subscriptions map[string]map[string]*subscription // className -> (queryHash -> subscription)
-	keyPairs      map[string]string
-	subscriber    subscriber
+	pattern           string
+	addr              string
+	clientID          int
+	clients           map[int]*client
+	subscriptions     map[string]map[string]*subscription // className -> (queryHash -> subscription)
+	keyPairs          map[string]string
+	subscriber        subscriber
+	sessionTokenCache *sessionTokenCache
 }
 
 // initServer 初始化 liveQuery 服务
@@ -76,6 +77,7 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 		}
 	}
 	l.subscriber.on("message", h)
+	l.sessionTokenCache = &sessionTokenCache{}
 }
 
 // run 启动 WebSocket 服务
@@ -386,10 +388,37 @@ func (l *liveQueryServer) handleUnsubscribe(ws *webSocket, request M) {
 }
 
 func (l *liveQueryServer) matchesSubscription(object M, subscription *subscription) bool {
-	return false
+	if object == nil {
+		return false
+	}
+
+	return matchesQuery(object, subscription.query)
 }
 
 func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool, error) {
+	if acl == nil {
+		return true, nil
+	}
+
+	if aclPer(acl).getPublicReadAccess() {
+		return true, nil
+	}
+
+	subscriptionInfo := client.getSubscriptionInfo(requestID)
+	if subscriptionInfo == nil {
+		return false, nil
+	}
+
+	subscriptionSessionToken := subscriptionInfo.sessionToken
+	userID := l.sessionTokenCache.getUserID(subscriptionSessionToken)
+	if userID == "" {
+		return false, nil
+	}
+	isSubscriptionSessionTokenMatched := aclPer(acl).getReadAccess(userID)
+	if isSubscriptionSessionTokenMatched {
+		return true, nil
+	}
+
 	return false, nil
 }
 
@@ -410,4 +439,33 @@ func (l *liveQueryServer) validateKeys(request M, validKeyPairs map[string]strin
 	}
 
 	return isValid
+}
+
+type aclPer M
+
+func (a aclPer) getPublicReadAccess() bool {
+	return a.getReadAccess("*")
+}
+
+// getReadAccess 需要解析的格式如下
+// {
+// 	"id":{
+// 		"read":true,
+// 		"write":true
+// 	}
+// 	"*":{
+// 		"read":true
+// 	}
+// }
+func (a aclPer) getReadAccess(id string) bool {
+	if p, ok := a[id]; ok {
+		if per, ok := p.(map[string]interface{}); ok {
+			if _, ok := per["read"]; ok {
+				return true
+			}
+			return false
+		}
+		return false
+	}
+	return false
 }

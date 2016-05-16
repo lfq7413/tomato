@@ -96,6 +96,7 @@ func (l *liveQueryServer) onMessage(ws *webSocket, msg interface{}) {
 			return
 		}
 	}
+	TLog.verbose("Request:", request)
 
 	op := request["op"].(string)
 	if op == "" {

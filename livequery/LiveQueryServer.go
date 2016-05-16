@@ -98,11 +98,20 @@ func (l *liveQueryServer) onMessage(ws *webSocket, msg interface{}) {
 	}
 	TLog.verbose("Request:", request)
 
-	op := request["op"].(string)
-	if op == "" {
+	err := validate(request, "general")
+	if err != nil {
+		pushError(ws, 1, err.Error(), true)
+		TLog.error("Connect message error", err.Error())
+		return
+	}
+	err = validate(request, request["op"].(string))
+	if err != nil {
+		pushError(ws, 1, err.Error(), true)
+		TLog.error("Connect message error", err.Error())
 		return
 	}
 
+	op := request["op"].(string)
 	switch op {
 	case "connect":
 		l.handleConnect(ws, request)
@@ -111,7 +120,8 @@ func (l *liveQueryServer) onMessage(ws *webSocket, msg interface{}) {
 	case "unsubscribe":
 		l.handleUnsubscribe(ws, request)
 	default:
-
+		pushError(ws, 3, "Get unknown operation", true)
+		TLog.error("Get unknown operation", op)
 	}
 }
 

@@ -68,9 +68,11 @@ func (c *client) deleteSubscriptionInfo(requestID int) {
 func (c *client) pushEvent(eventType string) func(int, M) {
 	return func(subscriptionId int, object M) {
 		response := M{
-			"op":        eventType,
-			"clientId":  c.id,
-			"requestId": subscriptionId,
+			"op":       eventType,
+			"clientId": c.id,
+		}
+		if subscriptionId != 0 {
+			response["requestId"] = subscriptionId
 		}
 		if object != nil {
 			fields := []string{}

@@ -281,12 +281,65 @@ func (l *liveQueryServer) onAfterSave(message M) {
 
 // handleConnect 处理客户端 Connect 操作
 func (l *liveQueryServer) handleConnect(ws *webSocket, request M) {
+	if l.validateKeys(request, l.keyPairs) == false {
+		pushError(ws, 4, "Key in request is not valid", true)
+		TLog.error("Key in request is not valid")
+		return
+	}
 
+	client := newClient(l.clientID, ws)
+	ws.clientID = l.clientID
+	l.clientID++
+	l.clients[ws.clientID] = client
+	TLog.log("Create new client:", ws.clientID)
+	client.pushConnect(0, nil)
 }
 
 // handleSubscribe 处理客户端 Subscribe 操作
 func (l *liveQueryServer) handleSubscribe(ws *webSocket, request M) {
+	if ws.clientID == 0 {
+		pushError(ws, 2, "Can not find this client, make sure you connect to server before subscribing", true)
+		TLog.error("Can not find this client, make sure you connect to server before subscribing")
+		return
+	}
 
+	client := l.clients[ws.clientID]
+
+	query := request["query"].(map[string]interface{})
+	subscriptionHash := queryHash(query)
+	className := query["className"].(string)
+	if _, ok := l.subscriptions[className]; ok == false {
+		l.subscriptions[className] = map[string]*subscription{}
+	}
+	classSubscriptions := l.subscriptions[className]
+	var subscription *subscription
+	if s, ok := classSubscriptions[subscriptionHash]; ok {
+		subscription = s
+	} else {
+		where := query["where"].(map[string]interface{})
+		subscription = newSubscription(className, where, subscriptionHash)
+		classSubscriptions[subscriptionHash] = subscription
+	}
+
+	subscriptionInfo := &subscriptionInfo{
+		subscription: subscription,
+	}
+
+	if fields, ok := query["fields"]; ok {
+		subscriptionInfo.fields = fields.([]string)
+	}
+	if sessionToken, ok := request["sessionToken"]; ok {
+		subscriptionInfo.sessionToken = sessionToken.(string)
+	}
+	requestID := int(request["requestId"].(float64))
+	client.addSubscriptionInfo(requestID, subscriptionInfo)
+
+	subscription.addClientSubscription(ws.clientID, requestID)
+
+	client.pushSubscribe(requestID, nil)
+
+	TLog.verbose("Create client", ws.clientID, "new subscription:", requestID)
+	TLog.verbose("Current client number:", len(l.clients))
 }
 
 // handleUnsubscribe 处理客户端 Unsubscribe 操作
@@ -300,4 +353,8 @@ func (l *liveQueryServer) matchesSubscription(object M, subscription *subscripti
 
 func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool, error) {
 	return false, nil
+}
+
+func (l *liveQueryServer) validateKeys(request M, validKeyPairs map[string]string) bool {
+	return false
 }

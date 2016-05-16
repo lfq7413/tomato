@@ -62,6 +62,11 @@ func matchesKeyConstraints(object M, key string, constraints interface{}) bool {
 		return equalObject(object[key], constraints)
 	}
 
+	objectType := constraint["__type"].(string)
+	if objectType != "" {
+
+	}
+
 	return true
 }
 

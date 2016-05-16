@@ -5,5 +5,6 @@ type sessionTokenCache struct {
 }
 
 func (s *sessionTokenCache) getUserID(sessionToken string) string {
+	// TODO
 	return ""
 }

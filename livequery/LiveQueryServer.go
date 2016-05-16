@@ -168,7 +168,7 @@ func (l *liveQueryServer) inflateParseObject(message M) {
 func (l *liveQueryServer) onAfterDelete(message M) {
 	TLog.verbose("afterDelete is triggered")
 
-	deletedParseObject := message["currentParseObject"].(M)
+	deletedParseObject := message["currentParseObject"].(map[string]interface{})
 	className := deletedParseObject["className"].(string)
 	TLog.verbose("ClassName:", className, "| ObjectId:", deletedParseObject["objectId"])
 	TLog.verbose("Current client number :", len(l.clients))
@@ -189,7 +189,7 @@ func (l *liveQueryServer) onAfterDelete(message M) {
 				continue
 			}
 			for _, requestID := range requestIDs {
-				acl := deletedParseObject["ACL"].(M)
+				acl := deletedParseObject["ACL"].(map[string]interface{})
 				isMatched, err := l.matchesACL(acl, client, requestID)
 				if err != nil {
 					TLog.error("Matching ACL error :", err)
@@ -209,9 +209,9 @@ func (l *liveQueryServer) onAfterSave(message M) {
 
 	var originalParseObject M
 	if message["originalParseObject"] != nil {
-		originalParseObject = message["originalParseObject"].(M)
+		originalParseObject = message["originalParseObject"].(map[string]interface{})
 	}
-	currentParseObject := message["currentParseObject"].(M)
+	currentParseObject := message["currentParseObject"].(map[string]interface{})
 	className := currentParseObject["className"].(string)
 	TLog.verbose("ClassName:", className, "| ObjectId:", currentParseObject["objectId"])
 	TLog.verbose("Current client number :", len(l.clients))
@@ -238,7 +238,7 @@ func (l *liveQueryServer) onAfterSave(message M) {
 				} else {
 					var originalACL M
 					if originalParseObject != nil {
-						originalACL = originalParseObject["ACL"].(M)
+						originalACL = originalParseObject["ACL"].(map[string]interface{})
 					}
 					isOriginalMatched, err = l.matchesACL(originalACL, client, requestID)
 					if err != nil {
@@ -251,7 +251,7 @@ func (l *liveQueryServer) onAfterSave(message M) {
 				if isCurrentSubscriptionMatched == false {
 					isCurrentMatched = false
 				} else {
-					currentACL := currentParseObject["ACL"].(M)
+					currentACL := currentParseObject["ACL"].(map[string]interface{})
 					isCurrentMatched, err = l.matchesACL(currentACL, client, requestID)
 					if err != nil {
 						TLog.error("Matching ACL error :", err)
@@ -400,7 +400,7 @@ func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool
 		return true, nil
 	}
 
-	if aclPer(acl).getPublicReadAccess() {
+	if getPublicReadAccess(acl) {
 		return true, nil
 	}
 
@@ -414,7 +414,7 @@ func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool
 	if userID == "" {
 		return false, nil
 	}
-	isSubscriptionSessionTokenMatched := aclPer(acl).getReadAccess(userID)
+	isSubscriptionSessionTokenMatched := getReadAccess(acl, userID)
 	if isSubscriptionSessionTokenMatched {
 		return true, nil
 	}
@@ -441,10 +441,8 @@ func (l *liveQueryServer) validateKeys(request M, validKeyPairs map[string]strin
 	return isValid
 }
 
-type aclPer M
-
-func (a aclPer) getPublicReadAccess() bool {
-	return a.getReadAccess("*")
+func getPublicReadAccess(acl M) bool {
+	return getReadAccess(acl, "*")
 }
 
 // getReadAccess 需要解析的格式如下
@@ -457,8 +455,8 @@ func (a aclPer) getPublicReadAccess() bool {
 // 		"read":true
 // 	}
 // }
-func (a aclPer) getReadAccess(id string) bool {
-	if p, ok := a[id]; ok {
+func getReadAccess(acl M, id string) bool {
+	if p, ok := acl[id]; ok {
 		if per, ok := p.(map[string]interface{}); ok {
 			if _, ok := per["read"]; ok {
 				return true

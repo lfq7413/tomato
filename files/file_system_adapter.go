@@ -70,10 +70,7 @@ func (f *fileSystemAdapter) getFileData(filename string) []byte {
 	data := []byte{}
 	buf := make([]byte, 1024)
 	for {
-		n, err := file.Read(buf)
-		if err != nil {
-			return []byte{}
-		}
+		n, _ := file.Read(buf)
 		if n == 0 {
 			break
 		}
@@ -85,7 +82,7 @@ func (f *fileSystemAdapter) getFileData(filename string) []byte {
 
 // getFileLocation 获取文件路径
 func (f *fileSystemAdapter) getFileLocation(filename string) string {
-	return config.TConfig.ServerURL + "/files/" + f.filesDir + "/" + filename
+	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + filename
 }
 
 func (f *fileSystemAdapter) getApplicationDir() string {

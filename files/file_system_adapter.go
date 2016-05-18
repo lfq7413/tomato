@@ -7,30 +7,38 @@ import (
 	"github.com/lfq7413/tomato/config"
 )
 
-// diskAdapter 本地文件存储模块
-type diskAdapter struct {
+// fileSystemAdapter 本地文件存储模块
+type fileSystemAdapter struct {
+	filesDir string
 }
 
-// createFile 在磁盘上创建文件
-func (d *diskAdapter) createFile(filename string, data []byte, contentType string) error {
-	dir := config.TConfig.FileDir + string(os.PathSeparator) + config.TConfig.AppID
-	if utils.FileExists(dir) == false {
-		err := os.MkdirAll(dir, 0777)
+func newFileSystemAdapter(filesSubDirectory string) *fileSystemAdapter {
+	f := &fileSystemAdapter{
+		filesDir: filesSubDirectory,
+	}
+	f.filesDir = filesSubDirectory
+	if f.applicationDirExist() == false {
+		err := f.mkdir(f.getApplicationDir())
 		if err != nil {
-			return err
+			panic(err)
 		}
 	}
 
-	filepath := dir + string(os.PathSeparator) + filename
+	return f
+}
+
+// createFile 在磁盘上创建文件
+func (f *fileSystemAdapter) createFile(filename string, data []byte, contentType string) error {
+	filepath := f.getLocalFilePath(filename)
 	os.Remove(filepath)
 
-	f, err := os.Create(filepath)
+	file, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer file.Close()
 
-	_, err = f.Write(data)
+	_, err = file.Write(data)
 	if err != nil {
 		return err
 	}
@@ -39,9 +47,8 @@ func (d *diskAdapter) createFile(filename string, data []byte, contentType strin
 }
 
 // deleteFile 从磁盘删除文件
-func (d *diskAdapter) deleteFile(filename string) error {
-	dir := config.TConfig.FileDir + string(os.PathSeparator) + config.TConfig.AppID
-	filepath := dir + string(os.PathSeparator) + filename
+func (f *fileSystemAdapter) deleteFile(filename string) error {
+	filepath := f.getLocalFilePath(filename)
 	err := os.Remove(filepath)
 	if err != nil {
 		return err
@@ -51,20 +58,19 @@ func (d *diskAdapter) deleteFile(filename string) error {
 }
 
 // getFileData 从磁盘获取文件数据，出错时返回空数据
-func (d *diskAdapter) getFileData(filename string) []byte {
-	dir := config.TConfig.FileDir + string(os.PathSeparator) + config.TConfig.AppID
-	filepath := dir + string(os.PathSeparator) + filename
+func (f *fileSystemAdapter) getFileData(filename string) []byte {
+	filepath := f.getLocalFilePath(filename)
 
-	f, err := os.Open(filepath)
+	file, err := os.Open(filepath)
 	if err != nil {
 		return []byte{}
 	}
-	defer f.Close()
+	defer file.Close()
 
 	data := []byte{}
 	buf := make([]byte, 1024)
 	for {
-		n, err := f.Read(buf)
+		n, err := file.Read(buf)
 		if err != nil {
 			return []byte{}
 		}
@@ -78,6 +84,29 @@ func (d *diskAdapter) getFileData(filename string) []byte {
 }
 
 // getFileLocation 获取文件路径
-func (d *diskAdapter) getFileLocation(filename string) string {
-	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + filename
+func (f *fileSystemAdapter) getFileLocation(filename string) string {
+	return config.TConfig.ServerURL + "/files/" + f.filesDir + "/" + filename
+}
+
+func (f *fileSystemAdapter) getApplicationDir() string {
+	if f.filesDir != "" {
+		return utils.SelfDir() + string(os.PathSeparator) + "files" + string(os.PathSeparator) + f.filesDir
+	}
+	return utils.SelfDir() + string(os.PathSeparator) + "files"
+}
+
+func (f *fileSystemAdapter) applicationDirExist() bool {
+	return utils.FileExists(f.getApplicationDir())
+}
+
+func (f *fileSystemAdapter) getLocalFilePath(filename string) string {
+	applicationDir := f.getApplicationDir()
+	if utils.FileExists(applicationDir) == false {
+		f.mkdir(applicationDir)
+	}
+	return applicationDir + string(os.PathSeparator) + filename
+}
+
+func (f *fileSystemAdapter) mkdir(dirPath string) error {
+	return os.MkdirAll(dirPath, 0777)
 }

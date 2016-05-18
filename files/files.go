@@ -13,9 +13,9 @@ var adapter filesAdapter
 func init() {
 	a := config.TConfig.FileAdapter
 	if a == "disk" {
-		adapter = &diskAdapter{}
+		adapter = newFileSystemAdapter(config.TConfig.AppID)
 	} else {
-		adapter = &diskAdapter{}
+		adapter = newFileSystemAdapter(config.TConfig.AppID)
 	}
 }
 

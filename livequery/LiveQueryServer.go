@@ -77,7 +77,7 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 		}
 	}
 	l.subscriber.on("message", h)
-	l.sessionTokenCache = &sessionTokenCache{}
+	l.sessionTokenCache = newSessionTokenCache()
 }
 
 // run 启动 WebSocket 服务

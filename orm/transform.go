@@ -488,6 +488,11 @@ func transformAtom(atom interface{}, force bool, options types.M) (interface{}, 
 			return f.jsonToDatabase(object)
 		}
 
+		// 在数组或者对象中的元素无需转换
+		if inArray || inObject {
+			return atom, nil
+		}
+
 		if force {
 			// 无效类型，"__type" 的值不支持
 			return nil, errs.E(errs.InvalidJSON, "bad atom.")

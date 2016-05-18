@@ -52,6 +52,11 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 	}
 	TLog.verbose("Support key pairs", l.keyPairs)
 
+	tomatoInfo["serverURL"] = args["serverURL"]
+	tomatoInfo["appId"] = args["appId"]
+	tomatoInfo["clientKey"] = args["clientKey"]
+	tomatoInfo["masterKey"] = args["masterKey"]
+
 	l.subscriber = createSubscriber("", "")
 	l.subscriber.subscribe("afterSave")
 	l.subscriber.subscribe("afterDelete")

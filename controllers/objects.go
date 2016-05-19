@@ -188,8 +188,13 @@ func (o *ObjectsController) HandleGet() {
 	if o.ObjectID == "" {
 		o.ObjectID = o.Ctx.Input.Param(":objectId")
 	}
-
 	options := types.M{}
+	if o.GetString("keys") != "" {
+		options["keys"] = o.GetString("keys")
+	}
+	if o.GetString("include") != "" {
+		options["include"] = o.GetString("include")
+	}
 	where := types.M{"objectId": o.ObjectID}
 	response, err := rest.Find(o.Auth, o.ClassName, where, options)
 

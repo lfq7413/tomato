@@ -343,8 +343,7 @@ func (w *Write) handleSession() error {
 	if w.query == nil && w.auth.IsMaster == false {
 		// 生成 token ，过期时间为 1 年
 		token := "r:" + utils.CreateToken()
-		expiresAt := time.Now().UTC()
-		expiresAt = expiresAt.AddDate(1, 0, 0)
+		expiresAt := config.GenerateSessionExpiresAt()
 		user := types.M{
 			"__type":    "Pointer",
 			"className": "_User",
@@ -585,8 +584,7 @@ func (w *Write) transformUser() error {
 	if w.query == nil {
 		token := "r:" + utils.CreateToken()
 		w.storage["token"] = token
-		expiresAt := time.Now().UTC()
-		expiresAt = expiresAt.AddDate(1, 0, 0)
+		expiresAt := config.GenerateSessionExpiresAt()
 		user := types.M{
 			"__type":    "Pointer",
 			"className": "_User",

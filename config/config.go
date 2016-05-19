@@ -2,6 +2,7 @@ package config
 
 import (
 	"strings"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/lfq7413/tomato/livequery"
@@ -23,6 +24,7 @@ type Config struct {
 	PushAdapter              string
 	MailAdapter              string
 	LiveQuery                *livequery.LiveQuery
+	SessionLength            int
 }
 
 var (
@@ -45,6 +47,7 @@ func init() {
 		FileDir:                  "/Users",
 		PushAdapter:              "tomato",
 		MailAdapter:              "smtp",
+		SessionLength:            31536000,
 	}
 
 	parseConfig()
@@ -71,4 +74,13 @@ func parseConfig() {
 	pubURL := beego.AppConfig.DefaultString("pubURL", "")
 	liveQuery := strings.Split(classeNames, "|")
 	TConfig.LiveQuery = livequery.NewLiveQuery(liveQuery, pubType, pubURL)
+
+	TConfig.SessionLength = beego.AppConfig.DefaultInt("SessionLength", 31536000)
+}
+
+// GenerateSessionExpiresAt 获取 Session 过期时间
+func GenerateSessionExpiresAt() time.Time {
+	expiresAt := time.Now().UTC()
+	expiresAt = expiresAt.AddDate(0, 0, TConfig.SessionLength/86400)
+	return expiresAt
 }

@@ -41,12 +41,12 @@ func SendVerificationEmail(user types.M) {
 	if shouldVerifyEmails() == false {
 		return
 	}
+	token := url.QueryEscape(user["_email_verify_token"].(string))
 	user = getUserIfNeeded(user)
 	if user == nil {
 		return
 	}
 	user["className"] = "_User"
-	token := url.QueryEscape(user["_email_verify_token"].(string))
 	username := url.QueryEscape(user["username"].(string))
 	link := config.TConfig.ServerURL + "app/verify_email" + "?token=" + token + "&username=" + username
 	options := types.M{

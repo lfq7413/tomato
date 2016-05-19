@@ -492,14 +492,21 @@ func removeRelation(key, fromClassName, fromID, toID string) error {
 // ValidateObject 校验对象是否合法
 func ValidateObject(className string, object, where, options types.M) error {
 	schema := LoadSchema(nil)
-	acl := []string{}
-	if options["acl"] != nil {
-		if v, ok := options["acl"].([]string); ok {
-			acl = v
+	isMaster := false
+	aclGroup := []string{}
+	if acl, ok := options["acl"]; ok {
+		if v, ok := acl.([]string); ok {
+			aclGroup = v
 		}
+	} else {
+		isMaster = true
 	}
 
-	err := canAddField(schema, className, object, acl)
+	if isMaster {
+		return nil
+	}
+
+	err := canAddField(schema, className, object, aclGroup)
 	if err != nil {
 		return err
 	}

@@ -681,25 +681,70 @@ func joinTableName(className, key string) string {
 // 或者
 // "objectId":{"$in":["id","id2"]}
 func addInObjectIdsIds(ids types.S, query types.M) {
+	coll := map[string]types.S{}
+	idsFromString := types.S{}
 	if id, ok := query["objectId"].(string); ok {
-		query["objectId"] = types.M{"$eq": id}
+		idsFromString = append(idsFromString, id)
 	}
+	coll["idsFromString"] = idsFromString
 
-	objectID := utils.MapInterface(query["objectId"])
-	if objectID == nil {
-		objectID = types.M{}
+	idsFromEq := types.S{}
+	if eqid, ok := query["objectId"].(map[string]interface{}); ok {
+		if id, ok := eqid["$eq"]; ok {
+			idsFromEq = append(idsFromEq, id.(string))
+		}
 	}
+	coll["idsFromEq"] = idsFromEq
 
-	queryIn := types.S{}
-	if objectID["$in"] != nil && utils.SliceInterface(objectID["$in"]) != nil {
-		in := utils.SliceInterface(objectID["$in"])
-		queryIn = append(queryIn, in...)
+	idsFromIn := types.S{}
+	if inid, ok := query["objectId"].(map[string]interface{}); ok {
+		if id, ok := inid["$in"]; ok {
+			idsFromIn = append(idsFromIn, id.([]interface{}))
+		}
 	}
+	coll["idsFromIn"] = idsFromIn
+
 	if ids != nil {
-		queryIn = append(queryIn, ids...)
+		coll["ids"] = ids
 	}
-	objectID["$in"] = queryIn
-	query["objectId"] = objectID
+
+	// 统计 idsFromString idsFromEq idsFromIn ids 中的共同元素加入到 $in 中
+	max := 0 // 以上4个集合中不为空的个数，也就是说 某个 objectId 出现的次数应该等于 max 才能加入到 $in 中查询
+	for k, v := range coll {
+		// 删除空集合
+		if len(v) > 0 {
+			max++
+		} else {
+			delete(coll, k)
+		}
+	}
+	idsColl := map[string]int{} // 统计每个 objectId 出现的次数
+	for _, c := range coll {
+		// 从每个集合中取出 objectId
+		idColl := map[string]int{}
+		for _, v := range c {
+			id := v.(string)
+			// 并去除重复
+			if _, ok := idColl[id]; ok == false {
+				idColl[id] = 0
+
+				// 加入到 idsColl 中，并增加出现次数
+				if i, ok := idsColl[id]; ok {
+					idsColl[id] = i + 1
+				} else {
+					idsColl[id] = 1
+				}
+			}
+		}
+	}
+	queryIn := types.S{} // 统计出现次数为 max 的 objectId
+	for k, v := range idsColl {
+		if v == max {
+			queryIn = append(queryIn, k)
+		}
+	}
+
+	query["objectId"] = types.M{"$in": queryIn}
 }
 
 // reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in 或者等于某对象

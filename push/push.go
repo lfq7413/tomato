@@ -75,6 +75,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, wait bool) error {
 	if op != nil && updateWhere != nil {
 		badgeQuery, err := rest.NewQuery(auth, "_Installation", updateWhere, types.M{})
 		if err != nil {
+			status.fail(err)
 			return err
 		}
 		badgeQuery.BuildRestWhere()
@@ -91,6 +92,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, wait bool) error {
 		restWhere["$and"] = and
 		err = orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
 		if err != nil {
+			status.fail(err)
 			return err
 		}
 	}
@@ -100,9 +102,11 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, wait bool) error {
 	// TODO 处理结果大于100的情况
 	response, err := rest.Find(auth, "_Installation", where, types.M{})
 	if err != nil {
+		status.fail(err)
 		return err
 	}
 	if utils.HasResults(response) == false {
+		status.complete([]types.M{})
 		return nil
 	}
 	results := utils.SliceInterface(response["results"])

@@ -125,4 +125,14 @@ func (p *pushStatus) complete(results []types.M) {
 	p.collection().UpdateOne(where, types.M{"$set": update})
 }
 
-// TODO 添加处理推送失败的情况
+// fail 处理推送失败的情况
+func (p *pushStatus) fail(err error) {
+	update := types.M{
+		"errorMessage": err.Error(),
+		"status":       "failed",
+	}
+	where := types.M{
+		"objectId": p.status["objectId"],
+	}
+	p.collection().UpdateOne(where, types.M{"$set": update})
+}

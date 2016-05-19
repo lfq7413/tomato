@@ -278,7 +278,7 @@ func transformConstraint(constraint interface{}, inArray bool) (interface{}, err
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
-				obj, err := transformAtom(v, true, types.M{})
+				obj, err := transformAtom(v, true, types.M{"inArray": inArray})
 				if err != nil {
 					return nil, err
 				}

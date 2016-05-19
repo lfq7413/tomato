@@ -1,6 +1,7 @@
 package files
 
 import (
+	"net/url"
 	"os"
 
 	"github.com/astaxie/beego/utils"
@@ -82,7 +83,7 @@ func (f *fileSystemAdapter) getFileData(filename string) []byte {
 
 // getFileLocation 获取文件路径
 func (f *fileSystemAdapter) getFileLocation(filename string) string {
-	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + filename
+	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + url.QueryEscape(filename)
 }
 
 func (f *fileSystemAdapter) getApplicationDir() string {

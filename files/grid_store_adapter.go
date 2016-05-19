@@ -2,6 +2,7 @@ package files
 
 import (
 	"errors"
+	"net/url"
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
@@ -65,5 +66,5 @@ func (g *gridStoreAdapter) getFileData(filename string) []byte {
 }
 
 func (g *gridStoreAdapter) getFileLocation(filename string) string {
-	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + filename
+	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + url.QueryEscape(filename)
 }

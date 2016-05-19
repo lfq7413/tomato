@@ -598,7 +598,7 @@ func (w *Write) transformUser() error {
 			authProvider = "password"
 		}
 		createdWith := types.M{
-			"action":       "login",
+			"action":       "signup",
 			"authProvider": authProvider,
 		}
 		sessionData := types.M{
@@ -606,7 +606,7 @@ func (w *Write) transformUser() error {
 			"user":           user,
 			"createdWith":    createdWith,
 			"restricted":     false,
-			"installationId": w.data["installationId"],
+			"installationId": w.auth.InstallationID,
 			"expiresAt":      utils.TimetoString(expiresAt),
 		}
 		if w.response != nil && w.response["response"] != nil {

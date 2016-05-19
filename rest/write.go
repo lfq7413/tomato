@@ -112,6 +112,9 @@ func (w *Write) Execute() (types.M, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	w.cleanUserAuthData()
+
 	return w.response, nil
 }
 
@@ -891,4 +894,21 @@ func (w *Write) sanitizedData() types.M {
 		}
 	}
 	return data
+}
+
+func (w *Write) cleanUserAuthData() {
+	if w.response != nil && w.response["response"] != nil && w.className == "_User" {
+		user := utils.MapInterface(w.response["response"])
+		if user != nil && user["authData"] != nil {
+			authData := utils.MapInterface(user["authData"])
+			for provider, v := range authData {
+				if v == nil {
+					delete(authData, provider)
+				}
+			}
+			if len(authData) == 0 {
+				delete(user, "authData")
+			}
+		}
+	}
 }

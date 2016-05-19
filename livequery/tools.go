@@ -121,7 +121,19 @@ func matchesKeyConstraints(object M, key string, constraints interface{}) bool {
 				return false
 			}
 		case "$exists":
-			if _, ok := object[key]; ok == false {
+			var propertyExists bool
+			if _, ok := object[key]; ok {
+				propertyExists = true
+			} else {
+				propertyExists = false
+			}
+			var existenceIsRequired bool
+			if v, ok := constraint["$exists"].(bool); ok {
+				existenceIsRequired = v
+			} else {
+				break
+			}
+			if (!propertyExists && existenceIsRequired) || (propertyExists && !existenceIsRequired) {
 				return false
 			}
 		case "$regex":

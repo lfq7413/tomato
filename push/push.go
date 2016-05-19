@@ -2,6 +2,7 @@ package push
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/lfq7413/tomato/config"
@@ -53,7 +54,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, wait bool) error {
 	if data != nil && data["badge"] != nil {
 		badge := data["badge"]
 		op = types.M{}
-		if utils.String(badge) == "Increment" {
+		if strings.ToLower(utils.String(badge)) == "increment" {
 			inc := types.M{
 				"badge": 1,
 			}
@@ -115,7 +116,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, wait bool) error {
 // sendToAdapter 发送推送消息
 func sendToAdapter(body types.M, installations []interface{}, status *pushStatus) []types.M {
 	data := utils.MapInterface(body["data"])
-	if data != nil && data["badge"] != nil && utils.String(data["badge"]) == "Increment" {
+	if data != nil && data["badge"] != nil && strings.ToLower(utils.String(data["badge"])) == "increment" {
 		badgeInstallationsMap := types.M{}
 		// 按 badge 分组
 		for _, v := range installations {

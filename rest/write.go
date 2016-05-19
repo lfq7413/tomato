@@ -449,25 +449,24 @@ func (w *Write) handleAuthData(authData types.M) error {
 	}
 	w.storage["authProvider"] = strings.Join(keys, ",")
 
-	if results == nil || len(results) == 0 {
-		// 不存在用户，则创建 username
-		w.data["username"] = utils.CreateToken()
-	} else if w.query == nil {
-		// 存在一个用户，并且是 create 请求时，进行登录
-		user := utils.MapInterface(results[0])
-		delete(user, "password")
-		// 在 location() 之前设置 objectId，否则 w.data["objectId"] 可能为空
-		w.data["objectId"] = user["objectId"]
-		w.response = types.M{
-			"response": user,
-			"location": w.location(),
-		}
-	} else if w.query != nil && w.query["objectId"] != nil {
-		// 存在一个用户，并且当前为 update 请求，校验 objectId 是否一致
-		user := utils.MapInterface(results[0])
-		if utils.String(user["objectId"]) != utils.String(w.query["objectId"]) {
-			// auth 已经被使用
-			return errs.E(errs.AccountAlreadyLinked, "this auth is already used")
+	if results != nil || len(results) > 0 {
+		if w.query == nil {
+			// 存在一个用户，并且是 create 请求时，进行登录
+			user := utils.MapInterface(results[0])
+			delete(user, "password")
+			// 在 location() 之前设置 objectId，否则 w.data["objectId"] 可能为空
+			w.data["objectId"] = user["objectId"]
+			w.response = types.M{
+				"response": user,
+				"location": w.location(),
+			}
+		} else if w.query != nil && w.query["objectId"] != nil {
+			// 存在一个用户，并且当前为 update 请求，校验 objectId 是否一致
+			user := utils.MapInterface(results[0])
+			if utils.String(user["objectId"]) != utils.String(w.query["objectId"]) {
+				// auth 已经被使用
+				return errs.E(errs.AccountAlreadyLinked, "this auth is already used")
+			}
 		}
 	}
 

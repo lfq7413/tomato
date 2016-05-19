@@ -167,7 +167,7 @@ func VerifyEmail(username, token string) bool {
 }
 
 // CheckResetTokenValidity 检查要重置密码的用户与 token 是否存在
-func CheckResetTokenValidity(username, token string) bool {
+func CheckResetTokenValidity(username, token string) types.M {
 	collection := orm.AdaptiveCollection("_User")
 	where := types.M{
 		"username":          username,
@@ -176,33 +176,39 @@ func CheckResetTokenValidity(username, token string) bool {
 	option := types.M{"limit": 1}
 	results := collection.Find(where, option)
 	if len(results) != 1 {
-		return false
+		return nil
 	}
 
-	return true
+	return results[0]
 }
 
 // UpdatePassword 更新指定用户的密码
 func UpdatePassword(username, token, newPassword string) error {
-	if CheckResetTokenValidity(username, token) == false {
+	user := CheckResetTokenValidity(username, token)
+	if user == nil {
 		return errors.New("Invalid token")
 	}
-	query := types.M{
-		"username":          username,
-		"_perishable_token": token,
-	}
-	data := types.M{
-		"password":          newPassword,
-		"_perishable_token": "",
-	}
-	write, err := NewWrite(Master(), "_User", query, data, types.M{})
+
+	err := updateUserPassword(user["_id"].(string), newPassword)
 	if err != nil {
-		return errors.New("Reset password failed")
-	}
-	_, err = write.Execute()
-	if err != nil {
-		return errors.New("Reset password failed")
+		return err
 	}
 
+	// 清空重置密码 token
+	collection := orm.AdaptiveCollection("_User")
+	selector := types.M{"username": username}
+	update := types.M{
+		"$unset": types.M{"_perishable_token": nil},
+	}
+	collection.FindOneAndUpdate(selector, update)
+
+	return nil
+}
+
+func updateUserPassword(userID, password string) error {
+	_, err := Update(Master(), "_User", userID, types.M{"password": password})
+	if err != nil {
+		return err
+	}
 	return nil
 }

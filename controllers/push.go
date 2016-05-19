@@ -50,7 +50,7 @@ func getQueryCondition(body types.M) (types.M, error) {
 			"channels": channels,
 		}
 	} else {
-		return nil, errs.E(errs.PushMisconfigured, "Channels and query should be set at least one.")
+		return nil, errs.E(errs.PushMisconfigured, `Sending a push requires either "channels" or a "where" query.`)
 	}
 
 	return where, nil

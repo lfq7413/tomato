@@ -620,56 +620,56 @@ func includePath(auth *Auth, response types.M, path []string) error {
 	if len(pointers) == 0 {
 		return nil
 	}
+	pointersHash := map[string][]string{}
 	className := ""
-	objectIDs := []string{}
 	for _, v := range pointers {
 		pointer := utils.MapInterface(v)
-		// 所有节点的 className 应该一致
-		if className == "" {
-			className = utils.String(pointer["className"])
-		} else {
-			if className != utils.String(pointer["className"]) {
-				return errs.E(errs.InvalidJSON, "inconsistent type data for include")
+		// 不再区分不同 className ，添加不为空的 className
+		className = utils.String(pointer["className"])
+		if className != "" {
+			if v, ok := pointersHash[className]; ok {
+				v = append(v, pointer["objectId"].(string))
+				pointersHash[className] = v
+			} else {
+				pointersHash[className] = []string{pointer["objectId"].(string)}
 			}
 		}
-		objectIDs = append(objectIDs, utils.String(pointer["objectId"]))
-	}
-	if className == "" {
-		return errs.E(errs.InvalidJSON, "bad pointers")
+
 	}
 
-	// 获取所有 objectIDs 对应的对象
-	objectID := types.M{
-		"$in": objectIDs,
-	}
-	where := types.M{
-		"objectId": objectID,
-	}
-	query, err := NewQuery(auth, className, where, types.M{})
-	if err != nil {
-		return err
-	}
-	includeResponse, err := query.Execute()
-	if err != nil {
-		return err
-	}
-	if utils.HasResults(includeResponse) == false {
-		return nil
-	}
-
-	// 组装查询到的对象
-	results := utils.SliceInterface(includeResponse["results"])
 	replace := types.M{}
-	for _, v := range results {
-		obj := utils.MapInterface(v)
-		obj["__type"] = "Object"
-		obj["className"] = className
-		if className == "_User" {
-			delete(obj, "sessionToken")
+	for clsName, ids := range pointersHash {
+		// 获取所有 ids 对应的对象
+		objectID := types.M{
+			"$in": ids,
 		}
-		replace[utils.String(obj["objectId"])] = obj
-	}
+		where := types.M{
+			"objectId": objectID,
+		}
+		query, err := NewQuery(auth, clsName, where, types.M{})
+		if err != nil {
+			return err
+		}
+		includeResponse, err := query.Execute()
+		if err != nil {
+			return err
+		}
+		if utils.HasResults(includeResponse) == false {
+			return nil
+		}
 
+		// 组装查询到的对象
+		results := utils.SliceInterface(includeResponse["results"])
+		for _, v := range results {
+			obj := utils.MapInterface(v)
+			obj["__type"] = "Object"
+			obj["className"] = clsName
+			if clsName == "_User" {
+				delete(obj, "sessionToken")
+			}
+			replace[utils.String(obj["objectId"])] = obj
+		}
+	}
 	// 使用查询到的对象替换对应的节点
 	replacePointers(pointers, replace)
 

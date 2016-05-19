@@ -102,8 +102,8 @@ func (p *PublicController) RequestResetPassword() {
 		return
 	}
 
-	ok := rest.CheckResetTokenValidity(username, token)
-	if ok {
+	user := rest.CheckResetTokenValidity(username, token)
+	if user != nil {
 		p.Ctx.Output.SetStatus(302)
 		location := config.TConfig.ServerURL + "app/choose_password"
 		location += "?token=" + token

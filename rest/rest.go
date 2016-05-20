@@ -143,9 +143,12 @@ func Update(
 
 // enforceRoleSecurity 对指定的类与操作进行安全校验
 func enforceRoleSecurity(method string, className string, auth *Auth) error {
-	// 非 Master 不得对 _Installation 进行删除操作
-	if method == "delete" && className == "_Installation" && auth.IsMaster == false {
-		return errs.E(errs.OperationForbidden, "Clients aren't allowed to perform the delete operation on the installation collection.")
+	// 非 Master 不得对 _Installation 进行删除与查找操作操作
+	if className == "_Installation" && auth.IsMaster == false {
+		if method == "delete" || method == "find" {
+			msg := "Clients aren't allowed to perform the " + method + " operation on the installation collection."
+			return errs.E(errs.OperationForbidden, msg)
+		}
 	}
 	return nil
 }

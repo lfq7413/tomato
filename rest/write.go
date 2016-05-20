@@ -551,6 +551,7 @@ func (w *Write) runBeforeTrigger() error {
 		if w.query != nil && w.query["objectId"] != nil {
 			delete(w.data, "objectId")
 		}
+		return w.validateSchema()
 	}
 
 	return nil

@@ -676,9 +676,7 @@ func joinTableName(className, key string) string {
 }
 
 // addInObjectIdsIds 添加 ids 到查询条件中
-// 替换 $relatedTo 为：
-// "objectId":{"$eq":"id"}
-// 或者
+// 替换 objectId 为：
 // "objectId":{"$in":["id","id2"]}
 func addInObjectIdsIds(ids types.S, query types.M) {
 	coll := map[string]types.S{}
@@ -699,7 +697,7 @@ func addInObjectIdsIds(ids types.S, query types.M) {
 	idsFromIn := types.S{}
 	if inid, ok := query["objectId"].(map[string]interface{}); ok {
 		if id, ok := inid["$in"]; ok {
-			idsFromIn = append(idsFromIn, id.([]interface{}))
+			idsFromIn = append(idsFromIn, id.([]interface{})...)
 		}
 	}
 	coll["idsFromIn"] = idsFromIn
@@ -744,10 +742,27 @@ func addInObjectIdsIds(ids types.S, query types.M) {
 		}
 	}
 
-	query["objectId"] = types.M{"$in": queryIn}
+	if v, ok := query["objectId"]; ok {
+		if _, ok := v.(string); ok {
+			query["objectId"] = types.M{}
+		}
+	} else {
+		query["objectId"] = types.M{}
+	}
+	id := query["objectId"].(map[string]interface{})
+	id["$in"] = queryIn
+
+	query["objectId"] = id
 }
 
-// reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in 或者等于某对象
+// addNotInObjectIdsIds 添加 ids 到查询条件中
+// 替换 objectId 为：
+// "objectId":{"$nin":["id","id2"]}
+func addNotInObjectIdsIds(ids types.S, query types.M) {
+
+}
+
+// reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in $ne $nin 或者等于某对象
 // 例如 classA 中的 字段 key 为 relation<classB> 类型，查找 key 中包含指定 classB 对象的 classA
 // query = {"key":{"$in":[]}}
 func reduceInRelation(className string, query types.M, schema *Schema) types.M {
@@ -765,7 +780,7 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 
 	for key, v := range query {
 		op := utils.MapInterface(v)
-		if v != nil && (op["$in"] != nil || utils.String(op["__type"]) == "Pointer") {
+		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || utils.String(op["__type"]) == "Pointer") {
 			// 只处理 relation 类型
 			t := schema.getExpectedType(className, key)
 			match := false
@@ -777,21 +792,52 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 				return query
 			}
 
-			relatedIds := types.S{}
-			if op["$in"] != nil {
-				ors := utils.SliceInterface(op["$in"])
-				for _, v := range ors {
-					r := utils.MapInterface(v)
-					relatedIds = append(relatedIds, r["objectId"])
+			// 取出所有限制条件
+			relatedIds := []types.S{}
+			isNegation := []bool{}
+			for constraintKey, value := range op {
+				if constraintKey == "objectId" {
+					ids := types.S{value}
+					relatedIds = append(relatedIds, ids)
+					isNegation = append(isNegation, false)
+				} else if constraintKey == "$in" {
+					in := utils.SliceInterface(value)
+					ids := types.S{}
+					for _, v := range in {
+						r := utils.MapInterface(v)
+						ids = append(ids, r["objectId"])
+					}
+					relatedIds = append(relatedIds, ids)
+					isNegation = append(isNegation, false)
+				} else if constraintKey == "$nin" {
+					nin := utils.SliceInterface(value)
+					ids := types.S{}
+					for _, v := range nin {
+						r := utils.MapInterface(v)
+						ids = append(ids, r["objectId"])
+					}
+					relatedIds = append(relatedIds, ids)
+					isNegation = append(isNegation, true)
+				} else if constraintKey == "$ne" {
+					ne := utils.MapInterface(value)
+					ids := types.S{ne["objectId"]}
+					relatedIds = append(relatedIds, ids)
+					isNegation = append(isNegation, true)
 				}
-			} else {
-				relatedIds = append(relatedIds, op["objectId"])
 			}
 
-			// 从 Join 表中查找的 ids，替换查询条件
-			ids := owningIds(className, key, relatedIds)
 			delete(query, key)
-			addInObjectIdsIds(ids, query)
+
+			// 应用所有限制条件
+			for i, relatedID := range relatedIds {
+				// 从 Join 表中查找的 ids，替换查询条件
+				ids := owningIds(className, key, relatedID)
+				if isNegation[i] {
+					addNotInObjectIdsIds(ids, query)
+				} else {
+					addInObjectIdsIds(ids, query)
+				}
+			}
 		}
 	}
 

@@ -675,7 +675,7 @@ func joinTableName(className, key string) string {
 	return "_Join:" + key + ":" + className
 }
 
-// addInObjectIdsIds 添加 ids 到查询条件中
+// addInObjectIdsIds 添加 ids 到查询条件中, 应该取 objectId $eq $in ids 的交集
 // 替换 objectId 为：
 // "objectId":{"$in":["id","id2"]}
 func addInObjectIdsIds(ids types.S, query types.M) {
@@ -755,7 +755,7 @@ func addInObjectIdsIds(ids types.S, query types.M) {
 	query["objectId"] = id
 }
 
-// addNotInObjectIdsIds 添加 ids 到查询条件中
+// addNotInObjectIdsIds 添加 ids 到查询条件中，应该取 $ne $nin ids 的并集
 // 替换 objectId 为：
 // "objectId":{"$nin":["id","id2"]}
 func addNotInObjectIdsIds(ids types.S, query types.M) {
@@ -821,7 +821,7 @@ func addNotInObjectIdsIds(ids types.S, query types.M) {
 	query["objectId"] = id
 }
 
-// reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in $ne $nin 或者等于某对象
+// reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in $ne $nin $eq 或者等于某对象
 // 例如 classA 中的 字段 key 为 relation<classB> 类型，查找 key 中包含指定 classB 对象的 classA
 // query = {"key":{"$in":[]}}
 func reduceInRelation(className string, query types.M, schema *Schema) types.M {
@@ -839,7 +839,7 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 
 	for key, v := range query {
 		op := utils.MapInterface(v)
-		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || utils.String(op["__type"]) == "Pointer") {
+		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || op["$eq"] != nil || utils.String(op["__type"]) == "Pointer") {
 			// 只处理 relation 类型
 			t := schema.getExpectedType(className, key)
 			match := false
@@ -882,6 +882,11 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 					ids := types.S{ne["objectId"]}
 					relatedIds = append(relatedIds, ids)
 					isNegation = append(isNegation, true)
+				} else if constraintKey == "$eq" {
+					eq := utils.MapInterface(value)
+					ids := types.S{eq["objectId"]}
+					relatedIds = append(relatedIds, ids)
+					isNegation = append(isNegation, false)
 				}
 			}
 

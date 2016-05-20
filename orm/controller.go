@@ -759,7 +759,66 @@ func addInObjectIdsIds(ids types.S, query types.M) {
 // 替换 objectId 为：
 // "objectId":{"$nin":["id","id2"]}
 func addNotInObjectIdsIds(ids types.S, query types.M) {
+	coll := map[string]types.S{}
+	idsFromNin := types.S{}
+	if ninid, ok := query["objectId"].(map[string]interface{}); ok {
+		if id, ok := ninid["$nin"]; ok {
+			idsFromNin = append(idsFromNin, id.([]interface{})...)
+		}
+	}
+	coll["idsFromNin"] = idsFromNin
 
+	if ids != nil {
+		coll["ids"] = ids
+	}
+
+	// 统计 idsFromNin ids 中的共同元素加入到 $nin 中
+	max := 0 // 以上2个集合中不为空的个数，也就是说 某个 objectId 出现的次数应该等于 max 才能加入到 $nin 中查询
+	for k, v := range coll {
+		// 删除空集合
+		if len(v) > 0 {
+			max++
+		} else {
+			delete(coll, k)
+		}
+	}
+	idsColl := map[string]int{} // 统计每个 objectId 出现的次数
+	for _, c := range coll {
+		// 从每个集合中取出 objectId
+		idColl := map[string]int{}
+		for _, v := range c {
+			id := v.(string)
+			// 并去除重复
+			if _, ok := idColl[id]; ok == false {
+				idColl[id] = 0
+
+				// 加入到 idsColl 中，并增加出现次数
+				if i, ok := idsColl[id]; ok {
+					idsColl[id] = i + 1
+				} else {
+					idsColl[id] = 1
+				}
+			}
+		}
+	}
+	queryNin := types.S{} // 统计出现次数为 max 的 objectId
+	for k, v := range idsColl {
+		if v == max {
+			queryNin = append(queryNin, k)
+		}
+	}
+
+	if v, ok := query["objectId"]; ok {
+		if _, ok := v.(string); ok {
+			query["objectId"] = types.M{}
+		}
+	} else {
+		query["objectId"] = types.M{}
+	}
+	id := query["objectId"].(map[string]interface{})
+	id["$nin"] = queryNin
+
+	query["objectId"] = id
 }
 
 // reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in $ne $nin 或者等于某对象

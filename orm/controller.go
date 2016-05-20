@@ -772,40 +772,21 @@ func addNotInObjectIdsIds(ids types.S, query types.M) {
 		coll["ids"] = ids
 	}
 
-	// 统计 idsFromNin ids 中的共同元素加入到 $nin 中
-	max := 0 // 以上2个集合中不为空的个数，也就是说 某个 objectId 出现的次数应该等于 max 才能加入到 $nin 中查询
-	for k, v := range coll {
-		// 删除空集合
-		if len(v) > 0 {
-			max++
-		} else {
-			delete(coll, k)
-		}
-	}
-	idsColl := map[string]int{} // 统计每个 objectId 出现的次数
+	idsColl := map[string]int{}
 	for _, c := range coll {
 		// 从每个集合中取出 objectId
-		idColl := map[string]int{}
 		for _, v := range c {
 			id := v.(string)
 			// 并去除重复
-			if _, ok := idColl[id]; ok == false {
-				idColl[id] = 0
-
-				// 加入到 idsColl 中，并增加出现次数
-				if i, ok := idsColl[id]; ok {
-					idsColl[id] = i + 1
-				} else {
-					idsColl[id] = 1
-				}
+			if _, ok := idsColl[id]; ok == false {
+				idsColl[id] = 0
 			}
 		}
 	}
-	queryNin := types.S{} // 统计出现次数为 max 的 objectId
-	for k, v := range idsColl {
-		if v == max {
-			queryNin = append(queryNin, k)
-		}
+
+	queryNin := types.S{}
+	for k := range idsColl {
+		queryNin = append(queryNin, k)
 	}
 
 	if v, ok := query["objectId"]; ok {

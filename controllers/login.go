@@ -1,8 +1,7 @@
 package controllers
 
 import (
-	"time"
-
+	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
 	"github.com/lfq7413/tomato/orm"
@@ -75,8 +74,7 @@ func (l *LoginController) HandleLogIn() {
 	// 展开文件信息
 	files.ExpandFilesInObject(user)
 
-	expiresAt := time.Now().UTC()
-	expiresAt = expiresAt.AddDate(1, 0, 0)
+	expiresAt := config.GenerateSessionExpiresAt()
 	usr := types.M{
 		"__type":    "Pointer",
 		"className": "_User",

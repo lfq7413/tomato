@@ -1,6 +1,9 @@
 package rest
 
 import (
+	"time"
+
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -26,7 +29,7 @@ func Nobody() *Auth {
 }
 
 // GetAuthForSessionToken 返回 sessionToken 对应的用户权限信息
-func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
+func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, error) {
 	// 从缓存获取用户信息
 	cachedUser := usersCache.get(sessionToken)
 	if cachedUser != nil {
@@ -34,7 +37,7 @@ func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
 			IsMaster:       false,
 			InstallationID: installationID,
 			User:           cachedUser.(map[string]interface{}),
-		}
+		}, nil
 	}
 	// 缓存中不存在时，从数据库中查询
 	restOptions := types.M{
@@ -47,23 +50,30 @@ func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
 
 	query, err := NewQuery(Master(), "_Session", restWhere, restOptions)
 	if err != nil {
-		return Nobody()
+		return Nobody(), nil
 	}
 	response, err := query.Execute()
 	if err != nil {
-		return Nobody()
+		return Nobody(), nil
 	}
 
 	if response == nil || response["results"] == nil {
-		return Nobody()
+		return Nobody(), nil
 	}
 	results := utils.SliceInterface(response["results"])
 	if results == nil || len(results) != 1 {
-		return Nobody()
+		return Nobody(), nil
 	}
 	result := utils.MapInterface(results[0])
 	if result == nil || result["user"] == nil {
-		return Nobody()
+		return Nobody(), nil
+	}
+
+	now := time.Now().UTC()
+	expiresAtString := utils.MapInterface(result["expiresAt"])["iso"].(string)
+	expiresAt, _ := utils.StringtoTime(expiresAtString)
+	if expiresAt.UnixNano() < now.UnixNano() {
+		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
 	}
 
 	user := utils.MapInterface(result["user"])
@@ -77,7 +87,7 @@ func GetAuthForSessionToken(sessionToken string, installationID string) *Auth {
 		IsMaster:       false,
 		InstallationID: installationID,
 		User:           user,
-	}
+	}, nil
 }
 
 // CouldUpdateUserID Master 与当前用户可进行修改

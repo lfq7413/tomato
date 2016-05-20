@@ -147,7 +147,13 @@ func (o *ObjectsController) Prepare() {
 	if info.SessionToken == "" {
 		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: false}
 	} else {
-		o.Auth = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
+		var err error
+		o.Auth, err = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
+		if err != nil {
+			o.Data["json"] = errs.ErrorToMap(err)
+			o.ServeJSON()
+			return
+		}
 	}
 }
 

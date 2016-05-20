@@ -70,8 +70,14 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 	}
 
 	now := time.Now().UTC()
+	if result["expiresAt"] == nil {
+		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
+	}
 	expiresAtString := utils.MapInterface(result["expiresAt"])["iso"].(string)
-	expiresAt, _ := utils.StringtoTime(expiresAtString)
+	expiresAt, err := utils.StringtoTime(expiresAtString)
+	if err != nil {
+		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
+	}
 	if expiresAt.UnixNano() < now.UnixNano() {
 		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
 	}

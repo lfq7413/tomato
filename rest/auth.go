@@ -147,8 +147,9 @@ func (a *Auth) loadRoles() []string {
 		roleIDs = append(roleIDs, utils.String(roleObj["objectId"]))
 	}
 	// 取出角色对应的父角色
+	queriedRoles := map[string]bool{} // 记录查询过的 role ，避免多次查询
 	for _, v := range roleIDs {
-		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v)...)
+		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v, queriedRoles)...)
 	}
 
 	objectID := types.M{
@@ -173,7 +174,12 @@ func (a *Auth) loadRoles() []string {
 }
 
 // getAllRoleNamesForID 取出角色 id 对应的父角色
-func (a *Auth) getAllRoleNamesForID(roleID string) []string {
+func (a *Auth) getAllRoleNamesForID(roleID string, queriedRoles map[string]bool) []string {
+	if _, ok := queriedRoles[roleID]; ok {
+		return []string{}
+	}
+	queriedRoles[roleID] = true
+
 	// _Role 表中的 roles 字段为 Relation 类型，应该使用 $relatedTo 去查询
 	rolePointer := types.M{
 		"__type":    "Pointer",
@@ -201,7 +207,7 @@ func (a *Auth) getAllRoleNamesForID(roleID string) []string {
 	}
 	// 递归取出角色对应的父角色
 	for _, v := range roleIDs {
-		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v)...)
+		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v, queriedRoles)...)
 	}
 	return roleIDs
 }

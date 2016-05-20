@@ -124,54 +124,47 @@ func (a *Auth) GetUserRoles() []string {
 
 // loadRoles 从数据库加载用户角色列表
 func (a *Auth) loadRoles() []string {
-	// _Role 表中的 users 字段为 Relation 类型，应该使用 $relatedTo 去查询
 	users := types.M{
 		"__type":    "Pointer",
 		"className": "_User",
 		"objectId":  a.User["objectId"],
 	}
-	relatedTo := types.M{
-		"object": users,
-		"key":    "users",
-	}
-	where := types.M{
-		"$relatedTo": relatedTo,
+	restWhere := types.M{
+		"users": users,
 	}
 	// 取出当前用户直接对应的所有角色
 	// TODO 处理错误，处理结果大于100的情况
-	response, _ := Find(Master(), "_Role", where, types.M{})
-	if utils.HasResults(response) == false {
+	query, err := NewQuery(Master(), "_Role", restWhere, types.M{})
+	if err != nil {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
 		a.RolePromise = nil
 		return a.UserRoles
 	}
-	results := utils.SliceInterface(response["results"])
-	roleIDs := []string{}
-	for _, v := range results {
-		roleObj := utils.MapInterface(v)
-		roleIDs = append(roleIDs, utils.String(roleObj["objectId"]))
-	}
-	// 取出角色对应的父角色
-	queriedRoles := map[string]bool{} // 记录查询过的 role ，避免多次查询
-	for _, v := range roleIDs {
-		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v, queriedRoles)...)
+
+	response, err := query.Execute()
+	if err != nil || utils.HasResults(response) == false {
+		a.UserRoles = []string{}
+		a.FetchedRoles = true
+		a.RolePromise = nil
+		return a.UserRoles
 	}
 
-	objectID := types.M{
-		"$in": roleIDs,
-	}
-	where = types.M{
-		"objectId": objectID,
-	}
-	// 取出所有角色名称
-	// TODO 处理错误，处理结果大于100的情况
-	response, _ = Find(Master(), "_Role", where, types.M{})
-	results = utils.SliceInterface(response["results"])
-	a.UserRoles = []string{}
+	results := utils.SliceInterface(response["results"])
+	ids := []string{}
+	names := []string{}
 	for _, v := range results {
 		roleObj := utils.MapInterface(v)
-		a.UserRoles = append(a.UserRoles, "role:"+utils.String(roleObj["name"]))
+		ids = append(ids, utils.String(roleObj["objectId"]))
+		names = append(names, utils.String(roleObj["name"]))
+	}
+
+	queriedRoles := map[string]bool{} // 记录查询过的 role ，避免多次查询
+	roleNames := a.getAllRoleNamesForID(ids, names, queriedRoles)
+
+	a.UserRoles = []string{}
+	for _, v := range roleNames {
+		a.UserRoles = append(a.UserRoles, "role:"+v)
 	}
 	a.FetchedRoles = true
 	a.RolePromise = nil
@@ -180,40 +173,57 @@ func (a *Auth) loadRoles() []string {
 }
 
 // getAllRoleNamesForID 取出角色 id 对应的父角色
-func (a *Auth) getAllRoleNamesForID(roleID string, queriedRoles map[string]bool) []string {
-	if _, ok := queriedRoles[roleID]; ok {
-		return []string{}
+func (a *Auth) getAllRoleNamesForID(roleIDs, names []string, queriedRoles map[string]bool) []string {
+	ins := types.S{}
+	for _, roleID := range roleIDs {
+		if _, ok := queriedRoles[roleID]; ok {
+			continue
+		}
+		// 标记该 roleID 已经获取过一次父角色了
+		queriedRoles[roleID] = true
+		object := types.M{
+			"__type":    "Pointer",
+			"className": "_Role",
+			"objectId":  roleID,
+		}
+		ins = append(ins, object)
 	}
-	queriedRoles[roleID] = true
 
-	// _Role 表中的 roles 字段为 Relation 类型，应该使用 $relatedTo 去查询
-	rolePointer := types.M{
-		"__type":    "Pointer",
-		"className": "_Role",
-		"objectId":  roleID,
+	// 已经没有待获取父角色的 roleID，返回 names
+	if len(ins) == 0 {
+		return names
 	}
-	relatedTo := types.M{
-		"object": rolePointer,
-		"key":    "roles",
+
+	restWhere := types.M{}
+	if len(ins) == 0 {
+		restWhere["roles"] = ins[0]
+	} else {
+		restWhere["roles"] = types.M{"$in": ins}
 	}
-	where := types.M{
-		"$relatedTo": relatedTo,
+
+	query, err := NewQuery(Master(), "_Role", restWhere, types.M{})
+	if err != nil {
+		return names
 	}
-	// 取出当前角色对应的直接父角色
-	// TODO 处理错误，处理结果大于100的情况
-	response, _ := Find(Master(), "_Role", where, types.M{})
-	if utils.HasResults(response) == false {
-		return []string{}
+
+	// 未找到角色
+	response, err := query.Execute()
+	if err != nil || utils.HasResults(response) == false {
+		return names
 	}
+
 	results := utils.SliceInterface(response["results"])
-	roleIDs := []string{}
+	ids := []string{}
+	pnames := []string{}
 	for _, v := range results {
 		roleObj := utils.MapInterface(v)
-		roleIDs = append(roleIDs, utils.String(roleObj["objectId"]))
+		ids = append(ids, utils.String(roleObj["objectId"]))
+		pnames = append(pnames, utils.String(roleObj["name"]))
 	}
-	// 递归取出角色对应的父角色
-	for _, v := range roleIDs {
-		roleIDs = append(roleIDs, a.getAllRoleNamesForID(v, queriedRoles)...)
-	}
-	return roleIDs
+
+	// 存储找到的角色名
+	names = append(names, pnames...)
+
+	// 继续查找最新角色的父角色
+	return a.getAllRoleNamesForID(ids, names, queriedRoles)
 }

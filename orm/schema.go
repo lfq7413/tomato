@@ -516,8 +516,36 @@ func (s *Schema) reloadData() {
 			}
 		}
 
+		// 添加系统默认字段
+		defaultClassData := types.M{}
+		for k, v := range defaultColumns["_Default"] {
+			defaultClassData[k] = v
+		}
+		if defaultColumns[className] != nil {
+			for k, v := range defaultColumns[className] {
+				defaultClassData[k] = v
+			}
+		}
+		// 转换默认字段
+		defaultClassMongoData := types.M{}
+		for k, v := range defaultClassData {
+			mongoType, err := schemaAPITypeToMongoFieldType(v.(map[string]interface{}))
+			if err != nil {
+				continue
+			}
+			defaultClassMongoData[k] = mongoType
+		}
+		// 合并数据库中取出的字段与默认字段
+		classMongoData := types.M{}
+		for k, v := range defaultClassMongoData {
+			classMongoData[k] = v
+		}
+		for k, v := range classData {
+			classMongoData[k] = v
+		}
+
 		if className != "" {
-			s.data[className] = classData
+			s.data[className] = classMongoData
 			if permsData != nil {
 				s.perms[className] = permsData
 			}

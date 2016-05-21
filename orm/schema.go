@@ -485,62 +485,45 @@ func (s *Schema) getExpectedType(className, key string) string {
 func (s *Schema) reloadData() {
 	s.data = types.M{}
 	s.perms = types.M{}
-	results, err := s.collection.GetAllSchemas()
+	allSchemas, err := s.collection.GetAllSchemas()
 	if err != nil {
 		return
 	}
-	for _, obj := range results {
-		className := ""
-		classData := types.M{}
-		var permsData interface{}
-
-		for k, v := range obj {
-			switch k {
-			case "_id":
-				className = utils.String(v)
-			case "_metadata":
-				if v != nil && utils.MapInterface(v) != nil && utils.MapInterface(v)["class_permissions"] != nil {
-					permsData = utils.MapInterface(v)["class_permissions"]
-				}
-			default:
-				classData[k] = v
-			}
-		}
-
-		// 添加系统默认字段
-		defaultClassData := types.M{}
+	for _, schema := range allSchemas {
+		// 组合默认字段
+		parseFormatSchema := types.M{}
 		for k, v := range defaultColumns["_Default"] {
-			defaultClassData[k] = v
+			parseFormatSchema[k] = v
 		}
-		if defaultColumns[className] != nil {
-			for k, v := range defaultColumns[className] {
-				defaultClassData[k] = v
+		if defaultColumns[schema["className"].(string)] != nil {
+			for k, v := range defaultColumns[schema["className"].(string)] {
+				parseFormatSchema[k] = v
 			}
 		}
-		// 转换默认字段
-		defaultClassMongoData := types.M{}
-		for k, v := range defaultClassData {
+		if schema["fields"].(map[string]interface{}) != nil {
+			for k, v := range schema["fields"].(map[string]interface{}) {
+				parseFormatSchema[k] = v
+			}
+		}
+
+		// 无需包含 ACL
+		delete(parseFormatSchema, "ACL")
+		// createdAt updatedAt 为 string 类型
+		parseFormatSchema["createdAt"] = types.M{"type": "String"}
+		parseFormatSchema["updatedAt"] = types.M{"type": "String"}
+
+		// 转换为数据库存储格式
+		mongoFormatSchema := types.M{}
+		for k, v := range parseFormatSchema {
 			mongoType, err := schemaAPITypeToMongoFieldType(v.(map[string]interface{}))
 			if err != nil {
 				continue
 			}
-			defaultClassMongoData[k] = mongoType
-		}
-		// 合并数据库中取出的字段与默认字段
-		classMongoData := types.M{}
-		for k, v := range defaultClassMongoData {
-			classMongoData[k] = v
-		}
-		for k, v := range classData {
-			classMongoData[k] = v
+			mongoFormatSchema[k] = mongoType
 		}
 
-		if className != "" {
-			s.data[className] = classMongoData
-			if permsData != nil {
-				s.perms[className] = permsData
-			}
-		}
+		s.data[schema["className"].(string)] = mongoFormatSchema
+		s.perms[schema["className"].(string)] = schema["classLevelPermissions"]
 	}
 }
 

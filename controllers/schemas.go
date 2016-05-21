@@ -35,9 +35,6 @@ func (s *SchemasController) HandleFind() {
 		s.ServeJSON()
 		return
 	}
-	for i, v := range result {
-		result[i] = orm.MongoSchemaToParseSchema(v)
-	}
 	s.Data["json"] = types.M{
 		"results": result,
 	}

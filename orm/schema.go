@@ -94,7 +94,7 @@ func init() {
 // Schema schema 操作对象
 type Schema struct {
 	collection *MongoSchemaCollection
-	data       types.M // data 保存类的字段信息，类型为数据库中保存的类型
+	data       types.M // data 保存类的字段信息，类型为数据库中保存的类型，后期需要修改为 API 类型
 	perms      types.M // perms 保存类的操作权限
 }
 
@@ -248,7 +248,7 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 		return err
 	}
 
-	for k, v := range object {
+	for fieldName, v := range object {
 		if v == nil {
 			continue
 		}
@@ -266,8 +266,12 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 		if expected == "" {
 			continue
 		}
+		if fieldName == "ACL" {
+			// 每个对象都隐含 ACL 字段
+			continue
+		}
 		// 校验字段与字段类型
-		err = thenValidateField(s, className, k, expected)
+		err = thenValidateField(s, className, fieldName, expected)
 		if err != nil {
 			return err
 		}
@@ -317,7 +321,7 @@ func (s *Schema) validateClassName(className string, freeze bool) error {
 	}
 
 	// 添加不存在的类定义
-	err := s.collection.addSchema(className, types.M{})
+	_, err := s.AddClassIfNotExists(className, types.M{}, types.M{})
 	if err != nil {
 
 	}
@@ -361,33 +365,33 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 }
 
 // validateField 校验并插入字段，freeze 为 true 时不进行修改
-func (s *Schema) validateField(className, key, fieldtype string, freeze bool) error {
-	// 检测 key 是否合法
-	_, err := transformKey(s, className, key)
+func (s *Schema) validateField(className, fieldName, fieldtype string, freeze bool) error {
+	// 检测 fieldName 是否合法
+	_, err := transformKey(s, className, fieldName)
 	if err != nil {
 		return err
 	}
 
-	if strings.Index(key, ".") > 0 {
-		key = strings.Split(key, ".")[0]
+	if strings.Index(fieldName, ".") > 0 {
+		fieldName = strings.Split(fieldName, ".")[0]
 		fieldtype = "object"
 	}
 
-	expected := utils.String(utils.MapInterface(s.data[className])[key])
+	expected := utils.String(utils.MapInterface(s.data[className])[fieldName])
 	if expected != "" {
 		if expected == "map" {
 			expected = "object"
 		}
-		if expected == key {
+		if expected == fieldName {
 			return nil
 		}
 		// 类型不符
-		return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+key+"; expected "+expected+" but got "+fieldtype)
+		return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+fieldName+"; expected "+expected+" but got "+fieldtype)
 	}
 
 	if freeze {
 		// 不能修改
-		return errs.E(errs.InvalidJSON, "schema is frozen, cannot add "+key+" field")
+		return errs.E(errs.InvalidJSON, "schema is frozen, cannot add "+fieldName+" field")
 	}
 
 	// 没有当前要添加的字段，当字段类型为空时，不做更新
@@ -408,10 +412,10 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) er
 
 	// 当前没有该字段，更新 schema
 	query := types.M{
-		key: types.M{"$exists": false},
+		fieldName: types.M{"$exists": false},
 	}
 	update := types.M{
-		"$set": types.M{key: fieldtype},
+		"$set": types.M{fieldName: fieldtype},
 	}
 	err = s.collection.upsertSchema(className, query, update)
 	if err != nil {
@@ -422,7 +426,7 @@ func (s *Schema) validateField(className, key, fieldtype string, freeze bool) er
 
 	s.reloadData()
 	// 再次尝试校验字段，本次不做更新
-	err = s.validateField(className, key, fieldtype, true)
+	err = s.validateField(className, fieldName, fieldtype, true)
 	if err != nil {
 		// 字段依然无法校验通过
 		return errs.E(errs.InvalidJSON, "schema key will not revalidate")

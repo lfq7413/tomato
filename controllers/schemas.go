@@ -46,7 +46,12 @@ func (s *SchemasController) HandleFind() {
 func (s *SchemasController) HandleGet() {
 	className := s.Ctx.Input.Param(":className")
 	result, err := orm.SchemaCollection().FindSchema(className)
-	if err != nil && result == nil {
+	if err != nil {
+		s.Data["json"] = errs.ErrorMessageToMap(errs.InternalServerError, "Database adapter error.")
+		s.ServeJSON()
+		return
+	}
+	if result == nil || len(result) == 0 {
 		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, "Class "+className+" does not exist.")
 		s.ServeJSON()
 		return

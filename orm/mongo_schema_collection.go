@@ -38,7 +38,7 @@ func (m *MongoSchemaCollection) FindSchema(name string) (types.M, error) {
 	if results == nil || len(results) == 0 {
 		return types.M{}, nil
 	}
-	return results[0], nil
+	return MongoSchemaToParseSchema(results[0]), nil
 }
 
 // FindAndDeleteSchema 查找并删除指定的表定义

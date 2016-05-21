@@ -113,7 +113,8 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 		return nil, err
 	}
 
-	return utils.MapInterface(mongoObject["result"]), nil
+	result := utils.MapInterface(mongoObject["result"])
+	return MongoSchemaToParseSchema(result), nil
 }
 
 // UpdateClass 更新类

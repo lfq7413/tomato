@@ -99,7 +99,7 @@ func (s *SchemasController) HandleCreate() {
 		return
 	}
 
-	s.Data["json"] = orm.MongoSchemaToParseSchema(result)
+	s.Data["json"] = result
 	s.ServeJSON()
 }
 

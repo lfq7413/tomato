@@ -12,9 +12,6 @@ import (
 // clpValidKeys 类级别的权限 列表
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
 
-// defaultClassLevelPermissions 默认的类级别权限
-var defaultClassLevelPermissions types.M
-
 // defaultColumns 所有类的默认字段，以及系统类的默认字段
 var defaultColumns map[string]types.M
 
@@ -25,12 +22,6 @@ var requiredColumns map[string][]string
 var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
 
 func init() {
-	defaultClassLevelPermissions = types.M{}
-	for _, v := range clpValidKeys {
-		defaultClassLevelPermissions[v] = types.M{
-			"*": true,
-		}
-	}
 	defaultColumns = map[string]types.M{
 		"_Default": types.M{
 			"objectId":  types.M{"type": "String"},
@@ -190,7 +181,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	}
 
 	// 把数据库格式的数据转换为 API 格式，并返回
-	return MongoSchemaToSchemaAPIResponse(mongoResult), nil
+	return MongoSchemaToParseSchema(mongoResult), nil
 }
 
 // deleteField 从类定义中删除指定的字段，并删除对象中的数据
@@ -643,126 +634,6 @@ func getObjectType(obj interface{}) (string, error) {
 	return "object", nil
 }
 
-// MongoSchemaToSchemaAPIResponse 把数据库格式的数据转换为 API 格式
-func MongoSchemaToSchemaAPIResponse(schema types.M) types.M {
-	result := types.M{
-		"className": schema["_id"],
-		"fields":    mongoSchemaAPIResponseFields(schema),
-	}
-
-	// 复制 schema["_metadata"]["class_permissions"] 到 classLevelPermissions 中
-	classLevelPermissions := utils.CopyMap(defaultClassLevelPermissions)
-	if schema["_metadata"] != nil && utils.MapInterface(schema["_metadata"]) != nil {
-		metadata := utils.MapInterface(schema["_metadata"])
-		if metadata["class_permissions"] != nil && utils.MapInterface(metadata["class_permissions"]) != nil {
-			classPermissions := utils.MapInterface(metadata["class_permissions"])
-			for k, v := range classPermissions {
-				classLevelPermissions[k] = v
-			}
-		}
-	}
-	result["classLevelPermissions"] = classLevelPermissions
-
-	return result
-}
-
-var nonFieldSchemaKeys = []string{"_id", "_metadata", "_client_permissions"}
-
-// mongoSchemaAPIResponseFields 转换数据库格式的字段到 API类型，排除掉 nonFieldSchemaKeys 中的字段
-func mongoSchemaAPIResponseFields(schema types.M) types.M {
-	fieldNames := []string{}
-	for k := range schema {
-		t := false
-		// 排除 nonFieldSchemaKeys
-		for _, v := range nonFieldSchemaKeys {
-			if k == v {
-				t = true
-				break
-			}
-		}
-		if t == false {
-			fieldNames = append(fieldNames, k)
-		}
-	}
-	response := types.M{}
-	// 转换普通字段
-	for _, v := range fieldNames {
-		response[v] = mongoFieldTypeToSchemaAPIType(utils.String(schema[v]))
-	}
-	// 转换默认字段
-	response["ACL"] = types.M{
-		"type": "ACL",
-	}
-	response["createdAt"] = types.M{
-		"type": "Date",
-	}
-	response["updatedAt"] = types.M{
-		"type": "Date",
-	}
-	response["objectId"] = types.M{
-		"type": "String",
-	}
-	return response
-}
-
-// mongoFieldTypeToSchemaAPIType 把数据库格式的字段类型转换为 API 格式
-func mongoFieldTypeToSchemaAPIType(t string) types.M {
-	// *abc ==> {"type":"Pointer", "targetClass":"abc"}
-	if t[0] == '*' {
-		return types.M{
-			"type":        "Pointer",
-			"targetClass": string(t[1:]),
-		}
-	}
-	// relation<abc> ==> {"type":"Relation", "targetClass":"abc"}
-	if strings.HasPrefix(t, "relation<") {
-		return types.M{
-			"type":        "Relation",
-			"targetClass": string(t[len("relation<") : len(t)-1]),
-		}
-	}
-	switch t {
-	case "number":
-		return types.M{
-			"type": "Number",
-		}
-	case "string":
-		return types.M{
-			"type": "String",
-		}
-	case "boolean":
-		return types.M{
-			"type": "Boolean",
-		}
-	case "date":
-		return types.M{
-			"type": "Date",
-		}
-	case "map":
-		return types.M{
-			"type": "Object",
-		}
-	case "object":
-		return types.M{
-			"type": "Object",
-		}
-	case "array":
-		return types.M{
-			"type": "Array",
-		}
-	case "geopoint":
-		return types.M{
-			"type": "GeoPoint",
-		}
-	case "file":
-		return types.M{
-			"type": "File",
-		}
-	}
-
-	return types.M{}
-}
-
 // mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
 func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) (types.M, error) {
 	// 校验类名与字段是否合法
@@ -1069,7 +940,7 @@ func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 				}
 			}
 			if fieldIsDeleted == false {
-				newSchema[oldField] = mongoFieldTypeToSchemaAPIType(utils.String(v))
+				newSchema[oldField] = mongoFieldToParseSchemaField(utils.String(v))
 			}
 		}
 	}

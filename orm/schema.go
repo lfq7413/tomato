@@ -108,13 +108,12 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 	if err != nil {
 		return nil, err
 	}
-	err = s.collection.addSchema(className, utils.MapInterface(mongoObject["result"]))
+	result, err := s.collection.addSchema(className, utils.MapInterface(mongoObject["result"]))
 	if err != nil {
 		return nil, err
 	}
 
-	result := utils.MapInterface(mongoObject["result"])
-	return MongoSchemaToParseSchema(result), nil
+	return result, nil
 }
 
 // UpdateClass 更新类
@@ -707,8 +706,7 @@ func ClassNameIsValid(className string) bool {
 			return true
 		}
 	}
-	return className == "_SCHEMA" ||
-		joinClassIsValid(className) ||
+	return joinClassIsValid(className) ||
 		fieldNameIsValid(className) // 类名与字段名的规则相同
 }
 

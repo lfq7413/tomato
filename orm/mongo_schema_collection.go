@@ -62,9 +62,9 @@ func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (types.M, error
 }
 
 // addSchema 添加一个表定义
-func (m *MongoSchemaCollection) addSchema(name string, fields types.M) error {
+func (m *MongoSchemaCollection) addSchema(name string, fields types.M) (types.M, error) {
 	mongoObject := mongoSchemaObjectFromNameFields(name, fields)
-	return m.collection.InsertOne(mongoObject)
+	return MongoSchemaToParseSchema(mongoObject), m.collection.InsertOne(mongoObject)
 }
 
 // updateSchema 更新一个表定义

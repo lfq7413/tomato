@@ -829,6 +829,22 @@ func transformUpdate(schema *Schema, className string, update types.M) (types.M,
 	return mongoUpdate, nil
 }
 
+var specialKeysForUntransform = []string{
+	"_id",
+	"_hashed_password",
+	"_acl",
+	"_email_verify_token",
+	"_perishable_token",
+	"_tombstone",
+	"_session_token",
+	"updatedAt",
+	"_updated_at",
+	"createdAt",
+	"_created_at",
+	"expiresAt",
+	"_expiresAt",
+}
+
 // untransformObjectT  把数据库类型数据转换为 API 格式
 func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error) {
 	if mongoObject == nil {
@@ -878,6 +894,23 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 		// 转换权限信息
 		restObject := untransformACL(object)
 		for key, value := range object {
+			if isNestedObject {
+				in := false
+				for _, v := range specialKeysForUntransform {
+					if key == v {
+						in = true
+						break
+					}
+				}
+				if in {
+					r, err := untransformObjectT(schema, className, value, true)
+					if err != nil {
+						return nil, err
+					}
+					restObject[key] = r
+					continue
+				}
+			}
 			switch key {
 			case "_id":
 				restObject["objectId"] = value

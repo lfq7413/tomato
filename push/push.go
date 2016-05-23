@@ -28,10 +28,9 @@ func init() {
 }
 
 // SendPush 发送推送消息
-// wait 是否等待发送完成
-func SendPush(body types.M, where types.M, auth *rest.Auth, wait bool) error {
+func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved func(string)) error {
 
-	status := &pushStatus{}
+	status := newPushStatus()
 
 	// TODO where 中并不包含 deviceType，此处是否有问题？
 	err := validatePushType(where, adapter.getValidPushTypes())
@@ -98,6 +97,8 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, wait bool) error {
 	}
 
 	status.setRunning()
+
+	onPushStatusSaved(status.objectID)
 
 	// TODO 处理结果大于100的情况
 	response, err := rest.Find(auth, "_Installation", where, types.M{})

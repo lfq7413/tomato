@@ -26,7 +26,15 @@ func (p *PushController) HandlePost() {
 		p.ServeJSON()
 		return
 	}
-	push.SendPush(p.JSONBody, where, p.Auth, false)
+	onPushStatusSaved := func(pushStatusID string) {
+		p.Ctx.Output.Header("X-Parse-Push-Status-Id", pushStatusID)
+	}
+	err = push.SendPush(p.JSONBody, where, p.Auth, onPushStatusSaved)
+	if err != nil {
+		p.Data["json"] = errs.ErrorToMap(err)
+		p.ServeJSON()
+		return
+	}
 	p.Data["json"] = types.M{"result": true}
 	p.ServeJSON()
 }

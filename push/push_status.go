@@ -10,7 +10,15 @@ import (
 )
 
 type pushStatus struct {
-	status types.M
+	objectID string
+	status   types.M
+}
+
+func newPushStatus() *pushStatus {
+	p := &pushStatus{
+		objectID: utils.CreateObjectID(),
+	}
+	return p
 }
 
 // collection 推送状态表
@@ -29,7 +37,7 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 	dataJSON, _ := json.Marshal(body["data"])
 
 	object := types.M{
-		"objectId":    utils.CreateObjectID,
+		"objectId":    p.objectID,
 		"pushTime":    utils.TimetoString(now),
 		"_created_at": now,
 		"query":       where,

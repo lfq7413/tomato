@@ -35,8 +35,12 @@ func (s *SchemasController) HandleFind() {
 		s.ServeJSON()
 		return
 	}
+	schems := []types.M{}
+	for _, r := range result {
+		schems = append(schems, injectDefaultSchema(r))
+	}
 	s.Data["json"] = types.M{
-		"results": result,
+		"results": schems,
 	}
 	s.ServeJSON()
 }
@@ -56,7 +60,7 @@ func (s *SchemasController) HandleGet() {
 		s.ServeJSON()
 		return
 	}
-	s.Data["json"] = result
+	s.Data["json"] = injectDefaultSchema(result)
 	s.ServeJSON()
 }
 
@@ -215,4 +219,17 @@ func (s *SchemasController) Delete() {
 // @router / [put]
 func (s *SchemasController) Put() {
 	s.ObjectsController.Put()
+}
+
+// injectDefaultSchema 为 schema 添加默认字段
+func injectDefaultSchema(schema types.M) types.M {
+	defaultSchema := orm.DefaultColumns[schema["className"].(string)]
+	if defaultSchema != nil {
+		fields := schema["fields"].(map[string]interface{})
+		for k, v := range defaultSchema {
+			fields[k] = v
+		}
+		schema["fields"] = fields
+	}
+	return schema
 }

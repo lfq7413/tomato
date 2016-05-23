@@ -12,8 +12,8 @@ import (
 // clpValidKeys 类级别的权限 列表
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
 
-// defaultColumns 所有类的默认字段，以及系统类的默认字段
-var defaultColumns map[string]types.M
+// DefaultColumns 所有类的默认字段，以及系统类的默认字段
+var DefaultColumns map[string]types.M
 
 // requiredColumns 类必须要有的字段
 var requiredColumns map[string][]string
@@ -22,7 +22,7 @@ var requiredColumns map[string][]string
 var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
 
 func init() {
-	defaultColumns = map[string]types.M{
+	DefaultColumns = map[string]types.M{
 		"_Default": types.M{
 			"objectId":  types.M{"type": "String"},
 			"createdAt": types.M{"type": "Date"},
@@ -496,11 +496,11 @@ func (s *Schema) reloadData() {
 	for _, schema := range allSchemas {
 		// 组合默认字段
 		parseFormatSchema := types.M{}
-		for k, v := range defaultColumns["_Default"] {
+		for k, v := range DefaultColumns["_Default"] {
 			parseFormatSchema[k] = v
 		}
-		if defaultColumns[schema["className"].(string)] != nil {
-			for k, v := range defaultColumns[schema["className"].(string)] {
+		if DefaultColumns[schema["className"].(string)] != nil {
+			for k, v := range DefaultColumns[schema["className"].(string)] {
 				parseFormatSchema[k] = v
 			}
 		}
@@ -644,9 +644,9 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 	}
 
 	// 添加默认字段
-	if defaultColumns[className] != nil {
-		for fieldName := range defaultColumns[className] {
-			validatedField, err := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
+	if DefaultColumns[className] != nil {
+		for fieldName := range DefaultColumns[className] {
+			validatedField, err := schemaAPITypeToMongoFieldType(utils.MapInterface(DefaultColumns[className][fieldName]))
 			if err != nil {
 				return nil, err
 			}
@@ -656,7 +656,7 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 
 	// 添加其他字段
 	for fieldName := range fields {
-		validatedField, err := schemaAPITypeToMongoFieldType(utils.MapInterface(defaultColumns[className][fieldName]))
+		validatedField, err := schemaAPITypeToMongoFieldType(utils.MapInterface(DefaultColumns[className][fieldName]))
 		if err != nil {
 			return nil, err
 		}
@@ -738,11 +738,11 @@ func fieldNameIsValidForClass(fieldName string, className string) bool {
 		return false
 	}
 	// 默认字段不能添加
-	if defaultColumns["_Default"][fieldName] != nil {
+	if DefaultColumns["_Default"][fieldName] != nil {
 		return false
 	}
 	// 当前类的默认字段不能添加
-	if defaultColumns[className] != nil && defaultColumns[className][fieldName] != nil {
+	if DefaultColumns[className] != nil && DefaultColumns[className][fieldName] != nil {
 		return false
 	}
 
@@ -886,7 +886,7 @@ func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 
 	sysSchemaField := []string{}
 	id := utils.String(mongoObject["_id"])
-	for k, v := range defaultColumns {
+	for k, v := range DefaultColumns {
 		// 如果是系统预定义的表，则取出默认字段
 		if k == id {
 			for key := range v {

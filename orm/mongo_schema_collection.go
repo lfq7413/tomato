@@ -23,7 +23,7 @@ func (m *MongoSchemaCollection) GetAllSchemas() ([]types.M, error) {
 	for _, result := range results {
 		apiResults = append(apiResults, MongoSchemaToParseSchema(result))
 	}
-	return m.collection.rawFind(types.M{}, types.M{})
+	return apiResults, nil
 }
 
 // FindSchema 查找指定的 Schema

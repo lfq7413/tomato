@@ -1003,6 +1003,14 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 				restObject[key] = res
 			}
 		}
+
+		if isNestedObject == false {
+			relationFields := schema.getRelationFields(className)
+			for k, v := range relationFields {
+				restObject[k] = v
+			}
+		}
+
 		return restObject, nil
 	}
 

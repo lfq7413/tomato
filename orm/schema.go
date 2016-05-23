@@ -497,8 +497,8 @@ func (s *Schema) getRelationFields(className string) types.M {
 			}
 			name := fieldType[len("relation<") : len(fieldType)-1]
 			relationFields[field] = types.M{
-				"__type": "Relation",
-				"className": name.
+				"__type":    "Relation",
+				"className": name,
 			}
 		}
 	}

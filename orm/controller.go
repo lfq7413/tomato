@@ -539,6 +539,15 @@ func LoadSchema(acceptor func(*Schema) bool) *Schema {
 	return schemaPromise
 }
 
+// DeleteEverything 删除所有表数据，仅用于测试
+func DeleteEverything() {
+	schemaPromise = nil
+	collections := adapter.collectionsContaining("")
+	for _, v := range collections {
+		v.DropCollection()
+	}
+}
+
 // RedirectClassNameForKey 返回指定类的字段所对应的类型
 // 如果 key 字段的属性为 relation<classA> ，则返回 classA
 func RedirectClassNameForKey(className, key string) string {

@@ -58,7 +58,7 @@ func (m *MongoAdapter) dropCollection(name string) error {
 	return m.collection(name).DropCollection()
 }
 
-// collectionsContaining 查找包含指定前缀的表集合
+// collectionsContaining 查找包含指定前缀的表集合，仅用于测试
 func (m *MongoAdapter) collectionsContaining(match string) []*mgo.Collection {
 	names := TomatoDB.getCollectionNames()
 	collections := []*mgo.Collection{}

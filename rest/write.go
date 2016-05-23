@@ -736,6 +736,15 @@ func (w *Write) runDatabaseOperation() error {
 	}
 
 	if w.query != nil {
+		// 避免用户自身无法访问 _User 表
+		if w.className == "_User" && w.data["ACL"] != nil {
+			acl := w.data["ACL"].(map[string]interface{})
+			acl[w.query["objectId"].(string)] = types.M{
+				"read":  true,
+				"write": true,
+			}
+			w.data["ACL"] = acl
+		}
 		// 执行更新
 		resp, err := orm.Update(w.className, w.query, w.data, w.runOptions)
 		if err != nil {
@@ -758,7 +767,7 @@ func (w *Write) runDatabaseOperation() error {
 	} else {
 		// 给新用户设置默认 ACL
 		// TODO 为了用户信息安全性，应该禁止其他用户读取
-		if w.data["ACL"] == nil && w.className == "_User" {
+		if w.className == "_User" {
 			readwrite := types.M{
 				"read":  true,
 				"write": true,
@@ -767,12 +776,16 @@ func (w *Write) runDatabaseOperation() error {
 				"read":  true,
 				"write": false,
 			}
-			objectID := utils.String(w.data["objectId"])
-			w.data["ACL"] = types.M{
-				objectID: readwrite,
-				"*":      onlyread,
+			acl := w.data["ACL"].(map[string]interface{})
+			if acl == nil {
+				acl := types.M{}
+				acl["*"] = onlyread
 			}
+			objectID := utils.String(w.data["objectId"])
+			acl[objectID] = readwrite
+			w.data["ACL"] = acl
 		}
+
 		// 创建对象
 		err := orm.Create(w.className, w.data, w.runOptions)
 		if err != nil {

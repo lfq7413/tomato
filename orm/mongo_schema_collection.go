@@ -224,3 +224,36 @@ func MongoSchemaToParseSchema(schema types.M) types.M {
 
 	return result
 }
+
+// parseFieldTypeToMongoFieldType 返回数据库中存储的字段类型
+func parseFieldTypeToMongoFieldType(t types.M) string {
+	fieldType := t["type"].(string)
+	targetClass := ""
+	if fieldType == "Pointer" || fieldType == "Relation" {
+		targetClass = t["targetClass"].(string)
+	}
+	switch fieldType {
+	case "Pointer":
+		return "*" + targetClass
+	case "Relation":
+		return "relation<" + targetClass + ">"
+	case "Number":
+		return "number"
+	case "String":
+		return "string"
+	case "Boolean":
+		return "boolean"
+	case "Date":
+		return "date"
+	case "Object":
+		return "object"
+	case "Array":
+		return "array"
+	case "GeoPoint":
+		return "geopoint"
+	case "File":
+		return "file"
+	default:
+		return ""
+	}
+}

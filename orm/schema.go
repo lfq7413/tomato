@@ -365,6 +365,7 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 
 // validateField 校验并插入字段，freeze 为 true 时不进行修改
 func (s *Schema) validateField(className, fieldName, fieldtype string, freeze bool) error {
+	s.reloadData()
 	// 检测 fieldName 是否合法
 	_, err := transformKey(s, className, fieldName)
 	if err != nil {
@@ -540,11 +541,7 @@ func (s *Schema) reloadData() {
 		// 转换为数据库存储格式
 		mongoFormatSchema := types.M{}
 		for k, v := range parseFormatSchema {
-			mongoType, err := schemaAPITypeToMongoFieldType(v.(map[string]interface{}))
-			if err != nil {
-				continue
-			}
-			mongoFormatSchema[k] = mongoType
+			mongoFormatSchema[k] = parseFieldTypeToMongoFieldType(v.(map[string]interface{}))
 		}
 
 		s.data[schema["className"].(string)] = mongoFormatSchema
@@ -648,12 +645,16 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 	if ClassNameIsValid(className) == false {
 		return nil, errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
 	}
-	for fieldName := range fields {
+	for fieldName, v := range fields {
 		if fieldNameIsValid(fieldName) == false {
 			return nil, errs.E(errs.InvalidKeyName, "invalid field name: "+fieldName)
 		}
 		if fieldNameIsValidForClass(fieldName, className) == false {
 			return nil, errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be added")
+		}
+		err := fieldTypeIsInvalid(v.(map[string]interface{}))
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -666,22 +667,14 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 
 	// 添加默认字段
 	if DefaultColumns[className] != nil {
-		for fieldName := range DefaultColumns[className] {
-			validatedField, err := schemaAPITypeToMongoFieldType(utils.MapInterface(DefaultColumns[className][fieldName]))
-			if err != nil {
-				return nil, err
-			}
-			mongoObject[fieldName] = validatedField["result"]
+		for fieldName, v := range DefaultColumns[className] {
+			mongoObject[fieldName] = parseFieldTypeToMongoFieldType(v.(map[string]interface{}))
 		}
 	}
 
 	// 添加其他字段
-	for fieldName := range fields {
-		validatedField, err := schemaAPITypeToMongoFieldType(utils.MapInterface(DefaultColumns[className][fieldName]))
-		if err != nil {
-			return nil, err
-		}
-		mongoObject[fieldName] = validatedField["result"]
+	for fieldName, v := range fields {
+		mongoObject[fieldName] = parseFieldTypeToMongoFieldType(v.(map[string]interface{}))
 	}
 
 	// 处理 geopoint
@@ -770,63 +763,54 @@ func fieldNameIsValidForClass(fieldName string, className string) bool {
 	return true
 }
 
-// schemaAPITypeToMongoFieldType 把 API 格式的数据转换成 数据库存储的格式
-func schemaAPITypeToMongoFieldType(t types.M) (types.M, error) {
-	if utils.String(t["type"]) == "" {
-		return nil, errs.E(errs.InvalidJSON, "invalid JSON")
-	}
-	apiType := utils.String(t["type"])
+var validNonRelationOrPointerTypes = []string{
+	"Number",
+	"String",
+	"Boolean",
+	"Date",
+	"Object",
+	"Array",
+	"GeoPoint",
+	"File",
+}
 
-	// {"type":"Pointer", "targetClass":"abc"} => {"result":"*abc"}
-	if apiType == "Pointer" {
-		if t["targetClass"] == nil {
-			return nil, errs.E(errs.MissingRequiredFieldError, "type Pointer needs a class name")
+// fieldTypeIsInvalid 检测字段类型是否合法
+func fieldTypeIsInvalid(t types.M) error {
+	var invalidJSONError = errs.E(errs.InvalidJSON, "invalid JSON")
+	fieldType := ""
+	if v, ok := t["type"].(string); ok {
+		fieldType = v
+	} else {
+		return invalidJSONError
+	}
+	targetClass := ""
+	if fieldType == "Pointer" || fieldType == "Relation" {
+		if _, ok := t["targetClass"]; ok == false {
+			return errs.E(errs.MissingRequiredFieldError, "type "+fieldType+" needs a class name")
 		}
-		if utils.String(t["targetClass"]) == "" {
-			return nil, errs.E(errs.InvalidJSON, "invalid targetClass")
+		if v, ok := t["targetClass"].(string); ok {
+			targetClass = v
+		} else {
+			return invalidJSONError
 		}
-		targetClass := utils.String(t["targetClass"])
 		if ClassNameIsValid(targetClass) == false {
-			return nil, errs.E(errs.InvalidClassName, InvalidClassNameMessage(targetClass))
+			return errs.E(errs.InvalidClassName, InvalidClassNameMessage(targetClass))
 		}
-		return types.M{"result": "*" + targetClass}, nil
+		return nil
 	}
 
-	// {"type":"Relation", "targetClass":"abc"} => {"result":"relation<abc>"}
-	if apiType == "Relation" {
-		if t["targetClass"] == nil {
-			return nil, errs.E(errs.MissingRequiredFieldError, "type Relation needs a class name")
+	in := false
+	for _, v := range validNonRelationOrPointerTypes {
+		if fieldType == v {
+			in = true
+			break
 		}
-		if utils.String(t["targetClass"]) == "" {
-			return nil, errs.E(errs.InvalidJSON, "invalid targetClass")
-		}
-		targetClass := utils.String(t["targetClass"])
-		if ClassNameIsValid(targetClass) == false {
-			return nil, errs.E(errs.InvalidClassName, InvalidClassNameMessage(targetClass))
-		}
-		return types.M{"result": "relation<" + targetClass + ">"}, nil
+	}
+	if in == false {
+		return errs.E(errs.IncorrectType, "invalid field type: "+fieldType)
 	}
 
-	switch apiType {
-	case "Number":
-		return types.M{"result": "number"}, nil
-	case "String":
-		return types.M{"result": "string"}, nil
-	case "Boolean":
-		return types.M{"result": "boolean"}, nil
-	case "Date":
-		return types.M{"result": "date"}, nil
-	case "Object":
-		return types.M{"result": "object"}, nil
-	case "Array":
-		return types.M{"result": "array"}, nil
-	case "GeoPoint":
-		return types.M{"result": "geopoint"}, nil
-	case "File":
-		return types.M{"result": "file"}, nil
-	default:
-		return nil, errs.E(errs.InvalidJSON, "invalid JSON")
-	}
+	return nil
 }
 
 // validateCLP 校验类级别权限

@@ -108,7 +108,7 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.collection.addSchema(className, utils.MapInterface(mongoObject["result"]))
+	result, err := s.collection.addSchema(className, mongoObject)
 	if err != nil {
 		return nil, err
 	}
@@ -165,9 +165,8 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	s.reloadData()
 
 	// 校验并插入字段
-	mongoResult := utils.MapInterface(mongoObject["result"])
 	for _, fieldName := range insertedFields {
-		mongoType := utils.String(mongoResult[fieldName])
+		mongoType := utils.String(mongoObject[fieldName])
 		err := s.validateField(className, fieldName, mongoType, false)
 		if err != nil {
 			return nil, err
@@ -181,7 +180,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	}
 
 	// 把数据库格式的数据转换为 API 格式，并返回
-	return MongoSchemaToParseSchema(mongoResult), nil
+	return MongoSchemaToParseSchema(mongoObject), nil
 }
 
 // deleteField 从类定义中删除指定的字段，并删除对象中的数据
@@ -707,9 +706,7 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 	}
 	mongoObject["_metadata"] = metadata
 
-	return types.M{
-		"result": mongoObject,
-	}, nil
+	return mongoObject, nil
 }
 
 // ClassNameIsValid 校验类名，可以是系统内置类、join 类

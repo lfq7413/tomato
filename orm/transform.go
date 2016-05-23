@@ -844,7 +844,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 		results := types.S{}
 		objs := mongoObject.([]interface{})
 		for _, o := range objs {
-			res, err := untransformObjectT(schema, className, o, false)
+			res, err := untransformObjectT(schema, className, o, true)
 			if err != nil {
 				return nil, err
 			}

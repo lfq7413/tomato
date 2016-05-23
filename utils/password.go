@@ -17,6 +17,9 @@ func Hash(password string) string {
 
 // Compare ...
 func Compare(password string, hashedPassword string) bool {
+	if password == "" || hashedPassword == "" {
+		return false
+	}
 	s := Hash(password)
 	if s == hashedPassword {
 		return true

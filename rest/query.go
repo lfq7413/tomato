@@ -621,11 +621,10 @@ func includePath(auth *Auth, response types.M, path []string) error {
 		return nil
 	}
 	pointersHash := map[string][]string{}
-	className := ""
 	for _, v := range pointers {
 		pointer := utils.MapInterface(v)
 		// 不再区分不同 className ，添加不为空的 className
-		className = utils.String(pointer["className"])
+		className := utils.String(pointer["className"])
 		if className != "" {
 			if v, ok := pointersHash[className]; ok {
 				v = append(v, pointer["objectId"].(string))
@@ -666,6 +665,7 @@ func includePath(auth *Auth, response types.M, path []string) error {
 			obj["className"] = clsName
 			if clsName == "_User" {
 				delete(obj, "sessionToken")
+				delete(obj, "authData")
 			}
 			replace[utils.String(obj["objectId"])] = obj
 		}

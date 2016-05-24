@@ -210,32 +210,27 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	// 根据字段属性进行相应 对象数据 删除操作
 	name := utils.MapInterface(class[fieldName])["type"].(string)
 	if name == "Relation" {
-		// 删除 _Join table 数据
-		err := DropCollection("_Join:" + fieldName + ":" + className)
-		if err != nil {
-			return err
-		}
-	} else {
-		// 删除其他类型字段 对应的对象数据
+		// 删除表数据与 schema 中的对应字段
 		collection := AdaptiveCollection(className)
-		mongoFieldName := fieldName
-		if name == "Pointer" {
-			// Pointer 类型的字段名要添加前缀 _p_
-			mongoFieldName = "_p_" + fieldName
+		err := adapter.deleteFields(className, []string{fieldName}, []string{}, collection)
+		if err != nil {
+			return err
 		}
-		update := types.M{
-			"$unset": types.M{mongoFieldName: nil},
-		}
-		err := collection.UpdateMany(types.M{}, update)
+		// 删除 _Join table 数据
+		err = DropCollection("_Join:" + fieldName + ":" + className)
 		if err != nil {
 			return err
 		}
 	}
-	// 从 _SCHEMA 表中删除相应字段
-	update := types.M{
-		"$unset": types.M{fieldName: nil},
+	// 删除其他类型字段 对应的对象数据
+	fieldNames := []string{fieldName}
+	pointerFieldNames := []string{}
+
+	if name == "Pointer" {
+		pointerFieldNames = append(pointerFieldNames, fieldName)
 	}
-	return s.collection.updateSchema(className, update)
+	collection := AdaptiveCollection(className)
+	return adapter.deleteFields(className, fieldNames, pointerFieldNames, collection)
 }
 
 // validateObject 校验对象是否合法

@@ -3,6 +3,8 @@ package orm
 import (
 	"strings"
 
+	"github.com/lfq7413/tomato/types"
+
 	"gopkg.in/mgo.v2"
 )
 
@@ -70,4 +72,55 @@ func (m *MongoAdapter) collectionsContaining(match string) []*mgo.Collection {
 	}
 
 	return collections
+}
+
+// deleteFields 删除字段
+func (m *MongoAdapter) deleteFields(className string, fieldNames, pointerFieldNames []string, adaptiveCollection *MongoCollection) error {
+	// 查找非指针字段名
+	nonPointerFieldNames := []string{}
+	for _, fieldName := range fieldNames {
+		in := false
+		for _, pointerFieldName := range pointerFieldNames {
+			if fieldName == pointerFieldName {
+				in = true
+				break
+			}
+		}
+		if in == false {
+			nonPointerFieldNames = append(nonPointerFieldNames, fieldName)
+		}
+	}
+	// 转换为 mongo 格式
+	var mongoFormatNames []string
+	for _, pointerFieldName := range pointerFieldNames {
+		nonPointerFieldNames = append(nonPointerFieldNames, "_p_"+pointerFieldName)
+	}
+	mongoFormatNames = nonPointerFieldNames
+
+	// 组装表数据更新语句
+	unset := types.M{}
+	for _, name := range mongoFormatNames {
+		unset[name] = nil
+	}
+	collectionUpdate := types.M{"$unset": unset}
+
+	// 组装 schema 更新语句
+	unset2 := types.M{}
+	for _, name := range fieldNames {
+		unset[name] = nil
+	}
+	schemaUpdate := types.M{"$unset": unset2}
+
+	// 更新表数据
+	err := adaptiveCollection.UpdateMany(types.M{}, collectionUpdate)
+	if err != nil {
+		return err
+	}
+	// 更新 schema
+	schemaCollection := m.schemaCollection()
+	err = schemaCollection.updateSchema(className, schemaUpdate)
+	if err != nil {
+		return err
+	}
+	return nil
 }

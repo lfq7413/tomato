@@ -62,8 +62,12 @@ func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (types.M, error
 }
 
 // addSchema 添加一个表定义
-func (m *MongoSchemaCollection) addSchema(name string, fields types.M) (types.M, error) {
-	mongoObject := mongoSchemaObjectFromNameFields(name, fields)
+func (m *MongoSchemaCollection) addSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error) {
+	mongoSchema, err := mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions)
+	if err != nil {
+		return nil, err
+	}
+	mongoObject := mongoSchemaObjectFromNameFields(name, mongoSchema)
 	return MongoSchemaToParseSchema(mongoObject), m.collection.InsertOne(mongoObject)
 }
 
@@ -75,6 +79,18 @@ func (m *MongoSchemaCollection) updateSchema(name string, update types.M) error 
 // upsertSchema 更新或者插入一个表定义
 func (m *MongoSchemaCollection) upsertSchema(name string, query, update types.M) error {
 	return m.collection.upsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
+}
+
+// updateField 更新字段
+func (m *MongoSchemaCollection) updateField(className string, fieldName string, fieldType types.M) error {
+	query := types.M{}
+	query[fieldName] = types.M{"$exists": false}
+	date := types.M{}
+	date[fieldName] = parseFieldTypeToMongoFieldType(fieldType)
+	update := types.M{
+		"$set": date,
+	}
+	return m.upsertSchema(className, query, update)
 }
 
 // mongoSchemaQueryFromNameQuery 从表名及查询条件组装 mongo 查询对象
@@ -256,4 +272,35 @@ func parseFieldTypeToMongoFieldType(t types.M) string {
 	default:
 		return ""
 	}
+}
+
+// mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
+func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) (types.M, error) {
+	mongoObject := types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+
+	// 添加其他字段
+	for fieldName, v := range fields {
+		mongoObject[fieldName] = parseFieldTypeToMongoFieldType(v.(map[string]interface{}))
+	}
+
+	// 添加 CLP
+	var metadata types.M
+	if mongoObject["_metadata"] == nil && utils.MapInterface(mongoObject["_metadata"]) == nil {
+		metadata = types.M{}
+	} else {
+		metadata = utils.MapInterface(mongoObject["_metadata"])
+	}
+	if classLevelPermissions == nil {
+		delete(metadata, "class_permissions")
+	} else {
+		metadata["class_permissions"] = classLevelPermissions
+	}
+	mongoObject["_metadata"] = metadata
+
+	return mongoObject, nil
 }

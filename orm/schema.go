@@ -94,21 +94,18 @@ func init() {
 // Schema schema 操作对象
 type Schema struct {
 	collection *MongoSchemaCollection
-	data       types.M // data 保存类的字段信息，类型为数据库中保存的类型，后期需要修改为 API 类型
+	data       types.M // data 保存类的字段信息，类型为 API 类型
 	perms      types.M // perms 保存类的操作权限
 }
 
 // AddClassIfNotExists 添加类定义，包含默认的字段
 func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLevelPermissions types.M) (types.M, error) {
-	if s.data[className] != nil {
-		return nil, errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
-	}
-
-	mongoObject, err := mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions)
+	err := s.validateNewClass(className, fields, classLevelPermissions)
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.collection.addSchema(className, mongoObject)
+
+	result, err := s.collection.addSchema(className, fields, classLevelPermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +138,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 
 	// 组装写入数据库的数据
 	newSchema := buildMergedSchemaObject(existingFields, submittedFields)
-	mongoObject, err := mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions)
+	err := s.validateSchemaData(className, newSchema, classLevelPermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +163,8 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 
 	// 校验并插入字段
 	for _, fieldName := range insertedFields {
-		mongoType := utils.String(mongoObject[fieldName])
-		err := s.validateField(className, fieldName, mongoType, false)
+		fieldType := submittedFields[fieldName].(map[string]interface{})
+		err := s.validateField(className, fieldName, fieldType, false)
 		if err != nil {
 			return nil, err
 		}
@@ -179,8 +176,11 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 		return nil, err
 	}
 
-	// 把数据库格式的数据转换为 API 格式，并返回
-	return MongoSchemaToParseSchema(mongoObject), nil
+	return types.M{
+		"className":             className,
+		"fields":                s.data[className],
+		"classLevelPermissions": s.perms[className],
+	}, nil
 }
 
 // deleteField 从类定义中删除指定的字段，并删除对象中的数据
@@ -208,8 +208,8 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	}
 
 	// 根据字段属性进行相应 对象数据 删除操作
-	name := utils.String(class[fieldName])
-	if strings.HasPrefix(name, "relation<") {
+	name := utils.MapInterface(class[fieldName])["type"].(string)
+	if name == "Relation" {
 		// 删除 _Join table 数据
 		err := DropCollection("_Join:" + fieldName + ":" + className)
 		if err != nil {
@@ -219,7 +219,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 		// 删除其他类型字段 对应的对象数据
 		collection := AdaptiveCollection(className)
 		mongoFieldName := fieldName
-		if strings.HasPrefix(name, "*") {
+		if name == "Pointer" {
 			// Pointer 类型的字段名要添加前缀 _p_
 			mongoFieldName = "_p_" + fieldName
 		}
@@ -254,15 +254,15 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 		if err != nil {
 			return err
 		}
-		if expected == "geopoint" {
+		if expected == nil {
+			continue
+		}
+		if expected["type"].(string) == "GeoPoint" {
 			geocount++
 		}
 		if geocount > 1 {
 			// 只能有一个 geopoint
 			return errs.E(errs.IncorrectType, "there can only be one geopoint field in a class")
-		}
-		if expected == "" {
-			continue
 		}
 		if fieldName == "ACL" {
 			// 每个对象都隐含 ACL 字段
@@ -331,6 +331,56 @@ func (s *Schema) validateClassName(className string, freeze bool) error {
 	return nil
 }
 
+// validateNewClass 校验新建的类
+func (s *Schema) validateNewClass(className string, fields types.M, classLevelPermissions types.M) error {
+	if s.data[className] != nil {
+		return errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
+	}
+
+	if ClassNameIsValid(className) == false {
+		return errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
+	}
+
+	return s.validateSchemaData(className, fields, classLevelPermissions)
+}
+
+// validateSchemaData 校验 Schema 数据
+func (s *Schema) validateSchemaData(className string, fields types.M, classLevelPermissions types.M) error {
+	for fieldName, v := range fields {
+		if fieldNameIsValid(fieldName) == false {
+			return errs.E(errs.InvalidKeyName, "invalid field name: "+fieldName)
+		}
+		if fieldNameIsValidForClass(fieldName, className) == false {
+			return errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be added")
+		}
+		err := fieldTypeIsInvalid(v.(map[string]interface{}))
+		if err != nil {
+			return err
+		}
+	}
+
+	if DefaultColumns[className] != nil {
+		for fieldName, v := range DefaultColumns[className] {
+			fields[fieldName] = v
+		}
+	}
+
+	geoPoints := []string{}
+	for key, v := range fields {
+		if v != nil {
+			fieldData := v.(map[string]interface{})
+			if fieldData["type"].(string) == "GeoPoint" {
+				geoPoints = append(geoPoints, key)
+			}
+		}
+	}
+	if len(geoPoints) > 1 {
+		return errs.E(errs.IncorrectType, "currently, only one GeoPoint field may exist in an object. Adding "+geoPoints[1]+" when "+geoPoints[0]+" already exists.")
+	}
+
+	return validateCLP(classLevelPermissions)
+}
+
 // validateRequiredColumns 校验必须的字段
 func (s *Schema) validateRequiredColumns(className string, object, query types.M) error {
 	columns := requiredColumns[className]
@@ -363,7 +413,7 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 }
 
 // validateField 校验并插入字段，freeze 为 true 时不进行修改
-func (s *Schema) validateField(className, fieldName, fieldtype string, freeze bool) error {
+func (s *Schema) validateField(className, fieldName string, fieldtype types.M, freeze bool) error {
 	s.reloadData()
 	// 检测 fieldName 是否合法
 	_, err := transformKey(s, className, fieldName)
@@ -373,19 +423,21 @@ func (s *Schema) validateField(className, fieldName, fieldtype string, freeze bo
 
 	if strings.Index(fieldName, ".") > 0 {
 		fieldName = strings.Split(fieldName, ".")[0]
-		fieldtype = "object"
+		fieldtype = types.M{
+			"type": "Object",
+		}
 	}
 
-	expected := utils.String(utils.MapInterface(s.data[className])[fieldName])
-	if expected != "" {
-		if expected == "map" {
-			expected = "object"
+	expected := utils.MapInterface(utils.MapInterface(s.data[className])[fieldName])
+	if expected != nil {
+		if expected["type"].(string) == "map" {
+			expected["type"] = "Object"
 		}
-		if expected == fieldName {
+		if expected["type"].(string) == fieldtype["type"].(string) && expected["targetClass"].(string) == fieldtype["targetClass"].(string) {
 			return nil
 		}
 		// 类型不符
-		return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+fieldName+"; expected "+expected+" but got "+fieldtype)
+		return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+fieldName+"; expected "+expected["type"].(string)+" but got "+fieldtype["type"].(string))
 	}
 
 	if freeze {
@@ -394,29 +446,22 @@ func (s *Schema) validateField(className, fieldName, fieldtype string, freeze bo
 	}
 
 	// 没有当前要添加的字段，当字段类型为空时，不做更新
-	if fieldtype == "" {
+	if fieldtype == nil || fieldtype["type"].(string) == "" {
 		return nil
 	}
 
-	if fieldtype == "geopoint" {
+	if fieldtype["type"].(string) == "GeoPoint" {
 		// 只能有一个 geopoint
 		fields := utils.MapInterface(s.data[className])
 		for _, v := range fields {
-			otherKey := utils.String(v)
-			if otherKey == "geopoint" {
+			otherKey := utils.MapInterface(v)
+			if otherKey["type"].(string) == "GeoPoint" {
 				return errs.E(errs.IncorrectType, "there can only be one geopoint field in a class")
 			}
 		}
 	}
 
-	// 当前没有该字段，更新 schema
-	query := types.M{
-		fieldName: types.M{"$exists": false},
-	}
-	update := types.M{
-		"$set": types.M{fieldName: fieldtype},
-	}
-	err = s.collection.upsertSchema(className, query, update)
+	err = s.collection.updateField(className, fieldName, fieldtype)
 	if err != nil {
 		// 失败时也需要重新加载数据，因为这时候可能有其他客户端更新了字段
 		// s.reloadData()
@@ -477,12 +522,12 @@ func (s *Schema) hasKeys(className string, keys []string) bool {
 }
 
 // getExpectedType 获取期望的字段类型
-func (s *Schema) getExpectedType(className, key string) string {
+func (s *Schema) getExpectedType(className, key string) types.M {
 	if s.data != nil && s.data[className] != nil {
 		cls := utils.MapInterface(s.data[className])
-		return utils.String(cls[key])
+		return utils.MapInterface(cls[key])
 	}
-	return ""
+	return nil
 }
 
 // getRelationFields 转换 relation 类型的字段为 API 格式
@@ -491,11 +536,11 @@ func (s *Schema) getRelationFields(className string) types.M {
 	if s.data != nil && s.data[className] != nil {
 		classData := s.data[className].(map[string]interface{})
 		for field, v := range classData {
-			fieldType := v.(string)
-			if strings.HasPrefix(fieldType, "relation") == false {
+			fieldType := v.(map[string]interface{})
+			if fieldType["type"].(string) != "Relation" {
 				continue
 			}
-			name := fieldType[len("relation<") : len(fieldType)-1]
+			name := fieldType["targetClass"].(string)
 			relationFields[field] = types.M{
 				"__type":    "Relation",
 				"className": name,
@@ -531,25 +576,13 @@ func (s *Schema) reloadData() {
 			}
 		}
 
-		// 无需包含 ACL
-		delete(parseFormatSchema, "ACL")
-		// createdAt updatedAt 为 string 类型
-		parseFormatSchema["createdAt"] = types.M{"type": "String"}
-		parseFormatSchema["updatedAt"] = types.M{"type": "String"}
-
-		// 转换为数据库存储格式
-		mongoFormatSchema := types.M{}
-		for k, v := range parseFormatSchema {
-			mongoFormatSchema[k] = parseFieldTypeToMongoFieldType(v.(map[string]interface{}))
-		}
-
-		s.data[schema["className"].(string)] = mongoFormatSchema
+		s.data[schema["className"].(string)] = parseFormatSchema
 		s.perms[schema["className"].(string)] = schema["classLevelPermissions"]
 	}
 }
 
 // thenValidateField 校验字段，并且不对 schema 进行修改
-func thenValidateField(schema *Schema, className, key, fieldtype string) error {
+func thenValidateField(schema *Schema, className, key string, fieldtype types.M) error {
 	return schema.validateField(className, key, fieldtype, true)
 }
 
@@ -559,25 +592,25 @@ func thenValidateRequiredColumns(schema *Schema, className string, object, query
 }
 
 // getType 获取对象的格式
-func getType(obj interface{}) (string, error) {
+func getType(obj interface{}) (types.M, error) {
 	switch obj.(type) {
 	case bool:
-		return "boolean", nil
+		return types.M{"type": "Boolean"}, nil
 	case string:
-		return "string", nil
+		return types.M{"type": "String"}, nil
 	case float64:
-		return "number", nil
+		return types.M{"type": "Number"}, nil
 	case map[string]interface{}, []interface{}:
 		return getObjectType(obj)
 	default:
-		return "", errs.E(errs.IncorrectType, "bad obj. can not get type")
+		return nil, errs.E(errs.IncorrectType, "bad obj. can not get type")
 	}
 }
 
 // getObjectType 获取对象格式 仅处理 slice 与 map
-func getObjectType(obj interface{}) (string, error) {
+func getObjectType(obj interface{}) (types.M, error) {
 	if utils.SliceInterface(obj) != nil {
-		return "array", nil
+		return types.M{"type": "Array"}, nil
 	}
 	if utils.MapInterface(obj) != nil {
 		object := utils.MapInterface(obj)
@@ -586,27 +619,30 @@ func getObjectType(obj interface{}) (string, error) {
 			switch t {
 			case "Pointer":
 				if object["className"] != nil {
-					return "*" + utils.String(object["className"]), nil
+					return types.M{
+						"type":        "Pointer",
+						"targetClass": object["className"],
+					}, nil
 				}
 			case "File":
 				if object["name"] != nil {
-					return "file", nil
+					return types.M{"type": "File"}, nil
 				}
 			case "Date":
 				if object["iso"] != nil {
-					return "date", nil
+					return types.M{"type": "Date"}, nil
 				}
 			case "GeoPoint":
 				if object["latitude"] != nil && object["longitude"] != nil {
-					return "geopoint", nil
+					return types.M{"type": "Geopoint"}, nil
 				}
 			case "Bytes":
 				if object["base64"] != nil {
-					return "bytes", nil
+					return types.M{"type": "Bytes"}, nil
 				}
 			default:
 				// 无效的类型
-				return "", errs.E(errs.IncorrectType, "This is not a valid "+t)
+				return nil, errs.E(errs.IncorrectType, "This is not a valid "+t)
 			}
 		}
 		if object["$ne"] != nil {
@@ -616,97 +652,29 @@ func getObjectType(obj interface{}) (string, error) {
 			op := utils.String(object["__op"])
 			switch op {
 			case "Increment":
-				return "number", nil
+				return types.M{"type": "Number"}, nil
 			case "Delete":
-				return "", nil
+				return nil, nil
 			case "Add", "AddUnique", "Remove":
-				return "array", nil
+				return types.M{"type": "Array"}, nil
 			case "AddRelation", "RemoveRelation":
 				objects := utils.SliceInterface(object["objects"])
 				o := utils.MapInterface(objects[0])
-				return "relation<" + utils.String(o["className"]) + ">", nil
+				return types.M{
+					"type":        "Relation",
+					"targetClass": utils.String(o["className"]),
+				}, nil
 			case "Batch":
 				ops := utils.SliceInterface(object["ops"])
 				return getObjectType(ops[0])
 			default:
 				// 无效操作
-				return "", errs.E(errs.IncorrectType, "unexpected op: "+op)
+				return nil, errs.E(errs.IncorrectType, "unexpected op: "+op)
 			}
 		}
 	}
 
-	return "object", nil
-}
-
-// mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
-func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) (types.M, error) {
-	// 校验类名与字段是否合法
-	if ClassNameIsValid(className) == false {
-		return nil, errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
-	}
-	for fieldName, v := range fields {
-		if fieldNameIsValid(fieldName) == false {
-			return nil, errs.E(errs.InvalidKeyName, "invalid field name: "+fieldName)
-		}
-		if fieldNameIsValidForClass(fieldName, className) == false {
-			return nil, errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be added")
-		}
-		err := fieldTypeIsInvalid(v.(map[string]interface{}))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	mongoObject := types.M{
-		"_id":       className,
-		"objectId":  "string",
-		"updatedAt": "string",
-		"createdAt": "string",
-	}
-
-	// 添加默认字段
-	if DefaultColumns[className] != nil {
-		for fieldName, v := range DefaultColumns[className] {
-			mongoObject[fieldName] = parseFieldTypeToMongoFieldType(v.(map[string]interface{}))
-		}
-	}
-
-	// 添加其他字段
-	for fieldName, v := range fields {
-		mongoObject[fieldName] = parseFieldTypeToMongoFieldType(v.(map[string]interface{}))
-	}
-
-	// 处理 geopoint
-	geoPoints := []string{}
-	for k, v := range mongoObject {
-		if utils.String(v) == "geopoint" {
-			geoPoints = append(geoPoints, k)
-		}
-	}
-	if len(geoPoints) > 1 {
-		return nil, errs.E(errs.IncorrectType, "currently, only one GeoPoint field may exist in an object. Adding "+geoPoints[1]+" when "+geoPoints[0]+" already exists.")
-	}
-
-	// 校验类级别权限
-	err := validateCLP(classLevelPermissions)
-	if err != nil {
-		return nil, err
-	}
-	// 添加 CLP
-	var metadata types.M
-	if mongoObject["_metadata"] == nil && utils.MapInterface(mongoObject["_metadata"]) == nil {
-		metadata = types.M{}
-	} else {
-		metadata = utils.MapInterface(mongoObject["_metadata"])
-	}
-	if classLevelPermissions == nil {
-		delete(metadata, "class_permissions")
-	} else {
-		metadata["class_permissions"] = classLevelPermissions
-	}
-	mongoObject["_metadata"] = metadata
-
-	return mongoObject, nil
+	return types.M{"type": "object"}, nil
 }
 
 // ClassNameIsValid 校验类名，可以是系统内置类、join 类
@@ -881,13 +849,13 @@ func verifyPermissionKey(key string) error {
 	return nil
 }
 
-// buildMergedSchemaObject 组装数据库类型的 mongoObject 与 API 类型的 putRequest，
+// buildMergedSchemaObject 组装数据库类型的 existingFields 与 API 类型的 putRequest，
 // 返回值中不包含默认字段，返回的是 API 类型的数据
-func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
+func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M {
 	newSchema := types.M{}
 
 	sysSchemaField := []string{}
-	id := utils.String(mongoObject["_id"])
+	id := utils.String(existingFields["_id"])
 	for k, v := range DefaultColumns {
 		// 如果是系统预定义的表，则取出默认字段
 		if k == id {
@@ -899,7 +867,7 @@ func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 	}
 
 	// 处理已经存在的字段
-	for oldField, v := range mongoObject {
+	for oldField, v := range existingFields {
 		// 仅处理以下五种字段以外的字段
 		if oldField != "_id" &&
 			oldField != "ACL" &&
@@ -928,7 +896,7 @@ func buildMergedSchemaObject(mongoObject types.M, putRequest types.M) types.M {
 				}
 			}
 			if fieldIsDeleted == false {
-				newSchema[oldField] = mongoFieldToParseSchemaField(utils.String(v))
+				newSchema[oldField] = v
 			}
 		}
 	}

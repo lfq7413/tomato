@@ -130,18 +130,18 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	}
 
 	// 处理特殊字段名
-	expected := ""
+	var expected types.M
 	if schema != nil {
 		expected = schema.getExpectedType(className, key)
 	}
 
 	// 期望类型为 *xxx
 	// post ==> _p_post
-	if expected != "" && strings.HasPrefix(expected, "*") {
+	if expected != nil && expected["type"].(string) == "Pointer" {
 		key = "_p_" + key
 	}
 	// 期望类型不存在，但是 restValue 中存在 "__type":"Pointer"
-	if expected == "" && restValue != nil {
+	if expected == nil && restValue != nil {
 		op := utils.MapInterface(restValue)
 		if op != nil && op["__type"] != nil {
 			if utils.String(op["__type"]) == "Pointer" {
@@ -152,7 +152,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 
 	inArray := false
 	// 期望类型为 array
-	if expected == "array" {
+	if expected != nil && expected["type"].(string) == "Array" {
 		inArray = true
 	}
 
@@ -970,11 +970,11 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 				if strings.HasPrefix(key, "_p_") {
 					newKey := key[3:]
 					expected := schema.getExpectedType(className, newKey)
-					if expected == "" {
+					if expected == nil {
 						// 不在 schema 中的指针类型，丢弃
 						break
 					}
-					if expected != "" && strings.HasPrefix(expected, "*") == false {
+					if expected != nil && expected["type"].(string) != "Pointer" {
 						// schema 中对应的位置不是指针类型，丢弃
 						break
 					}
@@ -983,8 +983,8 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 					}
 					objData := strings.Split(value.(string), "$")
 					newClass := ""
-					if expected != "" {
-						newClass = expected[1:]
+					if expected != nil {
+						newClass = expected["targetClass"].(string)
 					} else {
 						newClass = objData[0]
 					}
@@ -1012,7 +1012,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 					// 	"name":   "hello.jpg"
 					// }
 					f := fileCoder{}
-					if expectedType == "file" && f.isValidDatabaseObject(value) {
+					if expectedType != nil && expectedType["type"].(string) == "File" && f.isValidDatabaseObject(value) {
 						restObject[key] = f.databaseToJSON(value)
 						break
 					}
@@ -1023,7 +1023,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 					// 	"latitude":  40
 					// }
 					g := geoPointCoder{}
-					if expectedType == "geopoint" && g.isValidDatabaseObject(value) {
+					if expectedType != nil && expectedType["type"].(string) == "geopoint" && g.isValidDatabaseObject(value) {
 						restObject[key] = g.databaseToJSON(value)
 						break
 					}

@@ -2,7 +2,6 @@
 package orm
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
@@ -553,9 +552,8 @@ func DeleteEverything() {
 func RedirectClassNameForKey(className, key string) string {
 	schema := LoadSchema(nil)
 	t := schema.getExpectedType(className, key)
-	b, _ := regexp.MatchString(`^relation<(.*)>$`, t)
-	if b {
-		return className[len("relation<"):(len(className) - 1)]
+	if t != nil && t["type"].(string) == "Relation" {
+		return t["targetClass"].(string)
 	}
 	return className
 }
@@ -832,12 +830,7 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || op["$eq"] != nil || utils.String(op["__type"]) == "Pointer") {
 			// 只处理 relation 类型
 			t := schema.getExpectedType(className, key)
-			match := false
-			if t != "" {
-				b, _ := regexp.MatchString("^relation<(.*)>$", t)
-				match = b
-			}
-			if match == false {
+			if t == nil || t["type"].(string) != "Relation" {
 				return query
 			}
 

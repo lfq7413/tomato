@@ -34,20 +34,21 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 
 	now := time.Now().UTC()
 
-	dataJSON, _ := json.Marshal(body["data"])
+	data := body["data"]
+	payloadString, _ := json.Marshal(data)
 
 	object := types.M{
-		"objectId":    p.objectID,
+		"_id":         p.objectID,
 		"pushTime":    utils.TimetoString(now),
 		"_created_at": now,
 		"query":       where,
-		"payload":     body["data"],
+		"payload":     string(payloadString),
 		"source":      options["source"],
 		"title":       options["title"],
 		"expiry":      body["expiration_time"],
 		"status":      "pending",
 		"numSent":     0,
-		"pushHash":    utils.MD5Hash(string(dataJSON)),
+		"pushHash":    utils.MD5Hash(string(payloadString)),
 		// lockdown!
 		"_wperm": []interface{}{},
 		"_rperm": []interface{}{},
@@ -67,8 +68,8 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 // setRunning 设置正在推送
 func (p *pushStatus) setRunning() {
 	where := types.M{
-		"status":   "pending",
-		"objectId": p.status["objectId"],
+		"status": "pending",
+		"_id":    p.status["objectId"],
 	}
 	update := types.M{
 		"$set": types.M{
@@ -120,8 +121,8 @@ func (p *pushStatus) complete(results []types.M) {
 	}
 
 	where := types.M{
-		"status":   "running",
-		"objectId": p.status["objectId"],
+		"status": "running",
+		"_id":    p.status["objectId"],
 	}
 	update := types.M{
 		"status":        "succeeded",
@@ -140,7 +141,7 @@ func (p *pushStatus) fail(err error) {
 		"status":       "failed",
 	}
 	where := types.M{
-		"objectId": p.status["objectId"],
+		"_id": p.status["objectId"],
 	}
 	p.collection().UpdateOne(where, types.M{"$set": update})
 }

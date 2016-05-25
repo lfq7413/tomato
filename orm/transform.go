@@ -12,9 +12,17 @@ import (
 	"github.com/lfq7413/tomato/utils"
 )
 
+// MongoTransform ...
+type MongoTransform struct{}
+
+// NewMongoTransform ...
+func NewMongoTransform() *MongoTransform {
+	return &MongoTransform{}
+}
+
 // transformKey 把 key 转换为数据库中保存的格式
-func transformKey(schema *Schema, className, key string) (string, error) {
-	k, _, err := transformKeyValue(schema, className, key, nil, nil)
+func (t *MongoTransform) transformKey(schema *Schema, className, key string) (string, error) {
+	k, _, err := t.transformKeyValue(schema, className, key, nil, nil)
 	if err != nil {
 		return "", err
 	}
@@ -30,7 +38,7 @@ func transformKey(schema *Schema, className, key string) (string, error) {
 // update: true 表示 restValue 中包含 __op 操作，类似 Add、Delete，需要进行转换
 // validate: true 表示需要校验字段名
 // 返回转换成 数据库格式的字段名与值
-func transformKeyValue(schema *Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
+func (t *MongoTransform) transformKeyValue(schema *Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -71,7 +79,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		mongoSubqueries := types.S{}
 		// 转换 where 查询条件
 		for _, v := range querys {
-			query, err := transformWhere(schema, className, utils.MapInterface(v), nil)
+			query, err := t.transformWhere(schema, className, utils.MapInterface(v), nil)
 			if err != nil {
 				return "", nil, err
 			}
@@ -91,7 +99,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		mongoSubqueries := types.S{}
 		// 转换 where 查询条件
 		for _, v := range querys {
-			query, err := transformWhere(schema, className, utils.MapInterface(v), nil)
+			query, err := t.transformWhere(schema, className, utils.MapInterface(v), nil)
 			if err != nil {
 				return "", nil, err
 			}
@@ -158,11 +166,11 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 
 	// 处理查询操作，转换限制条件
 	if options["query"] != nil {
-		value, err := transformConstraint(restValue, inArray)
+		value, err := t.transformConstraint(restValue, inArray)
 		if err != nil {
 			return "", nil, err
 		}
-		if value != cannotTransform() {
+		if value != t.cannotTransform() {
 			return key, value, nil
 		}
 	}
@@ -173,11 +181,11 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 	}
 
 	// 转换原子数据
-	value, err := transformAtom(restValue, false, options)
+	value, err := t.transformAtom(restValue, false, options)
 	if err != nil {
 		return "", nil, err
 	}
-	if value != cannotTransform() {
+	if value != t.cannotTransform() {
 		if timeField && utils.String(value) != "" {
 			var err error
 			value, err = utils.StringtoTime(utils.String(value))
@@ -202,7 +210,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		}
 		outValue := types.S{}
 		for _, restObj := range valueArray {
-			_, v, err := transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
+			_, v, err := t.transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
 			if err != nil {
 				return "", nil, err
 			}
@@ -219,18 +227,18 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		flatten = false
 	}
 	// 处理更新操作中的 "_op"
-	value, err = transformUpdateOperator(restValue, flatten)
+	value, err = t.transformUpdateOperator(restValue, flatten)
 	if err != nil {
 		return "", nil, err
 	}
-	if value != cannotTransform() {
+	if value != t.cannotTransform() {
 		return key, value, nil
 	}
 
 	// 处理正常的对象
 	normalValue := types.M{}
 	for subRestKey, subRestValue := range utils.MapInterface(restValue) {
-		k, v, err := transformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
+		k, v, err := t.transformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
 		if err != nil {
 			return "", nil, err
 		}
@@ -241,10 +249,10 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 
 // transformConstraint 转换查询限制条件，处理的操作符类似 "$lt", "$gt" 等
 // inArray 表示该字段是否为数组类型
-func transformConstraint(constraint interface{}, inArray bool) (interface{}, error) {
+func (t *MongoTransform) transformConstraint(constraint interface{}, inArray bool) (interface{}, error) {
 	// TODO 需要根据 MongoDB 文档修正参数
 	if constraint == nil || utils.MapInterface(constraint) == nil {
-		return cannotTransform(), nil
+		return t.cannotTransform(), nil
 	}
 
 	// keys is the constraints in reverse alphabetical order.
@@ -264,7 +272,7 @@ func transformConstraint(constraint interface{}, inArray bool) (interface{}, err
 		// 转换 小于、大于、存在、等于、不等于 操作符
 		case "$lt", "$lte", "$gt", "$gte", "$exists", "$ne", "$eq":
 			var err error
-			answer[key], err = transformAtom(object[key], true, types.M{"inArray": inArray})
+			answer[key], err = t.transformAtom(object[key], true, types.M{"inArray": inArray})
 			if err != nil {
 				return nil, err
 			}
@@ -278,7 +286,7 @@ func transformConstraint(constraint interface{}, inArray bool) (interface{}, err
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
-				obj, err := transformAtom(v, true, types.M{"inArray": inArray})
+				obj, err := t.transformAtom(v, true, types.M{"inArray": inArray})
 				if err != nil {
 					return nil, err
 				}
@@ -295,7 +303,7 @@ func transformConstraint(constraint interface{}, inArray bool) (interface{}, err
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
-				obj, err := transformAtom(v, true, types.M{"inArray": true})
+				obj, err := t.transformAtom(v, true, types.M{"inArray": true})
 				if err != nil {
 					return nil, err
 				}
@@ -378,7 +386,7 @@ func transformConstraint(constraint interface{}, inArray bool) (interface{}, err
 				// 其他以 $ 开头的操作符为无效参数
 				return nil, errs.E(errs.InvalidJSON, "bad constraint: "+key)
 			}
-			return cannotTransform(), nil
+			return t.cannotTransform(), nil
 		}
 	}
 
@@ -389,7 +397,7 @@ func transformConstraint(constraint interface{}, inArray bool) (interface{}, err
 // options.inArray 为 true，则不进行相应转换
 // options.inObject 为 true，则不进行相应转换
 // force 是否强制转换，true 时如果转换失败则返回错误
-func transformAtom(atom interface{}, force bool, options types.M) (interface{}, error) {
+func (t *MongoTransform) transformAtom(atom interface{}, force bool, options types.M) (interface{}, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -497,7 +505,7 @@ func transformAtom(atom interface{}, force bool, options types.M) (interface{}, 
 			// 无效类型，"__type" 的值不支持
 			return nil, errs.E(errs.InvalidJSON, "bad atom.")
 		}
-		return cannotTransform(), nil
+		return t.cannotTransform(), nil
 	}
 
 	// 其他类型无法转换
@@ -506,11 +514,11 @@ func transformAtom(atom interface{}, force bool, options types.M) (interface{}, 
 
 // transformUpdateOperator 转换更新请求中的操作
 // flatten 为 true 时，不再组装，直接返回实际数据
-func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, error) {
+func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten bool) (interface{}, error) {
 	// 具体操作放在 "__op" 中
 	operatorMap := utils.MapInterface(operator)
 	if operatorMap == nil || operatorMap["__op"] == nil {
-		return cannotTransform(), nil
+		return t.cannotTransform(), nil
 	}
 
 	op := utils.String(operatorMap["__op"])
@@ -576,7 +584,7 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 		}
 		toAdd := types.S{}
 		for _, obj := range objects {
-			o, err := transformAtom(obj, true, types.M{"inArray": true})
+			o, err := t.transformAtom(obj, true, types.M{"inArray": true})
 			if err != nil {
 				return nil, err
 			}
@@ -614,7 +622,7 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 		}
 		toRemove := types.S{}
 		for _, obj := range objects {
-			o, err := transformAtom(obj, true, types.M{"inArray": true})
+			o, err := t.transformAtom(obj, true, types.M{"inArray": true})
 			if err != nil {
 				return nil, err
 			}
@@ -635,17 +643,17 @@ func transformUpdateOperator(operator interface{}, flatten bool) (interface{}, e
 }
 
 // transformCreate 转换 create 数据
-func transformCreate(schema *Schema, className string, create types.M) (types.M, error) {
+func (t *MongoTransform) transformCreate(schema *Schema, className string, create types.M) (types.M, error) {
 	// 转换第三方登录数据
 	if className == "_User" {
-		create = transformAuthData(create)
+		create = t.transformAuthData(create)
 	}
 	// 转换权限数据，转换完成之后仅包含权限信息
-	mongoCreate := transformACL(create)
+	mongoCreate := t.transformACL(create)
 
 	// 转换其他字段并添加
 	for k, v := range create {
-		key, value, err := transformKeyValue(schema, className, k, v, types.M{})
+		key, value, err := t.transformKeyValue(schema, className, k, v, types.M{})
 		if err != nil {
 			return nil, err
 		}
@@ -666,7 +674,7 @@ func transformCreate(schema *Schema, className string, create types.M) (types.M,
 // {
 // 	"_auth_data_facebook": {...}
 // }
-func transformAuthData(restObject types.M) types.M {
+func (t *MongoTransform) transformAuthData(restObject types.M) types.M {
 	if restObject["authData"] != nil {
 		authData := utils.MapInterface(restObject["authData"])
 		for provider, v := range authData {
@@ -704,7 +712,7 @@ func transformAuthData(restObject types.M) types.M {
 // 	"_rperm":["userid","role:xxx","*"],
 // 	"_wperm":["userid","role:xxx"]
 // }
-func transformACL(restObject types.M) types.M {
+func (t *MongoTransform) transformACL(restObject types.M) types.M {
 	output := types.M{}
 	if restObject["ACL"] == nil {
 		return output
@@ -730,7 +738,7 @@ func transformACL(restObject types.M) types.M {
 }
 
 // transformWhere 转换 where 查询数据，返回数据库格式的数据
-func transformWhere(schema *Schema, className string, where types.M, options types.M) (types.M, error) {
+func (t *MongoTransform) transformWhere(schema *Schema, className string, where types.M, options types.M) (types.M, error) {
 	if options == nil || len(options) == 0 {
 		options = types.M{"validate": true}
 	}
@@ -745,7 +753,7 @@ func transformWhere(schema *Schema, className string, where types.M, options typ
 		"validate": options["validate"],
 	}
 	for k, v := range where {
-		key, value, err := transformKeyValue(schema, className, k, v, transformKeyOptions)
+		key, value, err := t.transformKeyValue(schema, className, k, v, transformKeyOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -756,19 +764,19 @@ func transformWhere(schema *Schema, className string, where types.M, options typ
 }
 
 // transformUpdate 转换 update 数据
-func transformUpdate(schema *Schema, className string, update types.M) (types.M, error) {
+func (t *MongoTransform) transformUpdate(schema *Schema, className string, update types.M) (types.M, error) {
 	if update == nil {
 		// 更新数据不能为空
 		return nil, errs.E(errs.InvalidJSON, "got empty restUpdate")
 	}
 	// 处理第三方登录数据
 	if className == "_User" {
-		update = transformAuthData(update)
+		update = t.transformAuthData(update)
 	}
 
 	mongoUpdate := types.M{}
 	// 转换并设置权限信息
-	acl := transformACL(update)
+	acl := t.transformACL(update)
 	if acl["_rperm"] != nil || acl["_wperm"] != nil {
 		set := types.M{}
 		if acl["_rperm"] != nil {
@@ -782,7 +790,7 @@ func transformUpdate(schema *Schema, className string, update types.M) (types.M,
 
 	// 转换 update 中的其他数据
 	for k, v := range update {
-		key, value, err := transformKeyValue(schema, className, k, v, types.M{"update": true})
+		key, value, err := t.transformKeyValue(schema, className, k, v, types.M{"update": true})
 		if err != nil {
 			return nil, err
 		}
@@ -848,8 +856,8 @@ var specialKeysForUntransform = []string{
 	"_expiresAt",
 }
 
-// untransformObjectT  把数据库类型数据转换为 API 格式
-func untransformObjectT(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error) {
+// untransformObject  把数据库类型数据转换为 API 格式
+func (t *MongoTransform) untransformObject(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error) {
 	if mongoObject == nil {
 		return mongoObject, nil
 	}
@@ -863,7 +871,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 		results := types.S{}
 		objs := mongoObject.([]interface{})
 		for _, o := range objs {
-			res, err := untransformObjectT(schema, className, o, true)
+			res, err := t.untransformObject(schema, className, o, true)
 			if err != nil {
 				return nil, err
 			}
@@ -895,7 +903,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 	// 转换对象类型
 	if object, ok := mongoObject.(map[string]interface{}); ok {
 		// 转换权限信息
-		restObject := untransformACL(object)
+		restObject := t.untransformACL(object)
 		for key, value := range object {
 			if isNestedObject {
 				in := false
@@ -906,7 +914,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 					}
 				}
 				if in {
-					r, err := untransformObjectT(schema, className, value, true)
+					r, err := t.untransformObject(schema, className, value, true)
 					if err != nil {
 						return nil, err
 					}
@@ -1032,7 +1040,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 					}
 				}
 				// 转换子对象
-				res, err := untransformObjectT(schema, className, value, true)
+				res, err := t.untransformObject(schema, className, value, true)
 				if err != nil {
 					return nil, err
 				}
@@ -1075,7 +1083,7 @@ func untransformObjectT(schema *Schema, className string, mongoObject interface{
 // 		}
 // 	}
 // }
-func untransformACL(mongoObject types.M) types.M {
+func (t *MongoTransform) untransformACL(mongoObject types.M) types.M {
 	output := types.M{}
 	if mongoObject["_rperm"] == nil && mongoObject["_wperm"] == nil {
 		return output
@@ -1118,7 +1126,7 @@ func untransformACL(mongoObject types.M) types.M {
 }
 
 // transformSelect 转换对象中的 $select
-func transformSelect(selectObject types.M, key string, objects []types.M) {
+func (t *MongoTransform) transformSelect(selectObject types.M, key string, objects []types.M) {
 	values := []interface{}{}
 	for _, result := range objects {
 		values = append(values, result[key])
@@ -1136,7 +1144,7 @@ func transformSelect(selectObject types.M, key string, objects []types.M) {
 }
 
 // transformDontSelect 转换对象中的 $dontSelect
-func transformDontSelect(dontSelectObject types.M, key string, objects []types.M) {
+func (t *MongoTransform) transformDontSelect(dontSelectObject types.M, key string, objects []types.M) {
 	values := []interface{}{}
 	for _, result := range objects {
 		values = append(values, result[key])
@@ -1154,7 +1162,7 @@ func transformDontSelect(dontSelectObject types.M, key string, objects []types.M
 }
 
 // transformInQuery 转换对象中的 $inQuery
-func transformInQuery(inQueryObject types.M, className string, results []types.M) {
+func (t *MongoTransform) transformInQuery(inQueryObject types.M, className string, results []types.M) {
 	values := []interface{}{}
 	for _, result := range results {
 		o := types.M{
@@ -1177,7 +1185,7 @@ func transformInQuery(inQueryObject types.M, className string, results []types.M
 }
 
 // transformNotInQuery 转换对象中的 $notInQuery
-func transformNotInQuery(notInQueryObject types.M, className string, results []types.M) {
+func (t *MongoTransform) transformNotInQuery(notInQueryObject types.M, className string, results []types.M) {
 	values := []interface{}{}
 	for _, result := range results {
 		o := types.M{
@@ -1200,7 +1208,7 @@ func transformNotInQuery(notInQueryObject types.M, className string, results []t
 }
 
 // addWriteACL 添加写请求权限
-func addWriteACL(mongoWhere interface{}, acl []string) types.M {
+func (t *MongoTransform) addWriteACL(mongoWhere interface{}, acl []string) types.M {
 	writePerms := types.S{
 		types.M{"_wperm": types.M{"$exists": false}},
 	}
@@ -1214,7 +1222,7 @@ func addWriteACL(mongoWhere interface{}, acl []string) types.M {
 }
 
 // addReadACL 添加读请求权限
-func addReadACL(mongoWhere interface{}, acl []string) types.M {
+func (t *MongoTransform) addReadACL(mongoWhere interface{}, acl []string) types.M {
 	orParts := types.S{
 		types.M{"_rperm": types.M{"$exists": false}},
 		types.M{"_rperm": types.M{"$in": types.S{"*"}}},
@@ -1228,7 +1236,7 @@ func addReadACL(mongoWhere interface{}, acl []string) types.M {
 	}
 }
 
-func cannotTransform() interface{} {
+func (t *MongoTransform) cannotTransform() interface{} {
 	return nil
 }
 

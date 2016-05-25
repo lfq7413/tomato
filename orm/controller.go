@@ -12,11 +12,13 @@ import (
 // TomatoDBController ...
 var TomatoDBController *dbController
 var adapter *MongoAdapter
+var transform *MongoTransform
 var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
 	adapter = NewMongoAdapter("tomato")
+	transform = NewMongoTransform()
 	TomatoDBController = &dbController{
 		skipValidation: false,
 	}
@@ -25,6 +27,13 @@ func init() {
 // dbController 数据库操作类
 type dbController struct {
 	skipValidation bool
+}
+
+// WithoutValidation 返回不进行字段校验的数据库操作对象
+func (d dbController) WithoutValidation() *dbController {
+	return &dbController{
+		skipValidation: true,
+	}
 }
 
 // AdaptiveCollection 获取要操作的表，以便后续操作
@@ -94,13 +103,13 @@ func (d dbController) Find(className string, where, options types.M) (types.S, e
 			mongoKey := ""
 			// sort 中的 key ，如果是要按倒序排列，则会加前缀 "-" ，所以要对其进行处理
 			if strings.HasPrefix(key, "-") {
-				k, err := transformKey(schema, className, key[1:])
+				k, err := transform.transformKey(schema, className, key[1:])
 				if err != nil {
 					return nil, err
 				}
 				mongoKey = "-" + k
 			} else {
-				k, err := transformKey(schema, className, key)
+				k, err := transform.transformKey(schema, className, key)
 				if err != nil {
 					return nil, err
 				}
@@ -129,7 +138,7 @@ func (d dbController) Find(className string, where, options types.M) (types.S, e
 	d.reduceInRelation(className, where, schema)
 
 	coll := TomatoDBController.AdaptiveCollection(className)
-	mongoWhere, err := transformWhere(schema, className, where, nil)
+	mongoWhere, err := transform.transformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +214,7 @@ func (d dbController) Destroy(className string, where types.M, options types.M) 
 	}
 
 	coll := TomatoDBController.AdaptiveCollection(className)
-	mongoWhere, err := transformWhere(schema, className, where, nil)
+	mongoWhere, err := transform.transformWhere(schema, className, where, nil)
 	if err != nil {
 		return err
 	}
@@ -280,7 +289,7 @@ func (d dbController) Update(className string, where, data, options types.M) (ty
 	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
 	coll := TomatoDBController.AdaptiveCollection(className)
-	mongoWhere, err := transformWhere(schema, className, where, nil)
+	mongoWhere, err := transform.transformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -307,7 +316,7 @@ func (d dbController) Update(className string, where, data, options types.M) (ty
 			},
 		}
 	}
-	mongoUpdate, err := transformUpdate(schema, className, data)
+	mongoUpdate, err := transform.transformUpdate(schema, className, data)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +393,7 @@ func (d dbController) Create(className string, data, options types.M) error {
 	}
 
 	coll := TomatoDBController.AdaptiveCollection(className)
-	mongoObject, err := transformCreate(schema, className, data)
+	mongoObject, err := transform.transformCreate(schema, className, data)
 	if err != nil {
 		return err
 	}
@@ -393,6 +402,9 @@ func (d dbController) Create(className string, data, options types.M) error {
 
 // validateClassName 校验表名是否合法
 func (d dbController) validateClassName(className string) error {
+	if d.skipValidation {
+		return nil
+	}
 	if ClassNameIsValid(className) == false {
 		return errs.E(errs.InvalidClassName, "invalid className: "+className)
 	}
@@ -917,7 +929,7 @@ func (d dbController) owningIds(className, key string, relatedIds types.S) types
 
 // untransformObject 从查询到的数据库对象转换出可返回给客户端的对象，并对 _User 表数据进行特殊处理
 func (d dbController) untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
-	res, err := untransformObjectT(schema, className, mongoObject, false)
+	res, err := transform.untransformObject(schema, className, mongoObject, false)
 	if err != nil {
 		return nil, err
 	}

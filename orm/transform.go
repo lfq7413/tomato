@@ -1135,7 +1135,7 @@ func transformSelect(selectObject types.M, key string, objects []types.M) {
 	selectObject["$in"] = in
 }
 
-// transformDontSelect 转换对象中的 $select
+// transformDontSelect 转换对象中的 $dontSelect
 func transformDontSelect(dontSelectObject types.M, key string, objects []types.M) {
 	values := []interface{}{}
 	for _, result := range objects {
@@ -1151,6 +1151,29 @@ func transformDontSelect(dontSelectObject types.M, key string, objects []types.M
 		nin = values
 	}
 	dontSelectObject["$nin"] = nin
+}
+
+// transformInQuery 转换对象中的 $inQuery
+func transformInQuery(inQueryObject types.M, className string, results []types.M) {
+	values := []interface{}{}
+	for _, result := range results {
+		o := types.M{
+			"__type":    "Pointer",
+			"className": className,
+			"objectId":  result["objectId"],
+		}
+		values = append(values, o)
+	}
+
+	delete(inQueryObject, "$inQuery")
+	var in []interface{}
+	if v, ok := inQueryObject["$in"].([]interface{}); ok {
+		in = v
+		in = append(in, values...)
+	} else {
+		in = values
+	}
+	inQueryObject["$in"] = in
 }
 
 func cannotTransform() interface{} {

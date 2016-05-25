@@ -1117,6 +1117,24 @@ func untransformACL(mongoObject types.M) types.M {
 	return output
 }
 
+// transformSelect 转换对象中的 $select
+func transformSelect(selectObject types.M, key string, objects []types.M) {
+	values := []interface{}{}
+	for _, result := range objects {
+		values = append(values, result[key])
+	}
+
+	delete(selectObject, "$select")
+	var in []interface{}
+	if v, ok := selectObject["$in"].([]interface{}); ok {
+		in = v
+		in = append(in, values...)
+	} else {
+		in = values
+	}
+	selectObject["$in"] = in
+}
+
 func cannotTransform() interface{} {
 	return nil
 }

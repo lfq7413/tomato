@@ -1213,6 +1213,21 @@ func addWriteACL(mongoWhere interface{}, acl []string) types.M {
 	}
 }
 
+// addReadACL 添加读请求权限
+func addReadACL(mongoWhere interface{}, acl []string) types.M {
+	orParts := types.S{
+		types.M{"_rperm": types.M{"$exists": false}},
+		types.M{"_rperm": types.M{"$in": types.S{"*"}}},
+	}
+	for _, entry := range acl {
+		p := types.M{"_rperm": types.M{"$in": types.S{entry}}}
+		orParts = append(orParts, p)
+	}
+	return types.M{
+		"$and": types.S{mongoWhere, types.M{"$or": orParts}},
+	}
+}
+
 func cannotTransform() interface{} {
 	return nil
 }

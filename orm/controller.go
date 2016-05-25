@@ -13,13 +13,13 @@ import (
 // TomatoDBController ...
 var TomatoDBController *dbController
 var adapter *MongoAdapter
-var transform *MongoTransform
+var Transform *MongoTransform
 var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
 	adapter = NewMongoAdapter("tomato")
-	transform = NewMongoTransform()
+	Transform = NewMongoTransform()
 	TomatoDBController = &dbController{
 		skipValidation: false,
 	}
@@ -104,13 +104,13 @@ func (d dbController) Find(className string, where, options types.M) (types.S, e
 			mongoKey := ""
 			// sort 中的 key ，如果是要按倒序排列，则会加前缀 "-" ，所以要对其进行处理
 			if strings.HasPrefix(key, "-") {
-				k, err := transform.transformKey(schema, className, key[1:])
+				k, err := Transform.transformKey(schema, className, key[1:])
 				if err != nil {
 					return nil, err
 				}
 				mongoKey = "-" + k
 			} else {
-				k, err := transform.transformKey(schema, className, key)
+				k, err := Transform.transformKey(schema, className, key)
 				if err != nil {
 					return nil, err
 				}
@@ -139,13 +139,13 @@ func (d dbController) Find(className string, where, options types.M) (types.S, e
 	d.reduceInRelation(className, where, schema)
 
 	coll := adapter.adaptiveCollection(className)
-	mongoWhere, err := transform.transformWhere(schema, className, where, nil)
+	mongoWhere, err := Transform.transformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
 	}
 	// 组装 acl 查询条件，查找可被当前用户访问的对象
 	if isMaster == false {
-		mongoWhere = transform.addReadACL(mongoWhere, aclGroup)
+		mongoWhere = Transform.addReadACL(mongoWhere, aclGroup)
 	}
 
 	// 获取 count
@@ -191,13 +191,13 @@ func (d dbController) Destroy(className string, where types.M, options types.M) 
 	}
 
 	coll := adapter.adaptiveCollection(className)
-	mongoWhere, err := transform.transformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
+	mongoWhere, err := Transform.transformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return err
 	}
 	// 组装 acl 查询条件，查找可被当前用户修改的对象
 	if isMaster == false {
-		mongoWhere = transform.addWriteACL(mongoWhere, aclGroup)
+		mongoWhere = Transform.addWriteACL(mongoWhere, aclGroup)
 	}
 	n, err := coll.deleteMany(mongoWhere)
 	if err != nil {
@@ -250,15 +250,15 @@ func (d dbController) Update(className string, where, data, options types.M) (ty
 	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
 	coll := adapter.adaptiveCollection(className)
-	mongoWhere, err := transform.transformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
+	mongoWhere, err := Transform.transformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
 	}
 	// 组装 acl 查询条件，查找可被当前用户修改的对象
 	if isMaster == false {
-		mongoWhere = transform.addWriteACL(mongoWhere, aclGroup)
+		mongoWhere = Transform.addWriteACL(mongoWhere, aclGroup)
 	}
-	mongoUpdate, err := transform.transformUpdate(schema, className, data, types.M{"validate": !d.skipValidation})
+	mongoUpdate, err := Transform.transformUpdate(schema, className, data, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +357,7 @@ func (d dbController) Create(className string, data, options types.M) error {
 	}
 
 	coll := adapter.adaptiveCollection(className)
-	mongoObject, err := transform.transformCreate(schema, className, data)
+	mongoObject, err := Transform.transformCreate(schema, className, data)
 	if err != nil {
 		return err
 	}
@@ -899,7 +899,7 @@ func (d dbController) owningIds(className, key string, relatedIds types.S) types
 
 // untransformObject 从查询到的数据库对象转换出可返回给客户端的对象，并对 _User 表数据进行特殊处理
 func (d dbController) untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
-	res, err := transform.untransformObject(schema, className, mongoObject, false)
+	res, err := Transform.untransformObject(schema, className, mongoObject, false)
 	if err != nil {
 		return nil, err
 	}

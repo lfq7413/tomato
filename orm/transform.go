@@ -1128,8 +1128,8 @@ func (t *MongoTransform) untransformACL(mongoObject types.M) types.M {
 	return output
 }
 
-// transformSelect 转换对象中的 $select
-func (t *MongoTransform) transformSelect(selectObject types.M, key string, objects []types.M) {
+// TransformSelect 转换对象中的 $select
+func (t *MongoTransform) TransformSelect(selectObject types.M, key string, objects []types.M) {
 	values := []interface{}{}
 	for _, result := range objects {
 		values = append(values, result[key])
@@ -1146,8 +1146,8 @@ func (t *MongoTransform) transformSelect(selectObject types.M, key string, objec
 	selectObject["$in"] = in
 }
 
-// transformDontSelect 转换对象中的 $dontSelect
-func (t *MongoTransform) transformDontSelect(dontSelectObject types.M, key string, objects []types.M) {
+// TransformDontSelect 转换对象中的 $dontSelect
+func (t *MongoTransform) TransformDontSelect(dontSelectObject types.M, key string, objects []types.M) {
 	values := []interface{}{}
 	for _, result := range objects {
 		values = append(values, result[key])
@@ -1164,8 +1164,8 @@ func (t *MongoTransform) transformDontSelect(dontSelectObject types.M, key strin
 	dontSelectObject["$nin"] = nin
 }
 
-// transformInQuery 转换对象中的 $inQuery
-func (t *MongoTransform) transformInQuery(inQueryObject types.M, className string, results []types.M) {
+// TransformInQuery 转换对象中的 $inQuery
+func (t *MongoTransform) TransformInQuery(inQueryObject types.M, className string, results []types.M) {
 	values := []interface{}{}
 	for _, result := range results {
 		o := types.M{
@@ -1187,8 +1187,8 @@ func (t *MongoTransform) transformInQuery(inQueryObject types.M, className strin
 	inQueryObject["$in"] = in
 }
 
-// transformNotInQuery 转换对象中的 $notInQuery
-func (t *MongoTransform) transformNotInQuery(notInQueryObject types.M, className string, results []types.M) {
+// TransformNotInQuery 转换对象中的 $notInQuery
+func (t *MongoTransform) TransformNotInQuery(notInQueryObject types.M, className string, results []types.M) {
 	values := []interface{}{}
 	for _, result := range results {
 		o := types.M{

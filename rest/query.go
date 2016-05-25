@@ -274,8 +274,6 @@ func (q *Query) replaceSelect() error {
 		"redirectClassNameForKey": queryValue["redirectClassNameForKey"],
 	}
 
-	values := types.S{}
-
 	var where types.M
 	if queryValue["where"] == nil {
 		where = types.M{}
@@ -295,24 +293,15 @@ func (q *Query) replaceSelect() error {
 		return err
 	}
 	// 组装查询到的对象
+	values := []types.M{}
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
-			key := result[utils.String(selectValue["key"])]
-			if key != nil {
-				values = append(values, key)
-			}
+			values = append(values, result)
 		}
 	}
 	// 替换 $select 为 $in
-	delete(selectObject, "$select")
-	if selectObject["$in"] != nil &&
-		utils.SliceInterface(selectObject["$in"]) != nil {
-		in := utils.SliceInterface(selectObject["$in"])
-		selectObject["$in"] = append(in, values...)
-	} else {
-		selectObject["$in"] = values
-	}
+	orm.Transform.TransformSelect(selectObject, selectValue["key"].(string), values)
 	// 继续搜索替换
 	return q.replaceSelect()
 }
@@ -342,8 +331,6 @@ func (q *Query) replaceDontSelect() error {
 		"redirectClassNameForKey": queryValue["redirectClassNameForKey"],
 	}
 
-	values := types.S{}
-
 	var where types.M
 	if queryValue["where"] == nil {
 		where = types.M{}
@@ -363,24 +350,15 @@ func (q *Query) replaceDontSelect() error {
 		return err
 	}
 	// 组装查询到的对象
+	values := []types.M{}
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
-			key := result[utils.String(dontSelectValue["key"])]
-			if key != nil {
-				values = append(values, key)
-			}
+			values = append(values, result)
 		}
 	}
 	// 替换 $dontSelect 为 $nin
-	delete(dontSelectObject, "$dontSelect")
-	if dontSelectObject["$nin"] != nil &&
-		utils.SliceInterface(dontSelectObject["$nin"]) != nil {
-		nin := utils.SliceInterface(dontSelectObject["$nin"])
-		dontSelectObject["$nin"] = append(nin, values...)
-	} else {
-		dontSelectObject["$nin"] = values
-	}
+	orm.Transform.TransformDontSelect(dontSelectObject, dontSelectValue["key"].(string), values)
 	// 继续搜索替换
 	return q.replaceDontSelect()
 }
@@ -430,8 +408,6 @@ func (q *Query) replaceInQuery() error {
 		"redirectClassNameForKey": inQueryValue["redirectClassNameForKey"],
 	}
 
-	values := types.S{}
-
 	query, err := NewQuery(
 		q.auth,
 		utils.String(inQueryValue["className"]),
@@ -445,26 +421,15 @@ func (q *Query) replaceInQuery() error {
 		return err
 	}
 	// 组装查询到的对象
+	values := []types.M{}
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
-			pointer := types.M{
-				"__type":    "Pointer",
-				"className": query.className,
-				"objectId":  result["objectId"],
-			}
-			values = append(values, pointer)
+			values = append(values, result)
 		}
 	}
 	// 替换 $inQuery 为 $in
-	delete(inQueryObject, "$inQuery")
-	if inQueryObject["$in"] != nil &&
-		utils.SliceInterface(inQueryObject["$in"]) != nil {
-		in := utils.SliceInterface(inQueryObject["$in"])
-		inQueryObject["$in"] = append(in, values...)
-	} else {
-		inQueryObject["$in"] = values
-	}
+	orm.Transform.TransformInQuery(inQueryObject, query.className, values)
 	// 继续搜索替换
 	return q.replaceInQuery()
 }
@@ -489,8 +454,6 @@ func (q *Query) replaceNotInQuery() error {
 		"redirectClassNameForKey": notInQueryValue["redirectClassNameForKey"],
 	}
 
-	values := types.S{}
-
 	query, err := NewQuery(
 		q.auth,
 		utils.String(notInQueryValue["className"]),
@@ -504,26 +467,15 @@ func (q *Query) replaceNotInQuery() error {
 		return err
 	}
 	// 组装查询到的对象
+	values := []types.M{}
 	if utils.HasResults(response) == true {
 		for _, v := range utils.SliceInterface(response["results"]) {
 			result := utils.MapInterface(v)
-			pointer := types.M{
-				"__type":    "Pointer",
-				"className": query.className,
-				"objectId":  result["objectId"],
-			}
-			values = append(values, pointer)
+			values = append(values, result)
 		}
 	}
 	// 替换 $notInQuery 为 $nin
-	delete(notInQueryObject, "$notInQuery")
-	if notInQueryObject["$nin"] != nil &&
-		utils.SliceInterface(notInQueryObject["$nin"]) != nil {
-		nin := utils.SliceInterface(notInQueryObject["$nin"])
-		notInQueryObject["$nin"] = append(nin, values...)
-	} else {
-		notInQueryObject["$nin"] = values
-	}
+	orm.Transform.TransformNotInQuery(notInQueryObject, query.className, values)
 	// 继续搜索替换
 	return q.replaceNotInQuery()
 }

@@ -122,12 +122,16 @@ func SendPasswordResetEmail(email string) error {
 // setPasswordResetToken 设置修改密码 token
 func setPasswordResetToken(email string) types.M {
 	token := utils.CreateToken()
-	collection := orm.TomatoDBController.AdaptiveCollection("_User")
+	db := orm.TomatoDBController.WithoutValidation()
 	where := types.M{"email": email}
 	update := types.M{
-		"$set": types.M{"_perishable_token": token},
+		"_perishable_token": token,
 	}
-	return collection.FindOneAndUpdate(where, update)
+	r, err := db.Update("_User", where, update, types.M{})
+	if err != nil {
+		return nil
+	}
+	return r
 }
 
 func defaultResetPasswordEmail(options types.M) types.M {
@@ -150,15 +154,18 @@ func VerifyEmail(username, token string) bool {
 		return false
 	}
 
-	collection := orm.TomatoDBController.AdaptiveCollection("_User")
+	db := orm.TomatoDBController.WithoutValidation()
 	where := types.M{
 		"username":            username,
 		"_email_verify_token": token,
 	}
 	update := types.M{
-		"$set": types.M{"emailVerified": true},
+		"emailVerified": true,
 	}
-	document := collection.FindOneAndUpdate(where, update)
+	document, err := db.Update("_User", where, update, types.M{})
+	if err != nil {
+		return false
+	}
 	if document == nil || len(document) == 0 {
 		return false
 	}
@@ -168,18 +175,21 @@ func VerifyEmail(username, token string) bool {
 
 // CheckResetTokenValidity 检查要重置密码的用户与 token 是否存在
 func CheckResetTokenValidity(username, token string) types.M {
-	collection := orm.TomatoDBController.AdaptiveCollection("_User")
+	db := orm.TomatoDBController.WithoutValidation()
 	where := types.M{
 		"username":          username,
 		"_perishable_token": token,
 	}
 	option := types.M{"limit": 1}
-	results := collection.Find(where, option)
+	results, err := db.Find("_User", where, option)
+	if err != nil {
+		return nil
+	}
 	if len(results) != 1 {
 		return nil
 	}
 
-	return results[0]
+	return results[0].(map[string]interface{})
 }
 
 // UpdatePassword 更新指定用户的密码
@@ -189,20 +199,20 @@ func UpdatePassword(username, token, newPassword string) error {
 		return errors.New("Invalid token")
 	}
 
-	err := updateUserPassword(user["_id"].(string), newPassword)
+	err := updateUserPassword(user["objectId"].(string), newPassword)
 	if err != nil {
 		return err
 	}
 
 	// 清空重置密码 token
-	collection := orm.TomatoDBController.AdaptiveCollection("_User")
+	db := orm.TomatoDBController.WithoutValidation()
 	selector := types.M{"username": username}
 	update := types.M{
-		"$unset": types.M{"_perishable_token": nil},
+		"_perishable_token": types.M{"__op": "Delete"},
 	}
-	collection.FindOneAndUpdate(selector, update)
+	_, err = db.Update("_User", selector, update, types.M{})
 
-	return nil
+	return err
 }
 
 func updateUserPassword(userID, password string) error {

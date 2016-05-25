@@ -83,7 +83,7 @@ func (d *Destroy) runDestroy() error {
 		}
 		options["acl"] = acl
 	}
-	return orm.Destroy(d.className, d.query, options)
+	return orm.TomatoDBController.Destroy(d.className, d.query, options)
 }
 
 // runAfterTrigger 执行删后回调

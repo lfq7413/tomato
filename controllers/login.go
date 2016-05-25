@@ -34,7 +34,7 @@ func (l *LoginController) HandleLogIn() {
 	where := types.M{
 		"username": username,
 	}
-	results, err := orm.Find("_User", where, types.M{})
+	results, err := orm.TomatoDBController.Find("_User", where, types.M{})
 	if err != nil {
 		l.Data["json"] = errs.ErrorToMap(err)
 		l.ServeJSON()

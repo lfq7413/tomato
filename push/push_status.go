@@ -23,7 +23,7 @@ func newPushStatus() *pushStatus {
 
 // collection 推送状态表
 func (p *pushStatus) collection() *orm.MongoCollection {
-	return orm.AdaptiveCollection("_PushStatus")
+	return orm.TomatoDBController.AdaptiveCollection("_PushStatus")
 }
 
 // setInitial 初始化推送状态

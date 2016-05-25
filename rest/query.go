@@ -196,7 +196,7 @@ func (q *Query) redirectClassNameForKey() error {
 		return nil
 	}
 
-	newClassName := orm.RedirectClassNameForKey(q.className, q.redirectKey)
+	newClassName := orm.TomatoDBController.RedirectClassNameForKey(q.className, q.redirectKey)
 	q.className = newClassName
 	q.redirectClassName = newClassName
 
@@ -220,7 +220,7 @@ func (q *Query) validateClientClassCreation() error {
 		}
 	}
 	// 允许操作已存在的表
-	if orm.CollectionExists(q.className) {
+	if orm.TomatoDBController.CollectionExists(q.className) {
 		return nil
 	}
 	// 无法操作不存在的表
@@ -530,7 +530,7 @@ func (q *Query) replaceNotInQuery() error {
 
 // runFind 从数据库查找数据，并处理返回结果
 func (q *Query) runFind() error {
-	response, err := orm.Find(q.className, q.Where, q.findOptions)
+	response, err := orm.TomatoDBController.Find(q.className, q.Where, q.findOptions)
 	if err != nil {
 		return err
 	}
@@ -582,7 +582,7 @@ func (q *Query) runCount() error {
 	delete(q.findOptions, "skip")
 	delete(q.findOptions, "limit")
 	// 当需要取 count 时，数据库返回结果的第一个即为 count
-	result, err := orm.Find(q.className, q.Where, q.findOptions)
+	result, err := orm.TomatoDBController.Find(q.className, q.Where, q.findOptions)
 	if err != nil {
 		return err
 	}

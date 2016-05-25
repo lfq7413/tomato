@@ -122,7 +122,7 @@ func SendPasswordResetEmail(email string) error {
 // setPasswordResetToken 设置修改密码 token
 func setPasswordResetToken(email string) types.M {
 	token := utils.CreateToken()
-	collection := orm.AdaptiveCollection("_User")
+	collection := orm.TomatoDBController.AdaptiveCollection("_User")
 	where := types.M{"email": email}
 	update := types.M{
 		"$set": types.M{"_perishable_token": token},
@@ -150,7 +150,7 @@ func VerifyEmail(username, token string) bool {
 		return false
 	}
 
-	collection := orm.AdaptiveCollection("_User")
+	collection := orm.TomatoDBController.AdaptiveCollection("_User")
 	where := types.M{
 		"username":            username,
 		"_email_verify_token": token,
@@ -168,7 +168,7 @@ func VerifyEmail(username, token string) bool {
 
 // CheckResetTokenValidity 检查要重置密码的用户与 token 是否存在
 func CheckResetTokenValidity(username, token string) types.M {
-	collection := orm.AdaptiveCollection("_User")
+	collection := orm.TomatoDBController.AdaptiveCollection("_User")
 	where := types.M{
 		"username":          username,
 		"_perishable_token": token,
@@ -195,7 +195,7 @@ func UpdatePassword(username, token, newPassword string) error {
 	}
 
 	// 清空重置密码 token
-	collection := orm.AdaptiveCollection("_User")
+	collection := orm.TomatoDBController.AdaptiveCollection("_User")
 	selector := types.M{"username": username}
 	update := types.M{
 		"$unset": types.M{"_perishable_token": nil},

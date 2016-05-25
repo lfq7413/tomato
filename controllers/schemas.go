@@ -27,7 +27,7 @@ func (s *SchemasController) Prepare() {
 // HandleFind 处理 schema 查找请求
 // @router / [get]
 func (s *SchemasController) HandleFind() {
-	result, err := orm.SchemaCollection().GetAllSchemas()
+	result, err := orm.TomatoDBController.SchemaCollection().GetAllSchemas()
 	if err != nil && result == nil {
 		s.Data["json"] = types.M{
 			"results": types.S{},
@@ -49,7 +49,7 @@ func (s *SchemasController) HandleFind() {
 // @router /:className [get]
 func (s *SchemasController) HandleGet() {
 	className := s.Ctx.Input.Param(":className")
-	result, err := orm.SchemaCollection().FindSchema(className)
+	result, err := orm.TomatoDBController.SchemaCollection().FindSchema(className)
 	if err != nil {
 		s.Data["json"] = errs.ErrorMessageToMap(errs.InternalServerError, "Database adapter error.")
 		s.ServeJSON()
@@ -95,7 +95,7 @@ func (s *SchemasController) HandleCreate() {
 		return
 	}
 
-	schema := orm.LoadSchema(nil)
+	schema := orm.TomatoDBController.LoadSchema(nil)
 	result, err := schema.AddClassIfNotExists(className, utils.MapInterface(data["fields"]), utils.MapInterface(data["classLevelPermissions"]))
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)
@@ -133,7 +133,7 @@ func (s *SchemasController) HandleUpdate() {
 		submittedFields = utils.MapInterface(data["fields"])
 	}
 
-	schema := orm.LoadSchema(nil)
+	schema := orm.TomatoDBController.LoadSchema(nil)
 	result, err := schema.UpdateClass(className, submittedFields, utils.MapInterface(data["classLevelPermissions"]))
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)
@@ -155,14 +155,14 @@ func (s *SchemasController) HandleDelete() {
 		return
 	}
 
-	exist := orm.CollectionExists(className)
+	exist := orm.TomatoDBController.CollectionExists(className)
 	if exist == false {
 		s.Data["json"] = types.M{}
 		s.ServeJSON()
 		return
 	}
 
-	collection := orm.AdaptiveCollection(className)
+	collection := orm.TomatoDBController.AdaptiveCollection(className)
 	count := collection.Count(types.M{}, types.M{})
 	if count > 0 {
 		s.Data["json"] = errs.ErrorMessageToMap(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
@@ -172,7 +172,7 @@ func (s *SchemasController) HandleDelete() {
 	collection.Drop()
 
 	// 从 _SCHEMA 表中删除类信息，清除相关的 _Join 表
-	coll := orm.SchemaCollection()
+	coll := orm.TomatoDBController.SchemaCollection()
 	document, err := coll.FindAndDeleteSchema(className)
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)
@@ -200,7 +200,7 @@ func removeJoinTables(mongoSchema types.M) error {
 		fieldType := utils.String(v)
 		if strings.HasPrefix(fieldType, "relation<") {
 			collectionName := "_Join:" + field + ":" + utils.String(mongoSchema["_id"])
-			err := orm.DropCollection(collectionName)
+			err := orm.TomatoDBController.DropCollection(collectionName)
 			if err != nil {
 				return err
 			}

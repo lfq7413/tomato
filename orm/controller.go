@@ -9,38 +9,48 @@ import (
 	"github.com/lfq7413/tomato/utils"
 )
 
+// TomatoDBController ...
+var TomatoDBController *dbController
 var adapter *MongoAdapter
 var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
 	adapter = NewMongoAdapter("tomato")
+	TomatoDBController = &dbController{
+		skipValidation: false,
+	}
+}
+
+// dbController 数据库操作类
+type dbController struct {
+	skipValidation bool
 }
 
 // AdaptiveCollection 获取要操作的表，以便后续操作
-func AdaptiveCollection(className string) *MongoCollection {
+func (d dbController) AdaptiveCollection(className string) *MongoCollection {
 	return adapter.adaptiveCollection(className)
 }
 
 // SchemaCollection 获取 Schema 表
-func SchemaCollection() *MongoSchemaCollection {
+func (d dbController) SchemaCollection() *MongoSchemaCollection {
 	return adapter.schemaCollection()
 }
 
 // CollectionExists 检测表是否存在
-func CollectionExists(className string) bool {
+func (d dbController) CollectionExists(className string) bool {
 	return adapter.collectionExists(className)
 }
 
 // DropCollection 删除指定表
-func DropCollection(className string) error {
+func (d dbController) DropCollection(className string) error {
 	return adapter.dropCollection(className)
 }
 
 // Find 从指定表中查询数据，查询到的数据放入 list 中
 // 如果查询的是 count ，结果也会放入 list，并且只有这一个元素
 // options 中的选项包括：skip、limit、sort、count、acl
-func Find(className string, where, options types.M) (types.S, error) {
+func (d dbController) Find(className string, where, options types.M) (types.S, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -75,7 +85,7 @@ func Find(className string, where, options types.M) (types.S, error) {
 	acceptor := func(schema *Schema) bool {
 		return schema.hasKeys(className, keysForQuery(where))
 	}
-	schema := LoadSchema(acceptor)
+	schema := d.LoadSchema(acceptor)
 
 	if options["sort"] != nil {
 		sortKeys := []string{}
@@ -114,11 +124,11 @@ func Find(className string, where, options types.M) (types.S, error) {
 	}
 
 	// 处理 $relatedTo
-	reduceRelationKeys(className, where)
+	d.reduceRelationKeys(className, where)
 	// 处理 relation 字段上的 $in
-	reduceInRelation(className, where, schema)
+	d.reduceInRelation(className, where, schema)
 
-	coll := AdaptiveCollection(className)
+	coll := TomatoDBController.AdaptiveCollection(className)
 	mongoWhere, err := transformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
@@ -163,7 +173,7 @@ func Find(className string, where, options types.M) (types.S, error) {
 	mongoResults := coll.Find(mongoWhere, mongoOptions)
 	results := types.S{}
 	for _, r := range mongoResults {
-		result, err := untransformObject(schema, isMaster, aclGroup, className, r)
+		result, err := d.untransformObject(schema, isMaster, aclGroup, className, r)
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +184,7 @@ func Find(className string, where, options types.M) (types.S, error) {
 }
 
 // Destroy 从指定表中删除数据
-func Destroy(className string, where types.M, options types.M) error {
+func (d dbController) Destroy(className string, where types.M, options types.M) error {
 	var isMaster bool
 	if _, ok := options["acl"]; ok {
 		isMaster = false
@@ -188,13 +198,13 @@ func Destroy(className string, where types.M, options types.M) error {
 		aclGroup = options["acl"].([]string)
 	}
 
-	schema := LoadSchema(nil)
+	schema := d.LoadSchema(nil)
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "delete")
 		return err
 	}
 
-	coll := AdaptiveCollection(className)
+	coll := TomatoDBController.AdaptiveCollection(className)
 	mongoWhere, err := transformWhere(schema, className, where, nil)
 	if err != nil {
 		return err
@@ -235,7 +245,7 @@ func Destroy(className string, where types.M, options types.M) error {
 }
 
 // Update 更新对象
-func Update(className string, where, data, options types.M) (types.M, error) {
+func (d dbController) Update(className string, where, data, options types.M) (types.M, error) {
 	originalUpdate := data
 	// 复制数据，不要修改原数据
 	data = utils.CopyMap(data)
@@ -259,7 +269,7 @@ func Update(className string, where, data, options types.M) (types.M, error) {
 		aclGroup = options["acl"].([]string)
 	}
 
-	schema := LoadSchema(acceptor)
+	schema := d.LoadSchema(acceptor)
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "update")
 		if err != nil {
@@ -267,9 +277,9 @@ func Update(className string, where, data, options types.M) (types.M, error) {
 		}
 	}
 	// 处理 Relation
-	handleRelationUpdates(className, utils.String(where["objectId"]), data)
+	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
-	coll := AdaptiveCollection(className)
+	coll := TomatoDBController.AdaptiveCollection(className)
 	mongoWhere, err := transformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
@@ -338,7 +348,7 @@ func sanitizeDatabaseResult(originalObject, result types.M) types.M {
 }
 
 // Create 创建对象
-func Create(className string, data, options types.M) error {
+func (d dbController) Create(className string, data, options types.M) error {
 	// 不要对原数据进行修改
 	data = utils.CopyMap(data)
 	var isMaster bool
@@ -354,12 +364,12 @@ func Create(className string, data, options types.M) error {
 		aclGroup = options["acl"].([]string)
 	}
 
-	err := validateClassName(className)
+	err := d.validateClassName(className)
 	if err != nil {
 		return err
 	}
 
-	schema := LoadSchema(nil)
+	schema := d.LoadSchema(nil)
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "create")
 		if err != nil {
@@ -368,12 +378,12 @@ func Create(className string, data, options types.M) error {
 	}
 
 	// 处理 Relation
-	err = handleRelationUpdates(className, "", data)
+	err = d.handleRelationUpdates(className, "", data)
 	if err != nil {
 		return err
 	}
 
-	coll := AdaptiveCollection(className)
+	coll := TomatoDBController.AdaptiveCollection(className)
 	mongoObject, err := transformCreate(schema, className, data)
 	if err != nil {
 		return err
@@ -382,7 +392,7 @@ func Create(className string, data, options types.M) error {
 }
 
 // validateClassName 校验表名是否合法
-func validateClassName(className string) error {
+func (d dbController) validateClassName(className string) error {
 	if ClassNameIsValid(className) == false {
 		return errs.E(errs.InvalidClassName, "invalid className: "+className)
 	}
@@ -390,7 +400,7 @@ func validateClassName(className string) error {
 }
 
 // handleRelationUpdates 处理 Relation 相关操作
-func handleRelationUpdates(className, objectID string, update types.M) error {
+func (d dbController) handleRelationUpdates(className, objectID string, update types.M) error {
 	objID := objectID
 	if utils.String(update["objectId"]) != "" {
 		objID = utils.String(update["objectId"])
@@ -426,7 +436,7 @@ func handleRelationUpdates(className, objectID string, update types.M) error {
 			objects := utils.SliceInterface(opMap["objects"])
 			for _, object := range objects {
 				relationID := utils.String(utils.MapInterface(object)["objectId"])
-				err := addRelation(key, className, objID, relationID)
+				err := d.addRelation(key, className, objID, relationID)
 				if err != nil {
 					return err
 				}
@@ -437,7 +447,7 @@ func handleRelationUpdates(className, objectID string, update types.M) error {
 			objects := utils.SliceInterface(opMap["objects"])
 			for _, object := range objects {
 				relationID := utils.String(utils.MapInterface(object)["objectId"])
-				err := removeRelation(key, className, objID, relationID)
+				err := d.removeRelation(key, className, objID, relationID)
 				if err != nil {
 					return err
 				}
@@ -465,30 +475,30 @@ func handleRelationUpdates(className, objectID string, update types.M) error {
 }
 
 // addRelation 把对象 id 加入 _Join 表，表名为 _Join:key:fromClassName
-func addRelation(key, fromClassName, fromID, toID string) error {
+func (d dbController) addRelation(key, fromClassName, fromID, toID string) error {
 	doc := types.M{
 		"relatedId": toID,
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := AdaptiveCollection(className)
+	coll := TomatoDBController.AdaptiveCollection(className)
 	return coll.upsertOne(doc, doc)
 }
 
 // removeRelation 把对象 id 从 _Join 表中删除，表名为 _Join:key:fromClassName
-func removeRelation(key, fromClassName, fromID, toID string) error {
+func (d dbController) removeRelation(key, fromClassName, fromID, toID string) error {
 	doc := types.M{
 		"relatedId": toID,
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := AdaptiveCollection(className)
+	coll := TomatoDBController.AdaptiveCollection(className)
 	return coll.deleteOne(doc)
 }
 
 // ValidateObject 校验对象是否合法
-func ValidateObject(className string, object, where, options types.M) error {
-	schema := LoadSchema(nil)
+func (d dbController) ValidateObject(className string, object, where, options types.M) error {
+	schema := d.LoadSchema(nil)
 	isMaster := false
 	aclGroup := []string{}
 	if acl, ok := options["acl"]; ok {
@@ -503,7 +513,7 @@ func ValidateObject(className string, object, where, options types.M) error {
 		return nil
 	}
 
-	err := canAddField(schema, className, object, aclGroup)
+	err := d.canAddField(schema, className, object, aclGroup)
 	if err != nil {
 		return err
 	}
@@ -517,9 +527,9 @@ func ValidateObject(className string, object, where, options types.M) error {
 }
 
 // LoadSchema 加载 Schema，仅加载一次，当 acceptor 返回 false 时，再从数据库读取一次
-func LoadSchema(acceptor func(*Schema) bool) *Schema {
+func (d dbController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 	if schemaPromise == nil {
-		collection := SchemaCollection()
+		collection := d.SchemaCollection()
 		schemaPromise = Load(collection)
 		return schemaPromise
 	}
@@ -531,13 +541,13 @@ func LoadSchema(acceptor func(*Schema) bool) *Schema {
 		return schemaPromise
 	}
 
-	collection := SchemaCollection()
+	collection := d.SchemaCollection()
 	schemaPromise = Load(collection)
 	return schemaPromise
 }
 
 // DeleteEverything 删除所有表数据，仅用于测试
-func DeleteEverything() {
+func (d dbController) DeleteEverything() {
 	schemaPromise = nil
 	collections := adapter.allCollections()
 	for _, v := range collections {
@@ -547,8 +557,8 @@ func DeleteEverything() {
 
 // RedirectClassNameForKey 返回指定类的字段所对应的类型
 // 如果 key 字段的属性为 relation<classA> ，则返回 classA
-func RedirectClassNameForKey(className, key string) string {
-	schema := LoadSchema(nil)
+func (d dbController) RedirectClassNameForKey(className, key string) string {
+	schema := d.LoadSchema(nil)
 	t := schema.getExpectedType(className, key)
 	if t != nil && t["type"].(string) == "Relation" {
 		return t["targetClass"].(string)
@@ -557,7 +567,7 @@ func RedirectClassNameForKey(className, key string) string {
 }
 
 // canAddField 检测是否能添加字段到类上
-func canAddField(schema *Schema, className string, object types.M, acl []string) error {
+func (d dbController) canAddField(schema *Schema, className string, object types.M, acl []string) error {
 	if schema.data[className] == nil {
 		return nil
 	}
@@ -639,12 +649,12 @@ func keysForQuery(query types.M) []string {
 //         ]
 //     }
 // }
-func reduceRelationKeys(className string, query types.M) {
+func (d dbController) reduceRelationKeys(className string, query types.M) {
 	if query["$or"] != nil {
 		subQuerys := utils.SliceInterface(query["$or"])
 		for _, v := range subQuerys {
 			aQuery := utils.MapInterface(v)
-			reduceRelationKeys(className, aQuery)
+			d.reduceRelationKeys(className, aQuery)
 		}
 		return
 	}
@@ -655,17 +665,17 @@ func reduceRelationKeys(className string, query types.M) {
 		object := utils.MapInterface(relatedTo["object"])
 		objClassName := utils.String(object["className"])
 		objID := utils.String(object["objectId"])
-		ids := relatedIds(objClassName, key, objID)
+		ids := d.relatedIds(objClassName, key, objID)
 		delete(query, "$relatedTo")
-		addInObjectIdsIds(ids, query)
-		reduceRelationKeys(className, query)
+		d.addInObjectIdsIds(ids, query)
+		d.reduceRelationKeys(className, query)
 	}
 
 }
 
 // relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
-func relatedIds(className, key, owningID string) types.S {
-	coll := AdaptiveCollection(joinTableName(className, key))
+func (d dbController) relatedIds(className, key, owningID string) types.S {
+	coll := TomatoDBController.AdaptiveCollection(joinTableName(className, key))
 	results := coll.Find(types.M{"owningId": owningID}, types.M{})
 	ids := types.S{}
 	for _, r := range results {
@@ -683,7 +693,7 @@ func joinTableName(className, key string) string {
 // addInObjectIdsIds 添加 ids 到查询条件中, 应该取 objectId $eq $in ids 的交集
 // 替换 objectId 为：
 // "objectId":{"$in":["id","id2"]}
-func addInObjectIdsIds(ids types.S, query types.M) {
+func (d dbController) addInObjectIdsIds(ids types.S, query types.M) {
 	coll := map[string]types.S{}
 	idsFromString := types.S{}
 	if id, ok := query["objectId"].(string); ok {
@@ -763,7 +773,7 @@ func addInObjectIdsIds(ids types.S, query types.M) {
 // addNotInObjectIdsIds 添加 ids 到查询条件中，应该取 $ne $nin ids 的并集
 // 替换 objectId 为：
 // "objectId":{"$nin":["id","id2"]}
-func addNotInObjectIdsIds(ids types.S, query types.M) {
+func (d dbController) addNotInObjectIdsIds(ids types.S, query types.M) {
 	coll := map[string]types.S{}
 	idsFromNin := types.S{}
 	if ninid, ok := query["objectId"].(map[string]interface{}); ok {
@@ -810,13 +820,13 @@ func addNotInObjectIdsIds(ids types.S, query types.M) {
 // reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in $ne $nin $eq 或者等于某对象
 // 例如 classA 中的 字段 key 为 relation<classB> 类型，查找 key 中包含指定 classB 对象的 classA
 // query = {"key":{"$in":[]}}
-func reduceInRelation(className string, query types.M, schema *Schema) types.M {
+func (d dbController) reduceInRelation(className string, query types.M, schema *Schema) types.M {
 	// 处理 $or 数组中的数据，并替换回去
 	if query["$or"] != nil {
 		ors := utils.SliceInterface(query["$or"])
 		for i, v := range ors {
 			aQuery := utils.MapInterface(v)
-			aQuery = reduceInRelation(className, aQuery, schema)
+			aQuery = d.reduceInRelation(className, aQuery, schema)
 			ors[i] = aQuery
 		}
 		query["$or"] = ors
@@ -876,11 +886,11 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 			// 应用所有限制条件
 			for i, relatedID := range relatedIds {
 				// 从 Join 表中查找的 ids，替换查询条件
-				ids := owningIds(className, key, relatedID)
+				ids := d.owningIds(className, key, relatedID)
 				if isNegation[i] {
-					addNotInObjectIdsIds(ids, query)
+					d.addNotInObjectIdsIds(ids, query)
 				} else {
-					addInObjectIdsIds(ids, query)
+					d.addInObjectIdsIds(ids, query)
 				}
 			}
 		}
@@ -890,8 +900,8 @@ func reduceInRelation(className string, query types.M, schema *Schema) types.M {
 }
 
 // owningIds 从 Join 表中查询 relatedIds 对应的父对象
-func owningIds(className, key string, relatedIds types.S) types.S {
-	coll := AdaptiveCollection(joinTableName(className, key))
+func (d dbController) owningIds(className, key string, relatedIds types.S) types.S {
+	coll := TomatoDBController.AdaptiveCollection(joinTableName(className, key))
 	query := types.M{
 		"relatedId": types.M{
 			"$in": relatedIds,
@@ -906,7 +916,7 @@ func owningIds(className, key string, relatedIds types.S) types.S {
 }
 
 // untransformObject 从查询到的数据库对象转换出可返回给客户端的对象，并对 _User 表数据进行特殊处理
-func untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
+func (d dbController) untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
 	res, err := untransformObjectT(schema, className, mongoObject, false)
 	if err != nil {
 		return nil, err

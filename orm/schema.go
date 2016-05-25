@@ -216,7 +216,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 			return err
 		}
 		// 删除 _Join table 数据
-		err = DropCollection("_Join:" + fieldName + ":" + className)
+		err = TomatoDBController.DropCollection("_Join:" + fieldName + ":" + className)
 		if err != nil {
 			return err
 		}

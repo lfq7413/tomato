@@ -89,7 +89,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 		}
 		and = append(and, tp)
 		restWhere["$and"] = and
-		err = orm.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
+		err = orm.TomatoDBController.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
 		if err != nil {
 			status.fail(err)
 			return err

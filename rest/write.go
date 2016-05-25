@@ -147,7 +147,7 @@ func (w *Write) validateClientClassCreation() error {
 		}
 	}
 	// 允许操作已存在的表
-	if orm.CollectionExists(w.className) {
+	if orm.TomatoDBController.CollectionExists(w.className) {
 		return nil
 	}
 	// 无法操作不存在的表
@@ -156,7 +156,7 @@ func (w *Write) validateClientClassCreation() error {
 
 // validateSchema 校验数据与权限是否允许进行当前操作
 func (w *Write) validateSchema() error {
-	return orm.ValidateObject(w.className, w.data, w.query, w.runOptions)
+	return orm.TomatoDBController.ValidateObject(w.className, w.data, w.query, w.runOptions)
 }
 
 // handleInstallation 处理 _Installation 表的操作
@@ -190,7 +190,7 @@ func (w *Write) handleInstallation() error {
 	// 如果是 update 操作，并且 objectId 存在，
 	// 校验是否能对 installationId、deviceToken、deviceType 进行修改
 	if w.query != nil && w.query["objectId"] != nil {
-		results, err := orm.Find("_Installation", types.M{"objectId": w.query["objectId"]}, types.M{})
+		results, err := orm.TomatoDBController.Find("_Installation", types.M{"objectId": w.query["objectId"]}, types.M{})
 		if err != nil {
 			return err
 		}
@@ -220,7 +220,7 @@ func (w *Write) handleInstallation() error {
 	// 检查是否已经存在 installationId、deviceToken
 	idMatch = nil
 	if w.data["installationId"] != nil {
-		results, err := orm.Find("_Installation", types.M{"installationId": w.data["installationId"]}, types.M{})
+		results, err := orm.TomatoDBController.Find("_Installation", types.M{"installationId": w.data["installationId"]}, types.M{})
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func (w *Write) handleInstallation() error {
 		}
 	}
 	if w.data["deviceToken"] != nil {
-		results, err := orm.Find("_Installation", types.M{"deviceToken": w.data["deviceToken"]}, types.M{})
+		results, err := orm.TomatoDBController.Find("_Installation", types.M{"deviceToken": w.data["deviceToken"]}, types.M{})
 		if err != nil {
 			return err
 		}
@@ -267,7 +267,7 @@ func (w *Write) handleInstallation() error {
 			if w.data["appIdentifier"] != nil {
 				delQuery["appIdentifier"] = w.data["appIdentifier"]
 			}
-			err := orm.Destroy("_Installation", delQuery, types.M{})
+			err := orm.TomatoDBController.Destroy("_Installation", delQuery, types.M{})
 			if err != nil {
 				return err
 			}
@@ -283,7 +283,7 @@ func (w *Write) handleInstallation() error {
 			delQuery := types.M{
 				"objectId": idMatch["objectId"],
 			}
-			err := orm.Destroy("_Installation", delQuery, nil)
+			err := orm.TomatoDBController.Destroy("_Installation", delQuery, nil)
 			if err != nil {
 				return err
 			}
@@ -311,7 +311,7 @@ func (w *Write) handleInstallation() error {
 					if w.data["appIdentifier"] != nil {
 						delQuery["appIdentifier"] = w.data["appIdentifier"]
 					}
-					err := orm.Destroy("_Installation", delQuery, nil)
+					err := orm.TomatoDBController.Destroy("_Installation", delQuery, nil)
 					if err != nil {
 						return err
 					}
@@ -520,7 +520,7 @@ func (w *Write) findUsersWithAuthData(authData types.M) (types.S, error) {
 			"$or": query,
 		}
 		var err error
-		findPromise, err = orm.Find(w.className, where, types.M{})
+		findPromise, err = orm.TomatoDBController.Find(w.className, where, types.M{})
 		if err != nil {
 			return nil, err
 		}
@@ -669,7 +669,7 @@ func (w *Write) transformUser() error {
 		option := types.M{
 			"limit": 1,
 		}
-		results, err := orm.Find(w.className, where, option)
+		results, err := orm.TomatoDBController.Find(w.className, where, option)
 		if err != nil {
 			return err
 		}
@@ -695,7 +695,7 @@ func (w *Write) transformUser() error {
 		option := types.M{
 			"limit": 1,
 		}
-		results, err := orm.Find(w.className, where, option)
+		results, err := orm.TomatoDBController.Find(w.className, where, option)
 		if err != nil {
 			return err
 		}
@@ -754,7 +754,7 @@ func (w *Write) runDatabaseOperation() error {
 			w.data["ACL"] = acl
 		}
 		// 执行更新
-		resp, err := orm.Update(w.className, w.query, w.data, w.runOptions)
+		resp, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.runOptions)
 		if err != nil {
 			return err
 		}
@@ -795,7 +795,7 @@ func (w *Write) runDatabaseOperation() error {
 		}
 
 		// 创建对象
-		err := orm.Create(w.className, w.data, w.runOptions)
+		err := orm.TomatoDBController.Create(w.className, w.data, w.runOptions)
 		if err != nil {
 			return err
 		}
@@ -836,7 +836,7 @@ func (w *Write) handleFollowup() error {
 			"user": user,
 		}
 		delete(w.storage, "clearSessions")
-		err := orm.Destroy("_Session", sessionQuery, types.M{})
+		err := orm.TomatoDBController.Destroy("_Session", sessionQuery, types.M{})
 		if err != nil {
 			return err
 		}

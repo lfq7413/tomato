@@ -39,7 +39,7 @@ func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
 // schemaCollection 组装 _SCHEMA 表操作对象
 func (m *MongoAdapter) schemaCollection() *MongoSchemaCollection {
 	return &MongoSchemaCollection{
-		collection: m.adaptiveCollection(m.collectionPrefix + mongoSchemaCollectionName),
+		collection: m.adaptiveCollection(mongoSchemaCollectionName),
 	}
 }
 

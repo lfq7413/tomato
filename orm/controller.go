@@ -13,6 +13,8 @@ import (
 // TomatoDBController ...
 var TomatoDBController *DBController
 var adapter *MongoAdapter
+
+// Transform ...
 var Transform *MongoTransform
 var schemaPromise *Schema
 
@@ -25,7 +27,7 @@ func init() {
 	}
 }
 
-// dbController 数据库操作类
+// DBController 数据库操作类
 type DBController struct {
 	skipValidation bool
 }
@@ -35,11 +37,6 @@ func (d DBController) WithoutValidation() *DBController {
 	return &DBController{
 		skipValidation: true,
 	}
-}
-
-// AdaptiveCollection 获取要操作的表，以便后续操作
-func (d DBController) AdaptiveCollection(className string) *MongoCollection {
-	return adapter.adaptiveCollection(className)
 }
 
 // SchemaCollection 获取 Schema 表

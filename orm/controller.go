@@ -21,7 +21,7 @@ var schemaPromise *Schema
 // init 初始化 Mongo 适配器
 func init() {
 	adapter = NewMongoAdapter("tomato")
-	Transform = NewMongoTransform()
+	Transform = adapter.transform
 	TomatoDBController = &DBController{
 		skipValidation: false,
 	}

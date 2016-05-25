@@ -409,7 +409,7 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 func (s *Schema) validateField(className, fieldName string, fieldtype types.M, freeze bool) error {
 	s.reloadData()
 	// 检测 fieldName 是否合法
-	_, err := Transform.transformKey(s, className, fieldName)
+	_, err := s.collection.transform.transformKey(s, className, fieldName)
 	if err != nil {
 		return err
 	}

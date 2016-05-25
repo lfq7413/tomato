@@ -14,6 +14,7 @@ const mongoSchemaCollectionName = "_SCHEMA"
 type MongoAdapter struct {
 	collectionPrefix string
 	collectionList   []string
+	transform        *MongoTransform
 }
 
 // NewMongoAdapter ...
@@ -21,6 +22,7 @@ func NewMongoAdapter(collectionPrefix string) *MongoAdapter {
 	return &MongoAdapter{
 		collectionPrefix: collectionPrefix,
 		collectionList:   []string{},
+		transform:        NewMongoTransform(),
 	}
 }
 
@@ -33,6 +35,7 @@ func (m *MongoAdapter) collection(name string) *mgo.Collection {
 func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
 	return &MongoCollection{
 		collection: m.collection(m.collectionPrefix + name),
+		transform:  m.transform,
 	}
 }
 
@@ -40,6 +43,7 @@ func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
 func (m *MongoAdapter) schemaCollection() *MongoSchemaCollection {
 	return &MongoSchemaCollection{
 		collection: m.adaptiveCollection(mongoSchemaCollectionName),
+		transform:  m.transform,
 	}
 }
 

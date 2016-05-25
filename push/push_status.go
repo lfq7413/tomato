@@ -9,21 +9,20 @@ import (
 	"github.com/lfq7413/tomato/utils"
 )
 
+const pushStatusCollection = "_PushStatus"
+
 type pushStatus struct {
 	objectID string
 	status   types.M
+	db       *orm.DBController
 }
 
 func newPushStatus() *pushStatus {
 	p := &pushStatus{
 		objectID: utils.CreateObjectID(),
+		db:       orm.TomatoDBController.WithoutValidation(),
 	}
 	return p
-}
-
-// collection 推送状态表
-func (p *pushStatus) collection() *orm.MongoCollection {
-	return orm.TomatoDBController.AdaptiveCollection("_PushStatus")
 }
 
 // setInitial 初始化推送状态
@@ -54,7 +53,7 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 		"_rperm": []interface{}{},
 	}
 
-	err := p.collection().InsertOne(object)
+	err := p.db.Create(pushStatusCollection, object, types.M{})
 	if err != nil {
 		p.status = types.M{}
 		return
@@ -76,7 +75,7 @@ func (p *pushStatus) setRunning() {
 			"status": "running",
 		},
 	}
-	p.collection().UpdateOne(where, update)
+	p.db.Update(pushStatusCollection, where, update, types.M{})
 }
 
 // complete 推送完成，传入数据格式如下
@@ -131,7 +130,7 @@ func (p *pushStatus) complete(results []types.M) {
 		"sentPerType":   sentPerType,
 		"failedPerType": failedPerType,
 	}
-	p.collection().UpdateOne(where, types.M{"$set": update})
+	p.db.Update(pushStatusCollection, where, types.M{"$set": update}, types.M{})
 }
 
 // fail 处理推送失败的情况
@@ -143,5 +142,5 @@ func (p *pushStatus) fail(err error) {
 	where := types.M{
 		"_id": p.status["objectId"],
 	}
-	p.collection().UpdateOne(where, types.M{"$set": update})
+	p.db.Update(pushStatusCollection, where, types.M{"$set": update}, types.M{})
 }

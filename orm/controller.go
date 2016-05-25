@@ -11,7 +11,7 @@ import (
 )
 
 // TomatoDBController ...
-var TomatoDBController *dbController
+var TomatoDBController *DBController
 var adapter *MongoAdapter
 var Transform *MongoTransform
 var schemaPromise *Schema
@@ -20,47 +20,47 @@ var schemaPromise *Schema
 func init() {
 	adapter = NewMongoAdapter("tomato")
 	Transform = NewMongoTransform()
-	TomatoDBController = &dbController{
+	TomatoDBController = &DBController{
 		skipValidation: false,
 	}
 }
 
 // dbController 数据库操作类
-type dbController struct {
+type DBController struct {
 	skipValidation bool
 }
 
 // WithoutValidation 返回不进行字段校验的数据库操作对象
-func (d dbController) WithoutValidation() *dbController {
-	return &dbController{
+func (d DBController) WithoutValidation() *DBController {
+	return &DBController{
 		skipValidation: true,
 	}
 }
 
 // AdaptiveCollection 获取要操作的表，以便后续操作
-func (d dbController) AdaptiveCollection(className string) *MongoCollection {
+func (d DBController) AdaptiveCollection(className string) *MongoCollection {
 	return adapter.adaptiveCollection(className)
 }
 
 // SchemaCollection 获取 Schema 表
-func (d dbController) SchemaCollection() *MongoSchemaCollection {
+func (d DBController) SchemaCollection() *MongoSchemaCollection {
 	return adapter.schemaCollection()
 }
 
 // CollectionExists 检测表是否存在
-func (d dbController) CollectionExists(className string) bool {
+func (d DBController) CollectionExists(className string) bool {
 	return adapter.collectionExists(className)
 }
 
 // DropCollection 删除指定表
-func (d dbController) DropCollection(className string) error {
+func (d DBController) DropCollection(className string) error {
 	return adapter.dropCollection(className)
 }
 
 // Find 从指定表中查询数据，查询到的数据放入 list 中
 // 如果查询的是 count ，结果也会放入 list，并且只有这一个元素
 // options 中的选项包括：skip、limit、sort、count、acl
-func (d dbController) Find(className string, where, options types.M) (types.S, error) {
+func (d DBController) Find(className string, where, options types.M) (types.S, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -170,7 +170,7 @@ func (d dbController) Find(className string, where, options types.M) (types.S, e
 }
 
 // Destroy 从指定表中删除数据
-func (d dbController) Destroy(className string, where types.M, options types.M) error {
+func (d DBController) Destroy(className string, where types.M, options types.M) error {
 	var isMaster bool
 	if _, ok := options["acl"]; ok {
 		isMaster = false
@@ -212,7 +212,7 @@ func (d dbController) Destroy(className string, where types.M, options types.M) 
 }
 
 // Update 更新对象
-func (d dbController) Update(className string, where, data, options types.M) (types.M, error) {
+func (d DBController) Update(className string, where, data, options types.M) (types.M, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -318,7 +318,7 @@ func sanitizeDatabaseResult(originalObject, result types.M) types.M {
 }
 
 // Create 创建对象
-func (d dbController) Create(className string, data, options types.M) error {
+func (d DBController) Create(className string, data, options types.M) error {
 	if options == nil {
 		options = types.M{}
 	}
@@ -365,7 +365,7 @@ func (d dbController) Create(className string, data, options types.M) error {
 }
 
 // validateClassName 校验表名是否合法
-func (d dbController) validateClassName(className string) error {
+func (d DBController) validateClassName(className string) error {
 	if d.skipValidation {
 		return nil
 	}
@@ -376,7 +376,7 @@ func (d dbController) validateClassName(className string) error {
 }
 
 // handleRelationUpdates 处理 Relation 相关操作
-func (d dbController) handleRelationUpdates(className, objectID string, update types.M) error {
+func (d DBController) handleRelationUpdates(className, objectID string, update types.M) error {
 	objID := objectID
 	if utils.String(update["objectId"]) != "" {
 		objID = utils.String(update["objectId"])
@@ -451,7 +451,7 @@ func (d dbController) handleRelationUpdates(className, objectID string, update t
 }
 
 // addRelation 把对象 id 加入 _Join 表，表名为 _Join:key:fromClassName
-func (d dbController) addRelation(key, fromClassName, fromID, toID string) error {
+func (d DBController) addRelation(key, fromClassName, fromID, toID string) error {
 	doc := types.M{
 		"relatedId": toID,
 		"owningId":  fromID,
@@ -462,7 +462,7 @@ func (d dbController) addRelation(key, fromClassName, fromID, toID string) error
 }
 
 // removeRelation 把对象 id 从 _Join 表中删除，表名为 _Join:key:fromClassName
-func (d dbController) removeRelation(key, fromClassName, fromID, toID string) error {
+func (d DBController) removeRelation(key, fromClassName, fromID, toID string) error {
 	doc := types.M{
 		"relatedId": toID,
 		"owningId":  fromID,
@@ -473,7 +473,7 @@ func (d dbController) removeRelation(key, fromClassName, fromID, toID string) er
 }
 
 // ValidateObject 校验对象是否合法
-func (d dbController) ValidateObject(className string, object, where, options types.M) error {
+func (d DBController) ValidateObject(className string, object, where, options types.M) error {
 	schema := d.LoadSchema(nil)
 	isMaster := false
 	aclGroup := []string{}
@@ -503,7 +503,7 @@ func (d dbController) ValidateObject(className string, object, where, options ty
 }
 
 // LoadSchema 加载 Schema，仅加载一次，当 acceptor 返回 false 时，再从数据库读取一次
-func (d dbController) LoadSchema(acceptor func(*Schema) bool) *Schema {
+func (d DBController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 	if schemaPromise == nil {
 		collection := d.SchemaCollection()
 		schemaPromise = Load(collection)
@@ -523,13 +523,13 @@ func (d dbController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 }
 
 // MongoFind 直接执行数据库查询，仅用于测试
-func (d *dbController) MongoFind(className string, query, options types.M) []types.M {
+func (d *DBController) MongoFind(className string, query, options types.M) []types.M {
 	coll := adapter.adaptiveCollection(className)
 	return coll.Find(query, options)
 }
 
 // DeleteEverything 删除所有表数据，仅用于测试
-func (d dbController) DeleteEverything() {
+func (d DBController) DeleteEverything() {
 	schemaPromise = nil
 	collections := adapter.allCollections()
 	for _, v := range collections {
@@ -539,7 +539,7 @@ func (d dbController) DeleteEverything() {
 
 // RedirectClassNameForKey 返回指定类的字段所对应的类型
 // 如果 key 字段的属性为 relation<classA> ，则返回 classA
-func (d dbController) RedirectClassNameForKey(className, key string) string {
+func (d DBController) RedirectClassNameForKey(className, key string) string {
 	schema := d.LoadSchema(nil)
 	t := schema.getExpectedType(className, key)
 	if t != nil && t["type"].(string) == "Relation" {
@@ -549,7 +549,7 @@ func (d dbController) RedirectClassNameForKey(className, key string) string {
 }
 
 // canAddField 检测是否能添加字段到类上
-func (d dbController) canAddField(schema *Schema, className string, object types.M, acl []string) error {
+func (d DBController) canAddField(schema *Schema, className string, object types.M, acl []string) error {
 	if schema.data[className] == nil {
 		return nil
 	}
@@ -631,7 +631,7 @@ func keysForQuery(query types.M) []string {
 //         ]
 //     }
 // }
-func (d dbController) reduceRelationKeys(className string, query types.M) {
+func (d DBController) reduceRelationKeys(className string, query types.M) {
 	if query["$or"] != nil {
 		subQuerys := utils.SliceInterface(query["$or"])
 		for _, v := range subQuerys {
@@ -656,7 +656,7 @@ func (d dbController) reduceRelationKeys(className string, query types.M) {
 }
 
 // relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
-func (d dbController) relatedIds(className, key, owningID string) types.S {
+func (d DBController) relatedIds(className, key, owningID string) types.S {
 	coll := adapter.adaptiveCollection(joinTableName(className, key))
 	results := coll.Find(types.M{"owningId": owningID}, types.M{})
 	ids := types.S{}
@@ -675,7 +675,7 @@ func joinTableName(className, key string) string {
 // addInObjectIdsIds 添加 ids 到查询条件中, 应该取 objectId $eq $in ids 的交集
 // 替换 objectId 为：
 // "objectId":{"$in":["id","id2"]}
-func (d dbController) addInObjectIdsIds(ids types.S, query types.M) {
+func (d DBController) addInObjectIdsIds(ids types.S, query types.M) {
 	coll := map[string]types.S{}
 	idsFromString := types.S{}
 	if id, ok := query["objectId"].(string); ok {
@@ -755,7 +755,7 @@ func (d dbController) addInObjectIdsIds(ids types.S, query types.M) {
 // addNotInObjectIdsIds 添加 ids 到查询条件中，应该取 $ne $nin ids 的并集
 // 替换 objectId 为：
 // "objectId":{"$nin":["id","id2"]}
-func (d dbController) addNotInObjectIdsIds(ids types.S, query types.M) {
+func (d DBController) addNotInObjectIdsIds(ids types.S, query types.M) {
 	coll := map[string]types.S{}
 	idsFromNin := types.S{}
 	if ninid, ok := query["objectId"].(map[string]interface{}); ok {
@@ -802,7 +802,7 @@ func (d dbController) addNotInObjectIdsIds(ids types.S, query types.M) {
 // reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in $ne $nin $eq 或者等于某对象
 // 例如 classA 中的 字段 key 为 relation<classB> 类型，查找 key 中包含指定 classB 对象的 classA
 // query = {"key":{"$in":[]}}
-func (d dbController) reduceInRelation(className string, query types.M, schema *Schema) types.M {
+func (d DBController) reduceInRelation(className string, query types.M, schema *Schema) types.M {
 	// 处理 $or 数组中的数据，并替换回去
 	if query["$or"] != nil {
 		ors := utils.SliceInterface(query["$or"])
@@ -882,7 +882,7 @@ func (d dbController) reduceInRelation(className string, query types.M, schema *
 }
 
 // owningIds 从 Join 表中查询 relatedIds 对应的父对象
-func (d dbController) owningIds(className, key string, relatedIds types.S) types.S {
+func (d DBController) owningIds(className, key string, relatedIds types.S) types.S {
 	coll := adapter.adaptiveCollection(joinTableName(className, key))
 	query := types.M{
 		"relatedId": types.M{
@@ -898,7 +898,7 @@ func (d dbController) owningIds(className, key string, relatedIds types.S) types
 }
 
 // untransformObject 从查询到的数据库对象转换出可返回给客户端的对象，并对 _User 表数据进行特殊处理
-func (d dbController) untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
+func (d DBController) untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
 	res, err := Transform.untransformObject(schema, className, mongoObject, false)
 	if err != nil {
 		return nil, err
@@ -924,7 +924,7 @@ func (d dbController) untransformObject(schema *Schema, isMaster bool, aclGroup 
 }
 
 // DeleteSchema ...
-func (d *dbController) DeleteSchema(className string) error {
+func (d *DBController) DeleteSchema(className string) error {
 	exist := d.CollectionExists(className)
 	if exist == false {
 		return nil

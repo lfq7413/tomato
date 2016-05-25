@@ -71,7 +71,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		mongoSubqueries := types.S{}
 		// 转换 where 查询条件
 		for _, v := range querys {
-			query, err := transformWhere(schema, className, utils.MapInterface(v))
+			query, err := transformWhere(schema, className, utils.MapInterface(v), nil)
 			if err != nil {
 				return "", nil, err
 			}
@@ -91,7 +91,7 @@ func transformKeyValue(schema *Schema, className, restKey string, restValue inte
 		mongoSubqueries := types.S{}
 		// 转换 where 查询条件
 		for _, v := range querys {
-			query, err := transformWhere(schema, className, utils.MapInterface(v))
+			query, err := transformWhere(schema, className, utils.MapInterface(v), nil)
 			if err != nil {
 				return "", nil, err
 			}
@@ -730,19 +730,22 @@ func transformACL(restObject types.M) types.M {
 }
 
 // transformWhere 转换 where 查询数据，返回数据库格式的数据
-func transformWhere(schema *Schema, className string, where types.M) (types.M, error) {
+func transformWhere(schema *Schema, className string, where types.M, options types.M) (types.M, error) {
+	if options == nil || len(options) == 0 {
+		options = types.M{"validate": true}
+	}
 	mongoWhere := types.M{}
 	if where["ACL"] != nil {
 		// 不能查询 ACL
 		return nil, errs.E(errs.InvalidQuery, "Cannot query on ACL.")
 	}
 
+	transformKeyOptions := types.M{
+		"query":    true,
+		"validate": options["validate"],
+	}
 	for k, v := range where {
-		options := types.M{
-			"query":    true,
-			"validate": true,
-		}
-		key, value, err := transformKeyValue(schema, className, k, v, options)
+		key, value, err := transformKeyValue(schema, className, k, v, transformKeyOptions)
 		if err != nil {
 			return nil, err
 		}

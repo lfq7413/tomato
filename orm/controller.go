@@ -119,7 +119,7 @@ func Find(className string, where, options types.M) (types.S, error) {
 	reduceInRelation(className, where, schema)
 
 	coll := AdaptiveCollection(className)
-	mongoWhere, err := transformWhere(schema, className, where)
+	mongoWhere, err := transformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func Destroy(className string, where types.M, options types.M) error {
 	}
 
 	coll := AdaptiveCollection(className)
-	mongoWhere, err := transformWhere(schema, className, where)
+	mongoWhere, err := transformWhere(schema, className, where, nil)
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func Update(className string, where, data, options types.M) (types.M, error) {
 	handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
 	coll := AdaptiveCollection(className)
-	mongoWhere, err := transformWhere(schema, className, where)
+	mongoWhere, err := transformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
 	}

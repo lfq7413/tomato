@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
@@ -155,21 +154,12 @@ func (s *SchemasController) HandleDelete() {
 		return
 	}
 
-	exist := orm.TomatoDBController.CollectionExists(className)
-	if exist == false {
-		s.Data["json"] = types.M{}
+	err := orm.TomatoDBController.DeleteSchema(className)
+	if err != nil {
+		s.Data["json"] = errs.ErrorToMap(err)
 		s.ServeJSON()
 		return
 	}
-
-	collection := orm.TomatoDBController.AdaptiveCollection(className)
-	count := collection.Count(types.M{}, types.M{})
-	if count > 0 {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
-		s.ServeJSON()
-		return
-	}
-	collection.Drop()
 
 	// 从 _SCHEMA 表中删除类信息，清除相关的 _Join 表
 	coll := orm.TomatoDBController.SchemaCollection()

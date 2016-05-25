@@ -2,6 +2,7 @@
 package orm
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
@@ -137,38 +138,14 @@ func (d dbController) Find(className string, where, options types.M) (types.S, e
 	// 处理 relation 字段上的 $in
 	d.reduceInRelation(className, where, schema)
 
-	coll := TomatoDBController.AdaptiveCollection(className)
+	coll := adapter.adaptiveCollection(className)
 	mongoWhere, err := transform.transformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
 	}
 	// 组装 acl 查询条件，查找可被当前用户访问的对象
 	if isMaster == false {
-		queryPerms := types.S{}
-		// 可查询 不存在读权限字段的
-		perm := types.M{
-			"_rperm": types.M{"$exists": false},
-		}
-		queryPerms = append(queryPerms, perm)
-		// 可查询 读权限包含 * 的
-		perm = types.M{
-			"_rperm": types.M{"$in": []string{"*"}},
-		}
-		queryPerms = append(queryPerms, perm)
-		for _, acl := range aclGroup {
-			// 可查询 读权限包含 当前用户角色与 id 的
-			perm = types.M{
-				"_rperm": types.M{"$in": []string{acl}},
-			}
-			queryPerms = append(queryPerms, perm)
-		}
-
-		mongoWhere = types.M{
-			"$and": types.S{
-				mongoWhere,
-				types.M{"$or": queryPerms},
-			},
-		}
+		mongoWhere = transform.addReadACL(mongoWhere, aclGroup)
 	}
 
 	// 获取 count
@@ -213,33 +190,14 @@ func (d dbController) Destroy(className string, where types.M, options types.M) 
 		return err
 	}
 
-	coll := TomatoDBController.AdaptiveCollection(className)
-	mongoWhere, err := transform.transformWhere(schema, className, where, nil)
+	coll := adapter.adaptiveCollection(className)
+	mongoWhere, err := transform.transformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return err
 	}
 	// 组装 acl 查询条件，查找可被当前用户修改的对象
 	if isMaster == false {
-		writePerms := types.S{}
-		// 可修改 不存在写权限字段的
-		perm := types.M{
-			"_wperm": types.M{"$exists": false},
-		}
-		writePerms = append(writePerms, perm)
-		for _, acl := range aclGroup {
-			// 可修改 写权限包含 当前用户角色与 id 的
-			perm = types.M{
-				"_wperm": types.M{"$in": []string{acl}},
-			}
-			writePerms = append(writePerms, perm)
-		}
-
-		mongoWhere = types.M{
-			"$and": types.S{
-				mongoWhere,
-				types.M{"$or": writePerms},
-			},
-		}
+		mongoWhere = transform.addWriteACL(mongoWhere, aclGroup)
 	}
 	n, err := coll.deleteMany(mongoWhere)
 	if err != nil {
@@ -255,6 +213,9 @@ func (d dbController) Destroy(className string, where types.M, options types.M) 
 
 // Update 更新对象
 func (d dbController) Update(className string, where, data, options types.M) (types.M, error) {
+	if options == nil {
+		options = types.M{}
+	}
 	originalUpdate := data
 	// 复制数据，不要修改原数据
 	data = utils.CopyMap(data)
@@ -288,42 +249,42 @@ func (d dbController) Update(className string, where, data, options types.M) (ty
 	// 处理 Relation
 	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
-	coll := TomatoDBController.AdaptiveCollection(className)
-	mongoWhere, err := transform.transformWhere(schema, className, where, nil)
+	coll := adapter.adaptiveCollection(className)
+	mongoWhere, err := transform.transformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
 	}
 	// 组装 acl 查询条件，查找可被当前用户修改的对象
 	if isMaster == false {
-		writePerms := types.S{}
-		// 可修改 不存在写权限字段的
-		perm := types.M{
-			"_wperm": types.M{"$exists": false},
-		}
-		writePerms = append(writePerms, perm)
-		for _, acl := range aclGroup {
-			// 可修改 写权限包含 当前用户角色与 id 的
-			perm = types.M{
-				"_wperm": types.M{"$in": []string{acl}},
-			}
-			writePerms = append(writePerms, perm)
-		}
-
-		mongoWhere = types.M{
-			"$and": types.S{
-				mongoWhere,
-				types.M{"$or": writePerms},
-			},
-		}
+		mongoWhere = transform.addWriteACL(mongoWhere, aclGroup)
 	}
-	mongoUpdate, err := transform.transformUpdate(schema, className, data)
+	mongoUpdate, err := transform.transformUpdate(schema, className, data, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
 	}
+	var result types.M
+	if options["many"] != nil {
+		err := coll.UpdateMany(mongoWhere, mongoUpdate)
+		if err != nil {
+			return nil, err
+		}
+		result = types.M{}
+	} else if options["upsert"] != nil {
+		err := coll.upsertOne(mongoWhere, mongoUpdate)
+		if err != nil {
+			return nil, err
+		}
+		result = types.M{}
+	} else {
+		result = coll.FindOneAndUpdate(mongoWhere, mongoUpdate)
+	}
 
-	result := coll.FindOneAndUpdate(mongoWhere, mongoUpdate)
-	if result == nil || len(result) == 0 {
+	if result == nil {
 		return nil, errs.E(errs.ObjectNotFound, "Object not found.")
+	}
+
+	if d.skipValidation {
+		return result, nil
 	}
 
 	// 返回经过修改的字段
@@ -358,6 +319,9 @@ func sanitizeDatabaseResult(originalObject, result types.M) types.M {
 
 // Create 创建对象
 func (d dbController) Create(className string, data, options types.M) error {
+	if options == nil {
+		options = types.M{}
+	}
 	// 不要对原数据进行修改
 	data = utils.CopyMap(data)
 	var isMaster bool
@@ -392,7 +356,7 @@ func (d dbController) Create(className string, data, options types.M) error {
 		return err
 	}
 
-	coll := TomatoDBController.AdaptiveCollection(className)
+	coll := adapter.adaptiveCollection(className)
 	mongoObject, err := transform.transformCreate(schema, className, data)
 	if err != nil {
 		return err
@@ -493,7 +457,7 @@ func (d dbController) addRelation(key, fromClassName, fromID, toID string) error
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := TomatoDBController.AdaptiveCollection(className)
+	coll := adapter.adaptiveCollection(className)
 	return coll.upsertOne(doc, doc)
 }
 
@@ -504,7 +468,7 @@ func (d dbController) removeRelation(key, fromClassName, fromID, toID string) er
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := TomatoDBController.AdaptiveCollection(className)
+	coll := adapter.adaptiveCollection(className)
 	return coll.deleteOne(doc)
 }
 
@@ -556,6 +520,12 @@ func (d dbController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 	collection := d.SchemaCollection()
 	schemaPromise = Load(collection)
 	return schemaPromise
+}
+
+// MongoFind 直接执行数据库查询，仅用于测试
+func (d *dbController) MongoFind(className string, query, options types.M) []types.M {
+	coll := adapter.adaptiveCollection(className)
+	return coll.Find(query, options)
 }
 
 // DeleteEverything 删除所有表数据，仅用于测试
@@ -687,7 +657,7 @@ func (d dbController) reduceRelationKeys(className string, query types.M) {
 
 // relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
 func (d dbController) relatedIds(className, key, owningID string) types.S {
-	coll := TomatoDBController.AdaptiveCollection(joinTableName(className, key))
+	coll := adapter.adaptiveCollection(joinTableName(className, key))
 	results := coll.Find(types.M{"owningId": owningID}, types.M{})
 	ids := types.S{}
 	for _, r := range results {
@@ -913,7 +883,7 @@ func (d dbController) reduceInRelation(className string, query types.M, schema *
 
 // owningIds 从 Join 表中查询 relatedIds 对应的父对象
 func (d dbController) owningIds(className, key string, relatedIds types.S) types.S {
-	coll := TomatoDBController.AdaptiveCollection(joinTableName(className, key))
+	coll := adapter.adaptiveCollection(joinTableName(className, key))
 	query := types.M{
 		"relatedId": types.M{
 			"$in": relatedIds,
@@ -951,4 +921,18 @@ func (d dbController) untransformObject(schema *Schema, isMaster bool, aclGroup 
 		}
 	}
 	return object, nil
+}
+
+// DeleteSchema ...
+func (d *dbController) DeleteSchema(className string) error {
+	exist := d.CollectionExists(className)
+	if exist == false {
+		return nil
+	}
+	coll := adapter.adaptiveCollection(className)
+	count := coll.Count(types.M{}, types.M{})
+	if count > 0 {
+		return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
+	}
+	return coll.Drop()
 }

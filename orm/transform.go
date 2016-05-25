@@ -764,7 +764,10 @@ func (t *MongoTransform) transformWhere(schema *Schema, className string, where 
 }
 
 // transformUpdate 转换 update 数据
-func (t *MongoTransform) transformUpdate(schema *Schema, className string, update types.M) (types.M, error) {
+func (t *MongoTransform) transformUpdate(schema *Schema, className string, update types.M, options types.M) (types.M, error) {
+	if options == nil {
+		options = types.M{}
+	}
 	if update == nil {
 		// 更新数据不能为空
 		return nil, errs.E(errs.InvalidJSON, "got empty restUpdate")

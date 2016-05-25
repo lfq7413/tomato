@@ -1199,6 +1199,20 @@ func transformNotInQuery(notInQueryObject types.M, className string, results []t
 	notInQueryObject["$nin"] = nin
 }
 
+// addWriteACL 添加写请求权限
+func addWriteACL(mongoWhere interface{}, acl []string) types.M {
+	writePerms := types.S{
+		types.M{"_wperm": types.M{"$exists": false}},
+	}
+	for _, entry := range acl {
+		p := types.M{"_wperm": types.M{"$in": types.S{entry}}}
+		writePerms = append(writePerms, p)
+	}
+	return types.M{
+		"$and": types.S{mongoWhere, types.M{"$or": writePerms}},
+	}
+}
+
 func cannotTransform() interface{} {
 	return nil
 }

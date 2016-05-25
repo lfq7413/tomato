@@ -211,8 +211,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	name := utils.MapInterface(class[fieldName])["type"].(string)
 	if name == "Relation" {
 		// 删除表数据与 schema 中的对应字段
-		collection := AdaptiveCollection(className)
-		err := adapter.deleteFields(className, []string{fieldName}, []string{}, collection)
+		err := adapter.deleteFields(className, []string{fieldName}, []string{})
 		if err != nil {
 			return err
 		}
@@ -229,8 +228,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	if name == "Pointer" {
 		pointerFieldNames = append(pointerFieldNames, fieldName)
 	}
-	collection := AdaptiveCollection(className)
-	return adapter.deleteFields(className, fieldNames, pointerFieldNames, collection)
+	return adapter.deleteFields(className, fieldNames, pointerFieldNames)
 }
 
 // validateObject 校验对象是否合法

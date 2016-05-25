@@ -14,9 +14,7 @@ var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
-	adapter = &MongoAdapter{
-		collectionList: []string{},
-	}
+	adapter = NewMongoAdapter("tomato")
 }
 
 // AdaptiveCollection 获取要操作的表，以便后续操作
@@ -541,7 +539,7 @@ func LoadSchema(acceptor func(*Schema) bool) *Schema {
 // DeleteEverything 删除所有表数据，仅用于测试
 func DeleteEverything() {
 	schemaPromise = nil
-	collections := adapter.collectionsContaining("")
+	collections := adapter.allCollections()
 	for _, v := range collections {
 		v.DropCollection()
 	}

@@ -12,7 +12,16 @@ const mongoSchemaCollectionName = "_SCHEMA"
 
 // MongoAdapter mongo 数据库适配器
 type MongoAdapter struct {
-	collectionList []string
+	collectionPrefix string
+	collectionList   []string
+}
+
+// NewMongoAdapter ...
+func NewMongoAdapter(collectionPrefix string) *MongoAdapter {
+	return &MongoAdapter{
+		collectionPrefix: collectionPrefix,
+		collectionList:   []string{},
+	}
 }
 
 // collection 获取指定表的操作对象
@@ -23,19 +32,20 @@ func (m *MongoAdapter) collection(name string) *mgo.Collection {
 // adaptiveCollection 组装 mongo 表操作对象
 func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
 	return &MongoCollection{
-		collection: m.collection(name),
+		collection: m.collection(m.collectionPrefix + name),
 	}
 }
 
 // schemaCollection 组装 _SCHEMA 表操作对象
 func (m *MongoAdapter) schemaCollection() *MongoSchemaCollection {
 	return &MongoSchemaCollection{
-		collection: m.adaptiveCollection(mongoSchemaCollectionName),
+		collection: m.adaptiveCollection(m.collectionPrefix + mongoSchemaCollectionName),
 	}
 }
 
 // collectionExists 检测数据库中是否存在指定表
 func (m *MongoAdapter) collectionExists(name string) bool {
+	name = m.collectionPrefix + name
 	if m.collectionList == nil {
 		m.collectionList = TomatoDB.getCollectionNames()
 	}
@@ -57,16 +67,16 @@ func (m *MongoAdapter) collectionExists(name string) bool {
 
 // dropCollection 删除指定表
 func (m *MongoAdapter) dropCollection(name string) error {
-	return m.collection(name).DropCollection()
+	return m.collection(m.collectionPrefix + name).DropCollection()
 }
 
-// collectionsContaining 查找包含指定前缀的表集合，仅用于测试
-func (m *MongoAdapter) collectionsContaining(match string) []*mgo.Collection {
+// allCollections 查找包含指定前缀的表集合，仅用于测试
+func (m *MongoAdapter) allCollections() []*mgo.Collection {
 	names := TomatoDB.getCollectionNames()
 	collections := []*mgo.Collection{}
 
 	for _, v := range names {
-		if strings.HasPrefix(v, match) {
+		if strings.HasPrefix(v, m.collectionPrefix) {
 			collections = append(collections, m.collection(v))
 		}
 	}
@@ -75,7 +85,7 @@ func (m *MongoAdapter) collectionsContaining(match string) []*mgo.Collection {
 }
 
 // deleteFields 删除字段
-func (m *MongoAdapter) deleteFields(className string, fieldNames, pointerFieldNames []string, adaptiveCollection *MongoCollection) error {
+func (m *MongoAdapter) deleteFields(className string, fieldNames, pointerFieldNames []string) error {
 	// 查找非指针字段名
 	nonPointerFieldNames := []string{}
 	for _, fieldName := range fieldNames {
@@ -112,7 +122,8 @@ func (m *MongoAdapter) deleteFields(className string, fieldNames, pointerFieldNa
 	schemaUpdate := types.M{"$unset": unset2}
 
 	// 更新表数据
-	err := adaptiveCollection.UpdateMany(types.M{}, collectionUpdate)
+	collection := m.adaptiveCollection(className)
+	err := collection.UpdateMany(types.M{}, collectionUpdate)
 	if err != nil {
 		return err
 	}

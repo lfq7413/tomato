@@ -22,7 +22,7 @@ type Write struct {
 	data         types.M
 	originalData types.M
 	storage      types.M
-	runOptions   types.M
+	RunOptions   types.M
 	response     types.M
 	updatedAt    string
 }
@@ -51,7 +51,7 @@ func NewWrite(
 		data:         utils.CopyMap(data),
 		originalData: originalData,
 		storage:      types.M{},
-		runOptions:   types.M{},
+		RunOptions:   types.M{},
 		response:     nil,
 		updatedAt:    utils.TimetoString(time.Now().UTC()),
 	}
@@ -128,7 +128,7 @@ func (w *Write) getUserAndRoleACL() error {
 		acl = append(acl, w.auth.User["objectId"].(string))
 		acl = append(acl, w.auth.GetUserRoles()...)
 	}
-	w.runOptions["acl"] = acl
+	w.RunOptions["acl"] = acl
 	return nil
 }
 
@@ -156,7 +156,7 @@ func (w *Write) validateClientClassCreation() error {
 
 // validateSchema 校验数据与权限是否允许进行当前操作
 func (w *Write) validateSchema() error {
-	return orm.TomatoDBController.ValidateObject(w.className, w.data, w.query, w.runOptions)
+	return orm.TomatoDBController.ValidateObject(w.className, w.data, w.query, w.RunOptions)
 }
 
 // handleInstallation 处理 _Installation 表的操作
@@ -754,7 +754,7 @@ func (w *Write) runDatabaseOperation() error {
 			w.data["ACL"] = acl
 		}
 		// 执行更新
-		resp, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.runOptions)
+		resp, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions)
 		if err != nil {
 			return err
 		}
@@ -795,7 +795,7 @@ func (w *Write) runDatabaseOperation() error {
 		}
 
 		// 创建对象
-		err := orm.TomatoDBController.Create(w.className, w.data, w.runOptions)
+		err := orm.TomatoDBController.Create(w.className, w.data, w.RunOptions)
 		if err != nil {
 			return err
 		}

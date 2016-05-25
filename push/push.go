@@ -7,7 +7,6 @@ import (
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -47,22 +46,20 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 
 	// TODO 检测通过立即返回，不等待推送发送完成，后续添加
 
-	var op types.M
+	var restUpdate types.M
 	var updateWhere types.M
 	data := utils.MapInterface(body["data"])
 	if data != nil && data["badge"] != nil {
 		badge := data["badge"]
-		op = types.M{}
+		restUpdate = types.M{}
 		if strings.ToLower(utils.String(badge)) == "increment" {
 			inc := types.M{
-				"badge": 1,
+				"__op":   "Increment",
+				"amount": 1,
 			}
-			op["$inc"] = inc
+			restUpdate["badge"] = inc
 		} else if v, ok := badge.(float64); ok {
-			set := types.M{
-				"badge": v,
-			}
-			op["$set"] = set
+			restUpdate["badge"] = v
 		} else {
 			return errs.E(errs.PushMisconfigured, "Invalid value for badge, expected number or 'Increment'")
 		}
@@ -71,25 +68,25 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 
 	status.setInitial(body, where, nil)
 
-	if op != nil && updateWhere != nil {
-		badgeQuery, err := rest.NewQuery(auth, "_Installation", updateWhere, types.M{})
+	if restUpdate != nil && updateWhere != nil {
+		updateWhere["deviceType"] = "ios"
+		restQuery, err := rest.NewQuery(rest.Master(), "_Installation", updateWhere, types.M{})
 		if err != nil {
 			status.fail(err)
 			return err
 		}
-		badgeQuery.BuildRestWhere()
-		restWhere := utils.CopyMap(badgeQuery.Where)
-		and := utils.SliceInterface(restWhere["$and"])
-		if and == nil {
-			and = types.S{badgeQuery.Where}
+		err = restQuery.BuildRestWhere()
+		if err != nil {
+			status.fail(err)
+			return err
 		}
-		// badge 只有 iOS 支持，所以只发送 iOS 设备，
-		tp := types.M{
-			"deviceType": "ios",
+		write, err := rest.NewWrite(rest.Master(), "_Installation", restQuery.Where, restUpdate, types.M{})
+		if err != nil {
+			status.fail(err)
+			return err
 		}
-		and = append(and, tp)
-		restWhere["$and"] = and
-		err = orm.TomatoDBController.AdaptiveCollection("_Installation").UpdateMany(restWhere, op)
+		write.RunOptions["many"] = true
+		_, err = write.Execute()
 		if err != nil {
 			status.fail(err)
 			return err

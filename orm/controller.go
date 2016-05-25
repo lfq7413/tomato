@@ -916,6 +916,8 @@ func untransformObject(schema *Schema, isMaster bool, aclGroup []string, classNa
 		return object, nil
 	}
 	// 以下单独处理 _User 类
+	delete(object, "authData")
+	delete(object, "sessionToken")
 	if isMaster {
 		return object, nil
 	}
@@ -926,8 +928,5 @@ func untransformObject(schema *Schema, isMaster bool, aclGroup []string, classNa
 			return object, nil
 		}
 	}
-	// 其他用户删除相关信息
-	delete(object, "authData")
-	delete(object, "sessionToken")
 	return object, nil
 }

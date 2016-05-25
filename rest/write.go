@@ -294,19 +294,27 @@ func (w *Write) handleInstallation() error {
 				// deviceToken 有多条，并且与 idMatch 中的 deviceToken 不一致时
 				// 清理多余数据，只保留 installationId 对应的数据
 				// 合并要更新的数据到 installationId 对应的记录上
-				installationID := types.M{
-					"$ne": w.data["installationId"],
-				}
 				delQuery := types.M{
-					"deviceToken":    w.data["deviceToken"],
-					"installationId": installationID,
+					"deviceToken": w.data["deviceToken"],
 				}
-				if w.data["appIdentifier"] != nil {
-					delQuery["appIdentifier"] = w.data["appIdentifier"]
+				// 当存在唯一 installationId 时，保护其不被删除
+				if w.data["installationId"] != nil {
+					delQuery["installationId"] = types.M{"$ne": w.data["installationId"]}
+				} else if idMatch["objectId"] != nil && w.data["objectId"] != nil && idMatch["objectId"].(string) == w.data["objectId"].(string) {
+					delQuery["objectId"] = types.M{"$ne": idMatch["objectId"]}
+				} else {
+					// 无需清理数据
+					objID = utils.String(idMatch["objectId"])
 				}
-				err := orm.Destroy("_Installation", delQuery, nil)
-				if err != nil {
-					return err
+				// 需要清理数据
+				if objID == "" {
+					if w.data["appIdentifier"] != nil {
+						delQuery["appIdentifier"] = w.data["appIdentifier"]
+					}
+					err := orm.Destroy("_Installation", delQuery, nil)
+					if err != nil {
+						return err
+					}
 				}
 			}
 			objID = utils.String(idMatch["objectId"])

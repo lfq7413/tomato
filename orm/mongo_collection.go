@@ -90,8 +90,8 @@ func (m *MongoCollection) InsertOne(docs interface{}) error {
 	return m.collection.Insert(docs)
 }
 
-// upsertOne 更新一个对象，如果要更新的对象不存在，则插入该对象
-func (m *MongoCollection) upsertOne(selector interface{}, update interface{}) error {
+// UpsertOne 更新一个对象，如果要更新的对象不存在，则插入该对象
+func (m *MongoCollection) UpsertOne(selector interface{}, update interface{}) error {
 	_, err := m.collection.Upsert(selector, update)
 	return err
 }
@@ -107,13 +107,13 @@ func (m *MongoCollection) UpdateMany(selector interface{}, update interface{}) e
 	return err
 }
 
-// deleteOne 删除一个对象
-func (m *MongoCollection) deleteOne(selector interface{}) error {
+// DeleteOne 删除一个对象
+func (m *MongoCollection) DeleteOne(selector interface{}) error {
 	return m.collection.Remove(selector)
 }
 
-// deleteMany 删除多个对象
-func (m *MongoCollection) deleteMany(selector interface{}) (int, error) {
+// DeleteMany 删除多个对象
+func (m *MongoCollection) DeleteMany(selector interface{}) (int, error) {
 	info, err := m.collection.RemoveAll(selector)
 	if err != nil {
 		return 0, err

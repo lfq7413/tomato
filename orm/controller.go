@@ -41,17 +41,17 @@ func (d DBController) WithoutValidation() *DBController {
 
 // SchemaCollection 获取 Schema 表
 func (d DBController) SchemaCollection() *MongoSchemaCollection {
-	return adapter.schemaCollection()
+	return adapter.SchemaCollection()
 }
 
 // CollectionExists 检测表是否存在
 func (d DBController) CollectionExists(className string) bool {
-	return adapter.collectionExists(className)
+	return adapter.CollectionExists(className)
 }
 
 // DropCollection 删除指定表
 func (d DBController) DropCollection(className string) error {
-	return adapter.dropCollection(className)
+	return adapter.DropCollection(className)
 }
 
 // Find 从指定表中查询数据，查询到的数据放入 list 中
@@ -101,13 +101,13 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 			mongoKey := ""
 			// sort 中的 key ，如果是要按倒序排列，则会加前缀 "-" ，所以要对其进行处理
 			if strings.HasPrefix(key, "-") {
-				k, err := Transform.transformKey(schema, className, key[1:])
+				k, err := Transform.TransformKey(schema, className, key[1:])
 				if err != nil {
 					return nil, err
 				}
 				mongoKey = "-" + k
 			} else {
-				k, err := Transform.transformKey(schema, className, key)
+				k, err := Transform.TransformKey(schema, className, key)
 				if err != nil {
 					return nil, err
 				}
@@ -135,14 +135,14 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	// 处理 relation 字段上的 $in
 	d.reduceInRelation(className, where, schema)
 
-	coll := adapter.adaptiveCollection(className)
-	mongoWhere, err := Transform.transformWhere(schema, className, where, nil)
+	coll := adapter.AdaptiveCollection(className)
+	mongoWhere, err := Transform.TransformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
 	}
 	// 组装 acl 查询条件，查找可被当前用户访问的对象
 	if isMaster == false {
-		mongoWhere = Transform.addReadACL(mongoWhere, aclGroup)
+		mongoWhere = Transform.AddReadACL(mongoWhere, aclGroup)
 	}
 
 	// 获取 count
@@ -187,16 +187,16 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		return err
 	}
 
-	coll := adapter.adaptiveCollection(className)
-	mongoWhere, err := Transform.transformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
+	coll := adapter.AdaptiveCollection(className)
+	mongoWhere, err := Transform.TransformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return err
 	}
 	// 组装 acl 查询条件，查找可被当前用户修改的对象
 	if isMaster == false {
-		mongoWhere = Transform.addWriteACL(mongoWhere, aclGroup)
+		mongoWhere = Transform.AddWriteACL(mongoWhere, aclGroup)
 	}
-	n, err := coll.deleteMany(mongoWhere)
+	n, err := coll.DeleteMany(mongoWhere)
 	if err != nil {
 		return err
 	}
@@ -246,16 +246,16 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 	// 处理 Relation
 	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
-	coll := adapter.adaptiveCollection(className)
-	mongoWhere, err := Transform.transformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
+	coll := adapter.AdaptiveCollection(className)
+	mongoWhere, err := Transform.TransformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
 	}
 	// 组装 acl 查询条件，查找可被当前用户修改的对象
 	if isMaster == false {
-		mongoWhere = Transform.addWriteACL(mongoWhere, aclGroup)
+		mongoWhere = Transform.AddWriteACL(mongoWhere, aclGroup)
 	}
-	mongoUpdate, err := Transform.transformUpdate(schema, className, data, types.M{"validate": !d.skipValidation})
+	mongoUpdate, err := Transform.TransformUpdate(schema, className, data, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		}
 		result = types.M{}
 	} else if options["upsert"] != nil {
-		err := coll.upsertOne(mongoWhere, mongoUpdate)
+		err := coll.UpsertOne(mongoWhere, mongoUpdate)
 		if err != nil {
 			return nil, err
 		}
@@ -353,8 +353,8 @@ func (d DBController) Create(className string, data, options types.M) error {
 		return err
 	}
 
-	coll := adapter.adaptiveCollection(className)
-	mongoObject, err := Transform.transformCreate(schema, className, data)
+	coll := adapter.AdaptiveCollection(className)
+	mongoObject, err := Transform.TransformCreate(schema, className, data)
 	if err != nil {
 		return err
 	}
@@ -454,8 +454,8 @@ func (d DBController) addRelation(key, fromClassName, fromID, toID string) error
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := adapter.adaptiveCollection(className)
-	return coll.upsertOne(doc, doc)
+	coll := adapter.AdaptiveCollection(className)
+	return coll.UpsertOne(doc, doc)
 }
 
 // removeRelation 把对象 id 从 _Join 表中删除，表名为 _Join:key:fromClassName
@@ -465,8 +465,8 @@ func (d DBController) removeRelation(key, fromClassName, fromID, toID string) er
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := adapter.adaptiveCollection(className)
-	return coll.deleteOne(doc)
+	coll := adapter.AdaptiveCollection(className)
+	return coll.DeleteOne(doc)
 }
 
 // ValidateObject 校验对象是否合法
@@ -521,16 +521,16 @@ func (d DBController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 
 // MongoFind 直接执行数据库查询，仅用于测试
 func (d *DBController) MongoFind(className string, query, options types.M) []types.M {
-	coll := adapter.adaptiveCollection(className)
+	coll := adapter.AdaptiveCollection(className)
 	return coll.Find(query, options)
 }
 
 // DeleteEverything 删除所有表数据，仅用于测试
 func (d DBController) DeleteEverything() {
 	schemaPromise = nil
-	collections := adapter.allCollections()
+	collections := adapter.AllCollections()
 	for _, v := range collections {
-		v.DropCollection()
+		v.Drop()
 	}
 }
 
@@ -538,7 +538,7 @@ func (d DBController) DeleteEverything() {
 // 如果 key 字段的属性为 relation<classA> ，则返回 classA
 func (d DBController) RedirectClassNameForKey(className, key string) string {
 	schema := d.LoadSchema(nil)
-	t := schema.getExpectedType(className, key)
+	t := schema.GetExpectedType(className, key)
 	if t != nil && t["type"].(string) == "Relation" {
 		return t["targetClass"].(string)
 	}
@@ -654,7 +654,7 @@ func (d DBController) reduceRelationKeys(className string, query types.M) {
 
 // relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
 func (d DBController) relatedIds(className, key, owningID string) types.S {
-	coll := adapter.adaptiveCollection(joinTableName(className, key))
+	coll := adapter.AdaptiveCollection(joinTableName(className, key))
 	results := coll.Find(types.M{"owningId": owningID}, types.M{})
 	ids := types.S{}
 	for _, r := range results {
@@ -816,7 +816,7 @@ func (d DBController) reduceInRelation(className string, query types.M, schema *
 		op := utils.MapInterface(v)
 		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || op["$eq"] != nil || utils.String(op["__type"]) == "Pointer") {
 			// 只处理 relation 类型
-			t := schema.getExpectedType(className, key)
+			t := schema.GetExpectedType(className, key)
 			if t == nil || t["type"].(string) != "Relation" {
 				return query
 			}
@@ -880,7 +880,7 @@ func (d DBController) reduceInRelation(className string, query types.M, schema *
 
 // owningIds 从 Join 表中查询 relatedIds 对应的父对象
 func (d DBController) owningIds(className, key string, relatedIds types.S) types.S {
-	coll := adapter.adaptiveCollection(joinTableName(className, key))
+	coll := adapter.AdaptiveCollection(joinTableName(className, key))
 	query := types.M{
 		"relatedId": types.M{
 			"$in": relatedIds,
@@ -896,7 +896,7 @@ func (d DBController) owningIds(className, key string, relatedIds types.S) types
 
 // untransformObject 从查询到的数据库对象转换出可返回给客户端的对象，并对 _User 表数据进行特殊处理
 func (d DBController) untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
-	res, err := Transform.untransformObject(schema, className, mongoObject, false)
+	res, err := Transform.UntransformObject(schema, className, mongoObject, false)
 	if err != nil {
 		return nil, err
 	}
@@ -926,7 +926,7 @@ func (d *DBController) DeleteSchema(className string) error {
 	if exist == false {
 		return nil
 	}
-	coll := adapter.adaptiveCollection(className)
+	coll := adapter.AdaptiveCollection(className)
 	count := coll.Count(types.M{}, types.M{})
 	if count > 0 {
 		return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")

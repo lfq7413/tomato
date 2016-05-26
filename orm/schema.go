@@ -105,7 +105,7 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 		return nil, err
 	}
 
-	result, err := s.collection.addSchema(className, fields, classLevelPermissions)
+	result, err := s.collection.AddSchema(className, fields, classLevelPermissions)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +211,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	name := utils.MapInterface(class[fieldName])["type"].(string)
 	if name == "Relation" {
 		// 删除表数据与 schema 中的对应字段
-		err := adapter.deleteFields(className, []string{fieldName}, []string{})
+		err := adapter.DeleteFields(className, []string{fieldName}, []string{})
 		if err != nil {
 			return err
 		}
@@ -228,7 +228,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	if name == "Pointer" {
 		pointerFieldNames = append(pointerFieldNames, fieldName)
 	}
-	return adapter.deleteFields(className, fieldNames, pointerFieldNames)
+	return adapter.DeleteFields(className, fieldNames, pointerFieldNames)
 }
 
 // validateObject 校验对象是否合法
@@ -409,7 +409,7 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 func (s *Schema) validateField(className, fieldName string, fieldtype types.M, freeze bool) error {
 	s.reloadData()
 	// 检测 fieldName 是否合法
-	_, err := s.collection.transform.transformKey(s, className, fieldName)
+	_, err := s.collection.transform.TransformKey(s, className, fieldName)
 	if err != nil {
 		return err
 	}
@@ -454,7 +454,7 @@ func (s *Schema) validateField(className, fieldName string, fieldtype types.M, f
 		}
 	}
 
-	err = s.collection.updateField(className, fieldName, fieldtype)
+	err = s.collection.UpdateField(className, fieldName, fieldtype)
 	if err != nil {
 		// 失败时也需要重新加载数据，因为这时候可能有其他客户端更新了字段
 		// s.reloadData()
@@ -486,7 +486,7 @@ func (s *Schema) setPermissions(className string, perms types.M) error {
 	update := types.M{
 		"$set": metadata,
 	}
-	err = s.collection.updateSchema(className, update)
+	err = s.collection.UpdateSchema(className, update)
 	if err != nil {
 		return err
 	}
@@ -514,8 +514,8 @@ func (s *Schema) hasKeys(className string, keys []string) bool {
 	return true
 }
 
-// getExpectedType 获取期望的字段类型
-func (s *Schema) getExpectedType(className, key string) types.M {
+// GetExpectedType 获取期望的字段类型
+func (s *Schema) GetExpectedType(className, key string) types.M {
 	if s.data != nil && s.data[className] != nil {
 		cls := utils.MapInterface(s.data[className])
 		return utils.MapInterface(cls[key])
@@ -523,8 +523,8 @@ func (s *Schema) getExpectedType(className, key string) types.M {
 	return nil
 }
 
-// getRelationFields 转换 relation 类型的字段为 API 格式
-func (s *Schema) getRelationFields(className string) types.M {
+// GetRelationFields 转换 relation 类型的字段为 API 格式
+func (s *Schema) GetRelationFields(className string) types.M {
 	relationFields := types.M{}
 	if s.data != nil && s.data[className] != nil {
 		classData := s.data[className].(map[string]interface{})

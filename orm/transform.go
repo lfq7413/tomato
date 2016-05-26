@@ -20,8 +20,8 @@ func NewMongoTransform() *MongoTransform {
 	return &MongoTransform{}
 }
 
-// transformKey 把 key 转换为数据库中保存的格式
-func (t *MongoTransform) transformKey(schema *Schema, className, key string) (string, error) {
+// TransformKey 把 key 转换为数据库中保存的格式
+func (t *MongoTransform) TransformKey(schema *Schema, className, key string) (string, error) {
 	k, _, err := t.transformKeyValue(schema, className, key, nil, nil)
 	if err != nil {
 		return "", err
@@ -79,7 +79,7 @@ func (t *MongoTransform) transformKeyValue(schema *Schema, className, restKey st
 		mongoSubqueries := types.S{}
 		// 转换 where 查询条件
 		for _, v := range querys {
-			query, err := t.transformWhere(schema, className, utils.MapInterface(v), nil)
+			query, err := t.TransformWhere(schema, className, utils.MapInterface(v), nil)
 			if err != nil {
 				return "", nil, err
 			}
@@ -99,7 +99,7 @@ func (t *MongoTransform) transformKeyValue(schema *Schema, className, restKey st
 		mongoSubqueries := types.S{}
 		// 转换 where 查询条件
 		for _, v := range querys {
-			query, err := t.transformWhere(schema, className, utils.MapInterface(v), nil)
+			query, err := t.TransformWhere(schema, className, utils.MapInterface(v), nil)
 			if err != nil {
 				return "", nil, err
 			}
@@ -140,7 +140,7 @@ func (t *MongoTransform) transformKeyValue(schema *Schema, className, restKey st
 	// 处理特殊字段名
 	var expected types.M
 	if schema != nil {
-		expected = schema.getExpectedType(className, key)
+		expected = schema.GetExpectedType(className, key)
 	}
 
 	// 期望类型为 *xxx
@@ -642,8 +642,8 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 	}
 }
 
-// transformCreate 转换 create 数据
-func (t *MongoTransform) transformCreate(schema *Schema, className string, create types.M) (types.M, error) {
+// TransformCreate 转换 create 数据
+func (t *MongoTransform) TransformCreate(schema *Schema, className string, create types.M) (types.M, error) {
 	// 转换第三方登录数据
 	if className == "_User" {
 		create = t.transformAuthData(create)
@@ -737,8 +737,8 @@ func (t *MongoTransform) transformACL(restObject types.M) types.M {
 	return output
 }
 
-// transformWhere 转换 where 查询数据，返回数据库格式的数据
-func (t *MongoTransform) transformWhere(schema *Schema, className string, where types.M, options types.M) (types.M, error) {
+// TransformWhere 转换 where 查询数据，返回数据库格式的数据
+func (t *MongoTransform) TransformWhere(schema *Schema, className string, where types.M, options types.M) (types.M, error) {
 	if options == nil || len(options) == 0 {
 		options = types.M{"validate": true}
 	}
@@ -763,8 +763,8 @@ func (t *MongoTransform) transformWhere(schema *Schema, className string, where 
 	return mongoWhere, nil
 }
 
-// transformUpdate 转换 update 数据
-func (t *MongoTransform) transformUpdate(schema *Schema, className string, update types.M, options types.M) (types.M, error) {
+// TransformUpdate 转换 update 数据
+func (t *MongoTransform) TransformUpdate(schema *Schema, className string, update types.M, options types.M) (types.M, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -859,8 +859,8 @@ var specialKeysForUntransform = []string{
 	"_expiresAt",
 }
 
-// untransformObject  把数据库类型数据转换为 API 格式
-func (t *MongoTransform) untransformObject(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error) {
+// UntransformObject  把数据库类型数据转换为 API 格式
+func (t *MongoTransform) UntransformObject(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error) {
 	if mongoObject == nil {
 		return mongoObject, nil
 	}
@@ -874,7 +874,7 @@ func (t *MongoTransform) untransformObject(schema *Schema, className string, mon
 		results := types.S{}
 		objs := mongoObject.([]interface{})
 		for _, o := range objs {
-			res, err := t.untransformObject(schema, className, o, true)
+			res, err := t.UntransformObject(schema, className, o, true)
 			if err != nil {
 				return nil, err
 			}
@@ -917,7 +917,7 @@ func (t *MongoTransform) untransformObject(schema *Schema, className string, mon
 					}
 				}
 				if in {
-					r, err := t.untransformObject(schema, className, value, true)
+					r, err := t.UntransformObject(schema, className, value, true)
 					if err != nil {
 						return nil, err
 					}
@@ -983,7 +983,7 @@ func (t *MongoTransform) untransformObject(schema *Schema, className string, mon
 				// }
 				if strings.HasPrefix(key, "_p_") {
 					newKey := key[3:]
-					expected := schema.getExpectedType(className, newKey)
+					expected := schema.GetExpectedType(className, newKey)
 					if expected == nil {
 						// 不在 schema 中的指针类型，丢弃
 						break
@@ -1019,7 +1019,7 @@ func (t *MongoTransform) untransformObject(schema *Schema, className string, mon
 					// TODO 此处可能会有问题，isNestedObject == true 时，即子对象也会进来
 					// 但是拿子对象的 key 无法从 className 中查询有效的类型
 					// 所以当子对象的某个 key 与 className 中的某个 key 相同时，可能出问题
-					expectedType := schema.getExpectedType(className, key)
+					expectedType := schema.GetExpectedType(className, key)
 					// file 类型
 					// {
 					// 	"__type": "File",
@@ -1043,7 +1043,7 @@ func (t *MongoTransform) untransformObject(schema *Schema, className string, mon
 					}
 				}
 				// 转换子对象
-				res, err := t.untransformObject(schema, className, value, true)
+				res, err := t.UntransformObject(schema, className, value, true)
 				if err != nil {
 					return nil, err
 				}
@@ -1052,7 +1052,7 @@ func (t *MongoTransform) untransformObject(schema *Schema, className string, mon
 		}
 
 		if isNestedObject == false {
-			relationFields := schema.getRelationFields(className)
+			relationFields := schema.GetRelationFields(className)
 			for k, v := range relationFields {
 				restObject[k] = v
 			}
@@ -1210,8 +1210,8 @@ func (t *MongoTransform) TransformNotInQuery(notInQueryObject types.M, className
 	notInQueryObject["$nin"] = nin
 }
 
-// addWriteACL 添加写请求权限
-func (t *MongoTransform) addWriteACL(mongoWhere interface{}, acl []string) types.M {
+// AddWriteACL 添加写请求权限
+func (t *MongoTransform) AddWriteACL(mongoWhere interface{}, acl []string) types.M {
 	writePerms := types.S{
 		types.M{"_wperm": types.M{"$exists": false}},
 	}
@@ -1224,8 +1224,8 @@ func (t *MongoTransform) addWriteACL(mongoWhere interface{}, acl []string) types
 	}
 }
 
-// addReadACL 添加读请求权限
-func (t *MongoTransform) addReadACL(mongoWhere interface{}, acl []string) types.M {
+// AddReadACL 添加读请求权限
+func (t *MongoTransform) AddReadACL(mongoWhere interface{}, acl []string) types.M {
 	orParts := types.S{
 		types.M{"_rperm": types.M{"$exists": false}},
 		types.M{"_rperm": types.M{"$in": types.S{"*"}}},

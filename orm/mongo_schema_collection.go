@@ -62,8 +62,8 @@ func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (types.M, error
 	return result, nil
 }
 
-// addSchema 添加一个表定义
-func (m *MongoSchemaCollection) addSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error) {
+// AddSchema 添加一个表定义
+func (m *MongoSchemaCollection) AddSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error) {
 	mongoSchema, err := mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions)
 	if err != nil {
 		return nil, err
@@ -72,18 +72,18 @@ func (m *MongoSchemaCollection) addSchema(name string, fields types.M, classLeve
 	return MongoSchemaToParseSchema(mongoObject), m.collection.InsertOne(mongoObject)
 }
 
-// updateSchema 更新一个表定义
-func (m *MongoSchemaCollection) updateSchema(name string, update types.M) error {
+// UpdateSchema 更新一个表定义
+func (m *MongoSchemaCollection) UpdateSchema(name string, update types.M) error {
 	return m.collection.UpdateOne(mongoSchemaQueryFromNameQuery(name, nil), update)
 }
 
 // upsertSchema 更新或者插入一个表定义
 func (m *MongoSchemaCollection) upsertSchema(name string, query, update types.M) error {
-	return m.collection.upsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
+	return m.collection.UpsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
 }
 
-// updateField 更新字段
-func (m *MongoSchemaCollection) updateField(className string, fieldName string, fieldType types.M) error {
+// UpdateField 更新字段
+func (m *MongoSchemaCollection) UpdateField(className string, fieldName string, fieldType types.M) error {
 	query := types.M{}
 	query[fieldName] = types.M{"$exists": false}
 	date := types.M{}

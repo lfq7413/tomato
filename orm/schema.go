@@ -541,7 +541,7 @@ func (s *Schema) getRelationFields(className string) types.M {
 		}
 	}
 
-	return types.M{}
+	return relationFields
 }
 
 // reloadData 从数据库加载表信息

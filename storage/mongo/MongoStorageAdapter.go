@@ -1,4 +1,4 @@
-package orm
+package mongo
 
 import (
 	"strings"
@@ -29,7 +29,7 @@ func NewMongoAdapter(collectionPrefix string) *MongoAdapter {
 
 // collection 获取指定表的操作对象
 func (m *MongoAdapter) collection(name string) *mgo.Collection {
-	return TomatoDB.MongoDatabase.C(name)
+	return storage.TomatoDB.MongoDatabase.C(name)
 }
 
 // AdaptiveCollection 组装 mongo 表操作对象
@@ -152,7 +152,7 @@ func (m *MongoAdapter) GetTransform() storage.Transform {
 
 // getCollectionNames 获取数据库中当前已经存在的表名
 func (m *MongoAdapter) getCollectionNames() []string {
-	names, err := TomatoDB.MongoDatabase.CollectionNames()
+	names, err := storage.TomatoDB.MongoDatabase.CollectionNames()
 	if err == nil && names != nil {
 		return names
 	}

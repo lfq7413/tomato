@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/lfq7413/tomato/config"
-	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/storage"
 	"gopkg.in/mgo.v2"
 )
 
@@ -15,7 +15,7 @@ type gridStoreAdapter struct {
 
 func newGridStoreAdapter() *gridStoreAdapter {
 	g := &gridStoreAdapter{}
-	g.gfs = orm.TomatoDB.MongoDatabase.GridFS("fs")
+	g.gfs = storage.TomatoDB.MongoDatabase.GridFS("fs")
 	return g
 }
 

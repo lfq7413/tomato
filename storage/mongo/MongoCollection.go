@@ -1,4 +1,4 @@
-package orm
+package mongo
 
 import (
 	"github.com/lfq7413/tomato/types"

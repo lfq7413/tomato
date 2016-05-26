@@ -37,12 +37,10 @@ type Adapter interface {
 // Collection 集合操作接口
 type Collection interface {
 	Find(query interface{}, options types.M) []types.M
-	RawFind(query interface{}, options types.M) ([]types.M, error)
 	Count(query interface{}, options types.M) int
 	FindOneAndUpdate(selector interface{}, update interface{}) types.M
 	InsertOne(docs interface{}) error
 	UpsertOne(selector interface{}, update interface{}) error
-	UpdateOne(selector interface{}, update interface{}) error
 	UpdateMany(selector interface{}, update interface{}) error
 	DeleteOne(selector interface{}) error
 	DeleteMany(selector interface{}) (int, error)

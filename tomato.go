@@ -6,14 +6,14 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/lfq7413/tomato/livequery"
-	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/storage"
 )
 
 // Run ...
 func Run() {
 
-	orm.OpenDB()
-	defer orm.CloseDB()
+	storage.OpenDB()
+	defer storage.CloseDB()
 
 	if beego.BConfig.RunMode == "dev" {
 		beego.BConfig.WebConfig.DirectoryIndex = true

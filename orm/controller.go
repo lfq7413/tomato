@@ -7,6 +7,7 @@ import (
 
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
+	"github.com/lfq7413/tomato/storage/mongo"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -21,7 +22,7 @@ var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
-	adapter = NewMongoAdapter("tomato")
+	adapter = mongo.NewMongoAdapter("tomato")
 	Transform = adapter.GetTransform()
 	TomatoDBController = &DBController{
 		skipValidation: false,

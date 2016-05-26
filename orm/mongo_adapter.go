@@ -28,7 +28,7 @@ func NewMongoAdapter(collectionPrefix string) *MongoAdapter {
 
 // collection 获取指定表的操作对象
 func (m *MongoAdapter) collection(name string) *mgo.Collection {
-	return TomatoDB.Database.C(name)
+	return TomatoDB.MongoDatabase.C(name)
 }
 
 // AdaptiveCollection 组装 mongo 表操作对象
@@ -51,7 +51,7 @@ func (m *MongoAdapter) SchemaCollection() *MongoSchemaCollection {
 func (m *MongoAdapter) CollectionExists(name string) bool {
 	name = m.collectionPrefix + name
 	if m.collectionList == nil {
-		m.collectionList = TomatoDB.getCollectionNames()
+		m.collectionList = m.getCollectionNames()
 	}
 	// 先在内存中查询
 	for _, v := range m.collectionList {
@@ -60,7 +60,7 @@ func (m *MongoAdapter) CollectionExists(name string) bool {
 		}
 	}
 	// 内存中不存在，则去数据库中查询一次，更新到内存中
-	m.collectionList = TomatoDB.getCollectionNames()
+	m.collectionList = m.getCollectionNames()
 	for _, v := range m.collectionList {
 		if v == name {
 			return true
@@ -76,7 +76,7 @@ func (m *MongoAdapter) DropCollection(name string) error {
 
 // AllCollections 查找包含指定前缀的表集合，仅用于测试
 func (m *MongoAdapter) AllCollections() []*MongoCollection {
-	names := TomatoDB.getCollectionNames()
+	names := m.getCollectionNames()
 	collections := []*MongoCollection{}
 
 	for _, v := range names {
@@ -143,4 +143,13 @@ func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNa
 // GetTransform ...
 func (m *MongoAdapter) GetTransform() *MongoTransform {
 	return m.transform
+}
+
+// getCollectionNames 获取数据库中当前已经存在的表名
+func (m *MongoAdapter) getCollectionNames() []string {
+	names, err := TomatoDB.MongoDatabase.CollectionNames()
+	if err == nil && names != nil {
+		return names
+	}
+	return []string{}
 }

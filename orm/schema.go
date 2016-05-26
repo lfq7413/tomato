@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -93,7 +94,7 @@ func init() {
 
 // Schema schema 操作对象
 type Schema struct {
-	collection *MongoSchemaCollection
+	collection storage.SchemaCollection
 	data       types.M // data 保存类的字段信息，类型为 API 类型
 	perms      types.M // perms 保存类的操作权限
 }
@@ -409,7 +410,7 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 func (s *Schema) validateField(className, fieldName string, fieldtype types.M, freeze bool) error {
 	s.reloadData()
 	// 检测 fieldName 是否合法
-	_, err := s.collection.transform.TransformKey(s, className, fieldName)
+	_, err := Transform.TransformKey(s, className, fieldName)
 	if err != nil {
 		return err
 	}
@@ -919,7 +920,7 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 }
 
 // Load 返回一个新的 Schema 结构体
-func Load(collection *MongoSchemaCollection) *Schema {
+func Load(collection storage.SchemaCollection) *Schema {
 	schema := &Schema{
 		collection: collection,
 	}

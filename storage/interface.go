@@ -1,19 +1,25 @@
 package storage
 
+import "github.com/lfq7413/tomato/types"
+
 // Schema 上层需要实现的 Schema 接口，用于 Transform 中
 type Schema interface {
-	GetExpectedType(className, key string) map[string]interface{}
-	GetRelationFields(className string) map[string]interface{}
+	GetExpectedType(className, key string) types.M
+	GetRelationFields(className string) types.M
 }
 
 // Transform API 格式与数据库格式之间转换的接口
 type Transform interface {
 	TransformKey(schema Schema, className, key string) (string, error)
-	TransformWhere(schema Schema, className string, where, options map[string]interface{}) (map[string]interface{}, error)
-	TransformUpdate(schema Schema, className string, update, options map[string]interface{}) (map[string]interface{}, error)
-	TransformCreate(schema Schema, className string, create map[string]interface{}) (map[string]interface{}, error)
-	AddReadACL(mongoWhere interface{}, acl []string) map[string]interface{}
-	AddWriteACL(mongoWhere interface{}, acl []string) map[string]interface{}
+	TransformWhere(schema Schema, className string, where, options types.M) (types.M, error)
+	TransformUpdate(schema Schema, className string, update, options types.M) (types.M, error)
+	TransformCreate(schema Schema, className string, create types.M) (types.M, error)
+	AddReadACL(mongoWhere interface{}, acl []string) types.M
+	AddWriteACL(mongoWhere interface{}, acl []string) types.M
+	TransformSelect(selectObject types.M, key string, objects []types.M)
+	TransformDontSelect(dontSelectObject types.M, key string, objects []types.M)
+	TransformInQuery(inQueryObject types.M, className string, results []types.M)
+	TransformNotInQuery(notInQueryObject types.M, className string, results []types.M)
 	UntransformObject(schema Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error)
 }
 
@@ -30,11 +36,13 @@ type Adapter interface {
 
 // Collection 集合操作接口
 type Collection interface {
-	Find(query interface{}, options map[string]interface{}) []map[string]interface{}
-	Count(query interface{}, options map[string]interface{}) int
-	FindOneAndUpdate(selector interface{}, update interface{}) map[string]interface{}
-	InsertOne(docs interface{})
+	Find(query interface{}, options types.M) []types.M
+	RawFind(query interface{}, options types.M) ([]types.M, error)
+	Count(query interface{}, options types.M) int
+	FindOneAndUpdate(selector interface{}, update interface{}) types.M
+	InsertOne(docs interface{}) error
 	UpsertOne(selector interface{}, update interface{}) error
+	UpdateOne(selector interface{}, update interface{}) error
 	UpdateMany(selector interface{}, update interface{}) error
 	DeleteOne(selector interface{}) error
 	DeleteMany(selector interface{}) (int, error)
@@ -43,10 +51,10 @@ type Collection interface {
 
 // SchemaCollection Schema 集合操作接口
 type SchemaCollection interface {
-	GetAllSchemas() ([]map[string]interface{}, error)
-	FindSchema(name string) (map[string]interface{}, error)
-	FindAndDeleteSchema(name string) (map[string]interface{}, error)
-	AddSchema(name string, fields map[string]interface{}, classLevelPermissions map[string]interface{}) (map[string]interface{}, error)
-	UpdateSchema(name string, update map[string]interface{}) error
-	UpdateField(className string, fieldName string, fieldType map[string]interface{}) error
+	GetAllSchemas() ([]types.M, error)
+	FindSchema(name string) (types.M, error)
+	FindAndDeleteSchema(name string) (types.M, error)
+	AddSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error)
+	UpdateSchema(name string, update types.M) error
+	UpdateField(className string, fieldName string, fieldType types.M) error
 }

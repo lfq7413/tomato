@@ -6,22 +6,23 @@ import (
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
 // TomatoDBController ...
 var TomatoDBController *DBController
-var adapter *MongoAdapter
+var adapter storage.Adapter
 
 // Transform ...
-var Transform *MongoTransform
+var Transform storage.Transform
 var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
 	adapter = NewMongoAdapter("tomato")
-	Transform = adapter.transform
+	Transform = adapter.GetTransform()
 	TomatoDBController = &DBController{
 		skipValidation: false,
 	}
@@ -40,7 +41,7 @@ func (d DBController) WithoutValidation() *DBController {
 }
 
 // SchemaCollection 获取 Schema 表
-func (d DBController) SchemaCollection() *MongoSchemaCollection {
+func (d DBController) SchemaCollection() storage.SchemaCollection {
 	return adapter.SchemaCollection()
 }
 

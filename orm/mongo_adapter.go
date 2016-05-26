@@ -3,6 +3,7 @@ package orm
 import (
 	"strings"
 
+	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 
 	"gopkg.in/mgo.v2"
@@ -32,7 +33,7 @@ func (m *MongoAdapter) collection(name string) *mgo.Collection {
 }
 
 // AdaptiveCollection 组装 mongo 表操作对象
-func (m *MongoAdapter) AdaptiveCollection(name string) *MongoCollection {
+func (m *MongoAdapter) AdaptiveCollection(name string) storage.Collection {
 	return &MongoCollection{
 		collection: m.collection(m.collectionPrefix + name),
 		transform:  m.transform,
@@ -40,9 +41,13 @@ func (m *MongoAdapter) AdaptiveCollection(name string) *MongoCollection {
 }
 
 // SchemaCollection 组装 _SCHEMA 表操作对象
-func (m *MongoAdapter) SchemaCollection() *MongoSchemaCollection {
+func (m *MongoAdapter) SchemaCollection() storage.SchemaCollection {
+	mongoCollection := &MongoCollection{
+		collection: m.collection(m.collectionPrefix + mongoSchemaCollectionName),
+		transform:  m.transform,
+	}
 	return &MongoSchemaCollection{
-		collection: m.AdaptiveCollection(mongoSchemaCollectionName),
+		collection: mongoCollection,
 		transform:  m.transform,
 	}
 }
@@ -75,9 +80,9 @@ func (m *MongoAdapter) DropCollection(name string) error {
 }
 
 // AllCollections 查找包含指定前缀的表集合，仅用于测试
-func (m *MongoAdapter) AllCollections() []*MongoCollection {
+func (m *MongoAdapter) AllCollections() []storage.Collection {
 	names := m.getCollectionNames()
-	collections := []*MongoCollection{}
+	collections := []storage.Collection{}
 
 	for _, v := range names {
 		if strings.HasPrefix(v, m.collectionPrefix) {
@@ -141,7 +146,7 @@ func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNa
 }
 
 // GetTransform ...
-func (m *MongoAdapter) GetTransform() *MongoTransform {
+func (m *MongoAdapter) GetTransform() storage.Transform {
 	return m.transform
 }
 

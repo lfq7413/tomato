@@ -13,7 +13,7 @@ type MongoCollection struct {
 
 // Find 执行查找操作，自动添加索引
 func (m *MongoCollection) Find(query interface{}, options types.M) []types.M {
-	result, err := m.rawFind(query, options)
+	result, err := m.RawFind(query, options)
 	if err != nil || result == nil {
 		return []types.M{}
 	}
@@ -21,8 +21,8 @@ func (m *MongoCollection) Find(query interface{}, options types.M) []types.M {
 	return result
 }
 
-// rawFind 执行原始查找操作，查找选项包括 sort、skip、limit
-func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M, error) {
+// RawFind 执行原始查找操作，查找选项包括 sort、skip、limit
+func (m *MongoCollection) RawFind(query interface{}, options types.M) ([]types.M, error) {
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
 		if sort, ok := options["sort"].([]string); ok {

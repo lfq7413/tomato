@@ -16,7 +16,7 @@ type MongoSchemaCollection struct {
 
 // GetAllSchemas 获取所有 Schema，并转换为 API 格式的数据
 func (m *MongoSchemaCollection) GetAllSchemas() ([]types.M, error) {
-	results, err := m.collection.rawFind(types.M{}, types.M{})
+	results, err := m.collection.RawFind(types.M{}, types.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (m *MongoSchemaCollection) FindSchema(name string) (types.M, error) {
 	options := types.M{
 		"limit": 1,
 	}
-	results, err := m.collection.rawFind(mongoSchemaQueryFromNameQuery(name, nil), options)
+	results, err := m.collection.RawFind(mongoSchemaQueryFromNameQuery(name, nil), options)
 	if err != nil {
 		return nil, err
 	}

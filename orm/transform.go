@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -21,7 +22,7 @@ func NewMongoTransform() *MongoTransform {
 }
 
 // TransformKey 把 key 转换为数据库中保存的格式
-func (t *MongoTransform) TransformKey(schema *Schema, className, key string) (string, error) {
+func (t *MongoTransform) TransformKey(schema storage.Schema, className, key string) (string, error) {
 	k, _, err := t.transformKeyValue(schema, className, key, nil, nil)
 	if err != nil {
 		return "", err
@@ -38,7 +39,7 @@ func (t *MongoTransform) TransformKey(schema *Schema, className, key string) (st
 // update: true 表示 restValue 中包含 __op 操作，类似 Add、Delete，需要进行转换
 // validate: true 表示需要校验字段名
 // 返回转换成 数据库格式的字段名与值
-func (t *MongoTransform) transformKeyValue(schema *Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
+func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -643,7 +644,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 }
 
 // TransformCreate 转换 create 数据
-func (t *MongoTransform) TransformCreate(schema *Schema, className string, create types.M) (types.M, error) {
+func (t *MongoTransform) TransformCreate(schema storage.Schema, className string, create types.M) (types.M, error) {
 	// 转换第三方登录数据
 	if className == "_User" {
 		create = t.transformAuthData(create)
@@ -738,7 +739,7 @@ func (t *MongoTransform) transformACL(restObject types.M) types.M {
 }
 
 // TransformWhere 转换 where 查询数据，返回数据库格式的数据
-func (t *MongoTransform) TransformWhere(schema *Schema, className string, where types.M, options types.M) (types.M, error) {
+func (t *MongoTransform) TransformWhere(schema storage.Schema, className string, where types.M, options types.M) (types.M, error) {
 	if options == nil || len(options) == 0 {
 		options = types.M{"validate": true}
 	}
@@ -764,7 +765,7 @@ func (t *MongoTransform) TransformWhere(schema *Schema, className string, where 
 }
 
 // TransformUpdate 转换 update 数据
-func (t *MongoTransform) TransformUpdate(schema *Schema, className string, update types.M, options types.M) (types.M, error) {
+func (t *MongoTransform) TransformUpdate(schema storage.Schema, className string, update types.M, options types.M) (types.M, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -860,7 +861,7 @@ var specialKeysForUntransform = []string{
 }
 
 // UntransformObject  把数据库类型数据转换为 API 格式
-func (t *MongoTransform) UntransformObject(schema *Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error) {
+func (t *MongoTransform) UntransformObject(schema storage.Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error) {
 	if mongoObject == nil {
 		return mongoObject, nil
 	}

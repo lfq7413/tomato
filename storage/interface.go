@@ -25,6 +25,7 @@ type Adapter interface {
 	DropCollection(name string) error
 	AllCollections() []Collection
 	DeleteFields(className string, fieldNames, pointerFieldNames []string) error
+	GetTransform() Transform
 }
 
 // Collection 集合操作接口

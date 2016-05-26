@@ -139,3 +139,8 @@ func (m *MongoAdapter) deleteFields(className string, fieldNames, pointerFieldNa
 	}
 	return nil
 }
+
+// GetTransform ...
+func (m *MongoAdapter) GetTransform() *MongoTransform {
+	return m.transform
+}

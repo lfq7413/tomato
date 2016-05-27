@@ -145,6 +145,16 @@ func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNa
 	return nil
 }
 
+// CreateObject 创建对象
+func (m *MongoAdapter) CreateObject(className string, object types.M, schema storage.Schema) error {
+	mongoObject, err := m.transform.parseObjectToMongoObject(schema, className, object)
+	if err != nil {
+		return err
+	}
+	coll := m.AdaptiveCollection(className)
+	return coll.InsertOne(mongoObject)
+}
+
 // GetTransform ...
 func (m *MongoAdapter) GetTransform() storage.Transform {
 	return m.transform

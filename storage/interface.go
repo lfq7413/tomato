@@ -13,7 +13,6 @@ type Transform interface {
 	TransformKey(schema Schema, className, key string) (string, error)
 	TransformWhere(schema Schema, className string, where, options types.M) (types.M, error)
 	TransformUpdate(schema Schema, className string, update, options types.M) (types.M, error)
-	TransformCreate(schema Schema, className string, create types.M) (types.M, error)
 	AddReadACL(mongoWhere interface{}, acl []string) types.M
 	AddWriteACL(mongoWhere interface{}, acl []string) types.M
 	TransformSelect(selectObject types.M, key string, objects []types.M)
@@ -31,6 +30,7 @@ type Adapter interface {
 	DropCollection(name string) error
 	AllCollections() []Collection
 	DeleteFields(className string, fieldNames, pointerFieldNames []string) error
+	CreateObject(className string, object types.M, schema Schema) error
 	GetTransform() Transform
 }
 

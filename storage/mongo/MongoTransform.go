@@ -643,8 +643,8 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 	}
 }
 
-// TransformCreate 转换 create 数据
-func (t *MongoTransform) TransformCreate(schema storage.Schema, className string, create types.M) (types.M, error) {
+// parseObjectToMongoObject 转换 create 数据
+func (t *MongoTransform) parseObjectToMongoObject(schema storage.Schema, className string, create types.M) (types.M, error) {
 	// 转换第三方登录数据
 	if className == "_User" {
 		create = t.transformAuthData(create)

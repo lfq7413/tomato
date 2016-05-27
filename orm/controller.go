@@ -355,12 +355,7 @@ func (d DBController) Create(className string, data, options types.M) error {
 		return err
 	}
 
-	coll := adapter.AdaptiveCollection(className)
-	mongoObject, err := Transform.TransformCreate(schema, className, data)
-	if err != nil {
-		return err
-	}
-	return coll.InsertOne(mongoObject)
+	return adapter.CreateObject(className, data, schema)
 }
 
 // validateClassName 校验表名是否合法

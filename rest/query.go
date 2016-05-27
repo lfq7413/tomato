@@ -482,6 +482,14 @@ func (q *Query) replaceNotInQuery() error {
 
 // runFind 从数据库查找数据，并处理返回结果
 func (q *Query) runFind() error {
+	if q.findOptions["limit"] != nil {
+		if l, ok := q.findOptions["limit"].(float64); ok {
+			if l == 0 {
+				q.response["results"] = types.S{}
+				return nil
+			}
+		}
+	}
 	response, err := orm.TomatoDBController.Find(q.className, q.Where, q.findOptions)
 	if err != nil {
 		return err

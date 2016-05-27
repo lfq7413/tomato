@@ -213,12 +213,12 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	name := utils.MapInterface(class[fieldName])["type"].(string)
 	if name == "Relation" {
 		// 删除表数据与 schema 中的对应字段
-		err := adapter.DeleteFields(className, []string{fieldName}, []string{})
+		err := Adapter.DeleteFields(className, []string{fieldName}, []string{})
 		if err != nil {
 			return err
 		}
 		// 删除 _Join table 数据
-		err = TomatoDBController.DropCollection("_Join:" + fieldName + ":" + className)
+		err = Adapter.DropCollection("_Join:" + fieldName + ":" + className)
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	if name == "Pointer" {
 		pointerFieldNames = append(pointerFieldNames, fieldName)
 	}
-	return adapter.DeleteFields(className, fieldNames, pointerFieldNames)
+	return Adapter.DeleteFields(className, fieldNames, pointerFieldNames)
 }
 
 // validateObject 校验对象是否合法
@@ -562,7 +562,7 @@ func (s *Schema) reloadData() {
 
 // GetAllSchemas ...
 func (s *Schema) GetAllSchemas() ([]types.M, error) {
-	allSchemas, err := adapter.GetAllSchemas()
+	allSchemas, err := Adapter.GetAllSchemas()
 	if err != nil {
 		return nil, err
 	}
@@ -575,7 +575,7 @@ func (s *Schema) GetAllSchemas() ([]types.M, error) {
 
 // GetOneSchema ...
 func (s *Schema) GetOneSchema(className string) (types.M, error) {
-	schema, err := adapter.GetOneSchema(className)
+	schema, err := Adapter.GetOneSchema(className)
 	if err != nil {
 		return nil, err
 	}

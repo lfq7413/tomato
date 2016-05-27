@@ -76,6 +76,7 @@ func (m *MongoAdapter) CollectionExists(name string) bool {
 
 // DropCollection 删除指定表
 func (m *MongoAdapter) DropCollection(name string) error {
+	// TODO 处理类不存在时的情况
 	return m.collection(m.collectionPrefix + name).DropCollection()
 }
 

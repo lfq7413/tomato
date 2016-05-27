@@ -14,7 +14,9 @@ import (
 
 // TomatoDBController ...
 var TomatoDBController *DBController
-var adapter storage.Adapter
+
+// Adapter ...
+var Adapter storage.Adapter
 
 // Transform ...
 var Transform storage.Transform
@@ -22,8 +24,8 @@ var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
-	adapter = mongo.NewMongoAdapter("tomato")
-	Transform = adapter.GetTransform()
+	Adapter = mongo.NewMongoAdapter("tomato")
+	Transform = Adapter.GetTransform()
 	TomatoDBController = &DBController{
 		skipValidation: false,
 	}
@@ -43,17 +45,12 @@ func (d DBController) WithoutValidation() *DBController {
 
 // SchemaCollection 获取 Schema 表
 func (d DBController) SchemaCollection() storage.SchemaCollection {
-	return adapter.SchemaCollection()
+	return Adapter.SchemaCollection()
 }
 
 // CollectionExists 检测表是否存在
 func (d DBController) CollectionExists(className string) bool {
-	return adapter.CollectionExists(className)
-}
-
-// DropCollection 删除指定表
-func (d DBController) DropCollection(className string) error {
-	return adapter.DropCollection(className)
+	return Adapter.CollectionExists(className)
 }
 
 // Find 从指定表中查询数据，查询到的数据放入 list 中
@@ -137,7 +134,7 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	// 处理 relation 字段上的 $in
 	d.reduceInRelation(className, where, schema)
 
-	coll := adapter.AdaptiveCollection(className)
+	coll := Adapter.AdaptiveCollection(className)
 	mongoWhere, err := Transform.TransformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
@@ -189,7 +186,7 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		return err
 	}
 
-	coll := adapter.AdaptiveCollection(className)
+	coll := Adapter.AdaptiveCollection(className)
 	mongoWhere, err := Transform.TransformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return err
@@ -248,7 +245,7 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 	// 处理 Relation
 	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
-	coll := adapter.AdaptiveCollection(className)
+	coll := Adapter.AdaptiveCollection(className)
 	mongoWhere, err := Transform.TransformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
@@ -355,7 +352,7 @@ func (d DBController) Create(className string, data, options types.M) error {
 		return err
 	}
 
-	return adapter.CreateObject(className, data, schema)
+	return Adapter.CreateObject(className, data, schema)
 }
 
 // validateClassName 校验表名是否合法
@@ -451,7 +448,7 @@ func (d DBController) addRelation(key, fromClassName, fromID, toID string) error
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := adapter.AdaptiveCollection(className)
+	coll := Adapter.AdaptiveCollection(className)
 	return coll.UpsertOne(doc, doc)
 }
 
@@ -462,7 +459,7 @@ func (d DBController) removeRelation(key, fromClassName, fromID, toID string) er
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := adapter.AdaptiveCollection(className)
+	coll := Adapter.AdaptiveCollection(className)
 	return coll.DeleteOne(doc)
 }
 
@@ -500,7 +497,7 @@ func (d DBController) ValidateObject(className string, object, where, options ty
 func (d DBController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 	if schemaPromise == nil {
 		collection := d.SchemaCollection()
-		schemaPromise = Load(collection, adapter)
+		schemaPromise = Load(collection, Adapter)
 		return schemaPromise
 	}
 
@@ -512,20 +509,20 @@ func (d DBController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 	}
 
 	collection := d.SchemaCollection()
-	schemaPromise = Load(collection, adapter)
+	schemaPromise = Load(collection, Adapter)
 	return schemaPromise
 }
 
 // MongoFind 直接执行数据库查询，仅用于测试
 func (d *DBController) MongoFind(className string, query, options types.M) []types.M {
-	coll := adapter.AdaptiveCollection(className)
+	coll := Adapter.AdaptiveCollection(className)
 	return coll.Find(query, options)
 }
 
 // DeleteEverything 删除所有表数据，仅用于测试
 func (d DBController) DeleteEverything() {
 	schemaPromise = nil
-	collections := adapter.AllCollections()
+	collections := Adapter.AllCollections()
 	for _, v := range collections {
 		v.Drop()
 	}
@@ -651,7 +648,7 @@ func (d DBController) reduceRelationKeys(className string, query types.M) {
 
 // relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
 func (d DBController) relatedIds(className, key, owningID string) types.S {
-	coll := adapter.AdaptiveCollection(joinTableName(className, key))
+	coll := Adapter.AdaptiveCollection(joinTableName(className, key))
 	results := coll.Find(types.M{"owningId": owningID}, types.M{})
 	ids := types.S{}
 	for _, r := range results {
@@ -877,7 +874,7 @@ func (d DBController) reduceInRelation(className string, query types.M, schema *
 
 // owningIds 从 Join 表中查询 relatedIds 对应的父对象
 func (d DBController) owningIds(className, key string, relatedIds types.S) types.S {
-	coll := adapter.AdaptiveCollection(joinTableName(className, key))
+	coll := Adapter.AdaptiveCollection(joinTableName(className, key))
 	query := types.M{
 		"relatedId": types.M{
 			"$in": relatedIds,
@@ -923,7 +920,7 @@ func (d *DBController) DeleteSchema(className string) error {
 	if exist == false {
 		return nil
 	}
-	coll := adapter.AdaptiveCollection(className)
+	coll := Adapter.AdaptiveCollection(className)
 	count := coll.Count(types.M{}, types.M{})
 	if count > 0 {
 		return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")

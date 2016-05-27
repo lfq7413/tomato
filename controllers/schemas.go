@@ -183,7 +183,7 @@ func removeJoinTables(mongoSchema types.M) error {
 		fieldType := utils.String(v)
 		if strings.HasPrefix(fieldType, "relation<") {
 			collectionName := "_Join:" + field + ":" + utils.String(mongoSchema["_id"])
-			err := orm.TomatoDBController.DropCollection(collectionName)
+			err := orm.Adapter.DropCollection(collectionName)
 			if err != nil {
 				return err
 			}

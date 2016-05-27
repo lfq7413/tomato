@@ -500,7 +500,7 @@ func (d DBController) ValidateObject(className string, object, where, options ty
 func (d DBController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 	if schemaPromise == nil {
 		collection := d.SchemaCollection()
-		schemaPromise = Load(collection)
+		schemaPromise = Load(collection, adapter)
 		return schemaPromise
 	}
 
@@ -512,7 +512,7 @@ func (d DBController) LoadSchema(acceptor func(*Schema) bool) *Schema {
 	}
 
 	collection := d.SchemaCollection()
-	schemaPromise = Load(collection)
+	schemaPromise = Load(collection, adapter)
 	return schemaPromise
 }
 

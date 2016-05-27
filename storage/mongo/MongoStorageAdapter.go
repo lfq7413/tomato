@@ -160,6 +160,16 @@ func (m *MongoAdapter) GetTransform() storage.Transform {
 	return m.transform
 }
 
+// GetOneSchema ...
+func (m *MongoAdapter) GetOneSchema(className string) (types.M, error) {
+	return m.SchemaCollection().FindSchema(className)
+}
+
+// GetAllSchemas ...
+func (m *MongoAdapter) GetAllSchemas() ([]types.M, error) {
+	return m.SchemaCollection().GetAllSchemas()
+}
+
 // getCollectionNames 获取数据库中当前已经存在的表名
 func (m *MongoAdapter) getCollectionNames() []string {
 	names, err := storage.TomatoDB.MongoDatabase.CollectionNames()

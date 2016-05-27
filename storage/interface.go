@@ -32,6 +32,8 @@ type Adapter interface {
 	DeleteFields(className string, fieldNames, pointerFieldNames []string) error
 	CreateObject(className string, object types.M, schema Schema) error
 	GetTransform() Transform
+	GetAllSchemas() ([]types.M, error)
+	GetOneSchema(className string) (types.M, error)
 }
 
 // Collection 集合操作接口

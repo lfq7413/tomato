@@ -95,6 +95,7 @@ func init() {
 // Schema schema 操作对象
 type Schema struct {
 	collection storage.SchemaCollection
+	dbAdapter  storage.Adapter
 	data       types.M // data 保存类的字段信息，类型为 API 类型
 	perms      types.M // perms 保存类的操作权限
 }
@@ -116,7 +117,7 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 
 // UpdateClass 更新类
 func (s *Schema) UpdateClass(className string, submittedFields types.M, classLevelPermissions types.M) (types.M, error) {
-	if s.data[className] == nil {
+	if s.hasClass(className) == false {
 		return nil, errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
 	// 组装已存在的字段
@@ -549,30 +550,36 @@ func (s *Schema) GetRelationFields(className string) types.M {
 func (s *Schema) reloadData() {
 	s.data = types.M{}
 	s.perms = types.M{}
-	allSchemas, err := s.collection.GetAllSchemas()
+	allSchemas, err := s.GetAllSchemas()
 	if err != nil {
 		return
 	}
 	for _, schema := range allSchemas {
-		// 组合默认字段
-		parseFormatSchema := types.M{}
-		for k, v := range DefaultColumns["_Default"] {
-			parseFormatSchema[k] = v
-		}
-		if DefaultColumns[schema["className"].(string)] != nil {
-			for k, v := range DefaultColumns[schema["className"].(string)] {
-				parseFormatSchema[k] = v
-			}
-		}
-		if schema["fields"].(map[string]interface{}) != nil {
-			for k, v := range schema["fields"].(map[string]interface{}) {
-				parseFormatSchema[k] = v
-			}
-		}
-
-		s.data[schema["className"].(string)] = parseFormatSchema
+		s.data[schema["className"].(string)] = schema
 		s.perms[schema["className"].(string)] = schema["classLevelPermissions"]
 	}
+}
+
+// GetAllSchemas ...
+func (s *Schema) GetAllSchemas() ([]types.M, error) {
+	allSchemas, err := adapter.GetAllSchemas()
+	if err != nil {
+		return nil, err
+	}
+	schems := []types.M{}
+	for _, v := range allSchemas {
+		schems = append(schems, injectDefaultSchema(v))
+	}
+	return schems, nil
+}
+
+// GetOneSchema ...
+func (s *Schema) GetOneSchema(className string) (types.M, error) {
+	schema, err := adapter.GetOneSchema(className)
+	if err != nil {
+		return nil, err
+	}
+	return injectDefaultSchema(schema), nil
 }
 
 // thenValidateField 校验字段，并且不对 schema 进行修改
@@ -919,10 +926,32 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 	return newSchema
 }
 
+// injectDefaultSchema 为 schema 添加默认字段
+func injectDefaultSchema(schema types.M) types.M {
+	newSchema := types.M{}
+	fields := schema["fields"].(map[string]interface{})
+	defaultFieldsSchema := DefaultColumns["_Default"]
+	for k, v := range defaultFieldsSchema {
+		fields[k] = v
+	}
+	defaultSchema := DefaultColumns[schema["className"].(string)]
+	if defaultSchema != nil {
+		for k, v := range defaultSchema {
+			fields[k] = v
+		}
+	}
+	newSchema["fields"] = fields
+	newSchema["className"] = schema["className"]
+	newSchema["classLevelPermissions"] = schema["classLevelPermissions"]
+
+	return schema
+}
+
 // Load 返回一个新的 Schema 结构体
-func Load(collection storage.SchemaCollection) *Schema {
+func Load(collection storage.SchemaCollection, adapter storage.Adapter) *Schema {
 	schema := &Schema{
 		collection: collection,
+		dbAdapter:  adapter,
 	}
 	schema.reloadData()
 	return schema

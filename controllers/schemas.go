@@ -26,20 +26,17 @@ func (s *SchemasController) Prepare() {
 // HandleFind 处理 schema 查找请求
 // @router / [get]
 func (s *SchemasController) HandleFind() {
-	result, err := orm.TomatoDBController.SchemaCollection().GetAllSchemas()
-	if err != nil && result == nil {
+	schema := orm.TomatoDBController.LoadSchema(nil)
+	schemas, err := schema.GetAllSchemas()
+	if err != nil {
 		s.Data["json"] = types.M{
 			"results": types.S{},
 		}
 		s.ServeJSON()
 		return
 	}
-	schems := []types.M{}
-	for _, r := range result {
-		schems = append(schems, injectDefaultSchema(r))
-	}
 	s.Data["json"] = types.M{
-		"results": schems,
+		"results": schemas,
 	}
 	s.ServeJSON()
 }
@@ -48,18 +45,14 @@ func (s *SchemasController) HandleFind() {
 // @router /:className [get]
 func (s *SchemasController) HandleGet() {
 	className := s.Ctx.Input.Param(":className")
-	result, err := orm.TomatoDBController.SchemaCollection().FindSchema(className)
+	schema := orm.TomatoDBController.LoadSchema(nil)
+	sch, err := schema.GetOneSchema(className)
 	if err != nil {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.InternalServerError, "Database adapter error.")
-		s.ServeJSON()
-		return
-	}
-	if result == nil || len(result) == 0 {
 		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, "Class "+className+" does not exist.")
 		s.ServeJSON()
 		return
 	}
-	s.Data["json"] = injectDefaultSchema(result)
+	s.Data["json"] = sch
 	s.ServeJSON()
 }
 

@@ -3,6 +3,7 @@ package mongo
 import (
 	"strings"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 	"gopkg.in/mgo.v2"
@@ -82,12 +83,31 @@ func (m *MongoSchemaCollection) upsertSchema(name string, query, update types.M)
 	return m.collection.UpsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
 }
 
-// UpdateField 更新字段
-func (m *MongoSchemaCollection) UpdateField(className string, fieldName string, fieldType types.M) error {
-	query := types.M{}
-	query[fieldName] = types.M{"$exists": false}
-	date := types.M{}
-	date[fieldName] = parseFieldTypeToMongoFieldType(fieldType)
+// AddFieldIfNotExists 更新字段
+func (m *MongoSchemaCollection) AddFieldIfNotExists(className string, fieldName string, fieldType types.M) error {
+	schema, err := m.FindSchema(className)
+	if err != nil {
+		return err
+	}
+	if schema == nil || len(schema) == 0 {
+		return nil
+	}
+	if fieldType["type"].(string) == "GeoPoint" {
+		fields := schema["fields"].(map[string]interface{})
+		for _, v := range fields {
+			existingField := v.(map[string]interface{})
+			if existingField["type"].(string) == "GeoPoint" {
+				return errs.E(errs.IncorrectType, "MongoDB only supports one GeoPoint field in a class.")
+			}
+		}
+	}
+
+	query := types.M{
+		fieldName: types.M{"$exists": false},
+	}
+	date := types.M{
+		fieldName: parseFieldTypeToMongoFieldType(fieldType),
+	}
 	update := types.M{
 		"$set": date,
 	}

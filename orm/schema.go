@@ -445,18 +445,7 @@ func (s *Schema) validateField(className, fieldName string, fieldtype types.M, f
 		return nil
 	}
 
-	if fieldtype["type"].(string) == "GeoPoint" {
-		// 只能有一个 geopoint
-		fields := utils.MapInterface(s.data[className])
-		for _, v := range fields {
-			otherKey := utils.MapInterface(v)
-			if otherKey["type"].(string) == "GeoPoint" {
-				return errs.E(errs.IncorrectType, "there can only be one geopoint field in a class")
-			}
-		}
-	}
-
-	err = s.collection.UpdateField(className, fieldName, fieldtype)
+	err = s.collection.AddFieldIfNotExists(className, fieldName, fieldtype)
 	if err != nil {
 		// 失败时也需要重新加载数据，因为这时候可能有其他客户端更新了字段
 		// s.reloadData()

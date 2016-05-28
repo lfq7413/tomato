@@ -56,5 +56,5 @@ type SchemaCollection interface {
 	FindAndDeleteSchema(name string) (types.M, error)
 	AddSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error)
 	UpdateSchema(name string, update types.M) error
-	UpdateField(className string, fieldName string, fieldType types.M) error
+	AddFieldIfNotExists(className string, fieldName string, fieldType types.M) error
 }

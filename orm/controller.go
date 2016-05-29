@@ -87,11 +87,7 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 		aclGroup = options["acl"].([]string)
 	}
 
-	// 检测查询条件中的 key 在表中是否存在
-	acceptor := func(schema *Schema) bool {
-		return schema.hasKeys(className, keysForQuery(where))
-	}
-	schema := d.LoadSchema(acceptor)
+	schema := d.LoadSchema()
 
 	if options["sort"] != nil {
 		sortKeys := []string{}
@@ -180,7 +176,7 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		aclGroup = options["acl"].([]string)
 	}
 
-	schema := d.LoadSchema(nil)
+	schema := d.LoadSchema()
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "delete")
 		return err
@@ -215,13 +211,7 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 	originalUpdate := data
 	// 复制数据，不要修改原数据
 	data = utils.CopyMap(data)
-	acceptor := func(schema *Schema) bool {
-		keys := []string{}
-		for k := range where {
-			keys = append(keys, k)
-		}
-		return schema.hasKeys(className, keys)
-	}
+
 	var isMaster bool
 	if _, ok := options["acl"]; ok {
 		isMaster = false
@@ -235,7 +225,7 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		aclGroup = options["acl"].([]string)
 	}
 
-	schema := d.LoadSchema(acceptor)
+	schema := d.LoadSchema()
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "update")
 		if err != nil {
@@ -338,7 +328,7 @@ func (d DBController) Create(className string, data, options types.M) error {
 		return err
 	}
 
-	schema := d.LoadSchema(nil)
+	schema := d.LoadSchema()
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "create")
 		if err != nil {
@@ -465,7 +455,7 @@ func (d DBController) removeRelation(key, fromClassName, fromID, toID string) er
 
 // ValidateObject 校验对象是否合法
 func (d DBController) ValidateObject(className string, object, where, options types.M) error {
-	schema := d.LoadSchema(nil)
+	schema := d.LoadSchema()
 	isMaster := false
 	aclGroup := []string{}
 	if acl, ok := options["acl"]; ok {
@@ -493,23 +483,12 @@ func (d DBController) ValidateObject(className string, object, where, options ty
 	return nil
 }
 
-// LoadSchema 加载 Schema，仅加载一次，当 acceptor 返回 false 时，再从数据库读取一次
-func (d DBController) LoadSchema(acceptor func(*Schema) bool) *Schema {
+// LoadSchema 加载 Schema，仅加载一次
+func (d DBController) LoadSchema() *Schema {
 	if schemaPromise == nil {
 		collection := d.SchemaCollection()
 		schemaPromise = Load(collection, Adapter)
-		return schemaPromise
 	}
-
-	if acceptor == nil {
-		return schemaPromise
-	}
-	if acceptor(schemaPromise) {
-		return schemaPromise
-	}
-
-	collection := d.SchemaCollection()
-	schemaPromise = Load(collection, Adapter)
 	return schemaPromise
 }
 
@@ -531,7 +510,7 @@ func (d DBController) DeleteEverything() {
 // RedirectClassNameForKey 返回指定类的字段所对应的类型
 // 如果 key 字段的属性为 relation<classA> ，则返回 classA
 func (d DBController) RedirectClassNameForKey(className, key string) string {
-	schema := d.LoadSchema(nil)
+	schema := d.LoadSchema()
 	t := schema.GetExpectedType(className, key)
 	if t != nil && t["type"].(string) == "Relation" {
 		return t["targetClass"].(string)

@@ -26,7 +26,7 @@ func (s *SchemasController) Prepare() {
 // HandleFind 处理 schema 查找请求
 // @router / [get]
 func (s *SchemasController) HandleFind() {
-	schema := orm.TomatoDBController.LoadSchema(nil)
+	schema := orm.TomatoDBController.LoadSchema()
 	schemas, err := schema.GetAllSchemas()
 	if err != nil {
 		s.Data["json"] = types.M{
@@ -45,7 +45,7 @@ func (s *SchemasController) HandleFind() {
 // @router /:className [get]
 func (s *SchemasController) HandleGet() {
 	className := s.Ctx.Input.Param(":className")
-	schema := orm.TomatoDBController.LoadSchema(nil)
+	schema := orm.TomatoDBController.LoadSchema()
 	sch, err := schema.GetOneSchema(className)
 	if err != nil {
 		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, "Class "+className+" does not exist.")
@@ -87,7 +87,7 @@ func (s *SchemasController) HandleCreate() {
 		return
 	}
 
-	schema := orm.TomatoDBController.LoadSchema(nil)
+	schema := orm.TomatoDBController.LoadSchema()
 	result, err := schema.AddClassIfNotExists(className, utils.MapInterface(data["fields"]), utils.MapInterface(data["classLevelPermissions"]))
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)
@@ -125,7 +125,7 @@ func (s *SchemasController) HandleUpdate() {
 		submittedFields = utils.MapInterface(data["fields"])
 	}
 
-	schema := orm.TomatoDBController.LoadSchema(nil)
+	schema := orm.TomatoDBController.LoadSchema()
 	result, err := schema.UpdateClass(className, submittedFields, utils.MapInterface(data["classLevelPermissions"]))
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)

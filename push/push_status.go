@@ -93,6 +93,9 @@ func (p *pushStatus) complete(results []types.M) {
 	failedPerType := map[string]int{}
 
 	for _, result := range results {
+		if result == nil {
+			continue
+		}
 		if result["device"] == nil {
 			continue
 		}

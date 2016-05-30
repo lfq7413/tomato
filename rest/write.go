@@ -104,6 +104,10 @@ func (w *Write) Execute() (types.M, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = w.createSessionTokenIfNeeded()
+	if err != nil {
+		return nil, err
+	}
 	err = w.handleFollowup()
 	if err != nil {
 		return nil, err
@@ -589,51 +593,6 @@ func (w *Write) transformUser() error {
 		return nil
 	}
 
-	// 如果是创建用户，则先创建 token
-	if w.query == nil {
-		token := "r:" + utils.CreateToken()
-		w.storage["token"] = token
-		expiresAt := config.GenerateSessionExpiresAt()
-		user := types.M{
-			"__type":    "Pointer",
-			"className": "_User",
-			"objectId":  w.objectID(),
-		}
-		// 确定登录方式
-		var authProvider interface{}
-		if w.storage["authProvider"] != nil {
-			authProvider = w.storage["authProvider"]
-		} else {
-			authProvider = "password"
-		}
-		createdWith := types.M{
-			"action":       "signup",
-			"authProvider": authProvider,
-		}
-		sessionData := types.M{
-			"sessionToken":   token,
-			"user":           user,
-			"createdWith":    createdWith,
-			"restricted":     false,
-			"installationId": w.auth.InstallationID,
-			"expiresAt":      utils.TimetoString(expiresAt),
-		}
-		if w.response != nil && w.response["response"] != nil {
-			// 此时为第三方登录时的情形，w.response 已经有值
-			response := utils.MapInterface(w.response["response"])
-			response["sessionToken"] = token
-		}
-
-		write, err := NewWrite(Master(), "_Session", nil, sessionData, nil)
-		if err != nil {
-			return err
-		}
-		_, err = write.Execute()
-		if err != nil {
-			return err
-		}
-	}
-
 	// 如果是正在更新 _User ，则清除相应用户的 session 缓存
 	if w.query != nil && w.auth.User != nil && w.auth.User["sessionToken"] != nil {
 		usersCache.remove(w.auth.User["sessionToken"].(string))
@@ -809,10 +768,6 @@ func (w *Write) runDatabaseOperation() error {
 				resp[k] = v
 			}
 		}
-		// 如果新创建的用户包含 token，则复制到返回结果中
-		if w.storage["token"] != nil {
-			resp["sessionToken"] = w.storage["token"]
-		}
 		w.response = types.M{
 			"status":   201,
 			"response": resp,
@@ -821,6 +776,53 @@ func (w *Write) runDatabaseOperation() error {
 	}
 
 	return nil
+}
+
+// createSessionTokenIfNeeded 创建 Token
+func (w *Write) createSessionTokenIfNeeded() error {
+	if w.className != "_User" {
+		return nil
+	}
+	if w.query != nil {
+		return nil
+	}
+	token := "r:" + utils.CreateToken()
+	expiresAt := config.GenerateSessionExpiresAt()
+	user := types.M{
+		"__type":    "Pointer",
+		"className": "_User",
+		"objectId":  w.objectID(),
+	}
+	var authProvider interface{}
+	if w.storage["authProvider"] != nil {
+		authProvider = w.storage["authProvider"]
+	} else {
+		authProvider = "password"
+	}
+	createdWith := types.M{
+		"action":       "signup",
+		"authProvider": authProvider,
+	}
+	sessionData := types.M{
+		"sessionToken":   token,
+		"user":           user,
+		"createdWith":    createdWith,
+		"restricted":     false,
+		"installationId": w.auth.InstallationID,
+		"expiresAt":      utils.TimetoString(expiresAt),
+	}
+	if w.response != nil && w.response["response"] != nil {
+		r := w.response["response"].(map[string]interface{})
+		r["sessionToken"] = token
+	}
+
+	create, err := NewWrite(Master(), "_Session", nil, sessionData, types.M{})
+	if err != nil {
+		return err
+	}
+	_, err = create.Execute()
+
+	return err
 }
 
 // handleFollowup 处理后续逻辑

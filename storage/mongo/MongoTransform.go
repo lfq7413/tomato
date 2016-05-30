@@ -1213,30 +1213,23 @@ func (t *MongoTransform) TransformNotInQuery(notInQueryObject types.M, className
 
 // AddWriteACL 添加写请求权限
 func (t *MongoTransform) AddWriteACL(mongoWhere interface{}, acl []string) types.M {
-	writePerms := types.S{
-		types.M{"_wperm": types.M{"$exists": false}},
-	}
-	for _, entry := range acl {
-		p := types.M{"_wperm": types.M{"$in": types.S{entry}}}
-		writePerms = append(writePerms, p)
+	writePerms := types.S{nil}
+	for _, a := range acl {
+		writePerms = append(writePerms, a)
 	}
 	return types.M{
-		"$and": types.S{mongoWhere, types.M{"$or": writePerms}},
+		"$and": types.S{mongoWhere, types.M{"_wperm": types.M{"$in": writePerms}}},
 	}
 }
 
 // AddReadACL 添加读请求权限
 func (t *MongoTransform) AddReadACL(mongoWhere interface{}, acl []string) types.M {
-	orParts := types.S{
-		types.M{"_rperm": types.M{"$exists": false}},
-		types.M{"_rperm": types.M{"$in": types.S{"*"}}},
-	}
-	for _, entry := range acl {
-		p := types.M{"_rperm": types.M{"$in": types.S{entry}}}
-		orParts = append(orParts, p)
+	orParts := types.S{nil, "*"}
+	for _, a := range acl {
+		orParts = append(orParts, a)
 	}
 	return types.M{
-		"$and": types.S{mongoWhere, types.M{"$or": orParts}},
+		"$and": types.S{mongoWhere, types.M{"_rperm": types.M{"$in": orParts}}},
 	}
 }
 

@@ -917,3 +917,51 @@ func (d *DBController) DeleteSchema(className string) error {
 	}
 	return coll.Drop()
 }
+
+// addPointerPermissions 添加查询用户权限，perms[className][readUserFields] 中保存的是字段名，该字段中的内容是：有权限进行读操作的用户
+func (d *DBController) addPointerPermissions(schema *Schema, className string, operation string, query types.M, aclGroup []string) types.M {
+	perms := schema.perms[className]
+	var field string
+	if operation == "get" || operation == "find" {
+		field = "readUserFields"
+	} else {
+		field = "writeUserFields"
+	}
+	userACL := []string{}
+	for _, acl := range aclGroup {
+		if strings.HasPrefix(acl, "role:") == false && acl != "*" {
+			userACL = append(userACL, acl)
+		}
+	}
+
+	if perms != nil && utils.MapInterface(perms)[field] != nil {
+		permFields := utils.MapInterface(perms)[field].([]interface{})
+		if permFields != nil && len(permFields) > 0 {
+			if len(userACL) != 1 {
+				return nil
+			}
+			userID := userACL[0]
+			userPointer := types.M{
+				"__type":    "Pointer",
+				"className": "_User",
+				"objectId":  userID,
+			}
+
+			ors := []types.M{}
+			for _, key := range permFields {
+				q := types.M{
+					key.(string): userPointer,
+				}
+				and := types.M{
+					"$and": types.S{q, query},
+				}
+				ors = append(ors, and)
+			}
+			if len(ors) > 1 {
+				return types.M{"$or": ors}
+			}
+			return ors[0]
+		}
+	}
+	return query
+}

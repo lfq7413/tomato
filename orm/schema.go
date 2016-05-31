@@ -20,7 +20,7 @@ var DefaultColumns map[string]types.M
 var requiredColumns map[string][]string
 
 // SystemClasses 系统表
-var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product"}
+var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product", "_PushStatus"}
 
 func init() {
 	DefaultColumns = map[string]types.M{
@@ -236,7 +236,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 // validateObject 校验对象是否合法
 func (s *Schema) validateObject(className string, object, query types.M) error {
 	geocount := 0
-	err := s.validateClassName(className, false)
+	err := s.enforceClassExists(className, false)
 	if err != nil {
 		return err
 	}
@@ -304,8 +304,8 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	return nil
 }
 
-// validateClassName 校验类名 freeze 为 true 时，不进行更新
-func (s *Schema) validateClassName(className string, freeze bool) error {
+// enforceClassExists 校验类名 freeze 为 true 时，不进行更新
+func (s *Schema) enforceClassExists(className string, freeze bool) error {
 	if s.data[className] != nil {
 		return nil
 	}
@@ -319,7 +319,7 @@ func (s *Schema) validateClassName(className string, freeze bool) error {
 
 	}
 	s.reloadData()
-	err = s.validateClassName(className, true)
+	err = s.enforceClassExists(className, true)
 	if err != nil {
 		return errs.E(errs.InvalidJSON, "schema class name does not revalidate")
 	}
@@ -933,7 +933,7 @@ func injectDefaultSchema(schema types.M) types.M {
 	newSchema["className"] = schema["className"]
 	newSchema["classLevelPermissions"] = schema["classLevelPermissions"]
 
-	return schema
+	return newSchema
 }
 
 // Load 返回一个新的 Schema 结构体

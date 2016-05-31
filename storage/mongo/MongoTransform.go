@@ -43,6 +43,11 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 	if options == nil {
 		options = types.M{}
 	}
+	inArray := options["inArray"].(bool)
+	inObject := options["inObject"].(bool)
+	query := options["query"].(bool)
+	update := options["update"].(bool)
+	validate := options["validate"].(bool)
 
 	// 检测 key 是否为 内置字段
 	key := restKey
@@ -68,7 +73,7 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 	case "_rperm", "_wperm":
 		return key, restValue, nil
 	case "$or":
-		if options["query"] == nil {
+		if query == false {
 			// 只有查询时才能使用 $or
 			return "", nil, errs.E(errs.InvalidKeyName, "you can only use $or in queries")
 		}
@@ -88,7 +93,7 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 		}
 		return "$or", mongoSubqueries, nil
 	case "$and":
-		if options["query"] == nil {
+		if query == false {
 			// 只有查询时才能使用 and
 			return "", "", errs.E(errs.InvalidKeyName, "you can only use $and in queries")
 		}
@@ -118,7 +123,7 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 		// }
 		authDataMatch, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key)
 		if authDataMatch {
-			if options["query"] != nil {
+			if query {
 				// 取出 authData.xxx.id 中的 xxx ，转换为 _auth_data_.xxx.id
 				provider := key[len("authData."):(len(key) - len(".id"))]
 				return "_auth_data_" + provider + ".id", restValue, nil
@@ -128,7 +133,7 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 		}
 
 		// 校验字段名
-		if options["validate"] != nil {
+		if validate {
 			keyMatch, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_\.]*$`, key)
 			if keyMatch == false {
 				// 无效的键名
@@ -159,15 +164,15 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 		}
 	}
 
-	inArray := false
+	expectedTypeIsArray := false
 	// 期望类型为 array
 	if expected != nil && expected["type"].(string) == "Array" {
-		inArray = true
+		expectedTypeIsArray = true
 	}
 
 	// 处理查询操作，转换限制条件
-	if options["query"] != nil {
-		value, err := t.transformConstraint(restValue, inArray)
+	if query {
+		value, err := t.transformConstraint(restValue, expectedTypeIsArray)
 		if err != nil {
 			return "", nil, err
 		}
@@ -177,12 +182,12 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 	}
 
 	// 期望类型为 array，并且转换限制条件失败，并且 restValue 不为 array 类型时，转换为 $all
-	if inArray && options["query"] != nil && utils.SliceInterface(restValue) == nil {
+	if expectedTypeIsArray && query && utils.SliceInterface(restValue) == nil {
 		return key, types.M{"$all": types.S{restValue}}, nil
 	}
 
 	// 转换原子数据
-	value, err := t.transformAtom(restValue, false, options)
+	value, err := t.transformAtom(restValue, false, types.M{"inArray": inArray, "inObject": inObject})
 	if err != nil {
 		return "", nil, err
 	}
@@ -205,7 +210,7 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 
 	// 转换数组类型
 	if valueArray, ok := restValue.([]interface{}); ok {
-		if options["query"] != nil {
+		if query {
 			// 查询时不能为数组
 			return "", "", errs.E(errs.InvalidJSON, "cannot use array as query param")
 		}
@@ -220,15 +225,8 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 		return key, outValue, nil
 	}
 
-	// 处理更新操作
-	var flatten bool
-	if options["update"] == nil {
-		flatten = true
-	} else {
-		flatten = false
-	}
 	// 处理更新操作中的 "_op"
-	value, err = t.transformUpdateOperator(restValue, flatten)
+	value, err = t.transformUpdateOperator(restValue, !update)
 	if err != nil {
 		return "", nil, err
 	}
@@ -643,8 +641,8 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 	}
 }
 
-// parseObjectToMongoObject 转换 create 数据
-func (t *MongoTransform) parseObjectToMongoObject(schema storage.Schema, className string, create types.M) (types.M, error) {
+// parseObjectToMongoObjectForCreate 转换 create 数据
+func (t *MongoTransform) parseObjectToMongoObjectForCreate(schema storage.Schema, className string, create types.M, parseFormatSchema types.M) (types.M, error) {
 	// 转换第三方登录数据
 	if className == "_User" {
 		create = t.transformAuthData(create)
@@ -654,7 +652,7 @@ func (t *MongoTransform) parseObjectToMongoObject(schema storage.Schema, classNa
 
 	// 转换其他字段并添加
 	for k, v := range create {
-		key, value, err := t.transformKeyValue(schema, className, k, v, types.M{})
+		key, value, err := t.parseObjectKeyValueToMongoObjectKeyValue(schema, className, k, v, parseFormatSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -663,6 +661,135 @@ func (t *MongoTransform) parseObjectToMongoObject(schema storage.Schema, classNa
 		}
 	}
 	return mongoCreate, nil
+}
+
+func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage.Schema, className string, restKey string, restValue interface{}, parseFormatSchema types.M) (string, interface{}, error) {
+	var transformedValue interface{}
+	var coercedToDate interface{}
+	var err error
+	switch restKey {
+	case "objectId":
+		return "_id", restValue, nil
+
+	case "_created_at", "createdAt":
+		transformedValue, err = t.transformAtom(restValue, false, types.M{})
+		if err != nil {
+			return "", nil, err
+		}
+		if v, ok := transformedValue.(string); ok {
+			coercedToDate, err = utils.StringtoTime(v)
+			if err != nil {
+				return "", nil, err
+			}
+		} else {
+			coercedToDate = transformedValue
+		}
+		return "_created_at", coercedToDate, nil
+
+	case "updatedAt":
+		transformedValue, err = t.transformAtom(restValue, false, types.M{})
+		if err != nil {
+			return "", nil, err
+		}
+		if v, ok := transformedValue.(string); ok {
+			coercedToDate, err = utils.StringtoTime(v)
+			if err != nil {
+				return "", nil, err
+			}
+		} else {
+			coercedToDate = transformedValue
+		}
+		return "_updated_at", coercedToDate, nil
+
+	case "expiresAt":
+		transformedValue, err = t.transformAtom(restValue, false, types.M{})
+		if err != nil {
+			return "", nil, err
+		}
+		if v, ok := transformedValue.(string); ok {
+			coercedToDate, err = utils.StringtoTime(v)
+			if err != nil {
+				return "", nil, err
+			}
+		} else {
+			coercedToDate = transformedValue
+		}
+		return "_expiresAt", coercedToDate, nil
+
+	case "_id", "_rperm", "_wperm", "_email_verify_token", "_hashed_password", "_perishable_token":
+		return restKey, restValue, nil
+
+	case "sessionToken":
+		return "_session_token", restValue, nil
+
+	default:
+		m, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, restKey)
+		if m {
+			return "", nil, errs.E(errs.InvalidKeyName, "can only query on "+restKey)
+		}
+		m, _ = regexp.MatchString(`^_auth_data_[a-zA-Z0-9_]+$`, restKey)
+		if m {
+			return restKey, restValue, nil
+		}
+	}
+
+	if v := utils.MapInterface(restValue); v != nil {
+		if ty, ok := v["__type"]; ok {
+			if ty.(string) != "Bytes" {
+				if ty.(string) == "Pointer" {
+					restKey = "_p_" + restKey
+				} else if fields, ok := parseFormatSchema["fields"].(map[string]interface{}); ok {
+					if t, ok := fields[restKey]; ok {
+						if t.(map[string]interface{})["type"].(string) == "Pointer" {
+							restKey = "_p_" + restKey
+						}
+					}
+				}
+			}
+		}
+	}
+
+	value, err := t.transformAtom(restValue, false, types.M{"inArray": false, "inObject": false})
+	if err != nil {
+		return "", nil, err
+	}
+	if value != t.cannotTransform() {
+		return restKey, value, nil
+	}
+
+	if restKey == "ACL" {
+		return "", nil, errs.E(errs.InvalidKeyName, "There was a problem transforming an ACL.")
+	}
+
+	if s, ok := restValue.([]interface{}); ok {
+		value := []interface{}{}
+		for _, restObj := range s {
+			_, v, err := t.transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
+			if err != nil {
+				return "", nil, err
+			}
+			value = append(value, v)
+		}
+		return restKey, value, nil
+	}
+
+	value, err = t.transformUpdateOperator(restValue, true)
+	if value != t.cannotTransform() {
+		return restKey, value, nil
+	}
+
+	newValue := types.M{}
+	if val, ok := restValue.(map[string]interface{}); ok {
+		for subRestKey, subRestValue := range val {
+			_, v, err := t.transformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
+			if err != nil {
+				return "", nil, err
+			}
+			newValue[subRestKey] = v
+		}
+	}
+
+	return restKey, newValue, nil
 }
 
 // transformAuthData 转换第三方登录数据

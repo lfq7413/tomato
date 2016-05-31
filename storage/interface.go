@@ -30,7 +30,7 @@ type Adapter interface {
 	DropCollection(name string) error
 	AllCollections() []Collection
 	DeleteFields(className string, fieldNames, pointerFieldNames []string) error
-	CreateObject(className string, object types.M, schema Schema) error
+	CreateObject(className string, object types.M, schema Schema, parseFormatSchema types.M) error
 	GetTransform() Transform
 	GetAllSchemas() ([]types.M, error)
 	GetOneSchema(className string) (types.M, error)

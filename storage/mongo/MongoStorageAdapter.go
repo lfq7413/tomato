@@ -147,8 +147,8 @@ func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNa
 }
 
 // CreateObject 创建对象
-func (m *MongoAdapter) CreateObject(className string, object types.M, schema storage.Schema) error {
-	mongoObject, err := m.transform.parseObjectToMongoObject(schema, className, object)
+func (m *MongoAdapter) CreateObject(className string, object types.M, schema storage.Schema, parseFormatSchema types.M) error {
+	mongoObject, err := m.transform.parseObjectToMongoObjectForCreate(schema, className, object, parseFormatSchema)
 	if err != nil {
 		return err
 	}

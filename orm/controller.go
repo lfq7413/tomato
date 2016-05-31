@@ -342,7 +342,18 @@ func (d DBController) Create(className string, data, options types.M) error {
 		return err
 	}
 
-	return Adapter.CreateObject(className, data, schema)
+	err = schema.enforceClassExists(className, false)
+	if err != nil {
+		return err
+	}
+
+	sch, err := schema.GetOneSchema(className)
+	if err != nil {
+		return err
+	}
+
+	// 无需调用 sanitizeDatabaseResult
+	return Adapter.CreateObject(className, data, schema, sch)
 }
 
 // validateClassName 校验表名是否合法

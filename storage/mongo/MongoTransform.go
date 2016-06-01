@@ -671,7 +671,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 	case "objectId":
 		return "_id", restValue, nil
 
-	case "_created_at", "createdAt":
+	case "createdAt":
 		transformedValue, err = t.transformAtom(restValue, false, types.M{})
 		if err != nil {
 			return "", nil, err
@@ -716,7 +716,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 		}
 		return "_expiresAt", coercedToDate, nil
 
-	case "_id", "_rperm", "_wperm", "_email_verify_token", "_hashed_password", "_perishable_token":
+	case "_rperm", "_wperm", "_email_verify_token", "_hashed_password", "_perishable_token":
 		return restKey, restValue, nil
 
 	case "sessionToken":

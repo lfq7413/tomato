@@ -37,20 +37,19 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 	payloadString, _ := json.Marshal(data)
 
 	object := types.M{
-		"_id":         p.objectID,
-		"pushTime":    utils.TimetoString(now),
-		"_created_at": now,
-		"query":       where,
-		"payload":     string(payloadString),
-		"source":      options["source"],
-		"title":       options["title"],
-		"expiry":      body["expiration_time"],
-		"status":      "pending",
-		"numSent":     0,
-		"pushHash":    utils.MD5Hash(string(payloadString)),
+		"objectId":  p.objectID,
+		"pushTime":  utils.TimetoString(now),
+		"createdAt": utils.TimetoString(now),
+		"query":     where,
+		"payload":   string(payloadString),
+		"source":    options["source"],
+		"title":     options["title"],
+		"expiry":    body["expiration_time"],
+		"status":    "pending",
+		"numSent":   0,
+		"pushHash":  utils.MD5Hash(string(payloadString)),
 		// lockdown!
-		"_wperm": []interface{}{},
-		"_rperm": []interface{}{},
+		"ACL": types.M{},
 	}
 
 	err := p.db.Create(pushStatusCollection, object, types.M{})
@@ -67,13 +66,12 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 // setRunning 设置正在推送
 func (p *pushStatus) setRunning() {
 	where := types.M{
-		"status": "pending",
-		"_id":    p.status["objectId"],
+		"status":   "pending",
+		"objectId": p.status["objectId"],
 	}
 	update := types.M{
-		"$set": types.M{
-			"status": "running",
-		},
+		"status":    "running",
+		"updatedAt": utils.TimetoString(time.Now().UTC()),
 	}
 	p.db.Update(pushStatusCollection, where, update, types.M{})
 }
@@ -123,8 +121,8 @@ func (p *pushStatus) complete(results []types.M) {
 	}
 
 	where := types.M{
-		"status": "running",
-		"_id":    p.status["objectId"],
+		"status":   "running",
+		"objectId": p.status["objectId"],
 	}
 	update := types.M{
 		"status":        "succeeded",
@@ -132,6 +130,7 @@ func (p *pushStatus) complete(results []types.M) {
 		"numFailed":     numFailed,
 		"sentPerType":   sentPerType,
 		"failedPerType": failedPerType,
+		"updatedAt":     utils.TimetoString(time.Now().UTC()),
 	}
 	p.db.Update(pushStatusCollection, where, types.M{"$set": update}, types.M{})
 }
@@ -141,9 +140,10 @@ func (p *pushStatus) fail(err error) {
 	update := types.M{
 		"errorMessage": err.Error(),
 		"status":       "failed",
+		"updatedAt":    utils.TimetoString(time.Now().UTC()),
 	}
 	where := types.M{
-		"_id": p.status["objectId"],
+		"objectId": p.status["objectId"],
 	}
 	p.db.Update(pushStatusCollection, where, types.M{"$set": update}, types.M{})
 }

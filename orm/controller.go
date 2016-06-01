@@ -73,18 +73,14 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 		mongoOptions["limit"] = options["limit"]
 	}
 
-	var isMaster bool
-	if _, ok := options["acl"]; ok {
-		isMaster = false
+	isMaster := false
+	aclGroup := []string{}
+	if acl, ok := options["acl"]; ok {
+		if v, ok := acl.([]string); ok {
+			aclGroup = v
+		}
 	} else {
-		// 不存在键值 acl 时，即为 Master
 		isMaster = true
-	}
-	var aclGroup []string
-	if options["acl"] == nil {
-		aclGroup = []string{}
-	} else {
-		aclGroup = options["acl"].([]string)
 	}
 
 	var op string
@@ -181,17 +177,14 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 
 // Destroy 从指定表中删除数据
 func (d DBController) Destroy(className string, where types.M, options types.M) error {
-	var isMaster bool
-	if _, ok := options["acl"]; ok {
-		isMaster = false
+	isMaster := false
+	aclGroup := []string{}
+	if acl, ok := options["acl"]; ok {
+		if v, ok := acl.([]string); ok {
+			aclGroup = v
+		}
 	} else {
 		isMaster = true
-	}
-	var aclGroup []string
-	if options["acl"] == nil {
-		aclGroup = []string{}
-	} else {
-		aclGroup = options["acl"].([]string)
 	}
 
 	schema := d.LoadSchema()
@@ -200,8 +193,6 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		return err
 	}
 
-	coll := Adapter.AdaptiveCollection(className)
-
 	if isMaster == false {
 		where = d.addPointerPermissions(schema, className, "delete", where, aclGroup)
 		if where == nil {
@@ -209,27 +200,22 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		}
 	}
 
-	mongoWhere, err := Transform.TransformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
+	err := Adapter.DeleteObjectsByQuery(className, where, aclGroup, schema, !d.skipValidation)
 	if err != nil {
+		msg := err.Error()
+		msg = strings.Replace(msg, " ", "", -1)
+		// 排除 _Session，避免在修改密码时因为没有 Session 失败
+		if className == "_Session" && strings.Index(msg, `"code":`+strconv.Itoa(errs.ObjectNotFound)) > -1 {
+			return nil
+		}
 		return err
-	}
-	// 组装 acl 查询条件，查找可被当前用户修改的对象
-	if isMaster == false {
-		mongoWhere = Transform.AddWriteACL(mongoWhere, aclGroup)
-	}
-	n, err := coll.DeleteMany(mongoWhere)
-	if err != nil {
-		return err
-	}
-	// 排除 _Session，避免在修改密码时因为没有 Session 失败
-	if n == 0 && className != "_Session" {
-		return errs.E(errs.ObjectNotFound, "Object not found.")
 	}
 
 	return nil
 }
 
 // Update 更新对象
+// options 中的参数包括：acl、many、upsert
 func (d DBController) Update(className string, where, data, options types.M) (types.M, error) {
 	if options == nil {
 		options = types.M{}
@@ -238,17 +224,17 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 	// 复制数据，不要修改原数据
 	data = utils.CopyMap(data)
 
-	var isMaster bool
-	if _, ok := options["acl"]; ok {
-		isMaster = false
+	many := options["many"].(bool)
+	upsert := options["upsert"].(bool)
+
+	isMaster := false
+	aclGroup := []string{}
+	if acl, ok := options["acl"]; ok {
+		if v, ok := acl.([]string); ok {
+			aclGroup = v
+		}
 	} else {
 		isMaster = true
-	}
-	var aclGroup []string
-	if options["acl"] == nil {
-		aclGroup = []string{}
-	} else {
-		aclGroup = options["acl"].([]string)
 	}
 
 	schema := d.LoadSchema()
@@ -284,13 +270,13 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		return nil, err
 	}
 	var result types.M
-	if options["many"] != nil {
+	if many {
 		err := coll.UpdateMany(mongoWhere, mongoUpdate)
 		if err != nil {
 			return nil, err
 		}
 		result = types.M{}
-	} else if options["upsert"] != nil {
+	} else if upsert {
 		err := coll.UpsertOne(mongoWhere, mongoUpdate)
 		if err != nil {
 			return nil, err
@@ -345,17 +331,15 @@ func (d DBController) Create(className string, data, options types.M) error {
 	}
 	// 不要对原数据进行修改
 	data = utils.CopyMap(data)
-	var isMaster bool
-	if _, ok := options["acl"]; ok {
-		isMaster = false
+
+	isMaster := false
+	aclGroup := []string{}
+	if acl, ok := options["acl"]; ok {
+		if v, ok := acl.([]string); ok {
+			aclGroup = v
+		}
 	} else {
 		isMaster = true
-	}
-	var aclGroup []string
-	if options["acl"] == nil {
-		aclGroup = []string{}
-	} else {
-		aclGroup = options["acl"].([]string)
 	}
 
 	err := d.validateClassName(className)
@@ -502,6 +486,7 @@ func (d DBController) removeRelation(key, fromClassName, fromID, toID string) er
 // ValidateObject 校验对象是否合法
 func (d DBController) ValidateObject(className string, object, where, options types.M) error {
 	schema := d.LoadSchema()
+
 	isMaster := false
 	aclGroup := []string{}
 	if acl, ok := options["acl"]; ok {

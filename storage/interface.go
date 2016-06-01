@@ -34,6 +34,7 @@ type Adapter interface {
 	GetTransform() Transform
 	GetAllSchemas() ([]types.M, error)
 	GetOneSchema(className string) (types.M, error)
+	DeleteObjectsByQuery(className string, query types.M, acl []string, schema Schema, validate bool) error
 }
 
 // Collection 集合操作接口

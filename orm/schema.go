@@ -218,7 +218,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 			return err
 		}
 		// 删除 _Join table 数据
-		err = Adapter.DropCollection("_Join:" + fieldName + ":" + className)
+		err = Adapter.DeleteOneSchema("_Join:" + fieldName + ":" + className)
 		if err != nil {
 			return err
 		}

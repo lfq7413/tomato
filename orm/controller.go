@@ -536,10 +536,7 @@ func (d *DBController) MongoFind(className string, query, options types.M) []typ
 // DeleteEverything 删除所有表数据，仅用于测试
 func (d DBController) DeleteEverything() {
 	schemaPromise = nil
-	collections := Adapter.AllCollections()
-	for _, v := range collections {
-		v.Drop()
-	}
+	Adapter.DeleteAllSchemas()
 }
 
 // RedirectClassNameForKey 返回指定类的字段所对应的类型
@@ -928,7 +925,7 @@ func (d DBController) untransformObject(schema *Schema, isMaster bool, aclGroup 
 	return object, nil
 }
 
-// DeleteSchema ...
+// DeleteSchema 删除类
 func (d *DBController) DeleteSchema(className string) error {
 	exist := d.CollectionExists(className)
 	if exist == false {
@@ -939,7 +936,7 @@ func (d *DBController) DeleteSchema(className string) error {
 	if count > 0 {
 		return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
 	}
-	return coll.Drop()
+	return Adapter.DeleteOneSchema(className)
 }
 
 // addPointerPermissions 添加查询用户权限，perms[className][readUserFields] 中保存的是字段名，该字段中的内容是：有权限进行读操作的用户

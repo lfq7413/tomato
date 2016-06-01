@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
@@ -75,24 +76,23 @@ func (m *MongoAdapter) CollectionExists(name string) bool {
 	return false
 }
 
-// DropCollection 删除指定表
-func (m *MongoAdapter) DropCollection(name string) error {
+// DeleteOneSchema 删除指定表
+func (m *MongoAdapter) DeleteOneSchema(name string) error {
 	// TODO 处理类不存在时的情况
 	return m.collection(m.collectionPrefix + name).DropCollection()
 }
 
-// AllCollections 查找包含指定前缀的表集合，仅用于测试
-func (m *MongoAdapter) AllCollections() []storage.Collection {
-	names := m.getCollectionNames()
-	collections := []storage.Collection{}
-
-	for _, v := range names {
-		if strings.HasPrefix(v, m.collectionPrefix) {
-			collections = append(collections, m.AdaptiveCollection(v[len(m.collectionPrefix):]))
+// DeleteAllSchemas 删除所有表，仅用于测试
+func (m *MongoAdapter) DeleteAllSchemas() error {
+	collections := storageAdapterAllCollections(m)
+	for _, collection := range collections {
+		err := collection.Drop()
+		if err != nil {
+			return err
 		}
 	}
 
-	return collections
+	return nil
 }
 
 // DeleteFields 删除字段
@@ -199,4 +199,20 @@ func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, sch
 	}
 
 	return nil
+}
+
+func storageAdapterAllCollections(m *MongoAdapter) []storage.Collection {
+	names := m.getCollectionNames()
+	collections := []storage.Collection{}
+
+	for _, v := range names {
+		if m, err := regexp.MatchString(`\.system\.`, v); err == nil && m {
+			continue
+		}
+		if strings.HasPrefix(v, m.collectionPrefix) {
+			collections = append(collections, m.AdaptiveCollection(v[len(m.collectionPrefix):]))
+		}
+	}
+
+	return collections
 }

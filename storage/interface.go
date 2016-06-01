@@ -25,8 +25,8 @@ type Adapter interface {
 	AdaptiveCollection(name string) Collection
 	SchemaCollection() SchemaCollection
 	CollectionExists(name string) bool
-	DropCollection(name string) error
-	AllCollections() []Collection
+	DeleteOneSchema(name string) error
+	DeleteAllSchemas() error
 	DeleteFields(className string, fieldNames, pointerFieldNames []string) error
 	CreateObject(className string, object types.M, schema Schema, parseFormatSchema types.M) error
 	GetTransform() Transform

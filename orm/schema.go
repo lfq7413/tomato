@@ -22,6 +22,8 @@ var requiredColumns map[string][]string
 // SystemClasses 系统表
 var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product", "_PushStatus"}
 
+var volatileClasses = []string{"_PushStatus"}
+
 func init() {
 	DefaultColumns = map[string]types.M{
 		"_Default": types.M{
@@ -563,6 +565,15 @@ func (s *Schema) reloadData() {
 		s.data[schema["className"].(string)] = schema
 		s.perms[schema["className"].(string)] = schema["classLevelPermissions"]
 	}
+
+	for _, className := range volatileClasses {
+		sch := types.M{
+			"className":             className,
+			"fields":                types.M{},
+			"classLevelPermissions": types.M{},
+		}
+		s.data[className] = injectDefaultSchema(sch)
+	}
 }
 
 // GetAllSchemas ...
@@ -578,8 +589,16 @@ func (s *Schema) GetAllSchemas() ([]types.M, error) {
 	return schems, nil
 }
 
-// GetOneSchema ...
-func (s *Schema) GetOneSchema(className string) (types.M, error) {
+// GetOneSchema allowVolatileClasses 默认为 false
+func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (types.M, error) {
+	if allowVolatileClasses {
+		for _, name := range volatileClasses {
+			if name == className {
+				return s.data[className].(map[string]interface{}), nil
+			}
+		}
+	}
+
 	schema, err := Adapter.GetOneSchema(className)
 	if err != nil {
 		return nil, err

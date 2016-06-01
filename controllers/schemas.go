@@ -46,7 +46,7 @@ func (s *SchemasController) HandleFind() {
 func (s *SchemasController) HandleGet() {
 	className := s.Ctx.Input.Param(":className")
 	schema := orm.TomatoDBController.LoadSchema()
-	sch, err := schema.GetOneSchema(className)
+	sch, err := schema.GetOneSchema(className, false)
 	if err != nil {
 		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, "Class "+className+" does not exist.")
 		s.ServeJSON()

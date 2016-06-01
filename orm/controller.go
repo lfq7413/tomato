@@ -370,7 +370,7 @@ func (d DBController) Create(className string, data, options types.M) error {
 		return err
 	}
 
-	sch, err := schema.GetOneSchema(className)
+	sch, err := schema.GetOneSchema(className, true)
 	if err != nil {
 		return err
 	}

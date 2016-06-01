@@ -84,9 +84,14 @@ func (o *ObjectsController) Prepare() {
 		// Unity SDK sends a _noBody key which needs to be removed.
 		// Unclear at this point if action needs to be taken.
 		delete(o.JSONBody, "_noBody")
+
+		delete(o.JSONBody, "_RevocableSession")
 	}
 
 	if info.AppID == "" {
+		if o.JSONBody != nil {
+			delete(o.JSONBody, "_RevocableSession")
+		}
 		// 从请求数据中获取各种 key
 		if o.JSONBody != nil && o.JSONBody["_ApplicationId"] != nil {
 			info.AppID = o.JSONBody["_ApplicationId"].(string)

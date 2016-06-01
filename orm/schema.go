@@ -11,7 +11,7 @@ import (
 )
 
 // clpValidKeys 类级别的权限 列表
-var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField"}
+var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField", "readUserFields", "writeUserFields"}
 
 // DefaultColumns 所有类的默认字段，以及系统类的默认字段
 var DefaultColumns map[string]types.M
@@ -173,7 +173,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	}
 
 	// 设置 CLP
-	err = s.setPermissions(className, classLevelPermissions)
+	err = s.setPermissions(className, classLevelPermissions, newSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -282,8 +282,8 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
 		return nil
 	}
-	class := utils.MapInterface(s.perms[className])
-	perms := utils.MapInterface(class[operation])
+	classPerms := utils.MapInterface(s.perms[className])
+	perms := utils.MapInterface(classPerms[operation])
 	// 当前操作的权限是公开的
 	if _, ok := perms["*"]; ok {
 		return nil
@@ -297,11 +297,27 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 			break
 		}
 	}
-	if found == false {
-		return errs.E(errs.ObjectNotFound, "Permission denied for this action.")
+
+	if found {
+		return nil
 	}
 
-	return nil
+	var permissionField string
+	if operation == "get" || operation == "find" {
+		permissionField = "readUserFields"
+	} else {
+		permissionField = "writeUserFields"
+	}
+
+	if permissionField == "writeUserFields" && operation == "create" {
+		return errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	}
+
+	if v, ok := classPerms[permissionField].([]interface{}); ok && len(v) > 0 {
+		return nil
+	}
+
+	return errs.E(errs.OperationForbidden, "Permission denied for this action.")
 }
 
 // enforceClassExists 校验类名 freeze 为 true 时，不进行更新
@@ -373,7 +389,7 @@ func (s *Schema) validateSchemaData(className string, fields types.M, classLevel
 		return errs.E(errs.IncorrectType, "currently, only one GeoPoint field may exist in an object. Adding "+geoPoints[1]+" when "+geoPoints[0]+" already exists.")
 	}
 
-	return validateCLP(classLevelPermissions)
+	return validateCLP(classLevelPermissions, fields)
 }
 
 // validateRequiredColumns 校验必须的字段
@@ -463,11 +479,11 @@ func (s *Schema) validateField(className, fieldName string, fieldtype types.M, f
 }
 
 // setPermissions 给指定类设置权限
-func (s *Schema) setPermissions(className string, perms types.M) error {
+func (s *Schema) setPermissions(className string, perms types.M, newSchema types.M) error {
 	if perms == nil {
 		return nil
 	}
-	err := validateCLP(perms)
+	err := validateCLP(perms, newSchema)
 	if err != nil {
 		return err
 	}
@@ -777,9 +793,10 @@ func fieldTypeIsInvalid(t types.M) error {
 // 		"*":true,
 // 	},
 // 	"delete":{...},
+//  "readUserFields":{"aaa","bbb"}
 // 	...
 // }
-func validateCLP(perms types.M) error {
+func validateCLP(perms types.M, fields types.M) error {
 	if perms == nil {
 		return nil
 	}
@@ -795,6 +812,25 @@ func validateCLP(perms types.M) error {
 		}
 		if t == false {
 			return errs.E(errs.InvalidJSON, operation+" is not a valid operation for class level permissions")
+		}
+
+		if operation == "readUserFields" || operation == "writeUserFields" {
+			if p, ok := perm.([]interface{}); ok {
+				for _, v := range p {
+					key := v.(string)
+					// 字段类型必须为指向 _User 的指针类型
+					if fields[key] != nil {
+						if t, ok := fields[key].(map[string]interface{}); ok {
+							if t["type"].(string) == "Pointer" && t["targetClass"].(string) == "_User" {
+								continue
+							}
+						}
+					}
+					return errs.E(errs.InvalidJSON, key+" is not a valid column for class level pointer permissions "+operation)
+				}
+				return nil
+			}
+			return errs.E(errs.InvalidJSON, "this perms[operation] is not a valid value for class level permissions "+operation)
 		}
 
 		for key, p := range utils.MapInterface(perm) {

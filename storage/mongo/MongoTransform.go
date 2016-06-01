@@ -1338,28 +1338,6 @@ func (t *MongoTransform) TransformNotInQuery(notInQueryObject types.M, className
 	notInQueryObject["$nin"] = nin
 }
 
-// AddWriteACL 添加写请求权限
-func (t *MongoTransform) AddWriteACL(mongoWhere interface{}, acl []string) types.M {
-	writePerms := types.S{nil}
-	for _, a := range acl {
-		writePerms = append(writePerms, a)
-	}
-	return types.M{
-		"$and": types.S{mongoWhere, types.M{"_wperm": types.M{"$in": writePerms}}},
-	}
-}
-
-// AddReadACL 添加读请求权限
-func (t *MongoTransform) AddReadACL(mongoWhere interface{}, acl []string) types.M {
-	orParts := types.S{nil, "*"}
-	for _, a := range acl {
-		orParts = append(orParts, a)
-	}
-	return types.M{
-		"$and": types.S{mongoWhere, types.M{"_rperm": types.M{"$in": orParts}}},
-	}
-}
-
 func (t *MongoTransform) cannotTransform() interface{} {
 	return nil
 }

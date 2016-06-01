@@ -145,13 +145,13 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 		return types.S{}, nil
 	}
 
+	// 组装 acl 查询条件，查找可被当前用户访问的对象
+	if isMaster == false {
+		where = addReadACL(where, aclGroup)
+	}
 	mongoWhere, err := Transform.TransformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
-	}
-	// 组装 acl 查询条件，查找可被当前用户访问的对象
-	if isMaster == false {
-		mongoWhere = Transform.AddReadACL(mongoWhere, aclGroup)
 	}
 
 	// 获取 count
@@ -200,7 +200,11 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		}
 	}
 
-	err := Adapter.DeleteObjectsByQuery(className, where, aclGroup, schema, !d.skipValidation)
+	if isMaster == false {
+		where = addWriteACL(where, aclGroup)
+	}
+
+	err := Adapter.DeleteObjectsByQuery(className, where, schema, !d.skipValidation)
 	if err != nil {
 		msg := err.Error()
 		msg = strings.Replace(msg, " ", "", -1)
@@ -257,13 +261,13 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		return types.M{}, nil
 	}
 
+	// 组装 acl 查询条件，查找可被当前用户修改的对象
+	if isMaster == false {
+		where = addWriteACL(where, aclGroup)
+	}
 	mongoWhere, err := Transform.TransformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
-	}
-	// 组装 acl 查询条件，查找可被当前用户修改的对象
-	if isMaster == false {
-		mongoWhere = Transform.AddWriteACL(mongoWhere, aclGroup)
 	}
 	mongoUpdate, err := Transform.TransformUpdate(schema, className, data, types.M{"validate": !d.skipValidation})
 	if err != nil {
@@ -984,4 +988,24 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 		}
 	}
 	return query
+}
+
+func addWriteACL(query types.M, acl []string) types.M {
+	newQuery := utils.CopyMap(query)
+	writePerms := types.S{nil}
+	for _, a := range acl {
+		writePerms = append(writePerms, a)
+	}
+	newQuery["_wperm"] = types.M{"$in": writePerms}
+	return newQuery
+}
+
+func addReadACL(query types.M, acl []string) types.M {
+	newQuery := utils.CopyMap(query)
+	orParts := types.S{nil, "*"}
+	for _, a := range acl {
+		orParts = append(orParts, a)
+	}
+	newQuery["_rperm"] = types.M{"$in": orParts}
+	return newQuery
 }

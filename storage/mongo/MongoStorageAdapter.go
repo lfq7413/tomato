@@ -182,16 +182,12 @@ func (m *MongoAdapter) getCollectionNames() []string {
 }
 
 // DeleteObjectsByQuery 删除符合条件的所有对象
-func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, acl []string, schema storage.Schema, validate bool) error {
+func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, schema storage.Schema, validate bool) error {
 	collection := m.AdaptiveCollection(className)
 
 	mongoWhere, err := m.transform.TransformWhere(schema, className, query, types.M{"validate": validate})
 	if err != nil {
 		return err
-	}
-
-	if acl != nil {
-		mongoWhere = m.transform.AddWriteACL(mongoWhere, acl)
 	}
 
 	n, err := collection.DeleteMany(mongoWhere)

@@ -87,6 +87,17 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 		aclGroup = options["acl"].([]string)
 	}
 
+	var op string
+	if _, ok := where["objectId"].(string); ok {
+		if len(where) == 1 {
+			op = "get"
+		} else {
+			op = "find"
+		}
+	} else {
+		op = "find"
+	}
+
 	schema := d.LoadSchema()
 
 	if options["sort"] != nil {
@@ -115,10 +126,6 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 
 	// 校验当前用户是否能对表进行 find 或者 get 操作
 	if isMaster == false {
-		op := "find"
-		if len(where) == 1 && where["objectId"] != nil && utils.String(where["objectId"]) != "" {
-			op = "get"
-		}
 		err := schema.validatePermission(className, aclGroup, op)
 		if err != nil {
 			return nil, err
@@ -131,6 +138,17 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	d.reduceInRelation(className, where, schema)
 
 	coll := Adapter.AdaptiveCollection(className)
+
+	if isMaster == false {
+		where = d.addPointerPermissions(schema, className, op, where, aclGroup)
+	}
+	if where == nil {
+		if op == "get" {
+			return nil, errs.E(errs.ObjectNotFound, "Object not found.")
+		}
+		return types.S{}, nil
+	}
+
 	mongoWhere, err := Transform.TransformWhere(schema, className, where, nil)
 	if err != nil {
 		return nil, err
@@ -183,6 +201,14 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 	}
 
 	coll := Adapter.AdaptiveCollection(className)
+
+	if isMaster == false {
+		where = d.addPointerPermissions(schema, className, "delete", where, aclGroup)
+		if where == nil {
+			return errs.E(errs.ObjectNotFound, "Object not found.")
+		}
+	}
+
 	mongoWhere, err := Transform.TransformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return err
@@ -236,6 +262,15 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
 	coll := Adapter.AdaptiveCollection(className)
+
+	// 添加用户权限
+	if isMaster == false {
+		where = d.addPointerPermissions(schema, className, "update", where, aclGroup)
+	}
+	if where == nil {
+		return types.M{}, nil
+	}
+
 	mongoWhere, err := Transform.TransformWhere(schema, className, where, types.M{"validate": !d.skipValidation})
 	if err != nil {
 		return nil, err
@@ -889,7 +924,6 @@ func (d DBController) untransformObject(schema *Schema, isMaster bool, aclGroup 
 		return object, nil
 	}
 	// 以下单独处理 _User 类
-	delete(object, "authData")
 	delete(object, "sessionToken")
 	if isMaster {
 		return object, nil
@@ -901,6 +935,7 @@ func (d DBController) untransformObject(schema *Schema, isMaster bool, aclGroup 
 			return object, nil
 		}
 	}
+	delete(object, "authData")
 	return object, nil
 }
 

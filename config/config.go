@@ -10,21 +10,22 @@ import (
 
 // Config ...
 type Config struct {
-	AppName                  string
-	ServerURL                string
-	DatabaseURI              string
-	AppID                    string
-	MasterKey                string
-	ClientKey                string
-	AllowClientClassCreation bool
-	EnableAnonymousUsers     bool
-	VerifyUserEmails         bool
-	FileAdapter              string
-	FileDir                  string
-	PushAdapter              string
-	MailAdapter              string
-	LiveQuery                *livequery.LiveQuery
-	SessionLength            int
+	AppName                      string
+	ServerURL                    string
+	DatabaseURI                  string
+	AppID                        string
+	MasterKey                    string
+	ClientKey                    string
+	AllowClientClassCreation     bool
+	EnableAnonymousUsers         bool
+	VerifyUserEmails             bool
+	FileAdapter                  string
+	FileDir                      string
+	PushAdapter                  string
+	MailAdapter                  string
+	LiveQuery                    *livequery.LiveQuery
+	SessionLength                int
+	RevokeSessionOnPasswordReset bool
 }
 
 var (
@@ -34,20 +35,21 @@ var (
 
 func init() {
 	TConfig = &Config{
-		AppName:                  "",
-		ServerURL:                "http://127.0.0.1:8080/v1",
-		DatabaseURI:              "192.168.99.100:27017/test",
-		AppID:                    "",
-		MasterKey:                "",
-		ClientKey:                "",
-		AllowClientClassCreation: false,
-		EnableAnonymousUsers:     true,
-		VerifyUserEmails:         false,
-		FileAdapter:              "disk",
-		FileDir:                  "/Users",
-		PushAdapter:              "tomato",
-		MailAdapter:              "smtp",
-		SessionLength:            31536000,
+		AppName:                      "",
+		ServerURL:                    "http://127.0.0.1:8080/v1",
+		DatabaseURI:                  "192.168.99.100:27017/test",
+		AppID:                        "",
+		MasterKey:                    "",
+		ClientKey:                    "",
+		AllowClientClassCreation:     false,
+		EnableAnonymousUsers:         true,
+		VerifyUserEmails:             false,
+		FileAdapter:                  "disk",
+		FileDir:                      "/Users",
+		PushAdapter:                  "tomato",
+		MailAdapter:                  "smtp",
+		SessionLength:                31536000,
+		RevokeSessionOnPasswordReset: true,
 	}
 
 	parseConfig()
@@ -76,6 +78,7 @@ func parseConfig() {
 	TConfig.LiveQuery = livequery.NewLiveQuery(liveQuery, pubType, pubURL)
 
 	TConfig.SessionLength = beego.AppConfig.DefaultInt("SessionLength", 31536000)
+	TConfig.RevokeSessionOnPasswordReset = beego.AppConfig.DefaultBool("RevokeSessionOnPasswordReset", true)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

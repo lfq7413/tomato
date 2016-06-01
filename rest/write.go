@@ -827,7 +827,7 @@ func (w *Write) createSessionTokenIfNeeded() error {
 
 // handleFollowup 处理后续逻辑
 func (w *Write) handleFollowup() error {
-	if w.storage != nil && w.storage["clearSessions"] != nil {
+	if w.storage != nil && w.storage["clearSessions"] != nil && config.TConfig.RevokeSessionOnPasswordReset {
 		// 修改密码之后，清除 session
 		user := types.M{
 			"__type":    "Pointer",

@@ -4,6 +4,7 @@ import (
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 // FunctionsController 处理 /functions 接口的请求
@@ -28,6 +29,14 @@ func (f *FunctionsController) HandleCloudFunction() {
 
 	if f.JSONBody == nil {
 		f.JSONBody = types.M{}
+	}
+
+	for k, v := range f.JSONBody {
+		if value, ok := v.(map[string]interface{}); ok {
+			if value["__type"].(string) == "Date" {
+				f.JSONBody[k], _ = utils.StringtoTime(value["iso"].(string))
+			}
+		}
 	}
 
 	f.Auth.IsMaster = true

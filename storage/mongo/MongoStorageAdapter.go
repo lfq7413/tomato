@@ -3,6 +3,7 @@ package mongo
 import (
 	"strings"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 
@@ -178,4 +179,28 @@ func (m *MongoAdapter) getCollectionNames() []string {
 		return names
 	}
 	return []string{}
+}
+
+// DeleteObjectsByQuery 删除符合条件的所有对象
+func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, acl []string, schema storage.Schema, validate bool) error {
+	collection := m.AdaptiveCollection(className)
+
+	mongoWhere, err := m.transform.TransformWhere(schema, className, query, types.M{"validate": validate})
+	if err != nil {
+		return err
+	}
+
+	if acl != nil {
+		mongoWhere = m.transform.AddWriteACL(mongoWhere, acl)
+	}
+
+	n, err := collection.DeleteMany(mongoWhere)
+	if err != nil {
+		return errs.E(errs.InternalServerError, "Database adapter error")
+	}
+	if n == 0 {
+		return errs.E(errs.ObjectNotFound, "Object not found.")
+	}
+
+	return nil
 }

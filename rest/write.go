@@ -639,33 +639,39 @@ func (w *Write) transformUser() error {
 
 	// 处理 email ，检测合法性、检测是否唯一
 	if w.data["email"] == nil {
-
-	} else {
-		if utils.IsEmail(utils.String(w.data["email"])) == false {
-			return errs.E(errs.InvalidEmailAddress, "Email address format is invalid.")
-		}
-		objectID := types.M{
-			"$ne": w.objectID(),
-		}
-		where := types.M{
-			"email":    w.data["email"],
-			"objectId": objectID,
-		}
-		option := types.M{
-			"limit": 1,
-		}
-		results, err := orm.TomatoDBController.Find(w.className, where, option)
-		if err != nil {
-			return err
-		}
-		if len(results) > 0 {
-			return errs.E(errs.EmailTaken, "Account already exists for this email address")
-		}
-
-		// 更新 email ，需要发送验证邮件
-		w.storage["sendVerificationEmail"] = true
-		SetEmailVerifyToken(w.data)
+		return nil
 	}
+
+	if p, ok := w.data["email"].(map[string]interface{}); ok {
+		if p["__op"].(string) == "Delete" {
+			return nil
+		}
+	}
+
+	if utils.IsEmail(utils.String(w.data["email"])) == false {
+		return errs.E(errs.InvalidEmailAddress, "Email address format is invalid.")
+	}
+	objectID := types.M{
+		"$ne": w.objectID(),
+	}
+	where := types.M{
+		"email":    w.data["email"],
+		"objectId": objectID,
+	}
+	option := types.M{
+		"limit": 1,
+	}
+	results, err := orm.TomatoDBController.Find(w.className, where, option)
+	if err != nil {
+		return err
+	}
+	if len(results) > 0 {
+		return errs.E(errs.EmailTaken, "Account already exists for this email address")
+	}
+
+	// 更新 email ，需要发送验证邮件
+	w.storage["sendVerificationEmail"] = true
+	SetEmailVerifyToken(w.data)
 
 	return nil
 }

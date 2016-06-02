@@ -896,17 +896,23 @@ func (t *MongoTransform) transformACL(restObject types.M) types.M {
 	acl := utils.MapInterface(restObject["ACL"])
 	rperm := types.S{}
 	wperm := types.S{}
+	_acl := types.M{}
 	for entry, v := range acl {
 		perm := utils.MapInterface(v)
+		a := types.M{}
 		if perm["read"] != nil {
 			rperm = append(rperm, entry)
+			a["r"] = true
 		}
 		if perm["write"] != nil {
 			wperm = append(wperm, entry)
+			a["w"] = true
 		}
+		_acl[entry] = a
 	}
 	output["_rperm"] = rperm
 	output["_wperm"] = wperm
+	output["_acl"] = _acl
 
 	delete(restObject, "ACL")
 	return output
@@ -951,13 +957,16 @@ func (t *MongoTransform) TransformUpdate(schema storage.Schema, className string
 	mongoUpdate := types.M{}
 	// 转换并设置权限信息
 	acl := t.transformACL(update)
-	if acl["_rperm"] != nil || acl["_wperm"] != nil {
+	if acl["_rperm"] != nil || acl["_wperm"] != nil || acl["_acl"] != nil {
 		set := types.M{}
 		if acl["_rperm"] != nil {
 			set["_rperm"] = acl["_rperm"]
 		}
 		if acl["_wperm"] != nil {
 			set["_wperm"] = acl["_wperm"]
+		}
+		if acl["_acl"] != nil {
+			set["_acl"] = acl["_acl"]
 		}
 		mongoUpdate["$set"] = set
 	}

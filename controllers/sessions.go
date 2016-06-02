@@ -64,7 +64,7 @@ func (s *SessionsController) HandleGetMe() {
 		return
 	}
 	where := types.M{
-		"_session_token": s.Info.SessionToken,
+		"sessionToken": s.Info.SessionToken,
 	}
 	response, err := rest.Find(rest.Master(), "_Session", where, types.M{})
 	if err != nil {

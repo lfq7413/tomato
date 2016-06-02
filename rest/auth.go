@@ -45,7 +45,7 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 		"include": "user",
 	}
 	restWhere := types.M{
-		"_session_token": sessionToken,
+		"sessionToken": sessionToken,
 	}
 
 	query, err := NewQuery(Master(), "_Session", restWhere, restOptions)

@@ -3,6 +3,7 @@ package rest
 import (
 	"time"
 
+	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -31,7 +32,7 @@ func Nobody() *Auth {
 // GetAuthForSessionToken 返回 sessionToken 对应的用户权限信息
 func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, error) {
 	// 从缓存获取用户信息
-	cachedUser := usersCache.get(sessionToken)
+	cachedUser := cache.User.Get(sessionToken)
 	if cachedUser != nil {
 		return &Auth{
 			IsMaster:       false,
@@ -87,7 +88,7 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 	user["className"] = "_User"
 	user["sessionToken"] = sessionToken
 	// 写入缓存
-	usersCache.set(sessionToken, user)
+	cache.User.Put(sessionToken, user, 0)
 
 	return &Auth{
 		IsMaster:       false,
@@ -124,6 +125,12 @@ func (a *Auth) GetUserRoles() []string {
 
 // loadRoles 从数据库加载用户角色列表
 func (a *Auth) loadRoles() []string {
+	cachedRoles := cache.Role.Get(a.User["objectId"].(string))
+	if cachedRoles != nil {
+		a.FetchedRoles = true
+		return cachedRoles.([]string)
+	}
+
 	users := types.M{
 		"__type":    "Pointer",
 		"className": "_User",
@@ -139,6 +146,7 @@ func (a *Auth) loadRoles() []string {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
 		a.RolePromise = nil
+		cache.Role.Put(a.User["objectId"].(string), a.UserRoles, 0)
 		return a.UserRoles
 	}
 
@@ -147,6 +155,7 @@ func (a *Auth) loadRoles() []string {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
 		a.RolePromise = nil
+		cache.Role.Put(a.User["objectId"].(string), a.UserRoles, 0)
 		return a.UserRoles
 	}
 
@@ -169,6 +178,7 @@ func (a *Auth) loadRoles() []string {
 	a.FetchedRoles = true
 	a.RolePromise = nil
 
+	cache.Role.Put(a.User["objectId"].(string), a.UserRoles, 0)
 	return a.UserRoles
 }
 

@@ -24,7 +24,7 @@ func newInMemoryCacheAdapter(ttl int64) *inMemoryCacheAdapter {
 
 func (m *inMemoryCacheAdapter) get(key string) interface{} {
 	if record, ok := m.cache[key]; ok {
-		if record.expire >= time.Now().UnixNano() {
+		if record.expire == -1 || record.expire >= time.Now().UnixNano() {
 			return record.value
 		}
 		delete(m.cache, key)
@@ -33,15 +33,20 @@ func (m *inMemoryCacheAdapter) get(key string) interface{} {
 	return nil
 }
 
-// put ttl 的单位为毫秒，为 0 时表示使用默认的时长
+// put ttl 的单位为毫秒，为 0 时表示使用默认的时长，为 -1 时表示永不过期
 func (m *inMemoryCacheAdapter) put(key string, value interface{}, ttl int64) {
+	var expire int64
 	if ttl == 0 {
-		ttl = m.ttl
+		expire = m.ttl*10e6 + time.Now().UnixNano()
+	} else if ttl == -1 {
+		expire = -1
+	} else {
+		expire = ttl*10e6 + time.Now().UnixNano()
 	}
 
 	record := &recordCache{
 		value:  value,
-		expire: ttl*10e6 + time.Now().UnixNano(),
+		expire: expire,
 	}
 
 	m.cache[key] = record

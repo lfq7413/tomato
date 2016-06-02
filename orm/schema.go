@@ -428,17 +428,16 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 // validateField 校验并插入字段，freeze 为 true 时不进行修改
 func (s *Schema) validateField(className, fieldName string, fieldtype types.M, freeze bool) error {
 	s.reloadData()
-	// 检测 fieldName 是否合法
-	_, err := Transform.TransformKey(s, className, fieldName)
-	if err != nil {
-		return err
-	}
 
 	if strings.Index(fieldName, ".") > 0 {
 		fieldName = strings.Split(fieldName, ".")[0]
 		fieldtype = types.M{
 			"type": "Object",
 		}
+	}
+
+	if fieldNameIsValid(fieldName) == false {
+		return errs.E(errs.InvalidKeyName, "Invalid field name: "+fieldName)
 	}
 
 	expected := utils.MapInterface(utils.MapInterface(s.data[className])[fieldName])
@@ -463,7 +462,7 @@ func (s *Schema) validateField(className, fieldName string, fieldtype types.M, f
 		return nil
 	}
 
-	err = s.collection.AddFieldIfNotExists(className, fieldName, fieldtype)
+	err := s.collection.AddFieldIfNotExists(className, fieldName, fieldtype)
 	if err != nil {
 		// 失败时也需要重新加载数据，因为这时候可能有其他客户端更新了字段
 		// s.reloadData()

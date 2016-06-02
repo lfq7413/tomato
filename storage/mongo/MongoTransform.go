@@ -21,16 +21,7 @@ func NewMongoTransform() *MongoTransform {
 	return &MongoTransform{}
 }
 
-// TransformKey 把 key 转换为数据库中保存的格式
-func (t *MongoTransform) TransformKey(schema storage.Schema, className, key string) (string, error) {
-	k, _, err := t.transformKeyValue(schema, className, key, nil, nil)
-	if err != nil {
-		return "", err
-	}
-	return k, nil
-}
-
-// transformKeyValue 把传入的键值对转换为数据库中保存的格式
+// TransformKeyValue 把传入的键值对转换为数据库中保存的格式
 // restKey API 格式的字段名
 // restValue API 格式的值
 // options 设置项
@@ -39,14 +30,13 @@ func (t *MongoTransform) TransformKey(schema storage.Schema, className, key stri
 // update: true 表示 restValue 中包含 __op 操作，类似 Add、Delete，需要进行转换
 // validate: true 表示需要校验字段名
 // 返回转换成 数据库格式的字段名与值
-func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
+func (t *MongoTransform) TransformKeyValue(schema storage.Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
 	if options == nil {
 		options = types.M{}
 	}
 	inArray := options["inArray"].(bool)
 	inObject := options["inObject"].(bool)
 	update := options["update"].(bool)
-	validate := options["validate"].(bool)
 
 	// 检测 key 是否为 内置字段
 	key := restKey
@@ -90,14 +80,6 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 			return "", nil, errs.E(errs.InvalidKeyName, "can only query on "+key)
 		}
 
-		// 校验字段名
-		if validate {
-			keyMatch, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_\.]*$`, key)
-			if keyMatch == false {
-				// 无效的键名
-				return "", nil, errs.E(errs.InvalidKeyName, "invalid key name: "+key)
-			}
-		}
 		// 其他字段名不做处理
 	}
 
@@ -148,7 +130,7 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 	if valueArray, ok := restValue.([]interface{}); ok {
 		outValue := types.S{}
 		for _, restObj := range valueArray {
-			_, v, err := t.transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
+			_, v, err := t.TransformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
 			if err != nil {
 				return "", nil, err
 			}
@@ -169,7 +151,7 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 	// 处理正常的对象
 	normalValue := types.M{}
 	for subRestKey, subRestValue := range utils.MapInterface(restValue) {
-		k, v, err := t.transformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
+		k, v, err := t.TransformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
 		if err != nil {
 			return "", nil, err
 		}
@@ -829,7 +811,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 	if s, ok := restValue.([]interface{}); ok {
 		value := []interface{}{}
 		for _, restObj := range s {
-			_, v, err := t.transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
+			_, v, err := t.TransformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
 			if err != nil {
 				return "", nil, err
 			}
@@ -846,7 +828,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 	newValue := types.M{}
 	if val, ok := restValue.(map[string]interface{}); ok {
 		for subRestKey, subRestValue := range val {
-			_, v, err := t.transformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
+			_, v, err := t.TransformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
 			if err != nil {
 				return "", nil, err
 			}
@@ -982,7 +964,7 @@ func (t *MongoTransform) TransformUpdate(schema storage.Schema, className string
 
 	// 转换 update 中的其他数据
 	for k, v := range update {
-		key, value, err := t.transformKeyValue(schema, className, k, v, types.M{"update": true})
+		key, value, err := t.TransformKeyValue(schema, className, k, v, types.M{"update": true})
 		if err != nil {
 			return nil, err
 		}

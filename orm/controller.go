@@ -102,19 +102,28 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 		for _, key := range keys {
 			mongoKey := ""
 			// sort 中的 key ，如果是要按倒序排列，则会加前缀 "-" ，所以要对其进行处理
+			var prefix string
 			if strings.HasPrefix(key, "-") {
-				k, err := Transform.TransformKey(schema, className, key[1:])
-				if err != nil {
-					return nil, err
-				}
-				mongoKey = "-" + k
-			} else {
-				k, err := Transform.TransformKey(schema, className, key)
-				if err != nil {
-					return nil, err
-				}
-				mongoKey = k
+				prefix = "-"
+				key = key[1:]
 			}
+
+			if key == "_created_at" {
+				key = "createdAt"
+			} else if key == "_updated_at" {
+				key = "updatedAt"
+			}
+
+			if fieldNameIsValid(key) == false {
+				return nil, errs.E(errs.InvalidKeyName, "Invalid field name: "+key)
+			}
+
+			k, _, err := Transform.TransformKeyValue(schema, className, key, nil, nil)
+			if err != nil {
+				return nil, err
+			}
+			mongoKey = prefix + k
+
 			sortKeys = append(sortKeys, mongoKey)
 		}
 		mongoOptions["sort"] = sortKeys

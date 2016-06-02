@@ -45,7 +45,6 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 	}
 	inArray := options["inArray"].(bool)
 	inObject := options["inObject"].(bool)
-	query := options["query"].(bool)
 	update := options["update"].(bool)
 	validate := options["validate"].(bool)
 
@@ -73,45 +72,9 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 	case "_rperm", "_wperm":
 		return key, restValue, nil
 	case "$or":
-		if query == false {
-			// 只有查询时才能使用 $or
-			return "", nil, errs.E(errs.InvalidKeyName, "you can only use $or in queries")
-		}
-		querys := utils.SliceInterface(restValue)
-		if querys == nil {
-			// 待转换值必须为数组类型
-			return "", nil, errs.E(errs.InvalidQuery, "bad $or format - use an array value")
-		}
-		mongoSubqueries := types.S{}
-		// 转换 where 查询条件
-		for _, v := range querys {
-			query, err := t.TransformWhere(schema, className, utils.MapInterface(v), nil)
-			if err != nil {
-				return "", nil, err
-			}
-			mongoSubqueries = append(mongoSubqueries, query)
-		}
-		return "$or", mongoSubqueries, nil
+		return "", nil, errs.E(errs.InvalidKeyName, "you can only use $or in queries")
 	case "$and":
-		if query == false {
-			// 只有查询时才能使用 and
-			return "", "", errs.E(errs.InvalidKeyName, "you can only use $and in queries")
-		}
-		querys := utils.SliceInterface(restValue)
-		if querys == nil {
-			// 待转换值必须为数组类型
-			return "", nil, errs.E(errs.InvalidQuery, "bad $and format - use an array value")
-		}
-		mongoSubqueries := types.S{}
-		// 转换 where 查询条件
-		for _, v := range querys {
-			query, err := t.TransformWhere(schema, className, utils.MapInterface(v), nil)
-			if err != nil {
-				return "", nil, err
-			}
-			mongoSubqueries = append(mongoSubqueries, query)
-		}
-		return "$and", mongoSubqueries, nil
+		return "", nil, errs.E(errs.InvalidKeyName, "you can only use $and in queries")
 	default:
 		// 处理第三方 auth 数据，key 的格式为： authData.xxx.id
 		// {
@@ -123,11 +86,6 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 		// }
 		authDataMatch, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key)
 		if authDataMatch {
-			if query {
-				// 取出 authData.xxx.id 中的 xxx ，转换为 _auth_data_.xxx.id
-				provider := key[len("authData."):(len(key) - len(".id"))]
-				return "_auth_data_" + provider + ".id", restValue, nil
-			}
 			// 只能将其应用查询操作
 			return "", nil, errs.E(errs.InvalidKeyName, "can only query on "+key)
 		}
@@ -164,28 +122,6 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 		}
 	}
 
-	expectedTypeIsArray := false
-	// 期望类型为 array
-	if expected != nil && expected["type"].(string) == "Array" {
-		expectedTypeIsArray = true
-	}
-
-	// 处理查询操作，转换限制条件
-	if query {
-		value, err := t.transformConstraint(restValue, expectedTypeIsArray)
-		if err != nil {
-			return "", nil, err
-		}
-		if value != t.cannotTransform() {
-			return key, value, nil
-		}
-	}
-
-	// 期望类型为 array，并且转换限制条件失败，并且 restValue 不为 array 类型时，转换为 $all
-	if expectedTypeIsArray && query && utils.SliceInterface(restValue) == nil {
-		return key, types.M{"$all": types.S{restValue}}, nil
-	}
-
 	// 转换原子数据
 	value, err := t.transformAtom(restValue, false, types.M{"inArray": inArray, "inObject": inObject})
 	if err != nil {
@@ -210,10 +146,6 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 
 	// 转换数组类型
 	if valueArray, ok := restValue.([]interface{}); ok {
-		if query {
-			// 查询时不能为数组
-			return "", "", errs.E(errs.InvalidJSON, "cannot use array as query param")
-		}
 		outValue := types.S{}
 		for _, restObj := range valueArray {
 			_, v, err := t.transformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
@@ -244,6 +176,139 @@ func (t *MongoTransform) transformKeyValue(schema storage.Schema, className, res
 		normalValue[k] = v
 	}
 	return key, normalValue, nil
+}
+
+// valueAsDate 校验并转换时间类型
+func valueAsDate(value interface{}) (time.Time, bool) {
+	if s, ok := value.(string); ok {
+		t, err := utils.StringtoTime(s)
+		if err != nil {
+			return time.Time{}, false
+		}
+		return t, true
+	}
+	if t, ok := value.(time.Time); ok {
+		return t, true
+	}
+	return time.Time{}, false
+}
+
+// transformQueryKeyValue 转换查询请求中的键值对
+func (t *MongoTransform) transformQueryKeyValue(className, key string, value interface{}, options, schema types.M) (string, interface{}, error) {
+	if options == nil {
+		options = types.M{}
+	}
+	validate := options["validate"].(bool)
+
+	switch key {
+	case "createdAt":
+		if t, ok := valueAsDate(value); ok {
+			return "_created_at", t, nil
+		}
+		key = "_created_at"
+
+	case "updatedAt":
+		if t, ok := valueAsDate(value); ok {
+			return "_updated_at", t, nil
+		}
+		key = "_updated_at"
+
+	case "expiresAt":
+		if t, ok := valueAsDate(value); ok {
+			return "expiresAt", t, nil
+		}
+
+	case "objectId":
+		return "_id", value, nil
+
+	case "sessionToken":
+		return "_session_token", value, nil
+
+	case "_rperm", "_wperm", "_perishable_token", "_email_verify_token":
+		return key, value, nil
+
+	case "$or":
+		if array, ok := value.([]interface{}); ok {
+			querys := types.S{}
+			for _, subQuery := range array {
+				r, err := t.TransformWhere(className, subQuery.(map[string]interface{}), types.M{}, schema)
+				if err != nil {
+					return "", nil, err
+				}
+				querys = append(querys, r)
+			}
+			return "$or", querys, nil
+		}
+		return "", nil, errs.E(errs.InvalidQuery, "bad $or format - use an array value")
+
+	case "$and":
+		if array, ok := value.([]interface{}); ok {
+			querys := types.S{}
+			for _, subQuery := range array {
+				r, err := t.TransformWhere(className, subQuery.(map[string]interface{}), types.M{}, schema)
+				if err != nil {
+					return "", nil, err
+				}
+				querys = append(querys, r)
+			}
+			return "$and", querys, nil
+		}
+		return "", nil, errs.E(errs.InvalidQuery, "bad $and format - use an array value")
+
+	default:
+		authDataMatch, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key)
+		if authDataMatch {
+			provider := key[len("authData."):(len(key) - len(".id"))]
+			return "_auth_data_" + provider + ".id", value, nil
+		}
+
+		if m, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_\.]*$`, key); m == false && validate {
+			return "", nil, errs.E(errs.InvalidKeyName, "invalid key name: "+key)
+		}
+	}
+
+	var fields types.M
+	if schema != nil {
+		fields = utils.MapInterface(schema["fields"])
+	}
+	var fieldType types.M
+	if fields != nil {
+		fieldType = utils.MapInterface(fields[key])
+	}
+
+	expectedTypeIsArray := schema != nil && fieldType != nil && fieldType["type"].(string) == "Array"
+	expectedTypeIsPointer := schema != nil && fieldType != nil && fieldType["type"].(string) == "Pointer"
+
+	if expectedTypeIsPointer {
+		key = "_p_" + key
+	} else if schema == nil && value != nil {
+		if v, ok := value.(map[string]interface{}); ok {
+			if v["__type"].(string) == "Pointer" {
+				key = "_p_" + key
+			}
+		}
+	}
+
+	cValue, err := t.transformConstraint(value, expectedTypeIsArray)
+	if err != nil {
+		return "", nil, err
+	}
+	if cValue != t.cannotTransform() {
+		return key, cValue, nil
+	}
+
+	if _, ok := value.([]interface{}); ok == false && expectedTypeIsArray {
+		return key, types.M{"$all": types.S{value}}, nil
+	}
+
+	aValue, err := t.transformAtom(value, false, types.M{})
+	if err != nil {
+		return "", nil, err
+	}
+	if aValue != t.cannotTransform() {
+		return key, aValue, nil
+	}
+	return "", nil, errs.E(errs.InvalidJSON, "You cannot use this value as a query parameter.")
 }
 
 // transformConstraint 转换查询限制条件，处理的操作符类似 "$lt", "$gt" 等
@@ -866,7 +931,7 @@ func (t *MongoTransform) transformACL(restObject types.M) types.M {
 }
 
 // TransformWhere 转换 where 查询数据，返回数据库格式的数据
-func (t *MongoTransform) TransformWhere(schema storage.Schema, className string, where types.M, options types.M) (types.M, error) {
+func (t *MongoTransform) TransformWhere(className string, where, options, schema types.M) (types.M, error) {
 	if options == nil || len(options) == 0 {
 		options = types.M{"validate": true}
 	}
@@ -876,12 +941,8 @@ func (t *MongoTransform) TransformWhere(schema storage.Schema, className string,
 		return nil, errs.E(errs.InvalidQuery, "Cannot query on ACL.")
 	}
 
-	transformKeyOptions := types.M{
-		"query":    true,
-		"validate": options["validate"],
-	}
 	for k, v := range where {
-		key, value, err := t.transformKeyValue(schema, className, k, v, transformKeyOptions)
+		key, value, err := t.transformQueryKeyValue(className, k, v, types.M{"validate": options["validate"]}, schema)
 		if err != nil {
 			return nil, err
 		}

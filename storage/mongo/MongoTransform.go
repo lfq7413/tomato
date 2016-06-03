@@ -23,7 +23,31 @@ func NewMongoTransform() *MongoTransform {
 
 // TransformKey ...
 func (t *MongoTransform) TransformKey(className, fieldName string, schema types.M) string {
-	return ""
+	switch fieldName {
+	case "objectId":
+		return "_id"
+
+	case "createdAt":
+		return "_created_at"
+
+	case "updatedAt":
+		return "_updated_at"
+
+	case "sessionToken":
+		return "_session_token"
+
+	}
+
+	fields := schema["fields"].(map[string]interface{})
+	if fields != nil {
+		if tp, ok := fields[fieldName].(map[string]interface{}); ok {
+			if tp["__type"].(string) == "Pointer" {
+				fieldName = "_p_" + fieldName
+			}
+		}
+	}
+
+	return fieldName
 }
 
 // TransformKeyValue 把传入的键值对转换为数据库中保存的格式
@@ -1521,4 +1545,48 @@ func (f fileCoder) jsonToDatabase(json types.M) (interface{}, error) {
 
 func (f fileCoder) isValidJSON(value types.M) bool {
 	return value != nil && utils.String(value["__type"]) == "File" && utils.String(value["name"]) != ""
+}
+
+func transformInteriorAtom(atom interface{}) (interface{}, error) {
+	if atom == nil {
+		return atom, nil
+	}
+
+	if a, ok := atom.(map[string]interface{}); ok {
+		if a["__type"].(string) == "Pointer" {
+			return types.M{
+				"__type":    "Pointer",
+				"className": a["className"],
+				"objectId":  a["objectId"],
+			}, nil
+		}
+	}
+
+	// Date 类型
+	// {
+	// 	"__type": "Date",
+	// 	"iso": "2015-03-01T15:59:11-07:00"
+	// }
+	// ==> 143123456789...
+	d := dateCoder{}
+	if a, ok := atom.(map[string]interface{}); ok {
+		if d.isValidJSON(a) {
+			return d.jsonToDatabase(a)
+		}
+	}
+
+	// Bytes 类型
+	// {
+	// 	"__type": "Bytes",
+	// 	"base64": "aGVsbG8="
+	// }
+	// ==> hello
+	b := bytesCoder{}
+	if a, ok := atom.(map[string]interface{}); ok {
+		if b.isValidJSON(a) {
+			return b.jsonToDatabase(a)
+		}
+	}
+
+	return atom, nil
 }

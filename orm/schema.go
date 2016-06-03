@@ -49,6 +49,10 @@ func init() {
 			"timeZone":         types.M{"type": "String"},
 			"localeIdentifier": types.M{"type": "String"},
 			"badge":            types.M{"type": "Number"},
+			"appVersion":       types.M{"type": "String"},
+			"appName":          types.M{"type": "String"},
+			"appIdentifier":    types.M{"type": "String"},
+			"parseVersion":     types.M{"type": "String"},
 		},
 		"_Role": types.M{
 			"name":  types.M{"type": "String"},

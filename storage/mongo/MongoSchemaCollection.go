@@ -185,6 +185,10 @@ func mongoFieldToParseSchemaField(t string) types.M {
 		return types.M{
 			"type": "File",
 		}
+	case "bytes":
+		return types.M{
+			"type": "Bytes",
+		}
 	}
 
 	return types.M{}

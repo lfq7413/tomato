@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lfq7413/tomato/authdatamanager"
+	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
@@ -594,8 +595,29 @@ func (w *Write) transformUser() error {
 	}
 
 	// 如果是正在更新 _User ，则清除相应用户的 session 缓存
-	if w.query != nil && w.auth.User != nil && w.auth.User["sessionToken"] != nil {
-		usersCache.remove(w.auth.User["sessionToken"].(string))
+	if w.query != nil {
+		where := types.M{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  w.objectID(),
+		}
+		query, err := NewQuery(Master(), "_Session", where, types.M{})
+		if err != nil {
+			return err
+		}
+		response, err := query.Execute()
+		if err != nil {
+			return err
+		}
+
+		if utils.HasResults(response) {
+			if results, ok := response["results"].([]interface{}); ok {
+				for _, result := range results {
+					session := result.(map[string]interface{})
+					cache.User.Del(session["sessionToken"].(string))
+				}
+			}
+		}
 	}
 
 	// 处理密码，计算 sha256

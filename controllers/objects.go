@@ -55,6 +55,17 @@ func (o *ObjectsController) Prepare() {
 	info.SessionToken = o.Ctx.Input.Header("X-Parse-Session-Token")
 	info.InstallationID = o.Ctx.Input.Header("X-Parse-Installation-Id")
 
+	basicAuth := httpAuth(o.Ctx.Input.Header("authorization"))
+	if basicAuth != nil {
+		info.AppID = basicAuth["appId"]
+		if basicAuth["masterKey"] != "" {
+			info.MasterKey = basicAuth["masterKey"]
+		}
+		if basicAuth["javascriptKey"] != "" {
+			info.ClientKey = basicAuth["javascriptKey"]
+		}
+	}
+
 	if o.Ctx.Input.RequestBody != nil {
 		contentType := o.Ctx.Input.Header("Content-type")
 		if strings.HasPrefix(contentType, "application/json") {
@@ -160,6 +171,51 @@ func (o *ObjectsController) Prepare() {
 			return
 		}
 	}
+}
+
+func httpAuth(authorization string) map[string]string {
+	if authorization == "" {
+		return nil
+	}
+
+	header := authorization
+	var appID, masterKey, javascriptKey string
+	authPrefix := "basic "
+
+	match := strings.HasPrefix(strings.ToLower(header), authPrefix)
+	if match {
+		encodedAuth := header[len(authPrefix):len(header)]
+		credentials := strings.Split(decodeBase64(encodedAuth), ":")
+
+		if len(credentials) == 2 {
+			appID = credentials[0]
+			key := credentials[1]
+			jsKeyPrefix := "javascript-key="
+
+			matchKey := strings.HasPrefix(key, jsKeyPrefix)
+			if matchKey {
+				javascriptKey = key[len(jsKeyPrefix):len(key)]
+			} else {
+				masterKey = key
+			}
+			return map[string]string{
+				"appId":         appID,
+				"masterKey":     masterKey,
+				"javascriptKey": javascriptKey,
+			}
+		}
+		return nil
+	}
+
+	return nil
+}
+
+func decodeBase64(str string) string {
+	data, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
 // HandleCreate 处理对象创建请求，返回对象 id 与对象位置

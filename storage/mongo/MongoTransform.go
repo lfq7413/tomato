@@ -21,6 +21,11 @@ func NewMongoTransform() *MongoTransform {
 	return &MongoTransform{}
 }
 
+// TransformKey ...
+func (t *MongoTransform) TransformKey(className, fieldName string, schema types.M) string {
+	return ""
+}
+
 // TransformKeyValue 把传入的键值对转换为数据库中保存的格式
 // restKey API 格式的字段名
 // restValue API 格式的值

@@ -2,6 +2,7 @@
 package orm
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -95,6 +96,13 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	}
 
 	schema := d.LoadSchema()
+	parseFormatSchema, err := schema.GetOneSchema(className, false)
+	if err != nil {
+		return nil, err
+	}
+	if len(parseFormatSchema) == 0 {
+		parseFormatSchema["fields"] = types.M{}
+	}
 
 	if options["sort"] != nil {
 		sortKeys := []string{}
@@ -118,10 +126,11 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 				return nil, errs.E(errs.InvalidKeyName, "Invalid field name: "+key)
 			}
 
-			k, _, err := Transform.TransformKeyValue(schema, className, key, nil, nil)
-			if err != nil {
-				return nil, err
+			if match, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key); match {
+				return nil, errs.E(errs.InvalidKeyName, "Cannot sort by "+key)
 			}
+
+			k := Transform.TransformKey(className, key, parseFormatSchema)
 			mongoKey = prefix + k
 
 			sortKeys = append(sortKeys, mongoKey)
@@ -157,14 +166,6 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	// 组装 acl 查询条件，查找可被当前用户访问的对象
 	if isMaster == false {
 		where = addReadACL(where, aclGroup)
-	}
-
-	parseFormatSchema, err := schema.GetOneSchema(className, false)
-	if err != nil {
-		return nil, err
-	}
-	if len(parseFormatSchema) == 0 {
-		parseFormatSchema["fields"] = types.M{}
 	}
 
 	mongoWhere, err := Transform.TransformWhere(className, where, nil, parseFormatSchema)

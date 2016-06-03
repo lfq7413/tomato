@@ -138,7 +138,7 @@ func (t *MongoTransform) TransformKeyValue(schema storage.Schema, className, res
 	if err != nil {
 		return "", nil, err
 	}
-	if value != t.cannotTransform() {
+	if value != cannotTransform() {
 		if timeField && utils.String(value) != "" {
 			var err error
 			value, err = utils.StringtoTime(utils.String(value))
@@ -173,7 +173,7 @@ func (t *MongoTransform) TransformKeyValue(schema storage.Schema, className, res
 	if err != nil {
 		return "", nil, err
 	}
-	if value != t.cannotTransform() {
+	if value != cannotTransform() {
 		return key, value, nil
 	}
 
@@ -304,7 +304,7 @@ func (t *MongoTransform) transformQueryKeyValue(className, key string, value int
 	if err != nil {
 		return "", nil, err
 	}
-	if cValue != t.cannotTransform() {
+	if cValue != cannotTransform() {
 		return key, cValue, nil
 	}
 
@@ -316,7 +316,7 @@ func (t *MongoTransform) transformQueryKeyValue(className, key string, value int
 	if err != nil {
 		return "", nil, err
 	}
-	if aValue != t.cannotTransform() {
+	if aValue != cannotTransform() {
 		return key, aValue, nil
 	}
 	return "", nil, errs.E(errs.InvalidJSON, "You cannot use this value as a query parameter.")
@@ -327,7 +327,7 @@ func (t *MongoTransform) transformQueryKeyValue(className, key string, value int
 func (t *MongoTransform) transformConstraint(constraint interface{}, inArray bool) (interface{}, error) {
 	// TODO 需要根据 MongoDB 文档修正参数
 	if constraint == nil || utils.MapInterface(constraint) == nil {
-		return t.cannotTransform(), nil
+		return cannotTransform(), nil
 	}
 
 	// keys is the constraints in reverse alphabetical order.
@@ -461,7 +461,7 @@ func (t *MongoTransform) transformConstraint(constraint interface{}, inArray boo
 				// 其他以 $ 开头的操作符为无效参数
 				return nil, errs.E(errs.InvalidJSON, "bad constraint: "+key)
 			}
-			return t.cannotTransform(), nil
+			return cannotTransform(), nil
 		}
 	}
 
@@ -580,7 +580,7 @@ func (t *MongoTransform) transformAtom(atom interface{}, force bool, options typ
 			// 无效类型，"__type" 的值不支持
 			return nil, errs.E(errs.InvalidJSON, "bad atom.")
 		}
-		return t.cannotTransform(), nil
+		return cannotTransform(), nil
 	}
 
 	// 其他类型无法转换
@@ -593,7 +593,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 	// 具体操作放在 "__op" 中
 	operatorMap := utils.MapInterface(operator)
 	if operatorMap == nil || operatorMap["__op"] == nil {
-		return t.cannotTransform(), nil
+		return cannotTransform(), nil
 	}
 
 	op := utils.String(operatorMap["__op"])
@@ -829,7 +829,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 	if err != nil {
 		return "", nil, err
 	}
-	if value != t.cannotTransform() {
+	if value != cannotTransform() {
 		return restKey, value, nil
 	}
 
@@ -850,7 +850,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 	}
 
 	value, err = t.transformUpdateOperator(restValue, true)
-	if value != t.cannotTransform() {
+	if value != cannotTransform() {
 		return restKey, value, nil
 	}
 
@@ -1419,7 +1419,7 @@ func (t *MongoTransform) TransformNotInQuery(notInQueryObject types.M, className
 	notInQueryObject["$nin"] = nin
 }
 
-func (t *MongoTransform) cannotTransform() interface{} {
+func cannotTransform() interface{} {
 	return nil
 }
 
@@ -1589,4 +1589,58 @@ func transformInteriorAtom(atom interface{}) (interface{}, error) {
 	}
 
 	return atom, nil
+}
+
+func transformInteriorValue(restValue interface{}) (interface{}, error) {
+	if restValue == nil {
+		return restValue, nil
+	}
+
+	if value, ok := restValue.(map[string]interface{}); ok {
+		for k := range value {
+			if strings.Index(k, "$") > -1 || strings.Index(k, ".") > -1 {
+				return nil, errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
+			}
+		}
+	}
+
+	value, err := transformInteriorAtom(restValue)
+	if err != nil {
+		return nil, err
+	}
+	if value != cannotTransform() {
+		return value, err
+	}
+
+	if value, ok := restValue.([]interface{}); ok {
+		newValue := types.S{}
+		for _, v := range value {
+			r, err := transformInteriorValue(v)
+			if err != nil {
+				return nil, err
+			}
+			newValue = append(newValue, r)
+		}
+		return newValue, nil
+	}
+
+	if value, ok := restValue.(map[string]interface{}); ok {
+		if _, ok := value["__op"]; ok {
+			// TODO return transformUpdateOperator(restValue, true);
+		}
+	}
+
+	if value, ok := restValue.(map[string]interface{}); ok {
+		newValue := types.M{}
+		for k, v := range value {
+			r, err := transformInteriorValue(v)
+			if err != nil {
+				return nil, err
+			}
+			newValue[k] = r
+		}
+		return newValue, nil
+	}
+
+	return restValue, nil
 }

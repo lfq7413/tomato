@@ -11,7 +11,6 @@ type Schema interface {
 // Transform API 格式与数据库格式之间转换的接口
 type Transform interface {
 	TransformKey(className, fieldName string, schema types.M) string
-	TransformKeyValue(schema Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error)
 	TransformWhere(className string, where, options, schema types.M) (types.M, error)
 	TransformUpdate(schema Schema, className string, update, options types.M) (types.M, error)
 	TransformSelect(selectObject types.M, key string, objects []types.M)

@@ -50,7 +50,7 @@ func (t *MongoTransform) TransformKey(className, fieldName string, schema types.
 	return fieldName
 }
 
-// TransformKeyValue 把传入的键值对转换为数据库中保存的格式
+// transformKeyValueForUpdate 把传入的键值对转换为数据库中保存的格式
 // restKey API 格式的字段名
 // restValue API 格式的值
 // options 设置项
@@ -59,14 +59,7 @@ func (t *MongoTransform) TransformKey(className, fieldName string, schema types.
 // update: true 表示 restValue 中包含 __op 操作，类似 Add、Delete，需要进行转换
 // validate: true 表示需要校验字段名
 // 返回转换成 数据库格式的字段名与值
-func (t *MongoTransform) TransformKeyValue(schema storage.Schema, className, restKey string, restValue interface{}, options types.M) (string, interface{}, error) {
-	if options == nil {
-		options = types.M{}
-	}
-	inArray := options["inArray"].(bool)
-	inObject := options["inObject"].(bool)
-	update := options["update"].(bool)
-
+func (t *MongoTransform) transformKeyValueForUpdate(schema storage.Schema, className, restKey string, restValue interface{}) (string, interface{}, error) {
 	// 检测 key 是否为 内置字段
 	key := restKey
 	timeField := false
@@ -134,7 +127,7 @@ func (t *MongoTransform) TransformKeyValue(schema storage.Schema, className, res
 	}
 
 	// 转换原子数据
-	value, err := t.transformAtom(restValue, false, types.M{"inArray": inArray, "inObject": inObject})
+	value, err := t.transformTopLevelAtom(restValue)
 	if err != nil {
 		return "", nil, err
 	}
@@ -149,17 +142,11 @@ func (t *MongoTransform) TransformKeyValue(schema storage.Schema, className, res
 		return key, value, nil
 	}
 
-	// ACL 应该在此之前处理，如果依然出现，则返回错误
-	if key == "ACL" {
-		// 不能在此转换 ACL
-		return "", "", errs.E(errs.InvalidKeyName, "There was a problem transforming an ACL.")
-	}
-
 	// 转换数组类型
 	if valueArray, ok := restValue.([]interface{}); ok {
 		outValue := types.S{}
 		for _, restObj := range valueArray {
-			_, v, err := t.TransformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
+			v, err := transformInteriorValue(restObj)
 			if err != nil {
 				return "", nil, err
 			}
@@ -169,24 +156,38 @@ func (t *MongoTransform) TransformKeyValue(schema storage.Schema, className, res
 	}
 
 	// 处理更新操作中的 "_op"
-	value, err = t.transformUpdateOperator(restValue, !update)
-	if err != nil {
-		return "", nil, err
-	}
-	if value != cannotTransform() {
-		return key, value, nil
+	if value, ok := restValue.(map[string]interface{}); ok {
+		if _, ok := value["__op"]; ok {
+			v, err := t.transformUpdateOperator(restValue, false)
+			if err != nil {
+				return "", nil, err
+			}
+			return key, v, nil
+		}
 	}
 
 	// 处理正常的对象
-	normalValue := types.M{}
-	for subRestKey, subRestValue := range utils.MapInterface(restValue) {
-		k, v, err := t.TransformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
-		if err != nil {
-			return "", nil, err
+	if value, ok := restValue.(map[string]interface{}); ok {
+		for k := range value {
+			if strings.Index(k, "$") > -1 || strings.Index(k, ".") > -1 {
+				return "", nil, errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
+			}
 		}
-		normalValue[k] = v
 	}
-	return key, normalValue, nil
+
+	if value, ok := restValue.(map[string]interface{}); ok {
+		newValue := types.M{}
+		for k, v := range value {
+			r, err := transformInteriorValue(v)
+			if err != nil {
+				return "", nil, err
+			}
+			newValue[k] = r
+		}
+		return key, newValue, nil
+	}
+
+	return key, restValue, nil
 }
 
 // valueAsDate 校验并转换时间类型
@@ -312,7 +313,7 @@ func (t *MongoTransform) transformQueryKeyValue(className, key string, value int
 		return key, types.M{"$all": types.S{value}}, nil
 	}
 
-	aValue, err := t.transformAtom(value, false, types.M{})
+	aValue, err := t.transformTopLevelAtom(value)
 	if err != nil {
 		return "", nil, err
 	}
@@ -347,9 +348,19 @@ func (t *MongoTransform) transformConstraint(constraint interface{}, inArray boo
 		// 转换 小于、大于、存在、等于、不等于 操作符
 		case "$lt", "$lte", "$gt", "$gte", "$exists", "$ne", "$eq":
 			var err error
-			answer[key], err = t.transformAtom(object[key], true, types.M{"inArray": inArray})
-			if err != nil {
-				return nil, err
+			if inArray {
+				answer[key], err = transformInteriorAtom(object[key])
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				answer[key], err = t.transformTopLevelAtom(object[key])
+				if err != nil {
+					return nil, err
+				}
+			}
+			if answer[key] == cannotTransform() {
+				return nil, errs.E(errs.InvalidJSON, "bad atom")
 			}
 
 		// 转换 包含、不包含 操作符
@@ -360,12 +371,24 @@ func (t *MongoTransform) transformConstraint(constraint interface{}, inArray boo
 				return nil, errs.E(errs.InvalidJSON, "bad "+key+" value")
 			}
 			answerArr := types.S{}
-			for _, v := range arr {
-				obj, err := t.transformAtom(v, true, types.M{"inArray": inArray})
-				if err != nil {
-					return nil, err
+			for _, value := range arr {
+				var result interface{}
+				var err error
+				if inArray {
+					result, err = transformInteriorAtom(value)
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					result, err = t.transformTopLevelAtom(value)
+					if err != nil {
+						return nil, err
+					}
 				}
-				answerArr = append(answerArr, obj)
+				if result == cannotTransform() {
+					return nil, errs.E(errs.InvalidJSON, "bad atom")
+				}
+				answerArr = append(answerArr, result)
 			}
 			answer[key] = answerArr
 
@@ -378,7 +401,7 @@ func (t *MongoTransform) transformConstraint(constraint interface{}, inArray boo
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
-				obj, err := t.transformAtom(v, true, types.M{"inArray": true})
+				obj, err := transformInteriorAtom(v)
 				if err != nil {
 					return nil, err
 				}
@@ -468,23 +491,11 @@ func (t *MongoTransform) transformConstraint(constraint interface{}, inArray boo
 	return answer, nil
 }
 
-// transformAtom 转换原子数据
+// transformTopLevelAtom 转换原子数据
 // options.inArray 为 true，则不进行相应转换
 // options.inObject 为 true，则不进行相应转换
 // force 是否强制转换，true 时如果转换失败则返回错误
-func (t *MongoTransform) transformAtom(atom interface{}, force bool, options types.M) (interface{}, error) {
-	if options == nil {
-		options = types.M{}
-	}
-	inArray := false
-	inObject := false
-	if v, ok := options["inArray"].(bool); ok {
-		inArray = v
-	}
-	if v, ok := options["inObject"].(bool); ok {
-		inObject = v
-	}
-
+func (t *MongoTransform) transformTopLevelAtom(atom interface{}) (interface{}, error) {
 	// 字符串、数字、布尔类型直接返回
 	if _, ok := atom.(string); ok {
 		return atom, nil
@@ -510,14 +521,7 @@ func (t *MongoTransform) transformAtom(atom interface{}, force bool, options typ
 		// }
 		// ==> abc$123
 		if utils.String(object["__type"]) == "Pointer" {
-			if inArray == false && inObject == false {
-				return utils.String(object["className"]) + "$" + utils.String(object["objectId"]), nil
-			}
-			return types.M{
-				"__type":    "Pointer",
-				"className": object["className"],
-				"objectId":  object["objectId"],
-			}, nil
+			return utils.String(object["className"]) + "$" + utils.String(object["objectId"]), nil
 		}
 
 		// Date 类型
@@ -551,9 +555,6 @@ func (t *MongoTransform) transformAtom(atom interface{}, force bool, options typ
 		// ==> [-30.0, 40.0]
 		g := geoPointCoder{}
 		if g.isValidJSON(object) {
-			if inArray || inObject {
-				return object, nil
-			}
 			return g.jsonToDatabase(object)
 		}
 
@@ -565,21 +566,9 @@ func (t *MongoTransform) transformAtom(atom interface{}, force bool, options typ
 		// ==> ...hello.png
 		f := fileCoder{}
 		if f.isValidJSON(object) {
-			if inArray || inObject {
-				return object, nil
-			}
 			return f.jsonToDatabase(object)
 		}
 
-		// 在数组或者对象中的元素无需转换
-		if inArray || inObject {
-			return atom, nil
-		}
-
-		if force {
-			// 无效类型，"__type" 的值不支持
-			return nil, errs.E(errs.InvalidJSON, "bad atom.")
-		}
 		return cannotTransform(), nil
 	}
 
@@ -593,7 +582,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 	// 具体操作放在 "__op" 中
 	operatorMap := utils.MapInterface(operator)
 	if operatorMap == nil || operatorMap["__op"] == nil {
-		return cannotTransform(), nil
+		return operator, nil
 	}
 
 	op := utils.String(operatorMap["__op"])
@@ -659,7 +648,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 		}
 		toAdd := types.S{}
 		for _, obj := range objects {
-			o, err := t.transformAtom(obj, true, types.M{"inArray": true})
+			o, err := transformInteriorAtom(obj)
 			if err != nil {
 				return nil, err
 			}
@@ -697,7 +686,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 		}
 		toRemove := types.S{}
 		for _, obj := range objects {
-			o, err := t.transformAtom(obj, true, types.M{"inArray": true})
+			o, err := transformInteriorAtom(obj)
 			if err != nil {
 				return nil, err
 			}
@@ -713,7 +702,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 
 	default:
 		// 不支持的类型
-		return nil, errs.E(errs.CommandUnavailable, "the "+op+" op is not supported yet")
+		return nil, errs.E(errs.CommandUnavailable, "the "+op+" operator is not supported yet")
 	}
 }
 
@@ -748,7 +737,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 		return "_id", restValue, nil
 
 	case "createdAt":
-		transformedValue, err = t.transformAtom(restValue, false, types.M{})
+		transformedValue, err = t.transformTopLevelAtom(restValue)
 		if err != nil {
 			return "", nil, err
 		}
@@ -763,7 +752,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 		return "_created_at", coercedToDate, nil
 
 	case "updatedAt":
-		transformedValue, err = t.transformAtom(restValue, false, types.M{})
+		transformedValue, err = t.transformTopLevelAtom(restValue)
 		if err != nil {
 			return "", nil, err
 		}
@@ -778,7 +767,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 		return "_updated_at", coercedToDate, nil
 
 	case "expiresAt":
-		transformedValue, err = t.transformAtom(restValue, false, types.M{})
+		transformedValue, err = t.transformTopLevelAtom(restValue)
 		if err != nil {
 			return "", nil, err
 		}
@@ -825,7 +814,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 		}
 	}
 
-	value, err := t.transformAtom(restValue, false, types.M{"inArray": false, "inObject": false})
+	value, err := t.transformTopLevelAtom(restValue)
 	if err != nil {
 		return "", nil, err
 	}
@@ -840,7 +829,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 	if s, ok := restValue.([]interface{}); ok {
 		value := []interface{}{}
 		for _, restObj := range s {
-			_, v, err := t.TransformKeyValue(schema, className, restKey, restObj, types.M{"inArray": true})
+			v, err := transformInteriorValue(restObj)
 			if err != nil {
 				return "", nil, err
 			}
@@ -849,23 +838,39 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage
 		return restKey, value, nil
 	}
 
-	value, err = t.transformUpdateOperator(restValue, true)
-	if value != cannotTransform() {
-		return restKey, value, nil
-	}
-
-	newValue := types.M{}
-	if val, ok := restValue.(map[string]interface{}); ok {
-		for subRestKey, subRestValue := range val {
-			_, v, err := t.TransformKeyValue(schema, className, subRestKey, subRestValue, types.M{"inObject": true})
+	// 处理更新操作中的 "_op"
+	if value, ok := restValue.(map[string]interface{}); ok {
+		if _, ok := value["__op"]; ok {
+			v, err := t.transformUpdateOperator(restValue, false)
 			if err != nil {
 				return "", nil, err
 			}
-			newValue[subRestKey] = v
+			return restKey, v, nil
 		}
 	}
 
-	return restKey, newValue, nil
+	// 处理正常的对象
+	if value, ok := restValue.(map[string]interface{}); ok {
+		for k := range value {
+			if strings.Index(k, "$") > -1 || strings.Index(k, ".") > -1 {
+				return "", nil, errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
+			}
+		}
+	}
+
+	if value, ok := restValue.(map[string]interface{}); ok {
+		newValue := types.M{}
+		for k, v := range value {
+			r, err := transformInteriorValue(v)
+			if err != nil {
+				return "", nil, err
+			}
+			newValue[k] = r
+		}
+		return restKey, newValue, nil
+	}
+
+	return restKey, restValue, nil
 }
 
 // transformAuthData 转换第三方登录数据
@@ -1002,7 +1007,7 @@ func (t *MongoTransform) TransformUpdate(schema storage.Schema, className string
 
 	// 转换 update 中的其他数据
 	for k, v := range update {
-		key, value, err := t.TransformKeyValue(schema, className, k, v, types.M{"update": true})
+		key, value, err := t.transformKeyValueForUpdate(schema, className, k, v)
 		if err != nil {
 			return nil, err
 		}

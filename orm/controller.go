@@ -1042,3 +1042,59 @@ func addReadACL(query types.M, acl []string) types.M {
 	newQuery["_rperm"] = types.M{"$in": orParts}
 	return newQuery
 }
+
+var specialQuerykeys = []string{"$and", "$or", "_rperm", "_wperm", "_perishable_token", "_email_verify_token"}
+
+func validateQuery(query types.M) error {
+	if query == nil {
+		return nil
+	}
+
+	if _, ok := query["ACL"]; ok {
+		return errs.E(errs.InvalidQuery, "Cannot query on ACL.")
+	}
+
+	if or, ok := query["$or"]; ok {
+		if arr, ok := or.([]interface{}); ok {
+			for _, a := range arr {
+				err := validateQuery(a.(map[string]interface{}))
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errs.E(errs.InvalidQuery, "Bad $or format - use an array value.")
+		}
+	}
+
+	if and, ok := query["$and"]; ok {
+		if arr, ok := and.([]interface{}); ok {
+			for _, a := range arr {
+				err := validateQuery(a.(map[string]interface{}))
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errs.E(errs.InvalidQuery, "Bad $and format - use an array value.")
+		}
+	}
+
+	for key := range query {
+		include := false
+		for _, v := range specialQuerykeys {
+			if key == v {
+				include = true
+				break
+			}
+		}
+		if include == false {
+			match, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_\.]*$`, key)
+			if match == false {
+				return errs.E(errs.InvalidKeyName, "Invalid key name: "+key)
+			}
+		}
+	}
+
+	return nil
+}

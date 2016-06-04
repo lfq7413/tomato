@@ -168,7 +168,12 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 		where = addReadACL(where, aclGroup)
 	}
 
-	mongoWhere, err := Transform.TransformWhere(className, where, nil, parseFormatSchema)
+	err = validateQuery(where)
+	if err != nil {
+		return nil, err
+	}
+
+	mongoWhere, err := Transform.TransformWhere(className, where, parseFormatSchema)
 	if err != nil {
 		return nil, err
 	}
@@ -223,6 +228,11 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		where = addWriteACL(where, aclGroup)
 	}
 
+	err := validateQuery(where)
+	if err != nil {
+		return err
+	}
+
 	parseFormatSchema, err := schema.GetOneSchema(className, false)
 	if err != nil {
 		return err
@@ -231,7 +241,7 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		parseFormatSchema["fields"] = types.M{}
 	}
 
-	err = Adapter.DeleteObjectsByQuery(className, where, !d.skipValidation, parseFormatSchema)
+	err = Adapter.DeleteObjectsByQuery(className, where, parseFormatSchema)
 	if err != nil {
 		msg := err.Error()
 		msg = strings.Replace(msg, " ", "", -1)
@@ -293,6 +303,11 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		where = addWriteACL(where, aclGroup)
 	}
 
+	err := validateQuery(where)
+	if err != nil {
+		return nil, err
+	}
+
 	parseFormatSchema, err := schema.GetOneSchema(className, false)
 	if err != nil {
 		return nil, err
@@ -301,7 +316,7 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		parseFormatSchema["fields"] = types.M{}
 	}
 
-	mongoWhere, err := Transform.TransformWhere(className, where, types.M{"validate": !d.skipValidation}, parseFormatSchema)
+	mongoWhere, err := Transform.TransformWhere(className, where, parseFormatSchema)
 	if err != nil {
 		return nil, err
 	}

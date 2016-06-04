@@ -11,7 +11,7 @@ type Schema interface {
 // Transform API 格式与数据库格式之间转换的接口
 type Transform interface {
 	TransformKey(className, fieldName string, schema types.M) string
-	TransformWhere(className string, where, options, schema types.M) (types.M, error)
+	TransformWhere(className string, where, schema types.M) (types.M, error)
 	TransformUpdate(schema Schema, className string, update, options types.M) (types.M, error)
 	TransformSelect(selectObject types.M, key string, objects []types.M)
 	TransformDontSelect(dontSelectObject types.M, key string, objects []types.M)
@@ -32,7 +32,7 @@ type Adapter interface {
 	GetTransform() Transform
 	GetAllSchemas() ([]types.M, error)
 	GetOneSchema(className string) (types.M, error)
-	DeleteObjectsByQuery(className string, query types.M, validate bool, schema types.M) error
+	DeleteObjectsByQuery(className string, query types.M, schema types.M) error
 }
 
 // Collection 集合操作接口

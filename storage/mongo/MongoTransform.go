@@ -1037,6 +1037,66 @@ func (t *MongoTransform) TransformUpdate(schema storage.Schema, className string
 	return mongoUpdate, nil
 }
 
+func nestedMongoObjectToNestedParseObject(mongoObject interface{}) (interface{}, error) {
+	if mongoObject == nil {
+		return mongoObject, nil
+	}
+
+	// 转换基本类型
+	switch mongoObject.(type) {
+	case string, float64, bool:
+		return mongoObject, nil
+
+	case []interface{}:
+		results := types.S{}
+		objs := mongoObject.([]interface{})
+		for _, o := range objs {
+			res, err := nestedMongoObjectToNestedParseObject(o)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, res)
+		}
+		return results, nil
+	}
+
+	// 日期格式
+	// {
+	// 	"__type": "Date",
+	// 	"iso": "2015-03-01T15:59:11-07:00"
+	// }
+	d := dateCoder{}
+	if d.isValidDatabaseObject(mongoObject) {
+		return d.databaseToJSON(mongoObject), nil
+	}
+
+	// byte 数组
+	// {
+	// 	"__type": "Bytes",
+	// 	"base64": "aGVsbG8="
+	// }
+	b := bytesCoder{}
+	if b.isValidDatabaseObject(mongoObject) {
+		return b.databaseToJSON(mongoObject), nil
+	}
+
+	// 转换对象类型
+	if object, ok := mongoObject.(map[string]interface{}); ok {
+		newObject := types.M{}
+		for k, v := range object {
+			r, err := nestedMongoObjectToNestedParseObject(v)
+			if err != nil {
+				return nil, err
+			}
+			newObject[k] = r
+		}
+		return newObject, nil
+	}
+
+	// 无法转换
+	return nil, errs.E(errs.InternalServerError, "unknown object type")
+}
+
 var specialKeysForUntransform = []string{
 	"_id",
 	"_hashed_password",

@@ -13,7 +13,6 @@ type Transform interface {
 	TransformKey(className, fieldName string, schema types.M) string
 	TransformWhere(className string, where, schema types.M) (types.M, error)
 	TransformUpdate(schema Schema, className string, update, options types.M) (types.M, error)
-	UntransformObject(schema Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error)
 }
 
 // Adapter 数据库操作适配器接口
@@ -29,6 +28,7 @@ type Adapter interface {
 	GetAllSchemas() ([]types.M, error)
 	GetOneSchema(className string) (types.M, error)
 	DeleteObjectsByQuery(className string, query types.M, schema types.M) error
+	Find(className string, query, options types.M, schema Schema) ([]types.M, error)
 }
 
 // Collection 集合操作接口

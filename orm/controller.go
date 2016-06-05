@@ -186,17 +186,16 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	}
 
 	// 执行查询操作
-	mongoResults := coll.Find(mongoWhere, mongoOptions)
+	objects, err := Adapter.Find(className, mongoWhere, mongoOptions, schema)
+	if err != nil {
+		return nil, err
+	}
 	results := types.S{}
-	for _, r := range mongoResults {
-		result, err := d.untransformObject(schema, isMaster, aclGroup, className, r)
-		if err != nil {
-			return nil, err
-		}
+	for _, object := range objects {
+		result := filterSensitiveData(isMaster, aclGroup, className, object)
 		results = append(results, result)
 	}
 	return results, nil
-
 }
 
 // Destroy 从指定表中删除数据
@@ -950,30 +949,25 @@ func (d DBController) owningIds(className, key string, relatedIds types.S) types
 	return ids
 }
 
-// untransformObject 从查询到的数据库对象转换出可返回给客户端的对象，并对 _User 表数据进行特殊处理
-func (d DBController) untransformObject(schema *Schema, isMaster bool, aclGroup []string, className string, mongoObject types.M) (types.M, error) {
-	res, err := Transform.UntransformObject(schema, className, mongoObject, false)
-	if err != nil {
-		return nil, err
-	}
-	object := utils.MapInterface(res)
+// filterSensitiveData 对 _User 表数据进行特殊处理
+func filterSensitiveData(isMaster bool, aclGroup []string, className string, object types.M) types.M {
 	if className != "_User" {
-		return object, nil
+		return object
 	}
 	// 以下单独处理 _User 类
 	delete(object, "sessionToken")
 	if isMaster {
-		return object, nil
+		return object
 	}
 	// 当前用户返回所有信息
 	id := utils.String(object["objectId"])
 	for _, v := range aclGroup {
 		if v == id {
-			return object, nil
+			return object
 		}
 	}
 	delete(object, "authData")
-	return object, nil
+	return object
 }
 
 // DeleteSchema 删除类

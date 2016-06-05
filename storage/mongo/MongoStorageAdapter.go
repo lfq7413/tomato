@@ -201,6 +201,21 @@ func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, sch
 	return nil
 }
 
+// Find ...
+func (m *MongoAdapter) Find(className string, query, options types.M, schema storage.Schema) ([]types.M, error) {
+	coll := m.AdaptiveCollection(className)
+	results := coll.Find(query, options)
+	objects := []types.M{}
+	for _, result := range results {
+		r, err := m.transform.mongoObjectToParseObject(schema, className, result)
+		if err != nil {
+			return nil, err
+		}
+		objects = append(objects, r.(map[string]interface{}))
+	}
+	return objects, nil
+}
+
 func storageAdapterAllCollections(m *MongoAdapter) []storage.Collection {
 	names := m.getCollectionNames()
 	collections := []storage.Collection{}

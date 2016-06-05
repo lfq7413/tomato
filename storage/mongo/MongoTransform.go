@@ -1097,6 +1097,192 @@ func nestedMongoObjectToNestedParseObject(mongoObject interface{}) (interface{},
 	return nil, errs.E(errs.InternalServerError, "unknown object type")
 }
 
+func (t *MongoTransform) mongoObjectToParseObject(schema storage.Schema, className string, mongoObject interface{}) (interface{}, error) {
+	if mongoObject == nil {
+		return mongoObject, nil
+	}
+
+	// 转换基本类型
+	switch mongoObject.(type) {
+	case string, float64, bool:
+		return mongoObject, nil
+
+	case []interface{}:
+		results := types.S{}
+		objs := mongoObject.([]interface{})
+		for _, o := range objs {
+			res, err := nestedMongoObjectToNestedParseObject(o)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, res)
+		}
+		return results, nil
+	}
+
+	// 日期格式
+	// {
+	// 	"__type": "Date",
+	// 	"iso": "2015-03-01T15:59:11-07:00"
+	// }
+	d := dateCoder{}
+	if d.isValidDatabaseObject(mongoObject) {
+		return d.databaseToJSON(mongoObject), nil
+	}
+
+	// byte 数组
+	// {
+	// 	"__type": "Bytes",
+	// 	"base64": "aGVsbG8="
+	// }
+	b := bytesCoder{}
+	if b.isValidDatabaseObject(mongoObject) {
+		return b.databaseToJSON(mongoObject), nil
+	}
+
+	// 转换对象类型
+	if object, ok := mongoObject.(map[string]interface{}); ok {
+		// 转换权限信息
+		restObject := t.untransformACL(object)
+		for key, value := range object {
+			switch key {
+			case "_id":
+				restObject["objectId"] = value
+
+			case "_hashed_password":
+				restObject["password"] = value
+
+			case "_acl", "_email_verify_token", "_perishable_token", "_tombstone":
+				// 以上字段不添加到结果中
+
+			case "_session_token":
+				restObject["sessionToken"] = value
+
+			// 时间类型转换为 ISO8601 标准的字符串
+			case "updatedAt", "_updated_at":
+				restObject["updatedAt"] = utils.TimetoString(value.(time.Time))
+
+			case "createdAt", "_created_at":
+				restObject["createdAt"] = utils.TimetoString(value.(time.Time))
+
+			case "expiresAt", "_expiresAt":
+				restObject["expiresAt"] = utils.TimetoString(value.(time.Time))
+
+			default:
+				// 处理第三方登录数据
+				// {
+				// 	"_auth_data_facebook":{...}
+				// }
+				// ==>
+				// {
+				// 	"authData":{
+				// 		"facebook":{...}
+				// 	}
+				// }
+				authDataMatch, _ := regexp.MatchString(`^_auth_data_([a-zA-Z0-9_]+)$`, key)
+				if authDataMatch {
+					provider := key[len("_auth_data_"):]
+					authData := types.M{}
+					if restObject["authData"] != nil {
+						authData = utils.MapInterface(restObject["authData"])
+					}
+					authData[provider] = value
+					restObject["authData"] = authData
+					break
+				}
+
+				// 处理指针类型的字段
+				// {
+				// 	"_p_post":"abc$123"
+				// }
+				// ==>
+				// {
+				// 	"__type":    "Pointer",
+				// 	"className": "post",
+				// 	"objectId":  "123"
+				// }
+				if strings.HasPrefix(key, "_p_") {
+					newKey := key[3:]
+					expected := schema.GetExpectedType(className, newKey)
+					if expected == nil {
+						// 不在 schema 中的指针类型，丢弃
+						break
+					}
+					if expected != nil && expected["type"].(string) != "Pointer" {
+						// schema 中对应的位置不是指针类型，丢弃
+						break
+					}
+					if value == nil {
+						break
+					}
+					objData := strings.Split(value.(string), "$")
+					newClass := ""
+					if expected != nil {
+						newClass = expected["targetClass"].(string)
+					} else {
+						newClass = objData[0]
+					}
+					if newClass != objData[0] {
+						// 指向了错误的类
+						return nil, errs.E(errs.InternalServerError, "pointer to incorrect className")
+					}
+					restObject[newKey] = types.M{
+						"__type":    "Pointer",
+						"className": objData[0],
+						"objectId":  objData[1],
+					}
+					break
+				} else if strings.HasPrefix(key, "_") && key != "__type" {
+					// 转换错误
+					return nil, errs.E(errs.InternalServerError, "bad key in untransform: "+key)
+				} else {
+					// TODO 此处可能会有问题，isNestedObject == true 时，即子对象也会进来
+					// 但是拿子对象的 key 无法从 className 中查询有效的类型
+					// 所以当子对象的某个 key 与 className 中的某个 key 相同时，可能出问题
+					expectedType := schema.GetExpectedType(className, key)
+					// file 类型
+					// {
+					// 	"__type": "File",
+					// 	"name":   "hello.jpg"
+					// }
+					f := fileCoder{}
+					if expectedType != nil && expectedType["type"].(string) == "File" && f.isValidDatabaseObject(value) {
+						restObject[key] = f.databaseToJSON(value)
+						break
+					}
+					// geopoint 类型
+					// {
+					// 	"__type":    "GeoPoint",
+					// 	"longitude": 30,
+					// 	"latitude":  40
+					// }
+					g := geoPointCoder{}
+					if expectedType != nil && expectedType["type"].(string) == "geopoint" && g.isValidDatabaseObject(value) {
+						restObject[key] = g.databaseToJSON(value)
+						break
+					}
+				}
+				// 转换子对象
+				res, err := nestedMongoObjectToNestedParseObject(value)
+				if err != nil {
+					return nil, err
+				}
+				restObject[key] = res
+			}
+		}
+
+		relationFields := schema.GetRelationFields(className)
+		for k, v := range relationFields {
+			restObject[k] = v
+		}
+
+		return restObject, nil
+	}
+
+	// 无法转换
+	return nil, errs.E(errs.InternalServerError, "unknown object type")
+}
+
 var specialKeysForUntransform = []string{
 	"_id",
 	"_hashed_password",

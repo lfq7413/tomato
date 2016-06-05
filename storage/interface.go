@@ -13,10 +13,6 @@ type Transform interface {
 	TransformKey(className, fieldName string, schema types.M) string
 	TransformWhere(className string, where, schema types.M) (types.M, error)
 	TransformUpdate(schema Schema, className string, update, options types.M) (types.M, error)
-	TransformSelect(selectObject types.M, key string, objects []types.M)
-	TransformDontSelect(dontSelectObject types.M, key string, objects []types.M)
-	TransformInQuery(inQueryObject types.M, className string, results []types.M)
-	TransformNotInQuery(notInQueryObject types.M, className string, results []types.M)
 	UntransformObject(schema Schema, className string, mongoObject interface{}, isNestedObject bool) (interface{}, error)
 }
 

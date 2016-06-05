@@ -301,7 +301,7 @@ func (q *Query) replaceSelect() error {
 		}
 	}
 	// 替换 $select 为 $in
-	orm.Transform.TransformSelect(selectObject, selectValue["key"].(string), values)
+	transformSelect(selectObject, selectValue["key"].(string), values)
 	// 继续搜索替换
 	return q.replaceSelect()
 }
@@ -358,7 +358,7 @@ func (q *Query) replaceDontSelect() error {
 		}
 	}
 	// 替换 $dontSelect 为 $nin
-	orm.Transform.TransformDontSelect(dontSelectObject, dontSelectValue["key"].(string), values)
+	transformDontSelect(dontSelectObject, dontSelectValue["key"].(string), values)
 	// 继续搜索替换
 	return q.replaceDontSelect()
 }
@@ -429,7 +429,7 @@ func (q *Query) replaceInQuery() error {
 		}
 	}
 	// 替换 $inQuery 为 $in
-	orm.Transform.TransformInQuery(inQueryObject, query.className, values)
+	transformInQuery(inQueryObject, query.className, values)
 	// 继续搜索替换
 	return q.replaceInQuery()
 }
@@ -475,7 +475,7 @@ func (q *Query) replaceNotInQuery() error {
 		}
 	}
 	// 替换 $notInQuery 为 $nin
-	orm.Transform.TransformNotInQuery(notInQueryObject, query.className, values)
+	transformNotInQuery(notInQueryObject, query.className, values)
 	// 继续搜索替换
 	return q.replaceNotInQuery()
 }
@@ -717,4 +717,86 @@ func findObjectWithKey(root interface{}, key string) types.M {
 		}
 	}
 	return nil
+}
+
+// transformSelect 转换对象中的 $select
+func transformSelect(selectObject types.M, key string, objects []types.M) {
+	values := []interface{}{}
+	for _, result := range objects {
+		values = append(values, result[key])
+	}
+
+	delete(selectObject, "$select")
+	var in []interface{}
+	if v, ok := selectObject["$in"].([]interface{}); ok {
+		in = v
+		in = append(in, values...)
+	} else {
+		in = values
+	}
+	selectObject["$in"] = in
+}
+
+// transformDontSelect 转换对象中的 $dontSelect
+func transformDontSelect(dontSelectObject types.M, key string, objects []types.M) {
+	values := []interface{}{}
+	for _, result := range objects {
+		values = append(values, result[key])
+	}
+
+	delete(dontSelectObject, "$dontSelect")
+	var nin []interface{}
+	if v, ok := dontSelectObject["$nin"].([]interface{}); ok {
+		nin = v
+		nin = append(nin, values...)
+	} else {
+		nin = values
+	}
+	dontSelectObject["$nin"] = nin
+}
+
+// transformInQuery 转换对象中的 $inQuery
+func transformInQuery(inQueryObject types.M, className string, results []types.M) {
+	values := []interface{}{}
+	for _, result := range results {
+		o := types.M{
+			"__type":    "Pointer",
+			"className": className,
+			"objectId":  result["objectId"],
+		}
+		values = append(values, o)
+	}
+
+	delete(inQueryObject, "$inQuery")
+	var in []interface{}
+	if v, ok := inQueryObject["$in"].([]interface{}); ok {
+		in = v
+		in = append(in, values...)
+	} else {
+		in = values
+	}
+	inQueryObject["$in"] = in
+}
+
+// transformNotInQuery 转换对象中的 $notInQuery
+func transformNotInQuery(notInQueryObject types.M, className string, results []types.M) {
+	values := []interface{}{}
+	for _, result := range results {
+		o := types.M{
+			"__type":    "Pointer",
+			"className": className,
+			"objectId":  result["objectId"],
+		}
+		values = append(values, o)
+	}
+
+	delete(notInQueryObject, "$notInQuery")
+	var nin []interface{}
+	if v, ok := notInQueryObject["$nin"].([]interface{}); ok {
+		nin = v
+		nin = append(nin, values...)
+	} else {
+		nin = values
+	}
+	notInQueryObject["$nin"] = nin
 }

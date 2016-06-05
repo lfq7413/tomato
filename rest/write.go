@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -559,8 +560,10 @@ func (w *Write) runBeforeTrigger() error {
 	response := RunTrigger(TypeBeforeSave, w.className, w.auth, updatedObject, w.originalData)
 	if response != nil && response["object"] != nil {
 		// 运行完回调函数之后，把结果设置回 data ，并标识已被修改
+		if reflect.DeepEqual(w.data, response["object"]) == false {
+			w.storage["changedByTrigger"] = true
+		}
 		w.data = utils.MapInterface(response["object"])
-		w.storage["changedByTrigger"] = true
 		if w.query != nil && w.query["objectId"] != nil {
 			delete(w.data, "objectId")
 		}
@@ -741,23 +744,23 @@ func (w *Write) runDatabaseOperation() error {
 			w.data["ACL"] = acl
 		}
 		// 执行更新
-		resp, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions)
+		response, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions)
 		if err != nil {
 			return err
 		}
-		resp["updatedAt"] = w.updatedAt
+		response["updatedAt"] = w.updatedAt
 
-		// 如果回调函数修改过数据，把 w.data 中存在但 resp 中不存在的字段复制到返回结果中
+		// 如果回调函数修改过数据，把 w.data 中存在但 response 中不存在的字段复制到返回结果中
 		if w.storage["changedByTrigger"] != nil {
 			for k, v := range w.data {
-				if resp[k] == nil {
-					resp[k] = v
+				if response[k] == nil {
+					response[k] = v
 				}
 			}
 		}
 
 		w.response = types.M{
-			"response": resp,
+			"response": response,
 		}
 	} else {
 		// 给新用户设置默认 ACL
@@ -786,19 +789,21 @@ func (w *Write) runDatabaseOperation() error {
 		if err != nil {
 			return err
 		}
-		resp := types.M{
+		response := types.M{
 			"objectId":  w.data["objectId"],
 			"createdAt": w.data["createdAt"],
 		}
 		// 如果回调函数修改过数据，则将其复制到返回结果中
 		if w.storage["changedByTrigger"] != nil {
 			for k, v := range w.data {
-				resp[k] = v
+				if response[k] == nil {
+					response[k] = v
+				}
 			}
 		}
 		w.response = types.M{
 			"status":   201,
-			"response": resp,
+			"response": response,
 			"location": w.location(),
 		}
 	}

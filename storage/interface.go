@@ -22,13 +22,16 @@ type Adapter interface {
 	DeleteOneSchema(name string) error
 	DeleteAllSchemas() error
 	DeleteFields(className string, fieldNames, pointerFieldNames []string) error
-	CreateObject(className string, object types.M, parseFormatSchema types.M) error
+	CreateObject(className string, object types.M, schema types.M) error
 	GetTransform() Transform
 	GetAllSchemas() ([]types.M, error)
 	GetOneSchema(className string) (types.M, error)
 	DeleteObjectsByQuery(className string, query types.M, schema types.M) error
 	Find(className string, query, schema, options types.M) ([]types.M, error)
 	Count(className string, query, schema types.M) (int, error)
+	UpdateObjectsByQuery(className string, query, schema, update types.M) error
+	FindOneAndUpdate(className string, query, schema, update types.M) (types.M, error)
+	UpsertOneObject(className string, query, schema, update types.M) error
 }
 
 // Collection 集合操作接口

@@ -148,8 +148,8 @@ func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNa
 }
 
 // CreateObject 创建对象
-func (m *MongoAdapter) CreateObject(className string, object types.M, parseFormatSchema types.M) error {
-	mongoObject, err := m.transform.parseObjectToMongoObjectForCreate(className, object, parseFormatSchema)
+func (m *MongoAdapter) CreateObject(className string, object types.M, schema types.M) error {
+	mongoObject, err := m.transform.parseObjectToMongoObjectForCreate(className, object, schema)
 	if err != nil {
 		return err
 	}
@@ -199,6 +199,48 @@ func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, sch
 	}
 
 	return nil
+}
+
+// UpdateObjectsByQuery ...
+func (m *MongoAdapter) UpdateObjectsByQuery(className string, query, schema, update types.M) error {
+	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
+	if err != nil {
+		return err
+	}
+	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	if err != nil {
+		return err
+	}
+	coll := m.AdaptiveCollection(className)
+	return coll.UpdateMany(mongoWhere, mongoUpdate)
+}
+
+// FindOneAndUpdate ...
+func (m *MongoAdapter) FindOneAndUpdate(className string, query, schema, update types.M) (types.M, error) {
+	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
+	if err != nil {
+		return nil, err
+	}
+	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	if err != nil {
+		return nil, err
+	}
+	coll := m.AdaptiveCollection(className)
+	return coll.FindOneAndUpdate(mongoWhere, mongoUpdate), nil
+}
+
+// UpsertOneObject ...
+func (m *MongoAdapter) UpsertOneObject(className string, query, schema, update types.M) error {
+	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
+	if err != nil {
+		return err
+	}
+	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	if err != nil {
+		return err
+	}
+	coll := m.AdaptiveCollection(className)
+	return coll.UpsertOne(mongoWhere, mongoUpdate)
 }
 
 // Find ...

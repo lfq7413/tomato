@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -663,7 +662,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 }
 
 // parseObjectToMongoObjectForCreate 转换 create 数据
-func (t *MongoTransform) parseObjectToMongoObjectForCreate(className string, create types.M, parseFormatSchema types.M) (types.M, error) {
+func (t *MongoTransform) parseObjectToMongoObjectForCreate(className string, create types.M, schema types.M) (types.M, error) {
 	// 转换第三方登录数据
 	if className == "_User" {
 		create = t.transformAuthData(create)
@@ -673,7 +672,7 @@ func (t *MongoTransform) parseObjectToMongoObjectForCreate(className string, cre
 
 	// 转换其他字段并添加
 	for k, v := range create {
-		key, value, err := t.parseObjectKeyValueToMongoObjectKeyValue(className, k, v, parseFormatSchema)
+		key, value, err := t.parseObjectKeyValueToMongoObjectKeyValue(className, k, v, schema)
 		if err != nil {
 			return nil, err
 		}
@@ -684,7 +683,7 @@ func (t *MongoTransform) parseObjectToMongoObjectForCreate(className string, cre
 	return mongoCreate, nil
 }
 
-func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(className string, restKey string, restValue interface{}, parseFormatSchema types.M) (string, interface{}, error) {
+func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(className string, restKey string, restValue interface{}, schema types.M) (string, interface{}, error) {
 	var transformedValue interface{}
 	var coercedToDate interface{}
 	var err error
@@ -759,7 +758,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(className stri
 			if ty.(string) != "Bytes" {
 				if ty.(string) == "Pointer" {
 					restKey = "_p_" + restKey
-				} else if fields, ok := parseFormatSchema["fields"].(map[string]interface{}); ok {
+				} else if fields, ok := schema["fields"].(map[string]interface{}); ok {
 					if t, ok := fields[restKey]; ok {
 						if t.(map[string]interface{})["type"].(string) == "Pointer" {
 							restKey = "_p_" + restKey
@@ -922,15 +921,8 @@ func (t *MongoTransform) TransformWhere(className string, where, schema types.M)
 	return mongoWhere, nil
 }
 
-// TransformUpdate 转换 update 数据
-func (t *MongoTransform) TransformUpdate(schema storage.Schema, className string, update types.M, options types.M) (types.M, error) {
-	if options == nil {
-		options = types.M{}
-	}
-	if update == nil {
-		// 更新数据不能为空
-		return nil, errs.E(errs.InvalidJSON, "got empty restUpdate")
-	}
+// transformUpdate 转换 update 数据
+func (t *MongoTransform) transformUpdate(className string, update types.M, parseFormatSchema types.M) (types.M, error) {
 	// 处理第三方登录数据
 	if className == "_User" {
 		update = t.transformAuthData(update)
@@ -955,7 +947,7 @@ func (t *MongoTransform) TransformUpdate(schema storage.Schema, className string
 
 	// 转换 update 中的其他数据
 	for k, v := range update {
-		key, value, err := t.transformKeyValueForUpdate(schema, className, k, v)
+		key, value, err := t.transformKeyValueForUpdate(className, k, v, parseFormatSchema)
 		if err != nil {
 			return nil, err
 		}

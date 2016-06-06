@@ -10,8 +10,6 @@ type Schema interface {
 // Transform API 格式与数据库格式之间转换的接口
 type Transform interface {
 	TransformKey(className, fieldName string, schema types.M) string
-	TransformWhere(className string, where, schema types.M) (types.M, error)
-	// TransformUpdate(schema Schema, className string, update, options types.M) (types.M, error)
 }
 
 // Adapter 数据库操作适配器接口

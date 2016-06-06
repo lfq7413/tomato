@@ -205,7 +205,7 @@ func (t *MongoTransform) transformQueryKeyValue(className, key string, value int
 		array := value.([]interface{})
 		querys := types.S{}
 		for _, subQuery := range array {
-			r, err := t.TransformWhere(className, subQuery.(map[string]interface{}), schema)
+			r, err := t.transformWhere(className, subQuery.(map[string]interface{}), schema)
 			if err != nil {
 				return "", nil, err
 			}
@@ -217,7 +217,7 @@ func (t *MongoTransform) transformQueryKeyValue(className, key string, value int
 		array := value.([]interface{})
 		querys := types.S{}
 		for _, subQuery := range array {
-			r, err := t.TransformWhere(className, subQuery.(map[string]interface{}), schema)
+			r, err := t.transformWhere(className, subQuery.(map[string]interface{}), schema)
 			if err != nil {
 				return "", nil, err
 			}
@@ -907,8 +907,8 @@ func (t *MongoTransform) transformACL(restObject types.M) types.M {
 	return output
 }
 
-// TransformWhere 转换 where 查询数据，返回数据库格式的数据
-func (t *MongoTransform) TransformWhere(className string, where, schema types.M) (types.M, error) {
+// transformWhere 转换 where 查询数据，返回数据库格式的数据
+func (t *MongoTransform) transformWhere(className string, where, schema types.M) (types.M, error) {
 	mongoWhere := types.M{}
 	for k, v := range where {
 		key, value, err := t.transformQueryKeyValue(className, k, v, schema)

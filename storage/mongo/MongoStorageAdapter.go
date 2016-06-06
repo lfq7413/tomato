@@ -185,7 +185,7 @@ func (m *MongoAdapter) getCollectionNames() []string {
 func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, schema types.M) error {
 	collection := m.AdaptiveCollection(className)
 
-	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (m *MongoAdapter) UpdateObjectsByQuery(className string, query, schema, upd
 	if err != nil {
 		return err
 	}
-	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (m *MongoAdapter) FindOneAndUpdate(className string, query, schema, update 
 	if err != nil {
 		return nil, err
 	}
-	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +235,7 @@ func (m *MongoAdapter) UpsertOneObject(className string, query, schema, update t
 	if err != nil {
 		return err
 	}
-	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func (m *MongoAdapter) UpsertOneObject(className string, query, schema, update t
 
 // Find ...
 func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([]types.M, error) {
-	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([
 // Count ...
 func (m *MongoAdapter) Count(className string, query, schema types.M) (int, error) {
 	coll := m.AdaptiveCollection(className)
-	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return 0, err
 	}

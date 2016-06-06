@@ -235,6 +235,8 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 	return nil
 }
 
+var specialKeysForUpdate = []string{"_hashed_password", "_perishable_token", "_email_verify_token"}
+
 // Update 更新对象
 // options 中的参数包括：acl、many、upsert
 func (d DBController) Update(className string, where, data, options types.M) (types.M, error) {
@@ -268,8 +270,6 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 	// 处理 Relation
 	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
 
-	coll := Adapter.AdaptiveCollection(className)
-
 	// 添加用户权限
 	if isMaster == false {
 		where = d.addPointerPermissions(schema, className, "update", where, aclGroup)
@@ -288,37 +288,60 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		return nil, err
 	}
 
-	parseFormatSchema, err := schema.GetOneSchema(className, false)
+	sch, err := schema.GetOneSchema(className, false)
 	if err != nil {
 		return nil, err
 	}
-	if len(parseFormatSchema) == 0 {
-		parseFormatSchema["fields"] = types.M{}
+	if len(sch) == 0 {
+		sch["fields"] = types.M{}
 	}
 
-	mongoWhere, err := Transform.TransformWhere(className, where, parseFormatSchema)
-	if err != nil {
-		return nil, err
+	for fieldName, v := range data {
+		if match, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, fieldName); match {
+			return nil, errs.E(errs.InvalidKeyName, "Invalid field name for update: "+fieldName)
+		}
+		fieldName = strings.Split(fieldName, ".")[0]
+		if fieldNameIsValid(fieldName) == false {
+			include := false
+			for _, k := range specialKeysForUpdate {
+				if fieldName == k {
+					include = true
+					break
+				}
+			}
+			if include == false {
+				return nil, errs.E(errs.InvalidKeyName, "Invalid field name for update: "+fieldName)
+			}
+		}
+
+		if updateOperation, ok := v.(map[string]interface{}); ok {
+			for innerKey := range updateOperation {
+				if strings.Index(innerKey, "$") > -1 || strings.Index(innerKey, ".") > -1 {
+					return nil, errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
+				}
+			}
+		}
 	}
-	mongoUpdate, err := Transform.TransformUpdate(schema, className, data, types.M{"validate": !d.skipValidation})
-	if err != nil {
-		return nil, err
-	}
+
 	var result types.M
 	if many {
-		err := coll.UpdateMany(mongoWhere, mongoUpdate)
+		err := Adapter.UpdateObjectsByQuery(className, where, sch, data)
 		if err != nil {
 			return nil, err
 		}
 		result = types.M{}
 	} else if upsert {
-		err := coll.UpsertOne(mongoWhere, mongoUpdate)
+		err := Adapter.UpsertOneObject(className, where, sch, data)
 		if err != nil {
 			return nil, err
 		}
 		result = types.M{}
 	} else {
-		result = coll.FindOneAndUpdate(mongoWhere, mongoUpdate)
+		var err error
+		result, err = Adapter.FindOneAndUpdate(className, where, sch, data)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if result == nil {

@@ -526,8 +526,8 @@ func (s *Schema) hasKeys(className string, keys []string) bool {
 	return true
 }
 
-// GetExpectedType 获取期望的字段类型
-func (s *Schema) GetExpectedType(className, key string) types.M {
+// getExpectedType 获取期望的字段类型
+func (s *Schema) getExpectedType(className, key string) types.M {
 	if s.data != nil && s.data[className] != nil {
 		cls := utils.MapInterface(s.data[className])
 		return utils.MapInterface(cls[key])

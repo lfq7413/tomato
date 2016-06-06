@@ -20,8 +20,8 @@ func NewMongoTransform() *MongoTransform {
 	return &MongoTransform{}
 }
 
-// TransformKey ...
-func (t *MongoTransform) TransformKey(className, fieldName string, schema types.M) string {
+// transformKey ...
+func (t *MongoTransform) transformKey(className, fieldName string, schema types.M) string {
 	switch fieldName {
 	case "objectId":
 		return "_id"

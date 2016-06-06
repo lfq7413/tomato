@@ -19,14 +19,11 @@ var TomatoDBController *DBController
 // Adapter ...
 var Adapter storage.Adapter
 
-// Transform ...
-var Transform storage.Transform
 var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
 	Adapter = mongo.NewMongoAdapter("tomato")
-	Transform = Adapter.GetTransform()
 	TomatoDBController = &DBController{
 		skipValidation: false,
 	}
@@ -597,7 +594,7 @@ func (d DBController) DeleteEverything() {
 // 如果 key 字段的属性为 relation<classA> ，则返回 classA
 func (d DBController) RedirectClassNameForKey(className, key string) string {
 	schema := d.LoadSchema()
-	t := schema.GetExpectedType(className, key)
+	t := schema.getExpectedType(className, key)
 	if t != nil && t["type"].(string) == "Relation" {
 		return t["targetClass"].(string)
 	}
@@ -875,7 +872,7 @@ func (d DBController) reduceInRelation(className string, query types.M, schema *
 		op := utils.MapInterface(v)
 		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || op["$eq"] != nil || utils.String(op["__type"]) == "Pointer") {
 			// 只处理 relation 类型
-			t := schema.GetExpectedType(className, key)
+			t := schema.getExpectedType(className, key)
 			if t == nil || t["type"].(string) != "Relation" {
 				return query
 			}

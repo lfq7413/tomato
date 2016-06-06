@@ -157,11 +157,6 @@ func (m *MongoAdapter) CreateObject(className string, object types.M, schema typ
 	return coll.InsertOne(mongoObject)
 }
 
-// GetTransform ...
-func (m *MongoAdapter) GetTransform() storage.Transform {
-	return m.transform
-}
-
 // GetOneSchema ...
 func (m *MongoAdapter) GetOneSchema(className string) (types.M, error) {
 	return m.SchemaCollection().FindSchema(className)
@@ -261,7 +256,7 @@ func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([
 				key = key[1:]
 			}
 
-			mongoKey = prefix + m.transform.TransformKey(className, key, schema)
+			mongoKey = prefix + m.transform.transformKey(className, key, schema)
 			mongoSort = append(mongoSort, mongoKey)
 		}
 		options["sort"] = mongoSort

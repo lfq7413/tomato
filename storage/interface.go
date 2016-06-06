@@ -2,16 +2,6 @@ package storage
 
 import "github.com/lfq7413/tomato/types"
 
-// Schema 上层需要实现的 Schema 接口，用于 Transform 中
-type Schema interface {
-	GetExpectedType(className, key string) types.M
-}
-
-// Transform API 格式与数据库格式之间转换的接口
-type Transform interface {
-	TransformKey(className, fieldName string, schema types.M) string
-}
-
 // Adapter 数据库操作适配器接口
 type Adapter interface {
 	AdaptiveCollection(name string) Collection
@@ -21,7 +11,6 @@ type Adapter interface {
 	DeleteAllSchemas() error
 	DeleteFields(className string, fieldNames, pointerFieldNames []string) error
 	CreateObject(className string, object types.M, schema types.M) error
-	GetTransform() Transform
 	GetAllSchemas() ([]types.M, error)
 	GetOneSchema(className string) (types.M, error)
 	DeleteObjectsByQuery(className string, query types.M, schema types.M) error

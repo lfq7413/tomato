@@ -65,15 +65,6 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 		where = types.M{}
 	}
 
-	// 组装数据库查询设置项
-	mongoOptions := types.M{}
-	if options["skip"] != nil {
-		mongoOptions["skip"] = options["skip"]
-	}
-	if options["limit"] != nil {
-		mongoOptions["limit"] = options["limit"]
-	}
-
 	isMaster := false
 	aclGroup := []string{}
 	if acl, ok := options["acl"]; ok {
@@ -105,10 +96,8 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	}
 
 	if options["sort"] != nil {
-		sortKeys := []string{}
 		keys := options["sort"].([]string)
-		for _, key := range keys {
-			mongoKey := ""
+		for i, key := range keys {
 			// sort 中的 key ，如果是要按倒序排列，则会加前缀 "-" ，所以要对其进行处理
 			var prefix string
 			if strings.HasPrefix(key, "-") {
@@ -130,12 +119,9 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 				return nil, errs.E(errs.InvalidKeyName, "Cannot sort by "+key)
 			}
 
-			k := Transform.TransformKey(className, key, parseFormatSchema)
-			mongoKey = prefix + k
-
-			sortKeys = append(sortKeys, mongoKey)
+			keys[i] = prefix + key
 		}
-		mongoOptions["sort"] = sortKeys
+		options["sort"] = keys
 	}
 
 	// 校验当前用户是否能对表进行 find 或者 get 操作
@@ -150,8 +136,6 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	d.reduceRelationKeys(className, where)
 	// 处理 relation 字段上的 $in
 	d.reduceInRelation(className, where, schema)
-
-	coll := Adapter.AdaptiveCollection(className)
 
 	if isMaster == false {
 		where = d.addPointerPermissions(schema, className, op, where, aclGroup)
@@ -173,20 +157,17 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 		return nil, err
 	}
 
-	mongoWhere, err := Transform.TransformWhere(className, where, parseFormatSchema)
-	if err != nil {
-		return nil, err
-	}
-
 	// 获取 count
 	if options["count"] != nil {
-		delete(mongoOptions, "limit")
-		count := coll.Count(mongoWhere, mongoOptions)
+		count, err := Adapter.Count(className, where, parseFormatSchema)
+		if err != nil {
+			return nil, err
+		}
 		return types.S{count}, nil
 	}
 
 	// 执行查询操作
-	objects, err := Adapter.Find(className, mongoWhere, mongoOptions, schema)
+	objects, err := Adapter.Find(className, where, parseFormatSchema, options)
 	if err != nil {
 		return nil, err
 	}

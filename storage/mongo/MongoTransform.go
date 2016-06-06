@@ -695,7 +695,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 }
 
 // parseObjectToMongoObjectForCreate 转换 create 数据
-func (t *MongoTransform) parseObjectToMongoObjectForCreate(schema storage.Schema, className string, create types.M, parseFormatSchema types.M) (types.M, error) {
+func (t *MongoTransform) parseObjectToMongoObjectForCreate(className string, create types.M, parseFormatSchema types.M) (types.M, error) {
 	// 转换第三方登录数据
 	if className == "_User" {
 		create = t.transformAuthData(create)
@@ -705,7 +705,7 @@ func (t *MongoTransform) parseObjectToMongoObjectForCreate(schema storage.Schema
 
 	// 转换其他字段并添加
 	for k, v := range create {
-		key, value, err := t.parseObjectKeyValueToMongoObjectKeyValue(schema, className, k, v, parseFormatSchema)
+		key, value, err := t.parseObjectKeyValueToMongoObjectKeyValue(className, k, v, parseFormatSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -716,7 +716,7 @@ func (t *MongoTransform) parseObjectToMongoObjectForCreate(schema storage.Schema
 	return mongoCreate, nil
 }
 
-func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(schema storage.Schema, className string, restKey string, restValue interface{}, parseFormatSchema types.M) (string, interface{}, error) {
+func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(className string, restKey string, restValue interface{}, parseFormatSchema types.M) (string, interface{}, error) {
 	var transformedValue interface{}
 	var coercedToDate interface{}
 	var err error

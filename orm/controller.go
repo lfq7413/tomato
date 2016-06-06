@@ -426,7 +426,7 @@ func (d DBController) Create(className string, data, options types.M) error {
 	}
 
 	// 无需调用 sanitizeDatabaseResult
-	return Adapter.CreateObject(className, data, schema, sch)
+	return Adapter.CreateObject(className, data, sch)
 }
 
 // validateClassName 校验表名是否合法

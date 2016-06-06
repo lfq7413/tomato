@@ -23,7 +23,7 @@ type Adapter interface {
 	DeleteOneSchema(name string) error
 	DeleteAllSchemas() error
 	DeleteFields(className string, fieldNames, pointerFieldNames []string) error
-	CreateObject(className string, object types.M, schema Schema, parseFormatSchema types.M) error
+	CreateObject(className string, object types.M, parseFormatSchema types.M) error
 	GetTransform() Transform
 	GetAllSchemas() ([]types.M, error)
 	GetOneSchema(className string) (types.M, error)

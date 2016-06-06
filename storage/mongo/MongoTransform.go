@@ -59,7 +59,7 @@ func (t *MongoTransform) TransformKey(className, fieldName string, schema types.
 // update: true 表示 restValue 中包含 __op 操作，类似 Add、Delete，需要进行转换
 // validate: true 表示需要校验字段名
 // 返回转换成 数据库格式的字段名与值
-func (t *MongoTransform) transformKeyValueForUpdate(schema storage.Schema, className, restKey string, restValue interface{}) (string, interface{}, error) {
+func (t *MongoTransform) transformKeyValueForUpdate(className, restKey string, restValue interface{}, parseFormatSchema types.M) (string, interface{}, error) {
 	// 检测 key 是否为 内置字段
 	key := restKey
 	timeField := false
@@ -72,10 +72,6 @@ func (t *MongoTransform) transformKeyValueForUpdate(schema storage.Schema, class
 	case "updatedAt", "_updated_at":
 		key = "_updated_at"
 		timeField = true
-	case "_email_verify_token":
-		key = "_email_verify_token"
-	case "_perishable_token":
-		key = "_perishable_token"
 	case "sessionToken", "_session_token":
 		key = "_session_token"
 	case "expiresAt", "_expiresAt":
@@ -83,33 +79,13 @@ func (t *MongoTransform) transformKeyValueForUpdate(schema storage.Schema, class
 		timeField = true
 	case "_rperm", "_wperm":
 		return key, restValue, nil
-	case "$or":
-		return "", nil, errs.E(errs.InvalidKeyName, "you can only use $or in queries")
-	case "$and":
-		return "", nil, errs.E(errs.InvalidKeyName, "you can only use $and in queries")
-	default:
-		// 处理第三方 auth 数据，key 的格式为： authData.xxx.id
-		// {
-		// 	"authData.facebook.id":"abc123"
-		// }
-		// ==>
-		// {
-		// 	"_auth_data_.facebook.id":"abc123"
-		// }
-		authDataMatch, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key)
-		if authDataMatch {
-			// 只能将其应用查询操作
-			return "", nil, errs.E(errs.InvalidKeyName, "can only query on "+key)
-		}
 
 		// 其他字段名不做处理
 	}
 
 	// 处理特殊字段名
-	var expected types.M
-	if schema != nil {
-		expected = schema.GetExpectedType(className, key)
-	}
+	fields := parseFormatSchema["fields"].(map[string]interface{})
+	expected := fields[key].(map[string]interface{})
 
 	// 期望类型为 *xxx
 	// post ==> _p_post
@@ -167,14 +143,6 @@ func (t *MongoTransform) transformKeyValueForUpdate(schema storage.Schema, class
 	}
 
 	// 处理正常的对象
-	if value, ok := restValue.(map[string]interface{}); ok {
-		for k := range value {
-			if strings.Index(k, "$") > -1 || strings.Index(k, ".") > -1 {
-				return "", nil, errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
-			}
-		}
-	}
-
 	if value, ok := restValue.(map[string]interface{}); ok {
 		newValue := types.M{}
 		for k, v := range value {

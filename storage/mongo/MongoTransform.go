@@ -1097,7 +1097,7 @@ func nestedMongoObjectToNestedParseObject(mongoObject interface{}) (interface{},
 	return nil, errs.E(errs.InternalServerError, "unknown object type")
 }
 
-func (t *MongoTransform) mongoObjectToParseObject(schema storage.Schema, className string, mongoObject interface{}) (interface{}, error) {
+func (t *MongoTransform) mongoObjectToParseObject(className string, mongoObject interface{}, schema types.M) (interface{}, error) {
 	if mongoObject == nil {
 		return mongoObject, nil
 	}
@@ -1203,12 +1203,13 @@ func (t *MongoTransform) mongoObjectToParseObject(schema storage.Schema, classNa
 				// }
 				if strings.HasPrefix(key, "_p_") {
 					newKey := key[3:]
-					expected := schema.GetExpectedType(className, newKey)
+					fields := schema["fields"].(map[string]interface{})
+					expected := fields[newKey].(map[string]interface{})
 					if expected == nil {
 						// 不在 schema 中的指针类型，丢弃
 						break
 					}
-					if expected != nil && expected["type"].(string) != "Pointer" {
+					if expected["type"].(string) != "Pointer" {
 						// schema 中对应的位置不是指针类型，丢弃
 						break
 					}
@@ -1216,13 +1217,7 @@ func (t *MongoTransform) mongoObjectToParseObject(schema storage.Schema, classNa
 						break
 					}
 					objData := strings.Split(value.(string), "$")
-					newClass := ""
-					if expected != nil {
-						newClass = expected["targetClass"].(string)
-					} else {
-						newClass = objData[0]
-					}
-					if newClass != objData[0] {
+					if expected["targetClass"].(string) != objData[0] {
 						// 指向了错误的类
 						return nil, errs.E(errs.InternalServerError, "pointer to incorrect className")
 					}
@@ -1239,7 +1234,8 @@ func (t *MongoTransform) mongoObjectToParseObject(schema storage.Schema, classNa
 					// TODO 此处可能会有问题，isNestedObject == true 时，即子对象也会进来
 					// 但是拿子对象的 key 无法从 className 中查询有效的类型
 					// 所以当子对象的某个 key 与 className 中的某个 key 相同时，可能出问题
-					expectedType := schema.GetExpectedType(className, key)
+					fields := schema["fields"].(map[string]interface{})
+					expectedType := fields[key].(map[string]interface{})
 					// file 类型
 					// {
 					// 	"__type": "File",
@@ -1257,7 +1253,7 @@ func (t *MongoTransform) mongoObjectToParseObject(schema storage.Schema, classNa
 					// 	"latitude":  40
 					// }
 					g := geoPointCoder{}
-					if expectedType != nil && expectedType["type"].(string) == "geopoint" && g.isValidDatabaseObject(value) {
+					if expectedType != nil && expectedType["type"].(string) == "GeoPoint" && g.isValidDatabaseObject(value) {
 						restObject[key] = g.databaseToJSON(value)
 						break
 					}
@@ -1271,7 +1267,18 @@ func (t *MongoTransform) mongoObjectToParseObject(schema storage.Schema, classNa
 			}
 		}
 
-		relationFields := schema.GetRelationFields(className)
+		relationFields := types.M{}
+		fields := schema["fields"].(map[string]interface{})
+		for fieldName, v := range fields {
+			fieldType := v.(map[string]interface{})
+			if fieldType["type"].(string) == "Relation" {
+				relationFields[fieldName] = types.M{
+					"__type":    "Relation",
+					"className": fieldType["targetClass"],
+				}
+			}
+		}
+
 		for k, v := range relationFields {
 			restObject[k] = v
 		}

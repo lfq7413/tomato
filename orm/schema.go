@@ -535,27 +535,6 @@ func (s *Schema) GetExpectedType(className, key string) types.M {
 	return nil
 }
 
-// GetRelationFields 转换 relation 类型的字段为 API 格式
-func (s *Schema) GetRelationFields(className string) types.M {
-	relationFields := types.M{}
-	if s.data != nil && s.data[className] != nil {
-		classData := s.data[className].(map[string]interface{})
-		for field, v := range classData {
-			fieldType := v.(map[string]interface{})
-			if fieldType["type"].(string) != "Relation" {
-				continue
-			}
-			name := fieldType["targetClass"].(string)
-			relationFields[field] = types.M{
-				"__type":    "Relation",
-				"className": name,
-			}
-		}
-	}
-
-	return relationFields
-}
-
 // reloadData 从数据库加载表信息
 func (s *Schema) reloadData() {
 	s.data = types.M{}

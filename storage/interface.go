@@ -5,7 +5,6 @@ import "github.com/lfq7413/tomato/types"
 // Schema 上层需要实现的 Schema 接口，用于 Transform 中
 type Schema interface {
 	GetExpectedType(className, key string) types.M
-	GetRelationFields(className string) types.M
 }
 
 // Transform API 格式与数据库格式之间转换的接口

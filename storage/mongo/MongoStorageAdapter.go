@@ -202,18 +202,51 @@ func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, sch
 }
 
 // Find ...
-func (m *MongoAdapter) Find(className string, query, options types.M, schema storage.Schema) ([]types.M, error) {
+func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([]types.M, error) {
+	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	if err != nil {
+		return nil, err
+	}
+	if options["sort"] != nil {
+		keys := options["sort"].([]string)
+		mongoSort := []string{}
+		for _, key := range keys {
+			var mongoKey string
+			var prefix string
+
+			if strings.HasPrefix(key, "-") {
+				prefix = "-"
+				key = key[1:]
+			}
+
+			mongoKey = prefix + m.transform.TransformKey(className, key, schema)
+			mongoSort = append(mongoSort, mongoKey)
+		}
+		options["sort"] = mongoSort
+	}
+
 	coll := m.AdaptiveCollection(className)
-	results := coll.Find(query, options)
+	results := coll.Find(mongoWhere, options)
 	objects := []types.M{}
 	for _, result := range results {
-		r, err := m.transform.mongoObjectToParseObject(schema, className, result)
+		r, err := m.transform.mongoObjectToParseObject(className, result, schema)
 		if err != nil {
 			return nil, err
 		}
 		objects = append(objects, r.(map[string]interface{}))
 	}
 	return objects, nil
+}
+
+// Count ...
+func (m *MongoAdapter) Count(className string, query, schema types.M) (int, error) {
+	coll := m.AdaptiveCollection(className)
+	mongoWhere, err := m.transform.TransformWhere(className, query, schema)
+	if err != nil {
+		return 0, err
+	}
+	c := coll.Count(mongoWhere, types.M{})
+	return c, nil
 }
 
 func storageAdapterAllCollections(m *MongoAdapter) []storage.Collection {

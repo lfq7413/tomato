@@ -28,7 +28,8 @@ type Adapter interface {
 	GetAllSchemas() ([]types.M, error)
 	GetOneSchema(className string) (types.M, error)
 	DeleteObjectsByQuery(className string, query types.M, schema types.M) error
-	Find(className string, query, options types.M, schema Schema) ([]types.M, error)
+	Find(className string, query, schema, options types.M) ([]types.M, error)
+	Count(className string, query, schema types.M) (int, error)
 }
 
 // Collection 集合操作接口

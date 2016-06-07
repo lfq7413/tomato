@@ -266,8 +266,7 @@ func (o *ObjectsController) HandleGet() {
 	if o.GetString("include") != "" {
 		options["include"] = o.GetString("include")
 	}
-	where := types.M{"objectId": o.ObjectID}
-	response, err := rest.Find(o.Auth, o.ClassName, where, options)
+	response, err := rest.Get(o.Auth, o.ClassName, o.ObjectID, options)
 
 	if err != nil {
 		o.Data["json"] = errs.ErrorToMap(err)
@@ -283,6 +282,7 @@ func (o *ObjectsController) HandleGet() {
 	}
 
 	result := utils.MapInterface(results[0])
+
 	if o.ClassName == "_User" {
 		delete(result, "sessionToken")
 		if o.Auth.User != nil && result["objectId"].(string) == o.Auth.User["objectId"].(string) {

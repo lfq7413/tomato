@@ -15,12 +15,7 @@ import (
 // 	],
 // 	"count":10
 // }
-func Find(
-	auth *Auth,
-	className string,
-	where types.M,
-	options types.M,
-) (types.M, error) {
+func Find(auth *Auth, className string, where, options types.M) (types.M, error) {
 
 	err := enforceRoleSecurity("find", className, auth)
 	if err != nil {
@@ -34,12 +29,23 @@ func Find(
 	return query.Execute()
 }
 
+// Get ...
+func Get(auth *Auth, className, objectID string, options types.M) (types.M, error) {
+
+	err := enforceRoleSecurity("get", className, auth)
+	if err != nil {
+		return nil, err
+	}
+	query, err := NewQuery(auth, className, types.M{"objectId": objectID}, options)
+	if err != nil {
+		return nil, err
+	}
+
+	return query.Execute()
+}
+
 // Delete 删除指定对象
-func Delete(
-	auth *Auth,
-	className string,
-	objectID string,
-) error {
+func Delete(auth *Auth, className, objectID string) error {
 
 	if className == "_User" && auth.CouldUpdateUserID(objectID) == false {
 		return errs.E(errs.SessionMissing, "insufficient auth to delete user")
@@ -81,11 +87,7 @@ func Delete(
 // 	"response":{...},
 // 	"location":"http://..."
 // }
-func Create(
-	auth *Auth,
-	className string,
-	object types.M,
-) (types.M, error) {
+func Create(auth *Auth, className string, object types.M) (types.M, error) {
 
 	err := enforceRoleSecurity("create", className, auth)
 	if err != nil {
@@ -101,12 +103,7 @@ func Create(
 
 // Update 更新对象
 // 返回更新后的字段，一般只有 updatedAt
-func Update(
-	auth *Auth,
-	className string,
-	objectID string,
-	object types.M,
-) (types.M, error) {
+func Update(auth *Auth, className, objectID string, object types.M) (types.M, error) {
 
 	err := enforceRoleSecurity("update", className, auth)
 	if err != nil {

@@ -233,6 +233,15 @@ func mongoSchemaFieldsToParseSchemaFields(schema types.M) types.M {
 	return response
 }
 
+var emptyCLPS = types.M{
+	"find":     types.M{},
+	"get":      types.M{},
+	"create":   types.M{},
+	"update":   types.M{},
+	"delete":   types.M{},
+	"addField": types.M{},
+}
+
 // defaultCLPS 默认的类级别权限
 var defaultCLPS = types.M{
 	"find":     types.M{"*": true},
@@ -245,25 +254,24 @@ var defaultCLPS = types.M{
 
 // mongoSchemaToParseSchema 把数据库格式的数据转换为 API 格式
 func mongoSchemaToParseSchema(schema types.M) types.M {
-	result := types.M{
-		"className": schema["_id"],
-		"fields":    mongoSchemaFieldsToParseSchemaFields(schema),
-	}
-
 	// 复制 schema["_metadata"]["class_permissions"] 到 classLevelPermissions 中
-	classLevelPermissions := utils.CopyMap(defaultCLPS)
+	clps := utils.CopyMap(defaultCLPS)
 	if schema["_metadata"] != nil && utils.MapInterface(schema["_metadata"]) != nil {
 		metadata := utils.MapInterface(schema["_metadata"])
 		if metadata["class_permissions"] != nil && utils.MapInterface(metadata["class_permissions"]) != nil {
 			classPermissions := utils.MapInterface(metadata["class_permissions"])
+			clps = utils.CopyMap(emptyCLPS)
 			for k, v := range classPermissions {
-				classLevelPermissions[k] = v
+				clps[k] = v
 			}
 		}
 	}
-	result["classLevelPermissions"] = classLevelPermissions
 
-	return result
+	return types.M{
+		"className":             schema["_id"],
+		"fields":                mongoSchemaFieldsToParseSchemaFields(schema),
+		"classLevelPermissions": clps,
+	}
 }
 
 // parseFieldTypeToMongoFieldType 返回数据库中存储的字段类型

@@ -8,7 +8,7 @@ import (
 // MongoCollection mongo 表操作对象
 type MongoCollection struct {
 	collection *mgo.Collection
-	transform  *MongoTransform
+	transform  *Transform
 }
 
 // find 执行查找操作，自动添加索引

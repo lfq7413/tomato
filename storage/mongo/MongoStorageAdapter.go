@@ -17,7 +17,7 @@ const mongoSchemaCollectionName = "_SCHEMA"
 type MongoAdapter struct {
 	collectionPrefix string
 	collectionList   []string
-	transform        *MongoTransform
+	transform        *Transform
 }
 
 // NewMongoAdapter ...
@@ -25,7 +25,7 @@ func NewMongoAdapter(collectionPrefix string) *MongoAdapter {
 	return &MongoAdapter{
 		collectionPrefix: collectionPrefix,
 		collectionList:   []string{},
-		transform:        NewMongoTransform(),
+		transform:        NewTransform(),
 	}
 }
 

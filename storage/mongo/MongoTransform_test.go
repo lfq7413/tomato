@@ -91,30 +91,50 @@ func Test_transformKey(t *testing.T) {
 }
 
 func Test_transformKeyValueForUpdate(t *testing.T) {
+	// transformTopLevelAtom
+	// transformInteriorValue
+	// transformUpdateOperator
 	// TODO
 }
 
 func Test_transformQueryKeyValue(t *testing.T) {
+	// valueAsDate
+	// transformWhere
+	// transformConstraint
+	// transformTopLevelAtom
 	// TODO
 }
 
 func Test_transformConstraint(t *testing.T) {
+	// transformInteriorAtom
+	// transformTopLevelAtom
 	// TODO
 }
 
 func Test_transformTopLevelAtom(t *testing.T) {
+	// dateCoder
+	// bytesCoder
+	// geoPointCoder
+	// fileCoder
 	// TODO
 }
 
 func Test_transformUpdateOperator(t *testing.T) {
+	// transformInteriorAtom
 	// TODO
 }
 
 func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
+	// transformAuthData
+	// transformACL
+	// parseObjectKeyValueToMongoObjectKeyValue
 	// TODO
 }
 
 func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
+	// transformTopLevelAtom
+	// transformInteriorValue
+	// transformUpdateOperator
 	// TODO
 }
 
@@ -127,10 +147,14 @@ func Test_transformACL(t *testing.T) {
 }
 
 func Test_transformWhere(t *testing.T) {
+	// transformQueryKeyValue
 	// TODO
 }
 
 func Test_transformUpdate(t *testing.T) {
+	// transformAuthData
+	// transformACL
+	// transformKeyValueForUpdate
 	// TODO
 }
 
@@ -139,6 +163,10 @@ func Test_nestedMongoObjectToNestedParseObject(t *testing.T) {
 }
 
 func Test_mongoObjectToParseObject(t *testing.T) {
+	// nestedMongoObjectToNestedParseObject
+	// dateCoder
+	// bytesCoder
+	// untransformACL
 	// TODO
 }
 
@@ -147,10 +175,13 @@ func Test_untransformACL(t *testing.T) {
 }
 
 func Test_transformInteriorAtom(t *testing.T) {
+	// dateCoder
+	// bytesCoder
 	// TODO
 }
 
 func Test_transformInteriorValue(t *testing.T) {
+	// transformInteriorAtom
 	// TODO
 }
 

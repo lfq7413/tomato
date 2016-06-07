@@ -283,7 +283,7 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 	return nil
 }
 
-// testBaseCLP ...
+// testBaseCLP 校验用户是否有权限对表进行指定操作
 func (s *Schema) testBaseCLP(className string, aclGroup []string, operation string) bool {
 	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
 		return true

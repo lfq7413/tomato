@@ -1003,6 +1003,10 @@ func (d *DBController) DeleteSchema(className string) error {
 
 // addPointerPermissions 添加查询用户权限，perms[className][readUserFields] 中保存的是字段名，该字段中的内容是：有权限进行读操作的用户
 func (d *DBController) addPointerPermissions(schema *Schema, className string, operation string, query types.M, aclGroup []string) types.M {
+	if schema.testBaseCLP(className, aclGroup, operation) {
+		return query
+	}
+
 	perms := schema.perms[className]
 	var field string
 	if operation == "get" || operation == "find" {

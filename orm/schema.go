@@ -283,16 +283,16 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 	return nil
 }
 
-// validatePermission 校验对指定类的操作权限
-func (s *Schema) validatePermission(className string, aclGroup []string, operation string) error {
+// testBaseCLP ...
+func (s *Schema) testBaseCLP(className string, aclGroup []string, operation string) bool {
 	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
-		return nil
+		return true
 	}
 	classPerms := utils.MapInterface(s.perms[className])
 	perms := utils.MapInterface(classPerms[operation])
 	// 当前操作的权限是公开的
 	if _, ok := perms["*"]; ok {
-		return nil
+		return true
 	}
 
 	// 查找 acl 中的角色信息是否在权限列表中，找到一个即可
@@ -303,10 +303,23 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 			break
 		}
 	}
-
 	if found {
+		return true
+	}
+
+	return false
+}
+
+// validatePermission 校验对指定类的操作权限
+func (s *Schema) validatePermission(className string, aclGroup []string, operation string) error {
+	if s.testBaseCLP(className, aclGroup, operation) {
 		return nil
 	}
+
+	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
+		return nil
+	}
+	classPerms := utils.MapInterface(s.perms[className])
 
 	var permissionField string
 	if operation == "get" || operation == "find" {

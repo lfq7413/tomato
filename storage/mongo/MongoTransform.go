@@ -121,7 +121,7 @@ func (t *MongoTransform) transformKeyValueForUpdate(className, restKey string, r
 	if valueArray, ok := restValue.([]interface{}); ok {
 		outValue := types.S{}
 		for _, restObj := range valueArray {
-			v, err := transformInteriorValue(restObj)
+			v, err := t.transformInteriorValue(restObj)
 			if err != nil {
 				return "", nil, err
 			}

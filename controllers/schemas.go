@@ -181,7 +181,7 @@ func (s *SchemasController) HandleDelete() {
 func removeJoinTables(mongoSchema types.M) error {
 	for field, v := range mongoSchema {
 		fieldType := utils.String(v)
-		if strings.HasPrefix(fieldType, "relation<") {
+		if field != "_metadata" && strings.HasPrefix(fieldType, "relation<") {
 			collectionName := "_Join:" + field + ":" + utils.String(mongoSchema["_id"])
 			err := orm.Adapter.DeleteOneSchema(collectionName)
 			if err != nil {

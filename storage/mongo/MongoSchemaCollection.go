@@ -17,13 +17,13 @@ type MongoSchemaCollection struct {
 
 // GetAllSchemas 获取所有 Schema，并转换为 API 格式的数据
 func (m *MongoSchemaCollection) GetAllSchemas() ([]types.M, error) {
-	results, err := m.collection.RawFind(types.M{}, types.M{})
+	results, err := m.collection.rawFind(types.M{}, types.M{})
 	if err != nil {
 		return nil, err
 	}
 	apiResults := []types.M{}
 	for _, result := range results {
-		apiResults = append(apiResults, MongoSchemaToParseSchema(result))
+		apiResults = append(apiResults, mongoSchemaToParseSchema(result))
 	}
 	return apiResults, nil
 }
@@ -33,14 +33,14 @@ func (m *MongoSchemaCollection) FindSchema(name string) (types.M, error) {
 	options := types.M{
 		"limit": 1,
 	}
-	results, err := m.collection.RawFind(mongoSchemaQueryFromNameQuery(name, nil), options)
+	results, err := m.collection.rawFind(mongoSchemaQueryFromNameQuery(name, nil), options)
 	if err != nil {
 		return nil, err
 	}
 	if results == nil || len(results) == 0 {
 		return types.M{}, nil
 	}
-	return MongoSchemaToParseSchema(results[0]), nil
+	return mongoSchemaToParseSchema(results[0]), nil
 }
 
 // FindAndDeleteSchema 查找并删除指定的表定义
@@ -70,17 +70,17 @@ func (m *MongoSchemaCollection) AddSchema(name string, fields types.M, classLeve
 		return nil, err
 	}
 	mongoObject := mongoSchemaObjectFromNameFields(name, mongoSchema)
-	return MongoSchemaToParseSchema(mongoObject), m.collection.InsertOne(mongoObject)
+	return mongoSchemaToParseSchema(mongoObject), m.collection.insertOne(mongoObject)
 }
 
 // UpdateSchema 更新一个表定义
 func (m *MongoSchemaCollection) UpdateSchema(name string, update types.M) error {
-	return m.collection.UpdateOne(mongoSchemaQueryFromNameQuery(name, nil), update)
+	return m.collection.updateOne(mongoSchemaQueryFromNameQuery(name, nil), update)
 }
 
 // upsertSchema 更新或者插入一个表定义
 func (m *MongoSchemaCollection) upsertSchema(name string, query, update types.M) error {
-	return m.collection.UpsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
+	return m.collection.upsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
 }
 
 // AddFieldIfNotExists 更新字段
@@ -243,8 +243,8 @@ var defaultCLPS = types.M{
 	"addField": types.M{"*": true},
 }
 
-// MongoSchemaToParseSchema 把数据库格式的数据转换为 API 格式
-func MongoSchemaToParseSchema(schema types.M) types.M {
+// mongoSchemaToParseSchema 把数据库格式的数据转换为 API 格式
+func mongoSchemaToParseSchema(schema types.M) types.M {
 	result := types.M{
 		"className": schema["_id"],
 		"fields":    mongoSchemaFieldsToParseSchemaFields(schema),

@@ -20,19 +20,6 @@ type Adapter interface {
 	UpsertOneObject(className string, query, schema, update types.M) error
 }
 
-// Collection 集合操作接口
-type Collection interface {
-	Find(query interface{}, options types.M) []types.M
-	Count(query interface{}, options types.M) int
-	FindOneAndUpdate(selector interface{}, update interface{}) types.M
-	InsertOne(docs interface{}) error
-	UpsertOne(selector interface{}, update interface{}) error
-	UpdateMany(selector interface{}, update interface{}) error
-	DeleteOne(selector interface{}) error
-	DeleteMany(selector interface{}) (int, error)
-	Drop() error
-}
-
 // SchemaCollection Schema 集合操作接口
 type SchemaCollection interface {
 	GetAllSchemas() ([]types.M, error)

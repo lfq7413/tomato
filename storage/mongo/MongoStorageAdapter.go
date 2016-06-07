@@ -86,7 +86,7 @@ func (m *MongoAdapter) DeleteOneSchema(name string) error {
 func (m *MongoAdapter) DeleteAllSchemas() error {
 	collections := storageAdapterAllCollections(m)
 	for _, collection := range collections {
-		err := collection.Drop()
+		err := collection.drop()
 		if err != nil {
 			return err
 		}
@@ -134,7 +134,7 @@ func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNa
 
 	// 更新表数据
 	collection := m.adaptiveCollection(className)
-	err := collection.UpdateMany(types.M{}, collectionUpdate)
+	err := collection.updateMany(types.M{}, collectionUpdate)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (m *MongoAdapter) CreateObject(className string, object types.M, schema typ
 		return err
 	}
 	coll := m.adaptiveCollection(className)
-	return coll.InsertOne(mongoObject)
+	return coll.insertOne(mongoObject)
 }
 
 // GetOneSchema ...
@@ -185,7 +185,7 @@ func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, sch
 		return err
 	}
 
-	n, err := collection.DeleteMany(mongoWhere)
+	n, err := collection.deleteMany(mongoWhere)
 	if err != nil {
 		return errs.E(errs.InternalServerError, "Database adapter error")
 	}
@@ -207,7 +207,7 @@ func (m *MongoAdapter) UpdateObjectsByQuery(className string, query, schema, upd
 		return err
 	}
 	coll := m.adaptiveCollection(className)
-	return coll.UpdateMany(mongoWhere, mongoUpdate)
+	return coll.updateMany(mongoWhere, mongoUpdate)
 }
 
 // FindOneAndUpdate ...
@@ -221,7 +221,7 @@ func (m *MongoAdapter) FindOneAndUpdate(className string, query, schema, update 
 		return nil, err
 	}
 	coll := m.adaptiveCollection(className)
-	return coll.FindOneAndUpdate(mongoWhere, mongoUpdate), nil
+	return coll.findOneAndUpdate(mongoWhere, mongoUpdate), nil
 }
 
 // UpsertOneObject ...
@@ -235,7 +235,7 @@ func (m *MongoAdapter) UpsertOneObject(className string, query, schema, update t
 		return err
 	}
 	coll := m.adaptiveCollection(className)
-	return coll.UpsertOne(mongoWhere, mongoUpdate)
+	return coll.upsertOne(mongoWhere, mongoUpdate)
 }
 
 // Find ...
@@ -263,7 +263,7 @@ func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([
 	}
 
 	coll := m.adaptiveCollection(className)
-	results := coll.Find(mongoWhere, options)
+	results := coll.find(mongoWhere, options)
 	objects := []types.M{}
 	for _, result := range results {
 		r, err := m.transform.mongoObjectToParseObject(className, result, schema)
@@ -278,7 +278,7 @@ func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([
 // rawFind 仅用于测试
 func (m *MongoAdapter) rawFind(className string, query types.M) []types.M {
 	coll := m.adaptiveCollection(className)
-	return coll.Find(query, types.M{})
+	return coll.find(query, types.M{})
 }
 
 // Count ...
@@ -288,13 +288,13 @@ func (m *MongoAdapter) Count(className string, query, schema types.M) (int, erro
 	if err != nil {
 		return 0, err
 	}
-	c := coll.Count(mongoWhere, types.M{})
+	c := coll.count(mongoWhere, types.M{})
 	return c, nil
 }
 
-func storageAdapterAllCollections(m *MongoAdapter) []storage.Collection {
+func storageAdapterAllCollections(m *MongoAdapter) []*MongoCollection {
 	names := m.getCollectionNames()
-	collections := []storage.Collection{}
+	collections := []*MongoCollection{}
 
 	for _, v := range names {
 		if m, err := regexp.MatchString(`\.system\.`, v); err == nil && m {

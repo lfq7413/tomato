@@ -145,7 +145,7 @@ func (t *MongoTransform) transformKeyValueForUpdate(className, restKey string, r
 	if value, ok := restValue.(map[string]interface{}); ok {
 		newValue := types.M{}
 		for k, v := range value {
-			r, err := transformInteriorValue(v)
+			r, err := t.transformInteriorValue(v)
 			if err != nil {
 				return "", nil, err
 			}
@@ -304,7 +304,7 @@ func (t *MongoTransform) transformConstraint(constraint interface{}, inArray boo
 		case "$lt", "$lte", "$gt", "$gte", "$exists", "$ne", "$eq":
 			var err error
 			if inArray {
-				answer[key], err = transformInteriorAtom(object[key])
+				answer[key], err = t.transformInteriorAtom(object[key])
 				if err != nil {
 					return nil, err
 				}
@@ -330,7 +330,7 @@ func (t *MongoTransform) transformConstraint(constraint interface{}, inArray boo
 				var result interface{}
 				var err error
 				if inArray {
-					result, err = transformInteriorAtom(value)
+					result, err = t.transformInteriorAtom(value)
 					if err != nil {
 						return nil, err
 					}
@@ -356,7 +356,7 @@ func (t *MongoTransform) transformConstraint(constraint interface{}, inArray boo
 			}
 			answerArr := types.S{}
 			for _, v := range arr {
-				obj, err := transformInteriorAtom(v)
+				obj, err := t.transformInteriorAtom(v)
 				if err != nil {
 					return nil, err
 				}
@@ -603,7 +603,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 		}
 		toAdd := types.S{}
 		for _, obj := range objects {
-			o, err := transformInteriorAtom(obj)
+			o, err := t.transformInteriorAtom(obj)
 			if err != nil {
 				return nil, err
 			}
@@ -641,7 +641,7 @@ func (t *MongoTransform) transformUpdateOperator(operator interface{}, flatten b
 		}
 		toRemove := types.S{}
 		for _, obj := range objects {
-			o, err := transformInteriorAtom(obj)
+			o, err := t.transformInteriorAtom(obj)
 			if err != nil {
 				return nil, err
 			}
@@ -784,7 +784,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(className stri
 	if s, ok := restValue.([]interface{}); ok {
 		value := []interface{}{}
 		for _, restObj := range s {
-			v, err := transformInteriorValue(restObj)
+			v, err := t.transformInteriorValue(restObj)
 			if err != nil {
 				return "", nil, err
 			}
@@ -816,7 +816,7 @@ func (t *MongoTransform) parseObjectKeyValueToMongoObjectKeyValue(className stri
 	if value, ok := restValue.(map[string]interface{}); ok {
 		newValue := types.M{}
 		for k, v := range value {
-			r, err := transformInteriorValue(v)
+			r, err := t.transformInteriorValue(v)
 			if err != nil {
 				return "", nil, err
 			}
@@ -997,7 +997,7 @@ func (t *MongoTransform) transformUpdate(className string, update types.M, parse
 	return mongoUpdate, nil
 }
 
-func nestedMongoObjectToNestedParseObject(mongoObject interface{}) (interface{}, error) {
+func (t *MongoTransform) nestedMongoObjectToNestedParseObject(mongoObject interface{}) (interface{}, error) {
 	if mongoObject == nil {
 		return mongoObject, nil
 	}
@@ -1011,7 +1011,7 @@ func nestedMongoObjectToNestedParseObject(mongoObject interface{}) (interface{},
 		results := types.S{}
 		objs := mongoObject.([]interface{})
 		for _, o := range objs {
-			res, err := nestedMongoObjectToNestedParseObject(o)
+			res, err := t.nestedMongoObjectToNestedParseObject(o)
 			if err != nil {
 				return nil, err
 			}
@@ -1044,7 +1044,7 @@ func nestedMongoObjectToNestedParseObject(mongoObject interface{}) (interface{},
 	if object, ok := mongoObject.(map[string]interface{}); ok {
 		newObject := types.M{}
 		for k, v := range object {
-			r, err := nestedMongoObjectToNestedParseObject(v)
+			r, err := t.nestedMongoObjectToNestedParseObject(v)
 			if err != nil {
 				return nil, err
 			}
@@ -1071,7 +1071,7 @@ func (t *MongoTransform) mongoObjectToParseObject(className string, mongoObject 
 		results := types.S{}
 		objs := mongoObject.([]interface{})
 		for _, o := range objs {
-			res, err := nestedMongoObjectToNestedParseObject(o)
+			res, err := t.nestedMongoObjectToNestedParseObject(o)
 			if err != nil {
 				return nil, err
 			}
@@ -1219,7 +1219,7 @@ func (t *MongoTransform) mongoObjectToParseObject(className string, mongoObject 
 					}
 				}
 				// 转换子对象
-				res, err := nestedMongoObjectToNestedParseObject(value)
+				res, err := t.nestedMongoObjectToNestedParseObject(value)
 				if err != nil {
 					return nil, err
 				}
@@ -1441,7 +1441,7 @@ func (f fileCoder) isValidJSON(value types.M) bool {
 	return value != nil && utils.String(value["__type"]) == "File" && utils.String(value["name"]) != ""
 }
 
-func transformInteriorAtom(atom interface{}) (interface{}, error) {
+func (t *MongoTransform) transformInteriorAtom(atom interface{}) (interface{}, error) {
 	if atom == nil {
 		return atom, nil
 	}
@@ -1485,7 +1485,7 @@ func transformInteriorAtom(atom interface{}) (interface{}, error) {
 	return atom, nil
 }
 
-func transformInteriorValue(restValue interface{}) (interface{}, error) {
+func (t *MongoTransform) transformInteriorValue(restValue interface{}) (interface{}, error) {
 	if restValue == nil {
 		return restValue, nil
 	}
@@ -1498,7 +1498,7 @@ func transformInteriorValue(restValue interface{}) (interface{}, error) {
 		}
 	}
 
-	value, err := transformInteriorAtom(restValue)
+	value, err := t.transformInteriorAtom(restValue)
 	if err != nil {
 		return nil, err
 	}
@@ -1509,7 +1509,7 @@ func transformInteriorValue(restValue interface{}) (interface{}, error) {
 	if value, ok := restValue.([]interface{}); ok {
 		newValue := types.S{}
 		for _, v := range value {
-			r, err := transformInteriorValue(v)
+			r, err := t.transformInteriorValue(v)
 			if err != nil {
 				return nil, err
 			}
@@ -1527,7 +1527,7 @@ func transformInteriorValue(restValue interface{}) (interface{}, error) {
 	if value, ok := restValue.(map[string]interface{}); ok {
 		newValue := types.M{}
 		for k, v := range value {
-			r, err := transformInteriorValue(v)
+			r, err := t.transformInteriorValue(v)
 			if err != nil {
 				return nil, err
 			}

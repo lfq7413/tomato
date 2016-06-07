@@ -49,7 +49,7 @@ func getQueryCondition(body types.M) (types.M, error) {
 		// 查询与频道不能同时设定
 		return nil, errs.E(errs.PushMisconfigured, "Channels and query can not be set at the same time.")
 	} else if hasWhere {
-		where = utils.MapInterface(body["where"])
+		where = utils.M(body["where"])
 	} else if hasChannels {
 		channels := types.M{
 			"$in": body["channels"],

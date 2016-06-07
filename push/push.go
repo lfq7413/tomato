@@ -48,11 +48,11 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 
 	var restUpdate types.M
 	var updateWhere types.M
-	data := utils.MapInterface(body["data"])
+	data := utils.M(body["data"])
 	if data != nil && data["badge"] != nil {
 		badge := data["badge"]
 		restUpdate = types.M{}
-		if strings.ToLower(utils.String(badge)) == "increment" {
+		if strings.ToLower(utils.S(badge)) == "increment" {
 			inc := types.M{
 				"__op":   "Increment",
 				"amount": 1,
@@ -107,7 +107,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 		status.complete([]types.M{})
 		return nil
 	}
-	results := utils.SliceInterface(response["results"])
+	results := utils.A(response["results"])
 
 	res := sendToAdapter(body, results, status)
 	status.complete(res)
@@ -117,24 +117,24 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 
 // sendToAdapter 发送推送消息
 func sendToAdapter(body types.M, installations []interface{}, status *pushStatus) []types.M {
-	data := utils.MapInterface(body["data"])
-	if data != nil && data["badge"] != nil && strings.ToLower(utils.String(data["badge"])) == "increment" {
+	data := utils.M(body["data"])
+	if data != nil && data["badge"] != nil && strings.ToLower(utils.S(data["badge"])) == "increment" {
 		badgeInstallationsMap := types.M{}
 		// 按 badge 分组
 		for _, v := range installations {
-			installation := utils.MapInterface(v)
+			installation := utils.M(v)
 			var badge string
 			if v, ok := installation["badge"].(float64); ok {
 				badge = strconv.Itoa(int(v))
 			} else {
 				continue
 			}
-			if utils.String(installation["deviceType"]) != "ios" {
+			if utils.S(installation["deviceType"]) != "ios" {
 				badge = "unsupported"
 			}
 			installations := types.S{}
 			if badgeInstallationsMap[badge] != nil {
-				installations = append(installations, utils.SliceInterface(badgeInstallationsMap[badge])...)
+				installations = append(installations, utils.A(badgeInstallationsMap[badge])...)
 			}
 			installations = append(installations, installation)
 			badgeInstallationsMap[badge] = installations
@@ -145,13 +145,13 @@ func sendToAdapter(body types.M, installations []interface{}, status *pushStatus
 		// 按 badge 分组发送推送
 		for k, v := range badgeInstallationsMap {
 			payload := utils.CopyMap(body)
-			paydata := utils.MapInterface(payload["data"])
+			paydata := utils.M(payload["data"])
 			if k == "unsupported" {
 				delete(paydata, "badge")
 			} else {
 				paydata["badge"], _ = strconv.Atoi(k)
 			}
-			result := adapter.send(payload, utils.SliceInterface(v), status)
+			result := adapter.send(payload, utils.A(v), status)
 			results = append(results, result...)
 		}
 		return results
@@ -169,14 +169,14 @@ func validatePushType(where types.M, validPushTypes []string) error {
 		deviceTypeField = types.M{}
 	}
 	deviceTypes := []string{}
-	if utils.String(deviceTypeField) != "" {
-		deviceTypes = append(deviceTypes, utils.String(deviceTypeField))
-	} else if utils.MapInterface(deviceTypeField) != nil {
-		m := utils.MapInterface(deviceTypeField)
-		if utils.SliceInterface(m["$in"]) != nil {
-			s := utils.SliceInterface(m["$in"])
+	if utils.S(deviceTypeField) != "" {
+		deviceTypes = append(deviceTypes, utils.S(deviceTypeField))
+	} else if utils.M(deviceTypeField) != nil {
+		m := utils.M(deviceTypeField)
+		if utils.A(m["$in"]) != nil {
+			s := utils.A(m["$in"])
 			for _, v := range s {
-				deviceTypes = append(deviceTypes, utils.String(v))
+				deviceTypes = append(deviceTypes, utils.S(v))
 			}
 		}
 	}

@@ -265,7 +265,7 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		}
 	}
 	// 处理 Relation
-	d.handleRelationUpdates(className, utils.String(where["objectId"]), data)
+	d.handleRelationUpdates(className, utils.S(where["objectId"]), data)
 
 	// 添加用户权限
 	if isMaster == false {
@@ -364,10 +364,10 @@ func sanitizeDatabaseResult(originalObject, result types.M) types.M {
 
 	// 检测是否是对字段的操作
 	for key, value := range originalObject {
-		if value != nil && utils.MapInterface(value) != nil {
-			keyUpdate := utils.MapInterface(value)
+		if value != nil && utils.M(value) != nil {
+			keyUpdate := utils.M(value)
 			if keyUpdate["__op"] != nil {
-				op := utils.String(keyUpdate["__op"])
+				op := utils.S(keyUpdate["__op"])
 				if op == "Add" || op == "AddUnique" || op == "Remove" || op == "Increment" {
 					// 只把操作的字段放入返回结果中
 					response[key] = result[key]
@@ -444,8 +444,8 @@ func (d DBController) validateClassName(className string) error {
 // handleRelationUpdates 处理 Relation 相关操作
 func (d DBController) handleRelationUpdates(className, objectID string, update types.M) error {
 	objID := objectID
-	if utils.String(update["objectId"]) != "" {
-		objID = utils.String(update["objectId"])
+	if utils.S(update["objectId"]) != "" {
+		objID = utils.S(update["objectId"])
 	}
 
 	// 定义处理函数
@@ -467,17 +467,17 @@ func (d DBController) handleRelationUpdates(className, objectID string, update t
 	// }
 	var process func(op interface{}, key string) error
 	process = func(op interface{}, key string) error {
-		if op == nil || utils.MapInterface(op) == nil || utils.MapInterface(op)["__op"] == nil {
+		if op == nil || utils.M(op) == nil || utils.M(op)["__op"] == nil {
 			return nil
 		}
-		opMap := utils.MapInterface(op)
-		p := utils.String(opMap["__op"])
+		opMap := utils.M(op)
+		p := utils.S(opMap["__op"])
 		if p == "AddRelation" {
 			delete(update, key)
 			// 添加 Relation 对象
-			objects := utils.SliceInterface(opMap["objects"])
+			objects := utils.A(opMap["objects"])
 			for _, object := range objects {
-				relationID := utils.String(utils.MapInterface(object)["objectId"])
+				relationID := utils.S(utils.M(object)["objectId"])
 				err := d.addRelation(key, className, objID, relationID)
 				if err != nil {
 					return err
@@ -486,9 +486,9 @@ func (d DBController) handleRelationUpdates(className, objectID string, update t
 		} else if p == "RemoveRelation" {
 			delete(update, key)
 			// 删除 Relation 对象
-			objects := utils.SliceInterface(opMap["objects"])
+			objects := utils.A(opMap["objects"])
 			for _, object := range objects {
-				relationID := utils.String(utils.MapInterface(object)["objectId"])
+				relationID := utils.S(utils.M(object)["objectId"])
 				err := d.removeRelation(key, className, objID, relationID)
 				if err != nil {
 					return err
@@ -496,7 +496,7 @@ func (d DBController) handleRelationUpdates(className, objectID string, update t
 			}
 		} else if p == "Batch" {
 			// 批处理 Relation 对象
-			ops := utils.SliceInterface(opMap["ops"])
+			ops := utils.A(opMap["ops"])
 			for _, x := range ops {
 				err := process(x, key)
 				if err != nil {
@@ -614,7 +614,7 @@ func (d DBController) canAddField(schema *Schema, className string, object types
 	if schema.data[className] == nil {
 		return nil
 	}
-	classSchema := utils.MapInterface(schema.data[className])
+	classSchema := utils.M(schema.data[className])
 
 	schemaFields := []string{}
 	for k := range classSchema {
@@ -654,9 +654,9 @@ func keysForQuery(query types.M) []string {
 	}
 
 	if s != nil {
-		sublist := utils.SliceInterface(s)
+		sublist := utils.A(s)
 		for _, v := range sublist {
-			subquery := utils.MapInterface(v)
+			subquery := utils.M(v)
 			answer = append(answer, keysForQuery(subquery)...)
 		}
 		return answer
@@ -694,20 +694,20 @@ func keysForQuery(query types.M) []string {
 // }
 func (d DBController) reduceRelationKeys(className string, query types.M) {
 	if query["$or"] != nil {
-		subQuerys := utils.SliceInterface(query["$or"])
+		subQuerys := utils.A(query["$or"])
 		for _, v := range subQuerys {
-			aQuery := utils.MapInterface(v)
+			aQuery := utils.M(v)
 			d.reduceRelationKeys(className, aQuery)
 		}
 		return
 	}
 
 	if query["$relatedTo"] != nil {
-		relatedTo := utils.MapInterface(query["$relatedTo"])
-		key := utils.String(relatedTo["key"])
-		object := utils.MapInterface(relatedTo["object"])
-		objClassName := utils.String(object["className"])
-		objID := utils.String(object["objectId"])
+		relatedTo := utils.M(query["$relatedTo"])
+		key := utils.S(relatedTo["key"])
+		object := utils.M(relatedTo["object"])
+		objClassName := utils.S(object["className"])
+		objID := utils.S(object["objectId"])
 		ids := d.relatedIds(objClassName, key, objID)
 		delete(query, "$relatedTo")
 		d.addInObjectIdsIds(ids, query)
@@ -869,9 +869,9 @@ func (d DBController) addNotInObjectIdsIds(ids types.S, query types.M) {
 func (d DBController) reduceInRelation(className string, query types.M, schema *Schema) types.M {
 	// 处理 $or 数组中的数据，并替换回去
 	if query["$or"] != nil {
-		ors := utils.SliceInterface(query["$or"])
+		ors := utils.A(query["$or"])
 		for i, v := range ors {
-			aQuery := utils.MapInterface(v)
+			aQuery := utils.M(v)
 			aQuery = d.reduceInRelation(className, aQuery, schema)
 			ors[i] = aQuery
 		}
@@ -880,8 +880,8 @@ func (d DBController) reduceInRelation(className string, query types.M, schema *
 	}
 
 	for key, v := range query {
-		op := utils.MapInterface(v)
-		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || op["$eq"] != nil || utils.String(op["__type"]) == "Pointer") {
+		op := utils.M(v)
+		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || op["$eq"] != nil || utils.S(op["__type"]) == "Pointer") {
 			// 只处理 relation 类型
 			t := schema.getExpectedType(className, key)
 			if t == nil || t["type"].(string) != "Relation" {
@@ -897,30 +897,30 @@ func (d DBController) reduceInRelation(className string, query types.M, schema *
 					relatedIds = append(relatedIds, ids)
 					isNegation = append(isNegation, false)
 				} else if constraintKey == "$in" {
-					in := utils.SliceInterface(value)
+					in := utils.A(value)
 					ids := types.S{}
 					for _, v := range in {
-						r := utils.MapInterface(v)
+						r := utils.M(v)
 						ids = append(ids, r["objectId"])
 					}
 					relatedIds = append(relatedIds, ids)
 					isNegation = append(isNegation, false)
 				} else if constraintKey == "$nin" {
-					nin := utils.SliceInterface(value)
+					nin := utils.A(value)
 					ids := types.S{}
 					for _, v := range nin {
-						r := utils.MapInterface(v)
+						r := utils.M(v)
 						ids = append(ids, r["objectId"])
 					}
 					relatedIds = append(relatedIds, ids)
 					isNegation = append(isNegation, true)
 				} else if constraintKey == "$ne" {
-					ne := utils.MapInterface(value)
+					ne := utils.M(value)
 					ids := types.S{ne["objectId"]}
 					relatedIds = append(relatedIds, ids)
 					isNegation = append(isNegation, true)
 				} else if constraintKey == "$eq" {
-					eq := utils.MapInterface(value)
+					eq := utils.M(value)
 					ids := types.S{eq["objectId"]}
 					relatedIds = append(relatedIds, ids)
 					isNegation = append(isNegation, false)
@@ -975,7 +975,7 @@ func filterSensitiveData(isMaster bool, aclGroup []string, className string, obj
 		return object
 	}
 	// 当前用户返回所有信息
-	id := utils.String(object["objectId"])
+	id := utils.S(object["objectId"])
 	for _, v := range aclGroup {
 		if v == id {
 			return object
@@ -1021,8 +1021,8 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 		}
 	}
 
-	if perms != nil && utils.MapInterface(perms)[field] != nil {
-		permFields := utils.MapInterface(perms)[field].([]interface{})
+	if perms != nil && utils.M(perms)[field] != nil {
+		permFields := utils.M(perms)[field].([]interface{})
 		if permFields != nil && len(permFields) > 0 {
 			if len(userACL) != 1 {
 				return nil

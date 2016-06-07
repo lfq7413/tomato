@@ -182,12 +182,12 @@ func (w *Write) handleInstallation() error {
 	}
 
 	// 	如果 deviceToken 为 64 位，则认为是 iOS 设备
-	if w.data["deviceToken"] != nil && len(utils.String(w.data["deviceToken"])) == 64 {
-		w.data["deviceToken"] = strings.ToLower(utils.String(w.data["deviceToken"]))
+	if w.data["deviceToken"] != nil && len(utils.S(w.data["deviceToken"])) == 64 {
+		w.data["deviceToken"] = strings.ToLower(utils.S(w.data["deviceToken"]))
 	}
 
 	if w.data["installationId"] != nil {
-		w.data["installationId"] = strings.ToLower(utils.String(w.data["installationId"]))
+		w.data["installationId"] = strings.ToLower(utils.S(w.data["installationId"]))
 	}
 
 	var idMatch types.M
@@ -204,7 +204,7 @@ func (w *Write) handleInstallation() error {
 			return errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}
 
-		idMatch = utils.MapInterface(results[0])
+		idMatch = utils.M(results[0])
 		if w.data["installationId"] != nil && idMatch["installationId"] != nil &&
 			w.data["installationId"] != idMatch["installationId"] {
 			// installationId 不能修改
@@ -232,7 +232,7 @@ func (w *Write) handleInstallation() error {
 		}
 		if results != nil && len(results) > 0 {
 			// 只取第一个结果
-			idMatch = utils.MapInterface(results[0])
+			idMatch = utils.M(results[0])
 		}
 	}
 	if w.data["deviceToken"] != nil {
@@ -252,9 +252,9 @@ func (w *Write) handleInstallation() error {
 			// 要更新的 deviceToken 不存在
 			objID = ""
 		} else if len(deviceTokenMatches) == 1 &&
-			(utils.MapInterface(deviceTokenMatches[0])["installationId"] == nil || w.data["installationId"] == nil) {
+			(utils.M(deviceTokenMatches[0])["installationId"] == nil || w.data["installationId"] == nil) {
 			// 要更新的 deviceToken 只存在一个，并且 installationId 不是同时都有
-			objID = utils.String(utils.MapInterface(deviceTokenMatches[0])["objectId"])
+			objID = utils.S(utils.M(deviceTokenMatches[0])["objectId"])
 		} else if w.data["installationId"] == nil {
 			// 当有多个 deviceToken 时，必须指定 installationId
 			return errs.E(errs.InvalidInstallationIDError, "Must specify installationId when deviceToken matches multiple Installation objects")
@@ -282,7 +282,7 @@ func (w *Write) handleInstallation() error {
 	} else {
 		// 要更新的 installationId 存在
 		if deviceTokenMatches != nil && len(deviceTokenMatches) == 1 &&
-			utils.MapInterface(deviceTokenMatches[0])["installationId"] == nil {
+			utils.M(deviceTokenMatches[0])["installationId"] == nil {
 			// deviceToken 存在，且只有一条，并且这条记录中的 installationId 为空
 			// 首先清理 idMatch 对应的记录
 			// 然后合并要更新的数据到 deviceToken 对应的记录
@@ -293,7 +293,7 @@ func (w *Write) handleInstallation() error {
 			if err != nil {
 				return err
 			}
-			objID = utils.String(utils.MapInterface(deviceTokenMatches[0])["objectId"])
+			objID = utils.S(utils.M(deviceTokenMatches[0])["objectId"])
 		} else {
 			// deviceToken 不存在，或者有多条，或者存在 installationId 时
 			if w.data["deviceToken"] != nil && idMatch["deviceToken"] != w.data["deviceToken"] {
@@ -310,7 +310,7 @@ func (w *Write) handleInstallation() error {
 					delQuery["objectId"] = types.M{"$ne": idMatch["objectId"]}
 				} else {
 					// 无需清理数据
-					objID = utils.String(idMatch["objectId"])
+					objID = utils.S(idMatch["objectId"])
 				}
 				// 需要清理数据
 				if objID == "" {
@@ -323,7 +323,7 @@ func (w *Write) handleInstallation() error {
 					}
 				}
 			}
-			objID = utils.String(idMatch["objectId"])
+			objID = utils.S(idMatch["objectId"])
 		}
 	}
 	// objID 不为空时，转换当前请求为 update 请求
@@ -392,7 +392,7 @@ func (w *Write) handleSession() error {
 		if results["response"] == nil {
 			return errs.E(errs.InternalServerError, "Error creating session.")
 		}
-		sessionData["objectId"] = utils.MapInterface(results["response"])["objectId"]
+		sessionData["objectId"] = utils.M(results["response"])["objectId"]
 		w.response = types.M{
 			"status":   201,
 			"location": results["location"],
@@ -411,26 +411,26 @@ func (w *Write) validateAuthData() error {
 
 	// 当前 create 请求，并且不存在第三方登录数据时
 	if w.query == nil && w.data["authData"] == nil {
-		if utils.String(w.data["username"]) == "" {
+		if utils.S(w.data["username"]) == "" {
 			return errs.E(errs.UsernameMissing, "bad or missing username")
 		}
-		if utils.String(w.data["password"]) == "" {
+		if utils.S(w.data["password"]) == "" {
 			return errs.E(errs.PasswordMissing, "password is required")
 		}
 	}
 
 	// 不存在第三方登录数据时，直接返回
-	if w.data["authData"] == nil || len(utils.MapInterface(w.data["authData"])) == 0 {
+	if w.data["authData"] == nil || len(utils.M(w.data["authData"])) == 0 {
 		return nil
 	}
 
-	authData := utils.MapInterface(w.data["authData"])
+	authData := utils.M(w.data["authData"])
 	canHandleAuthData := true
 
 	if len(authData) > 0 {
 		// authData 中包含 id 时，才需要进行处理
 		for _, v := range authData {
-			providerAuthData := utils.MapInterface(v)
+			providerAuthData := utils.M(v)
 			hasToken := (providerAuthData != nil && providerAuthData["id"] != nil)
 			canHandleAuthData = (canHandleAuthData && (hasToken || providerAuthData == nil))
 		}
@@ -468,7 +468,7 @@ func (w *Write) handleAuthData(authData types.M) error {
 	if results != nil || len(results) > 0 {
 		if w.query == nil {
 			// 存在一个用户，并且是 create 请求时，进行登录
-			user := utils.MapInterface(results[0])
+			user := utils.M(results[0])
 			delete(user, "password")
 			// 在 location() 之前设置 objectId，否则 w.data["objectId"] 可能为空
 			w.data["objectId"] = user["objectId"]
@@ -478,8 +478,8 @@ func (w *Write) handleAuthData(authData types.M) error {
 			}
 		} else if w.query != nil && w.query["objectId"] != nil {
 			// 存在一个用户，并且当前为 update 请求，校验 objectId 是否一致
-			user := utils.MapInterface(results[0])
-			if utils.String(user["objectId"]) != utils.String(w.query["objectId"]) {
+			user := utils.M(results[0])
+			if utils.S(user["objectId"]) != utils.S(w.query["objectId"]) {
 				// auth 已经被使用
 				return errs.E(errs.AccountAlreadyLinked, "this auth is already used")
 			}
@@ -495,7 +495,7 @@ func (w *Write) handleAuthDataValidation(authData types.M) error {
 		if v == nil {
 			continue
 		}
-		err := authdatamanager.ValidateAuthData(k, utils.MapInterface(v))
+		err := authdatamanager.ValidateAuthData(k, utils.M(v))
 		if err != nil {
 			// 验证出现问题
 			return err
@@ -513,7 +513,7 @@ func (w *Write) findUsersWithAuthData(authData types.M) (types.S, error) {
 			continue
 		}
 		key := "authData." + k + ".id"
-		provider := utils.MapInterface(v)
+		provider := utils.M(v)
 		q := types.M{
 			key: provider["id"],
 		}
@@ -563,7 +563,7 @@ func (w *Write) runBeforeTrigger() error {
 		if reflect.DeepEqual(w.data, response["object"]) == false {
 			w.storage["changedByTrigger"] = true
 		}
-		w.data = utils.MapInterface(response["object"])
+		w.data = utils.M(response["object"])
 		if w.query != nil && w.query["objectId"] != nil {
 			delete(w.data, "objectId")
 		}
@@ -632,7 +632,7 @@ func (w *Write) transformUser() error {
 			// 如果是 update 请求时，标识出需要清理 Sessions
 			w.storage["clearSessions"] = true
 		}
-		w.data["_hashed_password"] = utils.Hash(utils.String(w.data["password"]))
+		w.data["_hashed_password"] = utils.Hash(utils.S(w.data["password"]))
 		delete(w.data, "password")
 	}
 
@@ -673,7 +673,7 @@ func (w *Write) transformUser() error {
 		}
 	}
 
-	if utils.IsEmail(utils.String(w.data["email"])) == false {
+	if utils.IsEmail(utils.S(w.data["email"])) == false {
 		return errs.E(errs.InvalidEmailAddress, "Email address format is invalid.")
 	}
 	objectID := types.M{
@@ -718,18 +718,18 @@ func (w *Write) runDatabaseOperation() error {
 	}
 
 	if w.className == "_User" && w.query != nil &&
-		w.auth.CouldUpdateUserID(utils.String(w.query["objectId"])) == false {
+		w.auth.CouldUpdateUserID(utils.S(w.query["objectId"])) == false {
 		// 不能更新该用户，Master 可以更新任意用户，普通用户仅可更新自身
-		return errs.E(errs.SessionMissing, "cannot modify user "+utils.String(w.query["objectId"]))
+		return errs.E(errs.SessionMissing, "cannot modify user "+utils.S(w.query["objectId"]))
 	}
 
 	if w.className == "_Product" && w.data["download"] != nil {
-		download := utils.MapInterface(w.data["download"])
+		download := utils.M(w.data["download"])
 		w.data["downloadName"] = download["name"]
 	}
 
 	// TODO 确保不要出现用户无法访问自身数据的情况
-	if w.data["ACL"] != nil && utils.MapInterface(w.data["ACL"])["*unresolved"] != nil {
+	if w.data["ACL"] != nil && utils.M(w.data["ACL"])["*unresolved"] != nil {
 		return errs.E(errs.InvalidAcl, "Invalid ACL.")
 	}
 
@@ -779,7 +779,7 @@ func (w *Write) runDatabaseOperation() error {
 				acl := types.M{}
 				acl["*"] = onlyread
 			}
-			objectID := utils.String(w.data["objectId"])
+			objectID := utils.S(w.data["objectId"])
 			acl[objectID] = readwrite
 			w.data["ACL"] = acl
 		}
@@ -927,7 +927,7 @@ func (w *Write) location() string {
 	} else {
 		middle = "/classes/" + w.className + "/"
 	}
-	return config.TConfig.ServerURL + middle + utils.String(w.data["objectId"])
+	return config.TConfig.ServerURL + middle + utils.S(w.data["objectId"])
 }
 
 // objectID 从请求中获取 objectId
@@ -953,9 +953,9 @@ func (w *Write) sanitizedData() types.M {
 
 func (w *Write) cleanUserAuthData() {
 	if w.response != nil && w.response["response"] != nil && w.className == "_User" {
-		user := utils.MapInterface(w.response["response"])
+		user := utils.M(w.response["response"])
 		if user != nil && user["authData"] != nil {
-			authData := utils.MapInterface(user["authData"])
+			authData := utils.M(user["authData"])
 			for provider, v := range authData {
 				if v == nil {
 					delete(authData, provider)

@@ -27,9 +27,9 @@ func (l *LogoutController) HandleLogOut() {
 			return
 		}
 		if utils.HasResults(records) {
-			results := utils.SliceInterface(records["results"])
-			obj := utils.MapInterface(results[0])
-			err := rest.Delete(rest.Master(), "_Session", utils.String(obj["objectId"]))
+			results := utils.A(records["results"])
+			obj := utils.M(results[0])
+			err := rest.Delete(rest.Master(), "_Session", utils.S(obj["objectId"]))
 			if err != nil {
 				l.Data["json"] = errs.ErrorToMap(err)
 				l.ServeJSON()

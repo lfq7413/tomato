@@ -60,26 +60,26 @@ func DeleteFile(filename string) error {
 // 	"name": "pic.jpg",
 // }
 func ExpandFilesInObject(object interface{}) {
-	if utils.SliceInterface(object) != nil {
-		objs := utils.SliceInterface(object)
+	if utils.A(object) != nil {
+		objs := utils.A(object)
 		for _, obj := range objs {
 			ExpandFilesInObject(obj)
 		}
 	}
 
-	if utils.MapInterface(object) == nil {
+	if utils.M(object) == nil {
 		return
 	}
 
-	obj := utils.MapInterface(object)
+	obj := utils.M(object)
 
 	for _, v := range obj {
-		fileObject := utils.MapInterface(v)
+		fileObject := utils.M(v)
 		if fileObject != nil && fileObject["__type"] == "File" {
 			if fileObject["url"] != nil {
 				continue
 			}
-			filename := utils.String(fileObject["name"])
+			filename := utils.S(fileObject["name"])
 			fileObject["url"] = adapter.getFileLocation(filename)
 		}
 	}

@@ -97,11 +97,11 @@ func (p *pushStatus) complete(results []types.M) {
 		if result["device"] == nil {
 			continue
 		}
-		device := utils.MapInterface(result["device"])
+		device := utils.M(result["device"])
 		if device["deviceType"] == nil {
 			continue
 		}
-		deviceType := utils.String(device["deviceType"])
+		deviceType := utils.S(device["deviceType"])
 		// 统计发送数据
 		if result["transmitted"] != nil && result["transmitted"].(bool) {
 			numSent++

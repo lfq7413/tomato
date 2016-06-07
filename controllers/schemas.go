@@ -68,8 +68,8 @@ func (s *SchemasController) HandleCreate() {
 	}
 
 	bodyClassName := ""
-	if data["className"] != nil && utils.String(data["className"]) != "" {
-		bodyClassName = utils.String(data["className"])
+	if data["className"] != nil && utils.S(data["className"]) != "" {
+		bodyClassName = utils.S(data["className"])
 	}
 	if className != "" && bodyClassName != "" {
 		if className != bodyClassName {
@@ -88,7 +88,7 @@ func (s *SchemasController) HandleCreate() {
 	}
 
 	schema := orm.TomatoDBController.LoadSchema()
-	result, err := schema.AddClassIfNotExists(className, utils.MapInterface(data["fields"]), utils.MapInterface(data["classLevelPermissions"]))
+	result, err := schema.AddClassIfNotExists(className, utils.M(data["fields"]), utils.M(data["classLevelPermissions"]))
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)
 		s.ServeJSON()
@@ -111,8 +111,8 @@ func (s *SchemasController) HandleUpdate() {
 	}
 
 	bodyClassName := ""
-	if data["className"] != nil && utils.String(data["className"]) != "" {
-		bodyClassName = utils.String(data["className"])
+	if data["className"] != nil && utils.S(data["className"]) != "" {
+		bodyClassName = utils.S(data["className"])
 	}
 	if className != bodyClassName {
 		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, "Class name mismatch between "+bodyClassName+" and "+className+".")
@@ -121,12 +121,12 @@ func (s *SchemasController) HandleUpdate() {
 	}
 
 	submittedFields := types.M{}
-	if data["fields"] != nil && utils.MapInterface(data["fields"]) != nil {
-		submittedFields = utils.MapInterface(data["fields"])
+	if data["fields"] != nil && utils.M(data["fields"]) != nil {
+		submittedFields = utils.M(data["fields"])
 	}
 
 	schema := orm.TomatoDBController.LoadSchema()
-	result, err := schema.UpdateClass(className, submittedFields, utils.MapInterface(data["classLevelPermissions"]))
+	result, err := schema.UpdateClass(className, submittedFields, utils.M(data["classLevelPermissions"]))
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)
 		s.ServeJSON()
@@ -180,9 +180,9 @@ func (s *SchemasController) HandleDelete() {
 // 需要删除的表明： "_Join:field:className"
 func removeJoinTables(mongoSchema types.M) error {
 	for field, v := range mongoSchema {
-		fieldType := utils.String(v)
+		fieldType := utils.S(v)
 		if field != "_metadata" && strings.HasPrefix(fieldType, "relation<") {
-			collectionName := "_Join:" + field + ":" + utils.String(mongoSchema["_id"])
+			collectionName := "_Join:" + field + ":" + utils.S(mongoSchema["_id"])
 			err := orm.Adapter.DeleteOneSchema(collectionName)
 			if err != nil {
 				return err

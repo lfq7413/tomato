@@ -45,10 +45,10 @@ func (l *LoginController) HandleLogIn() {
 		l.ServeJSON()
 		return
 	}
-	user := utils.MapInterface(results[0])
+	user := utils.M(results[0])
 
 	// TODO 换用高强度的加密方式
-	correct := utils.Compare(password, utils.String(user["password"]))
+	correct := utils.Compare(password, utils.S(user["password"]))
 	if correct == false {
 		l.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Invalid username/password.")
 		l.ServeJSON()
@@ -60,7 +60,7 @@ func (l *LoginController) HandleLogIn() {
 	delete(user, "password")
 
 	if user["authData"] != nil {
-		authData := utils.MapInterface(user["authData"])
+		authData := utils.M(user["authData"])
 		for k, v := range authData {
 			if v == nil {
 				delete(authData, k)

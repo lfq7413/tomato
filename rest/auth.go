@@ -61,11 +61,11 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 	if response == nil || response["results"] == nil {
 		return Nobody(), nil
 	}
-	results := utils.SliceInterface(response["results"])
+	results := utils.A(response["results"])
 	if results == nil || len(results) != 1 {
 		return Nobody(), nil
 	}
-	result := utils.MapInterface(results[0])
+	result := utils.M(results[0])
 	if result == nil || result["user"] == nil {
 		return Nobody(), nil
 	}
@@ -74,7 +74,7 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 	if result["expiresAt"] == nil {
 		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
 	}
-	expiresAtString := utils.MapInterface(result["expiresAt"])["iso"].(string)
+	expiresAtString := utils.M(result["expiresAt"])["iso"].(string)
 	expiresAt, err := utils.StringtoTime(expiresAtString)
 	if err != nil {
 		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
@@ -83,7 +83,7 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
 	}
 
-	user := utils.MapInterface(result["user"])
+	user := utils.M(result["user"])
 	delete(user, "password")
 	user["className"] = "_User"
 	user["sessionToken"] = sessionToken
@@ -159,13 +159,13 @@ func (a *Auth) loadRoles() []string {
 		return a.UserRoles
 	}
 
-	results := utils.SliceInterface(response["results"])
+	results := utils.A(response["results"])
 	ids := []string{}
 	names := []string{}
 	for _, v := range results {
-		roleObj := utils.MapInterface(v)
-		ids = append(ids, utils.String(roleObj["objectId"]))
-		names = append(names, utils.String(roleObj["name"]))
+		roleObj := utils.M(v)
+		ids = append(ids, utils.S(roleObj["objectId"]))
+		names = append(names, utils.S(roleObj["name"]))
 	}
 
 	queriedRoles := map[string]bool{} // 记录查询过的 role ，避免多次查询
@@ -222,13 +222,13 @@ func (a *Auth) getAllRoleNamesForID(roleIDs, names []string, queriedRoles map[st
 		return names
 	}
 
-	results := utils.SliceInterface(response["results"])
+	results := utils.A(response["results"])
 	ids := []string{}
 	pnames := []string{}
 	for _, v := range results {
-		roleObj := utils.MapInterface(v)
-		ids = append(ids, utils.String(roleObj["objectId"]))
-		pnames = append(pnames, utils.String(roleObj["name"]))
+		roleObj := utils.M(v)
+		ids = append(ids, utils.S(roleObj["objectId"]))
+		pnames = append(pnames, utils.S(roleObj["name"]))
 	}
 
 	// 存储找到的角色名

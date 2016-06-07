@@ -77,7 +77,7 @@ func (s *SessionsController) HandleGetMe() {
 		s.ServeJSON()
 		return
 	}
-	results := utils.SliceInterface(response["results"])
+	results := utils.A(response["results"])
 	s.Data["json"] = results[0]
 	s.ServeJSON()
 }

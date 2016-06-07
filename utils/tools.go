@@ -10,8 +10,8 @@ import (
 func HasResults(response types.M) bool {
 	if response == nil ||
 		response["results"] == nil ||
-		SliceInterface(response["results"]) == nil ||
-		len(SliceInterface(response["results"])) == 0 {
+		A(response["results"]) == nil ||
+		len(A(response["results"])) == 0 {
 		return false
 	}
 	return true

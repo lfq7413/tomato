@@ -256,14 +256,14 @@ func (q *Query) replaceSelect() error {
 		return nil
 	}
 	// 必须包含两个 key ： query key
-	selectValue := utils.MapInterface(selectObject["$select"])
+	selectValue := utils.M(selectObject["$select"])
 	if selectValue == nil ||
 		selectValue["query"] == nil ||
 		selectValue["key"] == nil ||
 		len(selectValue) != 2 {
 		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
-	queryValue := utils.MapInterface(selectValue["query"])
+	queryValue := utils.M(selectValue["query"])
 	// iOS SDK 中不设置 where 时，没有 where 字段，所以此处不检测 where
 	if queryValue == nil ||
 		queryValue["className"] == nil {
@@ -278,11 +278,11 @@ func (q *Query) replaceSelect() error {
 	if queryValue["where"] == nil {
 		where = types.M{}
 	} else {
-		utils.MapInterface(queryValue["where"])
+		utils.M(queryValue["where"])
 	}
 	query, err := NewQuery(
 		q.auth,
-		utils.String(queryValue["className"]),
+		utils.S(queryValue["className"]),
 		where,
 		additionalOptions)
 	if err != nil {
@@ -295,8 +295,8 @@ func (q *Query) replaceSelect() error {
 	// 组装查询到的对象
 	values := []types.M{}
 	if utils.HasResults(response) == true {
-		for _, v := range utils.SliceInterface(response["results"]) {
-			result := utils.MapInterface(v)
+		for _, v := range utils.A(response["results"]) {
+			result := utils.M(v)
 			values = append(values, result)
 		}
 	}
@@ -314,14 +314,14 @@ func (q *Query) replaceDontSelect() error {
 		return nil
 	}
 	// 必须包含两个 key ： query key
-	dontSelectValue := utils.MapInterface(dontSelectObject["$dontSelect"])
+	dontSelectValue := utils.M(dontSelectObject["$dontSelect"])
 	if dontSelectValue == nil ||
 		dontSelectValue["query"] == nil ||
 		dontSelectValue["key"] == nil ||
 		len(dontSelectValue) != 2 {
 		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
-	queryValue := utils.MapInterface(dontSelectValue["query"])
+	queryValue := utils.M(dontSelectValue["query"])
 	if queryValue == nil ||
 		queryValue["className"] == nil {
 		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
@@ -335,11 +335,11 @@ func (q *Query) replaceDontSelect() error {
 	if queryValue["where"] == nil {
 		where = types.M{}
 	} else {
-		utils.MapInterface(queryValue["where"])
+		utils.M(queryValue["where"])
 	}
 	query, err := NewQuery(
 		q.auth,
-		utils.String(queryValue["className"]),
+		utils.S(queryValue["className"]),
 		where,
 		additionalOptions)
 	if err != nil {
@@ -352,8 +352,8 @@ func (q *Query) replaceDontSelect() error {
 	// 组装查询到的对象
 	values := []types.M{}
 	if utils.HasResults(response) == true {
-		for _, v := range utils.SliceInterface(response["results"]) {
-			result := utils.MapInterface(v)
+		for _, v := range utils.A(response["results"]) {
+			result := utils.M(v)
 			values = append(values, result)
 		}
 	}
@@ -396,7 +396,7 @@ func (q *Query) replaceInQuery() error {
 		return nil
 	}
 	// 必须包含两个 key ： where className
-	inQueryValue := utils.MapInterface(inQueryObject["$inQuery"])
+	inQueryValue := utils.M(inQueryObject["$inQuery"])
 	if inQueryValue == nil ||
 		inQueryValue["where"] == nil ||
 		inQueryValue["className"] == nil ||
@@ -410,8 +410,8 @@ func (q *Query) replaceInQuery() error {
 
 	query, err := NewQuery(
 		q.auth,
-		utils.String(inQueryValue["className"]),
-		utils.MapInterface(inQueryValue["where"]),
+		utils.S(inQueryValue["className"]),
+		utils.M(inQueryValue["where"]),
 		additionalOptions)
 	if err != nil {
 		return err
@@ -423,8 +423,8 @@ func (q *Query) replaceInQuery() error {
 	// 组装查询到的对象
 	values := []types.M{}
 	if utils.HasResults(response) == true {
-		for _, v := range utils.SliceInterface(response["results"]) {
-			result := utils.MapInterface(v)
+		for _, v := range utils.A(response["results"]) {
+			result := utils.M(v)
 			values = append(values, result)
 		}
 	}
@@ -442,7 +442,7 @@ func (q *Query) replaceNotInQuery() error {
 		return nil
 	}
 	// 必须包含两个 key ： where className
-	notInQueryValue := utils.MapInterface(notInQueryObject["$notInQuery"])
+	notInQueryValue := utils.M(notInQueryObject["$notInQuery"])
 	if notInQueryValue == nil ||
 		notInQueryValue["where"] == nil ||
 		notInQueryValue["className"] == nil ||
@@ -456,8 +456,8 @@ func (q *Query) replaceNotInQuery() error {
 
 	query, err := NewQuery(
 		q.auth,
-		utils.String(notInQueryValue["className"]),
-		utils.MapInterface(notInQueryValue["where"]),
+		utils.S(notInQueryValue["className"]),
+		utils.M(notInQueryValue["where"]),
 		additionalOptions)
 	if err != nil {
 		return err
@@ -469,8 +469,8 @@ func (q *Query) replaceNotInQuery() error {
 	// 组装查询到的对象
 	values := []types.M{}
 	if utils.HasResults(response) == true {
-		for _, v := range utils.SliceInterface(response["results"]) {
-			result := utils.MapInterface(v)
+		for _, v := range utils.A(response["results"]) {
+			result := utils.M(v)
 			values = append(values, result)
 		}
 	}
@@ -497,7 +497,7 @@ func (q *Query) runFind() error {
 	// 从 _User 表中删除密码字段
 	if q.className == "_User" {
 		for _, v := range response {
-			user := utils.MapInterface(v)
+			user := utils.M(v)
 			if user != nil {
 				delete(user, "password")
 			}
@@ -511,7 +511,7 @@ func (q *Query) runFind() error {
 	results := types.S{}
 	if len(q.keys) > 0 && len(response) > 0 {
 		for _, v := range response {
-			obj := utils.MapInterface(v)
+			obj := utils.M(v)
 			newObj := types.M{}
 			for _, s := range q.keys {
 				if obj[s] != nil {
@@ -524,7 +524,7 @@ func (q *Query) runFind() error {
 
 	if q.redirectClassName != "" {
 		for _, v := range results {
-			r := utils.MapInterface(v)
+			r := utils.M(v)
 			r["className"] = q.redirectClassName
 		}
 	}
@@ -582,9 +582,9 @@ func includePath(auth *Auth, response types.M, path []string) error {
 	}
 	pointersHash := map[string][]string{}
 	for _, v := range pointers {
-		pointer := utils.MapInterface(v)
+		pointer := utils.M(v)
 		// 不再区分不同 className ，添加不为空的 className
-		className := utils.String(pointer["className"])
+		className := utils.S(pointer["className"])
 		if className != "" {
 			if v, ok := pointersHash[className]; ok {
 				v = append(v, pointer["objectId"].(string))
@@ -618,16 +618,16 @@ func includePath(auth *Auth, response types.M, path []string) error {
 		}
 
 		// 组装查询到的对象
-		results := utils.SliceInterface(includeResponse["results"])
+		results := utils.A(includeResponse["results"])
 		for _, v := range results {
-			obj := utils.MapInterface(v)
+			obj := utils.M(v)
 			obj["__type"] = "Object"
 			obj["className"] = clsName
 			if clsName == "_User" {
 				delete(obj, "sessionToken")
 				delete(obj, "authData")
 			}
-			replace[utils.String(obj["objectId"])] = obj
+			replace[utils.S(obj["objectId"])] = obj
 		}
 	}
 	// 使用查询到的对象替换对应的节点
@@ -639,9 +639,9 @@ func includePath(auth *Auth, response types.M, path []string) error {
 // findPointers 查询路径对应的对象列表，对象必须为 Pointer 类型
 func findPointers(object interface{}, path []string) (types.S, error) {
 	// 如果是对象数组，则遍历每一个对象
-	if utils.SliceInterface(object) != nil {
+	if utils.A(object) != nil {
 		answer := types.S{}
-		for _, v := range utils.SliceInterface(object) {
+		for _, v := range utils.A(object) {
 			p, err := findPointers(v, path)
 			if err != nil {
 				return nil, err
@@ -652,7 +652,7 @@ func findPointers(object interface{}, path []string) (types.S, error) {
 	}
 
 	// 如果不能转成 map ，则返回错误
-	obj := utils.MapInterface(object)
+	obj := utils.M(object)
 	if obj == nil {
 		return nil, errs.E(errs.InvalidJSON, "can only include pointer fields")
 	}
@@ -676,12 +676,12 @@ func findPointers(object interface{}, path []string) (types.S, error) {
 // pointers 中保存的是指向 response 的引用，修改 pointers 中的内容，即可同时修改 response 的内容
 func replacePointers(pointers types.S, replace types.M) error {
 	for _, v := range pointers {
-		pointer := utils.MapInterface(v)
-		objectID := utils.String(pointer["objectId"])
+		pointer := utils.M(v)
+		objectID := utils.S(pointer["objectId"])
 		if replace[objectID] == nil {
 			continue
 		}
-		rpl := utils.MapInterface(replace[objectID])
+		rpl := utils.M(replace[objectID])
 		// 把对象中的所有字段写入节点
 		for k, v := range rpl {
 			pointer[k] = v
@@ -694,7 +694,7 @@ func replacePointers(pointers types.S, replace types.M) error {
 // 查找到一个符合条件的对象之后立即返回
 func findObjectWithKey(root interface{}, key string) types.M {
 	// 如果是 Slice 则遍历查找
-	if s := utils.SliceInterface(root); s != nil {
+	if s := utils.A(root); s != nil {
 		for _, v := range s {
 			answer := findObjectWithKey(v, key)
 			if answer != nil {
@@ -703,7 +703,7 @@ func findObjectWithKey(root interface{}, key string) types.M {
 		}
 	}
 
-	if m := utils.MapInterface(root); m != nil {
+	if m := utils.M(root); m != nil {
 		// 当前 map 中存在指定的 key，表示已经找到，立即返回
 		if m[key] != nil {
 			return m

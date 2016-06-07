@@ -37,10 +37,13 @@ func (t *Transform) transformKey(className, fieldName string, schema types.M) st
 
 	}
 
-	fields := schema["fields"].(map[string]interface{})
-	if fields != nil {
-		if tp, ok := fields[fieldName].(map[string]interface{}); ok {
-			if tp["__type"].(string) == "Pointer" {
+	if schema == nil {
+		return fieldName
+	}
+
+	if fields := utils.M(schema["fields"]); fields != nil {
+		if tp := utils.M(fields[fieldName]); tp != nil {
+			if utils.S(tp["__type"]) == "Pointer" {
 				fieldName = "_p_" + fieldName
 			}
 		}
@@ -93,9 +96,9 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	}
 	// 期望类型不存在，但是 restValue 中存在 "__type":"Pointer"
 	if expected == nil && restValue != nil {
-		op := utils.MapInterface(restValue)
+		op := utils.M(restValue)
 		if op != nil && op["__type"] != nil {
-			if utils.String(op["__type"]) == "Pointer" {
+			if utils.S(op["__type"]) == "Pointer" {
 				key = "_p_" + key
 			}
 		}
@@ -107,9 +110,9 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 		return "", nil, err
 	}
 	if value != cannotTransform() {
-		if timeField && utils.String(value) != "" {
+		if timeField && utils.S(value) != "" {
 			var err error
-			value, err = utils.StringtoTime(utils.String(value))
+			value, err = utils.StringtoTime(utils.S(value))
 			if err != nil {
 				return "", nil, errs.E(errs.InvalidJSON, "Invalid Date value.")
 			}
@@ -236,11 +239,11 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 
 	var fields types.M
 	if schema != nil {
-		fields = utils.MapInterface(schema["fields"])
+		fields = utils.M(schema["fields"])
 	}
 	var fieldType types.M
 	if fields != nil {
-		fieldType = utils.MapInterface(fields[key])
+		fieldType = utils.M(fields[key])
 	}
 
 	expectedTypeIsArray := schema != nil && fieldType != nil && fieldType["type"].(string) == "Array"
@@ -282,7 +285,7 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 // inArray 表示该字段是否为数组类型
 func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (interface{}, error) {
 	// TODO 需要根据 MongoDB 文档修正参数
-	if constraint == nil || utils.MapInterface(constraint) == nil {
+	if constraint == nil || utils.M(constraint) == nil {
 		return cannotTransform(), nil
 	}
 
@@ -290,7 +293,7 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 	// This is a hack so that:
 	//   $regex is handled before $options
 	//   $nearSphere is handled before $maxDistance
-	object := utils.MapInterface(constraint)
+	object := utils.M(constraint)
 	keys := []string{}
 	for k := range object {
 		keys = append(keys, k)
@@ -320,7 +323,7 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 
 		// 转换 包含、不包含 操作符
 		case "$in", "$nin":
-			arr := utils.SliceInterface(object[key])
+			arr := utils.A(object[key])
 			if arr == nil {
 				// 必须为数组
 				return nil, errs.E(errs.InvalidJSON, "bad "+key+" value")
@@ -349,7 +352,7 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 
 		// 转换 包含所有 操作符，用于数组类型的字段
 		case "$all":
-			arr := utils.SliceInterface(object[key])
+			arr := utils.A(object[key])
 			if arr == nil {
 				// 必须为数组
 				return nil, errs.E(errs.InvalidJSON, "bad "+key+" value")
@@ -366,7 +369,7 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 
 		// 转换 正则 操作符
 		case "$regex":
-			s := utils.String(object[key])
+			s := utils.S(object[key])
 			if s == "" {
 				// 必须为字符串
 				return nil, errs.E(errs.InvalidJSON, "bad regex")
@@ -375,7 +378,7 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 
 		// 转换 $options 操作符
 		case "$options":
-			options := utils.String(object[key])
+			options := utils.S(object[key])
 			if answer["$regex"] == nil || options == "" {
 				// 无效值
 				return nil, errs.E(errs.InvalidQuery, "got a bad $options")
@@ -389,7 +392,7 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 
 		// 转换 附近 操作符
 		case "$nearSphere":
-			point := utils.MapInterface(object[key])
+			point := utils.M(object[key])
 			answer[key] = types.S{point["longitude"], point["latitude"]}
 
 		// 转换 最大距离 操作符，单位是弧度
@@ -417,14 +420,14 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 			return nil, errs.E(errs.CommandUnavailable, "the "+key+" constraint is not supported yet")
 
 		case "$within":
-			within := utils.MapInterface(object[key])
-			box := utils.SliceInterface(within["$box"])
+			within := utils.M(object[key])
+			box := utils.A(within["$box"])
 			if box == nil || len(box) != 2 {
 				// 参数不正确
 				return nil, errs.E(errs.InvalidJSON, "malformatted $within arg")
 			}
-			box1 := utils.MapInterface(box[0])
-			box2 := utils.MapInterface(box[1])
+			box1 := utils.M(box[0])
+			box2 := utils.M(box[1])
 			// MongoDB 2.4 中 $within 替换为了 $geoWithin
 			answer["$geoWithin"] = types.M{
 				"$box": types.S{
@@ -475,8 +478,8 @@ func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error)
 		// 	"objectId": "123"
 		// }
 		// ==> abc$123
-		if utils.String(object["__type"]) == "Pointer" {
-			return utils.String(object["className"]) + "$" + utils.String(object["objectId"]), nil
+		if utils.S(object["__type"]) == "Pointer" {
+			return utils.S(object["className"]) + "$" + utils.S(object["objectId"]), nil
 		}
 
 		// Date 类型
@@ -535,12 +538,12 @@ func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error)
 // flatten 为 true 时，不再组装，直接返回实际数据
 func (t *Transform) transformUpdateOperator(operator interface{}, flatten bool) (interface{}, error) {
 	// 具体操作放在 "__op" 中
-	operatorMap := utils.MapInterface(operator)
+	operatorMap := utils.M(operator)
 	if operatorMap == nil || operatorMap["__op"] == nil {
 		return operator, nil
 	}
 
-	op := utils.String(operatorMap["__op"])
+	op := utils.S(operatorMap["__op"])
 	switch op {
 	// 删除字段操作
 	// {
@@ -596,7 +599,7 @@ func (t *Transform) transformUpdateOperator(operator interface{}, flatten bool) 
 	// 	}
 	// }
 	case "Add", "AddUnique":
-		objects := utils.SliceInterface(operatorMap["objects"])
+		objects := utils.A(operatorMap["objects"])
 		if objects == nil {
 			// 必须为数组
 			return nil, errs.E(errs.InvalidJSON, "objects to add must be an array")
@@ -634,7 +637,7 @@ func (t *Transform) transformUpdateOperator(operator interface{}, flatten bool) 
 	// 	"arg":[{...},{...}]
 	// }
 	case "Remove":
-		objects := utils.SliceInterface(operatorMap["objects"])
+		objects := utils.A(operatorMap["objects"])
 		if objects == nil {
 			// 必须为数组
 			return nil, errs.E(errs.InvalidJSON, "objects to remove must be an array")
@@ -753,7 +756,7 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, r
 		}
 	}
 
-	if v := utils.MapInterface(restValue); v != nil {
+	if v := utils.M(restValue); v != nil {
 		if ty, ok := v["__type"]; ok {
 			if ty.(string) != "Bytes" {
 				if ty.(string) == "Pointer" {
@@ -840,9 +843,9 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, r
 // }
 func (t *Transform) transformAuthData(restObject types.M) types.M {
 	if restObject["authData"] != nil {
-		authData := utils.MapInterface(restObject["authData"])
+		authData := utils.M(restObject["authData"])
 		for provider, v := range authData {
-			if v == nil || utils.MapInterface(v) == nil || len(utils.MapInterface(v)) == 0 {
+			if v == nil || utils.M(v) == nil || len(utils.M(v)) == 0 {
 				restObject["_auth_data_"+provider] = types.M{
 					"__op": "Delete",
 				}
@@ -882,12 +885,12 @@ func (t *Transform) transformACL(restObject types.M) types.M {
 		return output
 	}
 
-	acl := utils.MapInterface(restObject["ACL"])
+	acl := utils.M(restObject["ACL"])
 	rperm := types.S{}
 	wperm := types.S{}
 	_acl := types.M{}
 	for entry, v := range acl {
-		perm := utils.MapInterface(v)
+		perm := utils.M(v)
 		a := types.M{}
 		if perm["read"] != nil {
 			rperm = append(rperm, entry)
@@ -952,7 +955,7 @@ func (t *Transform) transformUpdate(className string, update types.M, parseForma
 			return nil, err
 		}
 
-		op := utils.MapInterface(value)
+		op := utils.M(value)
 		if op != nil && op["__op"] != nil {
 			// 处理带 "__op" 的数据，如下：
 			// {
@@ -967,10 +970,10 @@ func (t *Transform) transformUpdate(className string, update types.M, parseForma
 			// 		"size",3
 			// 	}
 			// }
-			opKey := utils.String(op["__op"])
+			opKey := utils.S(op["__op"])
 			opValue := types.M{}
 			if mongoUpdate[opKey] != nil {
-				opValue = utils.MapInterface(mongoUpdate[opKey])
+				opValue = utils.M(mongoUpdate[opKey])
 			}
 			opValue[key] = op["arg"]
 			mongoUpdate[opKey] = opValue
@@ -987,7 +990,7 @@ func (t *Transform) transformUpdate(className string, update types.M, parseForma
 			// }
 			set := types.M{}
 			if mongoUpdate["$set"] != nil {
-				set = utils.MapInterface(mongoUpdate["$set"])
+				set = utils.M(mongoUpdate["$set"])
 			}
 			set[key] = value
 			mongoUpdate["$set"] = set
@@ -1144,7 +1147,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 					provider := key[len("_auth_data_"):]
 					authData := types.M{}
 					if restObject["authData"] != nil {
-						authData = utils.MapInterface(restObject["authData"])
+						authData = utils.M(restObject["authData"])
 					}
 					authData[provider] = value
 					restObject["authData"] = authData
@@ -1281,17 +1284,17 @@ func (t *Transform) untransformACL(mongoObject types.M) types.M {
 	rperm := types.S{}
 	wperm := types.S{}
 	if mongoObject["_rperm"] != nil {
-		rperm = utils.SliceInterface(mongoObject["_rperm"])
+		rperm = utils.A(mongoObject["_rperm"])
 	}
 	if mongoObject["_wperm"] != nil {
-		wperm = utils.SliceInterface(mongoObject["_wperm"])
+		wperm = utils.A(mongoObject["_wperm"])
 	}
 	for _, v := range rperm {
 		entry := v.(string)
 		if acl[entry] == nil {
 			acl[entry] = types.M{"read": true}
 		} else {
-			per := utils.MapInterface(acl[entry])
+			per := utils.M(acl[entry])
 			per["read"] = true
 			acl[entry] = per
 		}
@@ -1301,7 +1304,7 @@ func (t *Transform) untransformACL(mongoObject types.M) types.M {
 		if acl[entry] == nil {
 			acl[entry] = types.M{"write": true}
 		} else {
-			per := utils.MapInterface(acl[entry])
+			per := utils.M(acl[entry])
 			per["write"] = true
 			acl[entry] = per
 		}
@@ -1338,7 +1341,7 @@ func (d dateCoder) isValidDatabaseObject(object interface{}) bool {
 }
 
 func (d dateCoder) jsonToDatabase(json types.M) (interface{}, error) {
-	t, err := utils.StringtoTime(utils.String(json["iso"]))
+	t, err := utils.StringtoTime(utils.S(json["iso"]))
 	if err != nil {
 		return nil, errs.E(errs.InvalidJSON, "invalid iso")
 	}
@@ -1346,7 +1349,7 @@ func (d dateCoder) jsonToDatabase(json types.M) (interface{}, error) {
 }
 
 func (d dateCoder) isValidJSON(value types.M) bool {
-	return value != nil && utils.String(value["__type"]) == "Date" && utils.String(value["iso"]) != ""
+	return value != nil && utils.S(value["__type"]) == "Date" && utils.S(value["iso"]) != ""
 }
 
 // bytesCoder Bytes 类型处理
@@ -1370,7 +1373,7 @@ func (b bytesCoder) isValidDatabaseObject(object interface{}) bool {
 }
 
 func (b bytesCoder) jsonToDatabase(json types.M) (interface{}, error) {
-	by, err := base64.StdEncoding.DecodeString(utils.String(json["base64"]))
+	by, err := base64.StdEncoding.DecodeString(utils.S(json["base64"]))
 	if err != nil {
 		return nil, errs.E(errs.InvalidJSON, "invalid base64")
 	}
@@ -1378,7 +1381,7 @@ func (b bytesCoder) jsonToDatabase(json types.M) (interface{}, error) {
 }
 
 func (b bytesCoder) isValidJSON(value types.M) bool {
-	return value != nil && utils.String(value["__type"]) == "Bytes" && utils.String(value["base64"]) != ""
+	return value != nil && utils.S(value["__type"]) == "Bytes" && utils.S(value["base64"]) != ""
 }
 
 // geoPointCoder GeoPoint 类型处理
@@ -1413,7 +1416,7 @@ func (g geoPointCoder) jsonToDatabase(json types.M) (interface{}, error) {
 }
 
 func (g geoPointCoder) isValidJSON(value types.M) bool {
-	return value != nil && utils.String(value["__type"]) == "GeoPoint" && value["longitude"] != nil && value["latitude"] != nil
+	return value != nil && utils.S(value["__type"]) == "GeoPoint" && value["longitude"] != nil && value["latitude"] != nil
 }
 
 // fileCoder File 类型处理
@@ -1438,7 +1441,7 @@ func (f fileCoder) jsonToDatabase(json types.M) (interface{}, error) {
 }
 
 func (f fileCoder) isValidJSON(value types.M) bool {
-	return value != nil && utils.String(value["__type"]) == "File" && utils.String(value["name"]) != ""
+	return value != nil && utils.S(value["__type"]) == "File" && utils.S(value["name"]) != ""
 }
 
 func (t *Transform) transformInteriorAtom(atom interface{}) (interface{}, error) {

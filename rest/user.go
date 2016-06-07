@@ -86,7 +86,7 @@ func getUserIfNeeded(user types.M) types.M {
 }
 
 func defaultVerificationEmail(options types.M) types.M {
-	user := utils.MapInterface(options["user"])
+	user := utils.M(options["user"])
 	text := "Hi,\n\n"
 	text += "You are being asked to confirm the e-mail address " + user["email"].(string)
 	text += " with " + options["appName"].(string) + "\n\n"
@@ -135,7 +135,7 @@ func setPasswordResetToken(email string) types.M {
 }
 
 func defaultResetPasswordEmail(options types.M) types.M {
-	user := utils.MapInterface(options["user"])
+	user := utils.M(options["user"])
 	text := "Hi,\n\n"
 	text += "You requested to reset your password for " + options["appName"].(string) + "\n\n"
 	text += "Click here to reset it:\n" + options["link"].(string)

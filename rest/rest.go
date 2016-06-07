@@ -67,8 +67,8 @@ func Delete(auth *Auth, className, objectID string) error {
 			return errs.E(errs.ObjectNotFound, "Object not found for delete.")
 		}
 
-		result := utils.SliceInterface(response["results"])
-		inflatedObject = utils.MapInterface(result[0])
+		result := utils.A(response["results"])
+		inflatedObject = utils.M(result[0])
 		if inflatedObject == nil {
 			return errs.E(errs.ObjectNotFound, "Object not found for delete.")
 		}
@@ -123,8 +123,8 @@ func Update(auth *Auth, className, objectID string, object types.M) (types.M, er
 			return nil, errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}
 
-		result := utils.SliceInterface(response["results"])
-		originalRestObject = utils.MapInterface(result[0])
+		result := utils.A(response["results"])
+		originalRestObject = utils.M(result[0])
 		if originalRestObject == nil {
 			return nil, errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}

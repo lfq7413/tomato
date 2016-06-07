@@ -127,13 +127,13 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 		return nil, errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
 	// 组装已存在的字段
-	existingFields := utils.CopyMap(utils.MapInterface(s.data[className]))
+	existingFields := utils.CopyMap(utils.M(s.data[className]))
 	existingFields["_id"] = className
 
 	// 校验对字段的操作是否合法
 	for name, v := range submittedFields {
-		field := utils.MapInterface(v)
-		op := utils.String(field["__op"])
+		field := utils.M(v)
+		op := utils.S(field["__op"])
 		if existingFields[name] != nil && op != "Delete" {
 			// 字段已存在，不能更新
 			return nil, errs.E(errs.ClassNotEmpty, "Field "+name+" exists, cannot update.")
@@ -154,8 +154,8 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	// 删除指定字段，并统计需要插入的字段
 	insertedFields := []string{}
 	for name, v := range submittedFields {
-		field := utils.MapInterface(v)
-		op := utils.String(field["__op"])
+		field := utils.M(v)
+		op := utils.S(field["__op"])
 		if op == "Delete" {
 			err := s.deleteField(name, className)
 			if err != nil {
@@ -210,13 +210,13 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 		return errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
 
-	class := utils.MapInterface(s.data[className])
+	class := utils.M(s.data[className])
 	if class[fieldName] == nil {
 		return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
 	}
 
 	// 根据字段属性进行相应 对象数据 删除操作
-	name := utils.MapInterface(class[fieldName])["type"].(string)
+	name := utils.M(class[fieldName])["type"].(string)
 	if name == "Relation" {
 		// 删除表数据与 schema 中的对应字段
 		err := Adapter.DeleteFields(className, []string{fieldName}, []string{})
@@ -285,11 +285,11 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 
 // testBaseCLP 校验用户是否有权限对表进行指定操作
 func (s *Schema) testBaseCLP(className string, aclGroup []string, operation string) bool {
-	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
+	if s.perms[className] == nil && utils.M(s.perms[className])[operation] == nil {
 		return true
 	}
-	classPerms := utils.MapInterface(s.perms[className])
-	perms := utils.MapInterface(classPerms[operation])
+	classPerms := utils.M(s.perms[className])
+	perms := utils.M(classPerms[operation])
 	// 当前操作的权限是公开的
 	if _, ok := perms["*"]; ok {
 		return true
@@ -316,10 +316,10 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 		return nil
 	}
 
-	if s.perms[className] == nil && utils.MapInterface(s.perms[className])[operation] == nil {
+	if s.perms[className] == nil && utils.M(s.perms[className])[operation] == nil {
 		return nil
 	}
-	classPerms := utils.MapInterface(s.perms[className])
+	classPerms := utils.M(s.perms[className])
 
 	var permissionField string
 	if operation == "get" || operation == "find" {
@@ -422,9 +422,9 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 	for _, column := range columns {
 		if query != nil && query["objectId"] != nil {
 			// 类必须的字段，不能进行删除操作
-			if object[column] != nil && utils.MapInterface(object[column]) != nil {
-				o := utils.MapInterface(object[column])
-				if utils.String(o["__op"]) == "Delete" {
+			if object[column] != nil && utils.M(object[column]) != nil {
+				o := utils.M(object[column])
+				if utils.S(o["__op"]) == "Delete" {
 					missingColumns = append(missingColumns, column)
 				}
 			}
@@ -457,7 +457,7 @@ func (s *Schema) validateField(className, fieldName string, fieldtype types.M, f
 		return errs.E(errs.InvalidKeyName, "Invalid field name: "+fieldName)
 	}
 
-	expected := utils.MapInterface(utils.MapInterface(s.data[className])[fieldName])
+	expected := utils.M(utils.M(s.data[className])[fieldName])
 	if expected != nil {
 		if expected["type"].(string) == "map" {
 			expected["type"] = "Object"
@@ -531,7 +531,7 @@ func (s *Schema) hasKeys(className string, keys []string) bool {
 		if s.data[className] == nil {
 			return false
 		}
-		class := utils.MapInterface(s.data[className])
+		class := utils.M(s.data[className])
 		if class[key] == nil {
 			return false
 		}
@@ -542,8 +542,8 @@ func (s *Schema) hasKeys(className string, keys []string) bool {
 // getExpectedType 获取期望的字段类型
 func (s *Schema) getExpectedType(className, key string) types.M {
 	if s.data != nil && s.data[className] != nil {
-		cls := utils.MapInterface(s.data[className])
-		return utils.MapInterface(cls[key])
+		cls := utils.M(s.data[className])
+		return utils.M(cls[key])
 	}
 	return nil
 }
@@ -629,13 +629,13 @@ func getType(obj interface{}) (types.M, error) {
 
 // getObjectType 获取对象格式 仅处理 slice 与 map
 func getObjectType(obj interface{}) (types.M, error) {
-	if utils.SliceInterface(obj) != nil {
+	if utils.A(obj) != nil {
 		return types.M{"type": "Array"}, nil
 	}
-	if utils.MapInterface(obj) != nil {
-		object := utils.MapInterface(obj)
+	if utils.M(obj) != nil {
+		object := utils.M(obj)
 		if object["__type"] != nil {
-			t := utils.String(object["__type"])
+			t := utils.S(object["__type"])
 			switch t {
 			case "Pointer":
 				if object["className"] != nil {
@@ -669,7 +669,7 @@ func getObjectType(obj interface{}) (types.M, error) {
 			return getObjectType(object["$ne"])
 		}
 		if object["__op"] != nil {
-			op := utils.String(object["__op"])
+			op := utils.S(object["__op"])
 			switch op {
 			case "Increment":
 				return types.M{"type": "Number"}, nil
@@ -678,14 +678,14 @@ func getObjectType(obj interface{}) (types.M, error) {
 			case "Add", "AddUnique", "Remove":
 				return types.M{"type": "Array"}, nil
 			case "AddRelation", "RemoveRelation":
-				objects := utils.SliceInterface(object["objects"])
-				o := utils.MapInterface(objects[0])
+				objects := utils.A(object["objects"])
+				o := utils.M(objects[0])
 				return types.M{
 					"type":        "Relation",
-					"targetClass": utils.String(o["className"]),
+					"targetClass": utils.S(o["className"]),
 				}, nil
 			case "Batch":
-				ops := utils.SliceInterface(object["ops"])
+				ops := utils.A(object["ops"])
 				return getObjectType(ops[0])
 			default:
 				// 无效操作
@@ -847,7 +847,7 @@ func validateCLP(perms types.M, fields types.M) error {
 			return errs.E(errs.InvalidJSON, "this perms[operation] is not a valid value for class level permissions "+operation)
 		}
 
-		for key, p := range utils.MapInterface(perm) {
+		for key, p := range utils.M(perm) {
 			err := verifyPermissionKey(key)
 			if err != nil {
 				return err
@@ -895,7 +895,7 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 	newSchema := types.M{}
 
 	sysSchemaField := []string{}
-	id := utils.String(existingFields["_id"])
+	id := utils.S(existingFields["_id"])
 	for k, v := range DefaultColumns {
 		// 如果是系统预定义的表，则取出默认字段
 		if k == id {
@@ -930,8 +930,8 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 			// 处理要删除的字段，要删除的字段不加入返回数据中
 			fieldIsDeleted := false
 			if putRequest[oldField] != nil {
-				op := utils.MapInterface(putRequest[oldField])
-				if utils.String(op["__op"]) == "Delete" {
+				op := utils.M(putRequest[oldField])
+				if utils.S(op["__op"]) == "Delete" {
 					fieldIsDeleted = true
 				}
 			}
@@ -943,9 +943,9 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 
 	// 处理需要更新的字段
 	for newField, v := range putRequest {
-		op := utils.MapInterface(v)
+		op := utils.M(v)
 		// 不处理 objectId，不处理要删除的字段，跳过系统默认字段，其余字段加入返回数据中
-		if newField != "objectId" && utils.String(op["__op"]) != "Delete" {
+		if newField != "objectId" && utils.S(op["__op"]) != "Delete" {
 			if len(sysSchemaField) > 0 {
 				t := false
 				for _, s := range sysSchemaField {

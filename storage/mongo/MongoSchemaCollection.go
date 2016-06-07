@@ -215,7 +215,7 @@ func mongoSchemaFieldsToParseSchemaFields(schema types.M) types.M {
 	response := types.M{}
 	// 转换普通字段
 	for _, v := range fieldNames {
-		response[v] = mongoFieldToParseSchemaField(utils.String(schema[v]))
+		response[v] = mongoFieldToParseSchemaField(utils.S(schema[v]))
 	}
 	// 转换默认字段
 	response["ACL"] = types.M{
@@ -256,10 +256,10 @@ var defaultCLPS = types.M{
 func mongoSchemaToParseSchema(schema types.M) types.M {
 	// 复制 schema["_metadata"]["class_permissions"] 到 classLevelPermissions 中
 	clps := utils.CopyMap(defaultCLPS)
-	if schema["_metadata"] != nil && utils.MapInterface(schema["_metadata"]) != nil {
-		metadata := utils.MapInterface(schema["_metadata"])
-		if metadata["class_permissions"] != nil && utils.MapInterface(metadata["class_permissions"]) != nil {
-			classPermissions := utils.MapInterface(metadata["class_permissions"])
+	if schema["_metadata"] != nil && utils.M(schema["_metadata"]) != nil {
+		metadata := utils.M(schema["_metadata"])
+		if metadata["class_permissions"] != nil && utils.M(metadata["class_permissions"]) != nil {
+			classPermissions := utils.M(metadata["class_permissions"])
 			clps = utils.CopyMap(emptyCLPS)
 			for k, v := range classPermissions {
 				clps[k] = v
@@ -323,10 +323,10 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 
 	// 添加 CLP
 	var metadata types.M
-	if mongoObject["_metadata"] == nil && utils.MapInterface(mongoObject["_metadata"]) == nil {
+	if mongoObject["_metadata"] == nil && utils.M(mongoObject["_metadata"]) == nil {
 		metadata = types.M{}
 	} else {
-		metadata = utils.MapInterface(mongoObject["_metadata"])
+		metadata = utils.M(mongoObject["_metadata"])
 	}
 	if classLevelPermissions == nil {
 		delete(metadata, "class_permissions")

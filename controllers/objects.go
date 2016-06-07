@@ -274,14 +274,14 @@ func (o *ObjectsController) HandleGet() {
 		return
 	}
 
-	results := utils.SliceInterface(response["results"])
+	results := utils.A(response["results"])
 	if results == nil && len(results) == 0 {
 		o.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Object not found.")
 		o.ServeJSON()
 		return
 	}
 
-	result := utils.MapInterface(results[0])
+	result := utils.M(results[0])
 
 	if o.ClassName == "_User" {
 		delete(result, "sessionToken")
@@ -387,9 +387,9 @@ func (o *ObjectsController) HandleFind() {
 		return
 	}
 	if utils.HasResults(response) {
-		results := utils.SliceInterface(response["results"])
+		results := utils.A(response["results"])
 		for _, v := range results {
-			result := utils.MapInterface(v)
+			result := utils.M(v)
 			if result["sessionToken"] != nil && o.Info.SessionToken != "" {
 				result["sessionToken"] = o.Info.SessionToken
 			}

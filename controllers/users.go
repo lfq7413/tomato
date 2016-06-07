@@ -90,14 +90,14 @@ func (u *UsersController) HandleMe() {
 		u.ServeJSON()
 		return
 	}
-	results := utils.SliceInterface(response["results"])
-	result := utils.MapInterface(results[0])
+	results := utils.A(response["results"])
+	result := utils.M(results[0])
 	if result["user"] == nil {
 		u.Data["json"] = errs.ErrorMessageToMap(errs.InvalidSessionToken, "invalid session token")
 		u.ServeJSON()
 		return
 	}
-	user := utils.MapInterface(result["user"])
+	user := utils.M(result["user"])
 	user["sessionToken"] = sessionToken
 	u.Data["json"] = user
 	u.ServeJSON()

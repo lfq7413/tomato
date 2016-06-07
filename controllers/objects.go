@@ -123,6 +123,10 @@ func (o *ObjectsController) Prepare() {
 				info.MasterKey = o.JSONBody["_MasterKey"].(string)
 				delete(o.JSONBody, "_MasterKey")
 			}
+			if o.JSONBody["_ContentType"] != nil {
+				o.Ctx.Input.Context.Request.Header.Set("Content-type", o.JSONBody["_ContentType"].(string))
+				delete(o.JSONBody, "_ContentType")
+			}
 		} else {
 			// 请求数据中也不存在 APPID 时，返回错误
 			o.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")

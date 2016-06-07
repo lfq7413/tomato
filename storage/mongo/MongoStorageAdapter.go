@@ -34,8 +34,8 @@ func (m *MongoAdapter) collection(name string) *mgo.Collection {
 	return storage.TomatoDB.MongoDatabase.C(name)
 }
 
-// AdaptiveCollection 组装 mongo 表操作对象
-func (m *MongoAdapter) AdaptiveCollection(name string) storage.Collection {
+// adaptiveCollection 组装 mongo 表操作对象
+func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
 	return &MongoCollection{
 		collection: m.collection(m.collectionPrefix + name),
 		transform:  m.transform,
@@ -133,7 +133,7 @@ func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNa
 	schemaUpdate := types.M{"$unset": unset2}
 
 	// 更新表数据
-	collection := m.AdaptiveCollection(className)
+	collection := m.adaptiveCollection(className)
 	err := collection.UpdateMany(types.M{}, collectionUpdate)
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func (m *MongoAdapter) CreateObject(className string, object types.M, schema typ
 	if err != nil {
 		return err
 	}
-	coll := m.AdaptiveCollection(className)
+	coll := m.adaptiveCollection(className)
 	return coll.InsertOne(mongoObject)
 }
 
@@ -178,7 +178,7 @@ func (m *MongoAdapter) getCollectionNames() []string {
 
 // DeleteObjectsByQuery 删除符合条件的所有对象
 func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, schema types.M) error {
-	collection := m.AdaptiveCollection(className)
+	collection := m.adaptiveCollection(className)
 
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
@@ -206,7 +206,7 @@ func (m *MongoAdapter) UpdateObjectsByQuery(className string, query, schema, upd
 	if err != nil {
 		return err
 	}
-	coll := m.AdaptiveCollection(className)
+	coll := m.adaptiveCollection(className)
 	return coll.UpdateMany(mongoWhere, mongoUpdate)
 }
 
@@ -220,7 +220,7 @@ func (m *MongoAdapter) FindOneAndUpdate(className string, query, schema, update 
 	if err != nil {
 		return nil, err
 	}
-	coll := m.AdaptiveCollection(className)
+	coll := m.adaptiveCollection(className)
 	return coll.FindOneAndUpdate(mongoWhere, mongoUpdate), nil
 }
 
@@ -234,7 +234,7 @@ func (m *MongoAdapter) UpsertOneObject(className string, query, schema, update t
 	if err != nil {
 		return err
 	}
-	coll := m.AdaptiveCollection(className)
+	coll := m.adaptiveCollection(className)
 	return coll.UpsertOne(mongoWhere, mongoUpdate)
 }
 
@@ -262,7 +262,7 @@ func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([
 		options["sort"] = mongoSort
 	}
 
-	coll := m.AdaptiveCollection(className)
+	coll := m.adaptiveCollection(className)
 	results := coll.Find(mongoWhere, options)
 	objects := []types.M{}
 	for _, result := range results {
@@ -275,9 +275,15 @@ func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([
 	return objects, nil
 }
 
+// rawFind 仅用于测试
+func (m *MongoAdapter) rawFind(className string, query types.M) []types.M {
+	coll := m.adaptiveCollection(className)
+	return coll.Find(query, types.M{})
+}
+
 // Count ...
 func (m *MongoAdapter) Count(className string, query, schema types.M) (int, error) {
-	coll := m.AdaptiveCollection(className)
+	coll := m.adaptiveCollection(className)
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return 0, err
@@ -295,7 +301,7 @@ func storageAdapterAllCollections(m *MongoAdapter) []storage.Collection {
 			continue
 		}
 		if strings.HasPrefix(v, m.collectionPrefix) {
-			collections = append(collections, m.AdaptiveCollection(v[len(m.collectionPrefix):]))
+			collections = append(collections, m.adaptiveCollection(v[len(m.collectionPrefix):]))
 		}
 	}
 

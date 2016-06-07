@@ -516,6 +516,13 @@ func (d DBController) handleRelationUpdates(className, objectID string, update t
 	return nil
 }
 
+var relationSchema = types.M{
+	"fields": types.M{
+		"relatedId": types.M{"type": "String"},
+		"owningId":  types.M{"type": "String"},
+	},
+}
+
 // addRelation 把对象 id 加入 _Join 表，表名为 _Join:key:fromClassName
 func (d DBController) addRelation(key, fromClassName, fromID, toID string) error {
 	doc := types.M{
@@ -523,8 +530,7 @@ func (d DBController) addRelation(key, fromClassName, fromID, toID string) error
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := Adapter.AdaptiveCollection(className)
-	return coll.UpsertOne(doc, doc)
+	return Adapter.UpsertOneObject(className, doc, relationSchema, doc)
 }
 
 // removeRelation 把对象 id 从 _Join 表中删除，表名为 _Join:key:fromClassName
@@ -534,8 +540,16 @@ func (d DBController) removeRelation(key, fromClassName, fromID, toID string) er
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	coll := Adapter.AdaptiveCollection(className)
-	return coll.DeleteOne(doc)
+	err := Adapter.DeleteObjectsByQuery(className, doc, relationSchema)
+	if err != nil {
+		msg := err.Error()
+		msg = strings.Replace(msg, " ", "", -1)
+		if strings.Index(msg, `"code":`+strconv.Itoa(errs.ObjectNotFound)) > -1 {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 // ValidateObject 校验对象是否合法
@@ -576,12 +590,6 @@ func (d DBController) LoadSchema() *Schema {
 		schemaPromise = Load(collection, Adapter)
 	}
 	return schemaPromise
-}
-
-// MongoFind 直接执行数据库查询，仅用于测试
-func (d *DBController) MongoFind(className string, query, options types.M) []types.M {
-	coll := Adapter.AdaptiveCollection(className)
-	return coll.Find(query, options)
 }
 
 // DeleteEverything 删除所有表数据，仅用于测试
@@ -710,11 +718,14 @@ func (d DBController) reduceRelationKeys(className string, query types.M) {
 
 // relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
 func (d DBController) relatedIds(className, key, owningID string) types.S {
-	coll := Adapter.AdaptiveCollection(joinTableName(className, key))
-	results := coll.Find(types.M{"owningId": owningID}, types.M{})
 	ids := types.S{}
-	for _, r := range results {
-		id := r["relatedId"]
+	results, err := Adapter.Find(joinTableName(className, key), types.M{"owningId": owningID}, relationSchema, types.M{})
+	if err != nil {
+		return ids
+	}
+
+	for _, result := range results {
+		id := result["relatedId"]
 		ids = append(ids, id)
 	}
 	return ids
@@ -936,16 +947,19 @@ func (d DBController) reduceInRelation(className string, query types.M, schema *
 
 // owningIds 从 Join 表中查询 relatedIds 对应的父对象
 func (d DBController) owningIds(className, key string, relatedIds types.S) types.S {
-	coll := Adapter.AdaptiveCollection(joinTableName(className, key))
+	ids := types.S{}
 	query := types.M{
 		"relatedId": types.M{
 			"$in": relatedIds,
 		},
 	}
-	results := coll.Find(query, types.M{})
-	ids := types.S{}
-	for _, r := range results {
-		ids = append(ids, r["owningId"])
+	results, err := Adapter.Find(joinTableName(className, key), query, relationSchema, types.M{})
+	if err != nil {
+		return ids
+	}
+
+	for _, result := range results {
+		ids = append(ids, result["owningId"])
 	}
 	return ids
 }
@@ -977,8 +991,10 @@ func (d *DBController) DeleteSchema(className string) error {
 	if exist == false {
 		return nil
 	}
-	coll := Adapter.AdaptiveCollection(className)
-	count := coll.Count(types.M{}, types.M{})
+	count, err := Adapter.Count(className, types.M{}, types.M{})
+	if err != nil {
+		return err
+	}
 	if count > 0 {
 		return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
 	}

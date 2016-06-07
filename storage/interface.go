@@ -4,7 +4,6 @@ import "github.com/lfq7413/tomato/types"
 
 // Adapter 数据库操作适配器接口
 type Adapter interface {
-	AdaptiveCollection(name string) Collection
 	SchemaCollection() SchemaCollection
 	CollectionExists(name string) bool
 	DeleteOneSchema(name string) error

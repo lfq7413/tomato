@@ -1324,12 +1324,17 @@ func cannotTransform() interface{} {
 type dateCoder struct{}
 
 func (d dateCoder) databaseToJSON(object interface{}) types.M {
-	data := object.(time.Time)
-	json := utils.TimetoString(data)
+	if data, ok := object.(time.Time); ok {
+		json := utils.TimetoString(data)
 
+		return types.M{
+			"__type": "Date",
+			"iso":    json,
+		}
+	}
 	return types.M{
 		"__type": "Date",
-		"iso":    json,
+		"iso":    "",
 	}
 }
 

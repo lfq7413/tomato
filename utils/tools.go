@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"reflect"
 	"regexp"
 
 	"github.com/lfq7413/tomato/types"
@@ -53,4 +54,35 @@ func CopySlice(s []interface{}) []interface{} {
 		d = append(d, DeepCopy(v))
 	}
 	return d
+}
+
+// CompareArray 比较两个数组是否相等，忽略数组顺序
+func CompareArray(i1, i2 interface{}) bool {
+	if i1 == nil && i2 == nil {
+		return true
+	}
+	if v1 := A(i1); v1 != nil {
+		if v2 := A(i2); v2 != nil {
+			// TODO 去重
+			if len(v1) != len(v2) {
+				return false
+			}
+
+			for _, a := range v1 {
+				match := false
+				for _, b := range v2 {
+					if reflect.DeepEqual(a, b) {
+						match = true
+						break
+					}
+				}
+				if match == false {
+					return false
+				}
+			}
+			return true
+		}
+		return false
+	}
+	return false
 }

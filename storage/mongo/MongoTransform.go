@@ -842,15 +842,17 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, r
 // 	"_auth_data_facebook": {...}
 // }
 func (t *Transform) transformAuthData(restObject types.M) types.M {
-	if restObject["authData"] != nil {
+	if restObject != nil && restObject["authData"] != nil {
 		authData := utils.M(restObject["authData"])
-		for provider, v := range authData {
-			if v == nil || utils.M(v) == nil || len(utils.M(v)) == 0 {
-				restObject["_auth_data_"+provider] = types.M{
-					"__op": "Delete",
+		if authData != nil {
+			for provider, v := range authData {
+				if v == nil || utils.M(v) == nil || len(utils.M(v)) == 0 {
+					restObject["_auth_data_"+provider] = types.M{
+						"__op": "Delete",
+					}
+				} else {
+					restObject["_auth_data_"+provider] = v
 				}
-			} else {
-				restObject["_auth_data_"+provider] = v
 			}
 		}
 		delete(restObject, "authData")

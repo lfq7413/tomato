@@ -122,7 +122,6 @@ func Test_transformUpdateOperator(t *testing.T) {
 }
 
 func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
-	// transformAuthData
 	// parseObjectKeyValueToMongoObjectKeyValue
 	// TODO
 }
@@ -135,7 +134,91 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 }
 
 func Test_transformAuthData(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var restObject types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	restObject = nil
+	result = tf.transformAuthData(restObject)
+	expect = restObject
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{}
+	result = tf.transformAuthData(restObject)
+	expect = restObject
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{"authData": 1024}
+	result = tf.transformAuthData(restObject)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"authData": types.M{
+			"facebook": nil,
+		},
+	}
+	result = tf.transformAuthData(restObject)
+	expect = types.M{
+		"_auth_data_facebook": types.M{
+			"__op": "Delete",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"authData": types.M{
+			"facebook": 1024,
+		},
+	}
+	result = tf.transformAuthData(restObject)
+	expect = types.M{
+		"_auth_data_facebook": types.M{
+			"__op": "Delete",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"authData": types.M{
+			"facebook": types.M{},
+		},
+	}
+	result = tf.transformAuthData(restObject)
+	expect = types.M{
+		"_auth_data_facebook": types.M{
+			"__op": "Delete",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"authData": types.M{
+			"facebook": types.M{"id": "1024"},
+			"twitter":  types.M{},
+		},
+	}
+	result = tf.transformAuthData(restObject)
+	expect = types.M{
+		"_auth_data_facebook": types.M{"id": "1024"},
+		"_auth_data_twitter":  types.M{"__op": "Delete"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_transformACL(t *testing.T) {
@@ -191,8 +274,17 @@ func Test_transformACL(t *testing.T) {
 			},
 		},
 	}
-	if reflect.DeepEqual(expect, result) == false || reflect.DeepEqual(restObject, types.M{}) == false {
+	if utils.CompareArray(expect["_rperm"], result["_rperm"]) == false {
 		t.Error("expect:", expect, "get result:", result)
+	}
+	if utils.CompareArray(expect["_wperm"], result["_wperm"]) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	if reflect.DeepEqual(expect["_acl"], result["_acl"]) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	if reflect.DeepEqual(restObject, types.M{}) == false {
+		t.Error("expect:", types.M{}, "get result:", restObject)
 	}
 }
 
@@ -202,7 +294,6 @@ func Test_transformWhere(t *testing.T) {
 }
 
 func Test_transformUpdate(t *testing.T) {
-	// transformAuthData
 	// transformKeyValueForUpdate
 	// TODO
 }

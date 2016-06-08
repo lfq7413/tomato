@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -116,7 +117,6 @@ func Test_transformTopLevelAtom(t *testing.T) {
 	// dateCoder
 	// bytesCoder
 	// geoPointCoder
-	// fileCoder
 	// TODO
 }
 
@@ -199,7 +199,84 @@ func Test_geoPointCoder(t *testing.T) {
 }
 
 func Test_fileCoder(t *testing.T) {
-	// TODO
+	fc := fileCoder{}
+	var databaseObject interface{}
+	var jsonObject types.M
+	var ok bool
+	var expect interface{}
+	/*********************case 01*********************/
+	databaseObject = "pic.jpg"
+	jsonObject = fc.databaseToJSON(databaseObject)
+	expect = types.M{
+		"__type": "File",
+		"name":   "pic.jpg",
+	}
+	if reflect.DeepEqual(jsonObject, expect) == false {
+		t.Error("expect:", expect, "get jsonObject:", jsonObject)
+	}
+	/*********************case 02*********************/
+	databaseObject = 1024
+	ok = fc.isValidDatabaseObject(databaseObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*********************case 03*********************/
+	databaseObject = "pic.jpg"
+	ok = fc.isValidDatabaseObject(databaseObject)
+	if !ok {
+		t.Error("expect:", "true", "get:", ok)
+	}
+	/*********************case 04*********************/
+	jsonObject = nil
+	databaseObject, _ = fc.jsonToDatabase(jsonObject)
+	if databaseObject != nil {
+		t.Error("expect:", "nil", "get:", databaseObject)
+	}
+	/*********************case 05*********************/
+	jsonObject = types.M{
+		"__type": "File",
+		"name":   "pic.jpg",
+	}
+	databaseObject, _ = fc.jsonToDatabase(jsonObject)
+	if reflect.DeepEqual("pic.jpg", databaseObject) == false {
+		t.Error("expect:", "pic.jpg", "get:", databaseObject)
+	}
+	/*********************case 06*********************/
+	jsonObject = nil
+	ok = fc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*********************case 07*********************/
+	jsonObject = types.M{}
+	ok = fc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*********************case 08*********************/
+	jsonObject = types.M{"__type": "Date"}
+	ok = fc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*********************case 09*********************/
+	jsonObject = types.M{"__type": "File"}
+	ok = fc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*********************case 10*********************/
+	jsonObject = types.M{"__type": "File", "name": 1024}
+	ok = fc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*********************case 11*********************/
+	jsonObject = types.M{"__type": "File", "name": "pic.jpg"}
+	ok = fc.isValidJSON(jsonObject)
+	if !ok {
+		t.Error("expect:", "true", "get:", ok)
+	}
 }
 
 func Test_valueAsDate(t *testing.T) {
@@ -210,24 +287,24 @@ func Test_valueAsDate(t *testing.T) {
 	value = 1024
 	date, ok = valueAsDate(value)
 	if ok {
-		t.Error("value:", value, "ok:", ok, "date:", date)
+		t.Error("value:", value, "date:", date, "expect: false", "get:", ok)
 	}
 	/*********************case 02*********************/
 	value = "Incorrect string time"
 	date, ok = valueAsDate(value)
 	if ok {
-		t.Error("value:", value, "ok:", ok, "date:", date)
+		t.Error("value:", value, "date:", date, "expect: false", "get:", ok)
 	}
 	/*********************case 03*********************/
 	value = "2006-01-02T15:04:05.000Z"
 	date, ok = valueAsDate(value)
 	if !ok || utils.TimetoString(date) != "2006-01-02T15:04:05.000Z" {
-		t.Error("value:", value, "ok:", ok, "date:", date)
+		t.Error("value:", value, "date:", date, "expect: true 2006-01-02T15:04:05.000Z", "get:", ok, utils.TimetoString(date))
 	}
 	/*********************case 04*********************/
 	value = time.Now().UTC()
 	date, ok = valueAsDate(value)
 	if !ok {
-		t.Error("value:", value, "ok:", ok, "date:", date)
+		t.Error("value:", value, "date:", date, "expect: true", "get:", ok)
 	}
 }

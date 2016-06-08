@@ -1323,7 +1323,7 @@ func cannotTransform() interface{} {
 // dateCoder Date 类型数据处理
 type dateCoder struct{}
 
-func (d dateCoder) databaseToJSON(object interface{}) interface{} {
+func (d dateCoder) databaseToJSON(object interface{}) types.M {
 	data := object.(time.Time)
 	json := utils.TimetoString(data)
 
@@ -1355,7 +1355,7 @@ func (d dateCoder) isValidJSON(value types.M) bool {
 // bytesCoder Bytes 类型处理
 type bytesCoder struct{}
 
-func (b bytesCoder) databaseToJSON(object interface{}) interface{} {
+func (b bytesCoder) databaseToJSON(object interface{}) types.M {
 	data := object.([]byte)
 	json := base64.StdEncoding.EncodeToString(data)
 
@@ -1387,7 +1387,7 @@ func (b bytesCoder) isValidJSON(value types.M) bool {
 // geoPointCoder GeoPoint 类型处理
 type geoPointCoder struct{}
 
-func (g geoPointCoder) databaseToJSON(object interface{}) interface{} {
+func (g geoPointCoder) databaseToJSON(object interface{}) types.M {
 	v := object.([]interface{})
 	return types.M{
 		"__type":    "GeoPoint",
@@ -1422,7 +1422,7 @@ func (g geoPointCoder) isValidJSON(value types.M) bool {
 // fileCoder File 类型处理
 type fileCoder struct{}
 
-func (f fileCoder) databaseToJSON(object interface{}) interface{} {
+func (f fileCoder) databaseToJSON(object interface{}) types.M {
 	return types.M{
 		"__type": "File",
 		"name":   object,
@@ -1437,6 +1437,9 @@ func (f fileCoder) isValidDatabaseObject(object interface{}) bool {
 }
 
 func (f fileCoder) jsonToDatabase(json types.M) (interface{}, error) {
+	if json == nil {
+		return nil, nil
+	}
 	return json["name"], nil
 }
 

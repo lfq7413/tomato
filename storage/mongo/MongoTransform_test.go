@@ -2,8 +2,10 @@ package mongo
 
 import (
 	"testing"
+	"time"
 
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 func Test_transformKey(t *testing.T) {
@@ -98,7 +100,6 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 }
 
 func Test_transformQueryKeyValue(t *testing.T) {
-	// valueAsDate
 	// transformWhere
 	// transformConstraint
 	// transformTopLevelAtom
@@ -202,5 +203,31 @@ func Test_fileCoder(t *testing.T) {
 }
 
 func Test_valueAsDate(t *testing.T) {
-	// TODO
+	var value interface{}
+	var date time.Time
+	var ok bool
+	/*********************case 01*********************/
+	value = 1024
+	date, ok = valueAsDate(value)
+	if ok {
+		t.Error("value:", value, "ok:", ok, "date:", date)
+	}
+	/*********************case 02*********************/
+	value = "Incorrect string time"
+	date, ok = valueAsDate(value)
+	if ok {
+		t.Error("value:", value, "ok:", ok, "date:", date)
+	}
+	/*********************case 03*********************/
+	value = "2006-01-02T15:04:05.000Z"
+	date, ok = valueAsDate(value)
+	if !ok || utils.TimetoString(date) != "2006-01-02T15:04:05.000Z" {
+		t.Error("value:", value, "ok:", ok, "date:", date)
+	}
+	/*********************case 04*********************/
+	value = time.Now().UTC()
+	date, ok = valueAsDate(value)
+	if !ok {
+		t.Error("value:", value, "ok:", ok, "date:", date)
+	}
 }

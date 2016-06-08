@@ -1356,12 +1356,17 @@ func (d dateCoder) isValidJSON(value types.M) bool {
 type bytesCoder struct{}
 
 func (b bytesCoder) databaseToJSON(object interface{}) types.M {
-	data := object.([]byte)
-	json := base64.StdEncoding.EncodeToString(data)
+	if data, ok := object.([]byte); ok {
+		json := base64.StdEncoding.EncodeToString(data)
 
+		return types.M{
+			"__type": "Bytes",
+			"base64": json,
+		}
+	}
 	return types.M{
 		"__type": "Bytes",
-		"base64": json,
+		"base64": "",
 	}
 }
 

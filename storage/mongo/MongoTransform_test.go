@@ -116,7 +116,6 @@ func Test_transformConstraint(t *testing.T) {
 
 func Test_transformTopLevelAtom(t *testing.T) {
 	// dateCoder
-	// bytesCoder
 	// TODO
 }
 
@@ -166,7 +165,6 @@ func Test_nestedMongoObjectToNestedParseObject(t *testing.T) {
 func Test_mongoObjectToParseObject(t *testing.T) {
 	// nestedMongoObjectToNestedParseObject
 	// dateCoder
-	// bytesCoder
 	// untransformACL
 	// TODO
 }
@@ -177,7 +175,6 @@ func Test_untransformACL(t *testing.T) {
 
 func Test_transformInteriorAtom(t *testing.T) {
 	// dateCoder
-	// bytesCoder
 	// TODO
 }
 
@@ -191,7 +188,100 @@ func Test_dateCoder(t *testing.T) {
 }
 
 func Test_bytesCoder(t *testing.T) {
-	// TODO
+	bc := bytesCoder{}
+	var databaseObject interface{}
+	var jsonObject types.M
+	var ok bool
+	var expect interface{}
+	var err error
+	/*************************************************/
+	databaseObject = "pic.jpg"
+	jsonObject = bc.databaseToJSON(databaseObject)
+	expect = types.M{
+		"__type": "Bytes",
+		"base64": "",
+	}
+	if reflect.DeepEqual(jsonObject, expect) == false {
+		t.Error("expect:", expect, "get jsonObject:", jsonObject)
+	}
+	/*************************************************/
+	databaseObject = []byte("hello")
+	jsonObject = bc.databaseToJSON(databaseObject)
+	expect = types.M{
+		"__type": "Bytes",
+		"base64": "aGVsbG8=",
+	}
+	if reflect.DeepEqual(jsonObject, expect) == false {
+		t.Error("expect:", expect, "get jsonObject:", jsonObject)
+	}
+	/*************************************************/
+	databaseObject = "pic.jpg"
+	ok = bc.isValidDatabaseObject(databaseObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	databaseObject = []byte("hello")
+	ok = bc.isValidDatabaseObject(databaseObject)
+	if !ok {
+		t.Error("expect:", "true", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{
+		"__type": "Bytes",
+		"base64": "aabbcc",
+	}
+	databaseObject, err = bc.jsonToDatabase(jsonObject)
+	expect = errs.E(errs.InvalidJSON, "invalid base64")
+	if reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "get:", err)
+	}
+	/*************************************************/
+	jsonObject = types.M{
+		"__type": "File",
+		"base64": "aGVsbG8=",
+	}
+	databaseObject, err = bc.jsonToDatabase(jsonObject)
+	expect = []byte("hello")
+	if err != nil || reflect.DeepEqual(expect, databaseObject) == false {
+		t.Error("expect:", expect, "get:", databaseObject)
+	}
+	/*************************************************/
+	jsonObject = nil
+	ok = bc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{}
+	ok = bc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{"__type": "Date"}
+	ok = bc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{"__type": "Bytes"}
+	ok = bc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{"__type": "Bytes", "base64": 1024}
+	ok = bc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{"__type": "Bytes", "base64": "aGVsbG8="}
+	ok = bc.isValidJSON(jsonObject)
+	if !ok {
+		t.Error("expect:", "true", "get:", ok)
+	}
 }
 
 func Test_geoPointCoder(t *testing.T) {

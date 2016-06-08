@@ -109,7 +109,6 @@ func Test_transformQueryKeyValue(t *testing.T) {
 }
 
 func Test_transformConstraint(t *testing.T) {
-	// transformInteriorAtom
 	// transformTopLevelAtom
 	// TODO
 }
@@ -119,7 +118,6 @@ func Test_transformTopLevelAtom(t *testing.T) {
 }
 
 func Test_transformUpdateOperator(t *testing.T) {
-	// transformInteriorAtom
 	// TODO
 }
 
@@ -172,11 +170,63 @@ func Test_untransformACL(t *testing.T) {
 }
 
 func Test_transformInteriorAtom(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var atom interface{}
+	var result interface{}
+	var expect interface{}
+	var err error
+	/*************************************************/
+	atom = nil
+	result, err = tf.transformInteriorAtom(atom)
+	if err != nil || result != nil {
+		t.Error("expect:", nil, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.M{
+		"__type":    "Pointer",
+		"className": "user",
+		"objectId":  "1024",
+	}
+	result, err = tf.transformInteriorAtom(atom)
+	expect = types.M{
+		"__type":    "Pointer",
+		"className": "user",
+		"objectId":  "1024",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	tmpTime := utils.TimetoString(time.Now().UTC())
+	atom = types.M{
+		"__type": "Date",
+		"iso":    tmpTime,
+	}
+	result, err = tf.transformInteriorAtom(atom)
+	expect, _ = utils.StringtoTime(tmpTime)
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.M{
+		"__type": "Bytes",
+		"base64": "aGVsbG8=",
+	}
+	result, err = tf.transformInteriorAtom(atom)
+	expect = []byte("hello")
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = 1024
+	result, err = tf.transformInteriorAtom(atom)
+	expect = 1024
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_transformInteriorValue(t *testing.T) {
-	// transformInteriorAtom
 	// TODO
 }
 

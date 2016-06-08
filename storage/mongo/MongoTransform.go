@@ -1501,8 +1501,8 @@ func (t *Transform) transformInteriorAtom(atom interface{}) (interface{}, error)
 		return atom, nil
 	}
 
-	if a, ok := atom.(map[string]interface{}); ok {
-		if a["__type"].(string) == "Pointer" {
+	if a := utils.M(atom); a != nil {
+		if utils.S(a["__type"]) == "Pointer" {
 			return types.M{
 				"__type":    "Pointer",
 				"className": a["className"],
@@ -1518,7 +1518,7 @@ func (t *Transform) transformInteriorAtom(atom interface{}) (interface{}, error)
 	// }
 	// ==> 143123456789...
 	d := dateCoder{}
-	if a, ok := atom.(map[string]interface{}); ok {
+	if a := utils.M(atom); a != nil {
 		if d.isValidJSON(a) {
 			return d.jsonToDatabase(a)
 		}
@@ -1531,7 +1531,7 @@ func (t *Transform) transformInteriorAtom(atom interface{}) (interface{}, error)
 	// }
 	// ==> hello
 	b := bytesCoder{}
-	if a, ok := atom.(map[string]interface{}); ok {
+	if a := utils.M(atom); a != nil {
 		if b.isValidJSON(a) {
 			return b.jsonToDatabase(a)
 		}

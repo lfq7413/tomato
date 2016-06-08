@@ -1388,19 +1388,42 @@ func (b bytesCoder) isValidJSON(value types.M) bool {
 type geoPointCoder struct{}
 
 func (g geoPointCoder) databaseToJSON(object interface{}) types.M {
-	v := object.([]interface{})
+	var points types.S
+	if points = utils.A(object); points == nil || len(points) != 2 {
+		return types.M{
+			"__type":    "GeoPoint",
+			"longitude": 0,
+			"latitude":  0,
+		}
+	}
 	return types.M{
 		"__type":    "GeoPoint",
-		"longitude": v[0],
-		"latitude":  v[1],
+		"longitude": points[0],
+		"latitude":  points[1],
 	}
 }
 
 func (g geoPointCoder) isValidDatabaseObject(object interface{}) bool {
-	if v, ok := object.([]interface{}); ok {
-		if len(v) == 2 {
-			return true
-		}
+	var points types.S
+	if points = utils.A(object); points == nil || len(points) != 2 {
+		return false
+	}
+	p1 := false
+	if _, ok := points[0].(float64); ok {
+		p1 = true
+	}
+	if _, ok := points[0].(int); ok {
+		p1 = true
+	}
+	p2 := false
+	if _, ok := points[1].(float64); ok {
+		p2 = true
+	}
+	if _, ok := points[1].(int); ok {
+		p2 = true
+	}
+	if p1 && p2 {
+		return true
 	}
 	return false
 }

@@ -14,38 +14,38 @@ func Test_transformKey(t *testing.T) {
 	var fieldName string
 	var schema types.M
 	var result string
-	/*********************case 01*********************/
+	/*************************************************/
 	fieldName = "objectId"
 	result = tf.transformKey("", fieldName, schema)
 	if result != "_id" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
-	/*********************case 02*********************/
+	/*************************************************/
 	fieldName = "createdAt"
 	result = tf.transformKey("", fieldName, schema)
 	if result != "_created_at" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
-	/*********************case 03*********************/
+	/*************************************************/
 	fieldName = "updatedAt"
 	result = tf.transformKey("", fieldName, schema)
 	if result != "_updated_at" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
-	/*********************case 04*********************/
+	/*************************************************/
 	fieldName = "sessionToken"
 	result = tf.transformKey("", fieldName, schema)
 	if result != "_session_token" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
-	/*********************case 05*********************/
+	/*************************************************/
 	schema = nil
 	fieldName = "user"
 	result = tf.transformKey("", fieldName, schema)
 	if result != "user" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
-	/*********************case 06*********************/
+	/*************************************************/
 	schema = types.M{
 		"fields": "type is string",
 	}
@@ -54,7 +54,7 @@ func Test_transformKey(t *testing.T) {
 	if result != "user" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
-	/*********************case 07*********************/
+	/*************************************************/
 	schema = types.M{
 		"fields": types.M{
 			"user": "type is string",
@@ -65,7 +65,7 @@ func Test_transformKey(t *testing.T) {
 	if result != "user" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
-	/*********************case 08*********************/
+	/*************************************************/
 	schema = types.M{
 		"fields": types.M{
 			"user": types.M{
@@ -78,7 +78,7 @@ func Test_transformKey(t *testing.T) {
 	if result != "user" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
-	/*********************case 09*********************/
+	/*************************************************/
 	schema = types.M{
 		"fields": types.M{
 			"user": types.M{
@@ -195,6 +195,119 @@ func Test_bytesCoder(t *testing.T) {
 }
 
 func Test_geoPointCoder(t *testing.T) {
+	gpc := geoPointCoder{}
+	var databaseObject interface{}
+	var jsonObject types.M
+	var ok bool
+	var expect interface{}
+	/*************************************************/
+	databaseObject = "Incorrect type"
+	jsonObject = gpc.databaseToJSON(databaseObject)
+	expect = types.M{
+		"__type":    "GeoPoint",
+		"longitude": 0,
+		"latitude":  0,
+	}
+	if reflect.DeepEqual(jsonObject, expect) == false {
+		t.Error("expect:", expect, "get jsonObject:", jsonObject)
+	}
+	/*************************************************/
+	databaseObject = types.S{20, 20, 20}
+	jsonObject = gpc.databaseToJSON(databaseObject)
+	expect = types.M{
+		"__type":    "GeoPoint",
+		"longitude": 0,
+		"latitude":  0,
+	}
+	if reflect.DeepEqual(jsonObject, expect) == false {
+		t.Error("expect:", expect, "get jsonObject:", jsonObject)
+	}
+	/*************************************************/
+	databaseObject = types.S{20, 20}
+	jsonObject = gpc.databaseToJSON(databaseObject)
+	expect = types.M{
+		"__type":    "GeoPoint",
+		"longitude": 20,
+		"latitude":  20,
+	}
+	if reflect.DeepEqual(jsonObject, expect) == false {
+		t.Error("expect:", expect, "get jsonObject:", jsonObject)
+	}
+	/*************************************************/
+	databaseObject = "Incorrect type"
+	ok = gpc.isValidDatabaseObject(databaseObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	databaseObject = types.S{20, 20, 20}
+	ok = gpc.isValidDatabaseObject(databaseObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	databaseObject = types.S{"20", "20"}
+	ok = gpc.isValidDatabaseObject(databaseObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	databaseObject = types.S{20, 20}
+	ok = gpc.isValidDatabaseObject(databaseObject)
+	if !ok {
+		t.Error("expect:", "true", "get:", ok)
+	}
+	// /*************************************************/
+	// jsonObject = nil
+	// databaseObject, _ = gpc.jsonToDatabase(jsonObject)
+	// if databaseObject != nil {
+	// 	t.Error("expect:", "nil", "get:", databaseObject)
+	// }
+	// /*************************************************/
+	// jsonObject = types.M{
+	// 	"__type": "File",
+	// 	"name":   "pic.jpg",
+	// }
+	// databaseObject, _ = gpc.jsonToDatabase(jsonObject)
+	// if reflect.DeepEqual("pic.jpg", databaseObject) == false {
+	// 	t.Error("expect:", "pic.jpg", "get:", databaseObject)
+	// }
+	// /*************************************************/
+	// jsonObject = nil
+	// ok = gpc.isValidJSON(jsonObject)
+	// if ok {
+	// 	t.Error("expect:", "false", "get:", ok)
+	// }
+	// /*************************************************/
+	// jsonObject = types.M{}
+	// ok = gpc.isValidJSON(jsonObject)
+	// if ok {
+	// 	t.Error("expect:", "false", "get:", ok)
+	// }
+	// /*************************************************/
+	// jsonObject = types.M{"__type": "Date"}
+	// ok = gpc.isValidJSON(jsonObject)
+	// if ok {
+	// 	t.Error("expect:", "false", "get:", ok)
+	// }
+	// /*************************************************/
+	// jsonObject = types.M{"__type": "File"}
+	// ok = gpc.isValidJSON(jsonObject)
+	// if ok {
+	// 	t.Error("expect:", "false", "get:", ok)
+	// }
+	// /*************************************************/
+	// jsonObject = types.M{"__type": "File", "name": 1024}
+	// ok = gpc.isValidJSON(jsonObject)
+	// if ok {
+	// 	t.Error("expect:", "false", "get:", ok)
+	// }
+	// /*************************************************/
+	// jsonObject = types.M{"__type": "File", "name": "pic.jpg"}
+	// ok = gpc.isValidJSON(jsonObject)
+	// if !ok {
+	// 	t.Error("expect:", "true", "get:", ok)
+	// }
 	// TODO
 }
 
@@ -204,7 +317,7 @@ func Test_fileCoder(t *testing.T) {
 	var jsonObject types.M
 	var ok bool
 	var expect interface{}
-	/*********************case 01*********************/
+	/*************************************************/
 	databaseObject = "pic.jpg"
 	jsonObject = fc.databaseToJSON(databaseObject)
 	expect = types.M{
@@ -214,25 +327,25 @@ func Test_fileCoder(t *testing.T) {
 	if reflect.DeepEqual(jsonObject, expect) == false {
 		t.Error("expect:", expect, "get jsonObject:", jsonObject)
 	}
-	/*********************case 02*********************/
+	/*************************************************/
 	databaseObject = 1024
 	ok = fc.isValidDatabaseObject(databaseObject)
 	if ok {
 		t.Error("expect:", "false", "get:", ok)
 	}
-	/*********************case 03*********************/
+	/*************************************************/
 	databaseObject = "pic.jpg"
 	ok = fc.isValidDatabaseObject(databaseObject)
 	if !ok {
 		t.Error("expect:", "true", "get:", ok)
 	}
-	/*********************case 04*********************/
+	/*************************************************/
 	jsonObject = nil
 	databaseObject, _ = fc.jsonToDatabase(jsonObject)
 	if databaseObject != nil {
 		t.Error("expect:", "nil", "get:", databaseObject)
 	}
-	/*********************case 05*********************/
+	/*************************************************/
 	jsonObject = types.M{
 		"__type": "File",
 		"name":   "pic.jpg",
@@ -241,37 +354,37 @@ func Test_fileCoder(t *testing.T) {
 	if reflect.DeepEqual("pic.jpg", databaseObject) == false {
 		t.Error("expect:", "pic.jpg", "get:", databaseObject)
 	}
-	/*********************case 06*********************/
+	/*************************************************/
 	jsonObject = nil
 	ok = fc.isValidJSON(jsonObject)
 	if ok {
 		t.Error("expect:", "false", "get:", ok)
 	}
-	/*********************case 07*********************/
+	/*************************************************/
 	jsonObject = types.M{}
 	ok = fc.isValidJSON(jsonObject)
 	if ok {
 		t.Error("expect:", "false", "get:", ok)
 	}
-	/*********************case 08*********************/
+	/*************************************************/
 	jsonObject = types.M{"__type": "Date"}
 	ok = fc.isValidJSON(jsonObject)
 	if ok {
 		t.Error("expect:", "false", "get:", ok)
 	}
-	/*********************case 09*********************/
+	/*************************************************/
 	jsonObject = types.M{"__type": "File"}
 	ok = fc.isValidJSON(jsonObject)
 	if ok {
 		t.Error("expect:", "false", "get:", ok)
 	}
-	/*********************case 10*********************/
+	/*************************************************/
 	jsonObject = types.M{"__type": "File", "name": 1024}
 	ok = fc.isValidJSON(jsonObject)
 	if ok {
 		t.Error("expect:", "false", "get:", ok)
 	}
-	/*********************case 11*********************/
+	/*************************************************/
 	jsonObject = types.M{"__type": "File", "name": "pic.jpg"}
 	ok = fc.isValidJSON(jsonObject)
 	if !ok {
@@ -283,25 +396,25 @@ func Test_valueAsDate(t *testing.T) {
 	var value interface{}
 	var date time.Time
 	var ok bool
-	/*********************case 01*********************/
+	/*************************************************/
 	value = 1024
 	date, ok = valueAsDate(value)
 	if ok {
 		t.Error("value:", value, "date:", date, "expect: false", "get:", ok)
 	}
-	/*********************case 02*********************/
+	/*************************************************/
 	value = "Incorrect string time"
 	date, ok = valueAsDate(value)
 	if ok {
 		t.Error("value:", value, "date:", date, "expect: false", "get:", ok)
 	}
-	/*********************case 03*********************/
+	/*************************************************/
 	value = "2006-01-02T15:04:05.000Z"
 	date, ok = valueAsDate(value)
 	if !ok || utils.TimetoString(date) != "2006-01-02T15:04:05.000Z" {
 		t.Error("value:", value, "date:", date, "expect: true 2006-01-02T15:04:05.000Z", "get:", ok, utils.TimetoString(date))
 	}
-	/*********************case 04*********************/
+	/*************************************************/
 	value = time.Now().UTC()
 	date, ok = valueAsDate(value)
 	if !ok {

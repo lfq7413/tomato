@@ -877,11 +877,24 @@ func (t *Transform) transformAuthData(restObject types.M) types.M {
 // ==>
 // {
 // 	"_rperm":["userid","role:xxx","*"],
-// 	"_wperm":["userid","role:xxx"]
+// 	"_wperm":["userid","role:xxx"],
+// 	"_acl":{
+// 		"userid":{
+// 			"r": true,
+// 			"w": true,
+// 		},
+// 		"role:xxx":{
+// 			"r": true,
+// 			"w": true,
+// 		},
+// 		"*":{
+// 			"r": true,
+// 		},
+// 	},
 // }
 func (t *Transform) transformACL(restObject types.M) types.M {
 	output := types.M{}
-	if restObject["ACL"] == nil {
+	if restObject == nil || restObject["ACL"] == nil {
 		return output
 	}
 
@@ -891,16 +904,18 @@ func (t *Transform) transformACL(restObject types.M) types.M {
 	_acl := types.M{}
 	for entry, v := range acl {
 		perm := utils.M(v)
-		a := types.M{}
-		if perm["read"] != nil {
-			rperm = append(rperm, entry)
-			a["r"] = true
+		if perm != nil {
+			a := types.M{}
+			if perm["read"] != nil {
+				rperm = append(rperm, entry)
+				a["r"] = true
+			}
+			if perm["write"] != nil {
+				wperm = append(wperm, entry)
+				a["w"] = true
+			}
+			_acl[entry] = a
 		}
-		if perm["write"] != nil {
-			wperm = append(wperm, entry)
-			a["w"] = true
-		}
-		_acl[entry] = a
 	}
 	output["_rperm"] = rperm
 	output["_wperm"] = wperm

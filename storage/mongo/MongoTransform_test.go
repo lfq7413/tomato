@@ -123,7 +123,6 @@ func Test_transformUpdateOperator(t *testing.T) {
 
 func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 	// transformAuthData
-	// transformACL
 	// parseObjectKeyValueToMongoObjectKeyValue
 	// TODO
 }
@@ -140,7 +139,61 @@ func Test_transformAuthData(t *testing.T) {
 }
 
 func Test_transformACL(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var restObject types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	restObject = nil
+	result = tf.transformACL(restObject)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{}
+	result = tf.transformACL(restObject)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+			"role:xxx": types.M{
+				"read":  true,
+				"write": true,
+			},
+			"*": types.M{
+				"read": true,
+			},
+		},
+	}
+	result = tf.transformACL(restObject)
+	expect = types.M{
+		"_rperm": types.S{"userid", "role:xxx", "*"},
+		"_wperm": types.S{"userid", "role:xxx"},
+		"_acl": types.M{
+			"userid": types.M{
+				"r": true,
+				"w": true,
+			},
+			"role:xxx": types.M{
+				"r": true,
+				"w": true,
+			},
+			"*": types.M{
+				"r": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false || reflect.DeepEqual(restObject, types.M{}) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_transformWhere(t *testing.T) {
@@ -150,7 +203,6 @@ func Test_transformWhere(t *testing.T) {
 
 func Test_transformUpdate(t *testing.T) {
 	// transformAuthData
-	// transformACL
 	// transformKeyValueForUpdate
 	// TODO
 }

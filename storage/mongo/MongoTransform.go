@@ -1388,6 +1388,7 @@ func (b bytesCoder) isValidJSON(value types.M) bool {
 type geoPointCoder struct{}
 
 func (g geoPointCoder) databaseToJSON(object interface{}) types.M {
+	// 只校验空、数组长度，不再校验数据类型，在 isValidDatabaseObject 中校验
 	var points types.S
 	if points = utils.A(object); points == nil || len(points) != 2 {
 		return types.M{
@@ -1429,10 +1430,25 @@ func (g geoPointCoder) isValidDatabaseObject(object interface{}) bool {
 }
 
 func (g geoPointCoder) jsonToDatabase(json types.M) (interface{}, error) {
-	if _, ok := json["longitude"].(float64); ok == false {
+	// 默认已经是合法的 geoPoint json
+	p1 := false
+	if _, ok := json["longitude"].(float64); ok {
+		p1 = true
+	}
+	if _, ok := json["longitude"].(int); ok {
+		p1 = true
+	}
+	if p1 == false {
 		return nil, errs.E(errs.InvalidJSON, "invalid longitude")
 	}
-	if _, ok := json["latitude"].(float64); ok == false {
+	p2 := false
+	if _, ok := json["latitude"].(float64); ok {
+		p2 = true
+	}
+	if _, ok := json["latitude"].(int); ok {
+		p2 = true
+	}
+	if p2 == false {
 		return nil, errs.E(errs.InvalidJSON, "invalid latitude")
 	}
 	return types.S{json["longitude"], json["latitude"]}, nil

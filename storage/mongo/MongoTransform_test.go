@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -116,7 +117,6 @@ func Test_transformConstraint(t *testing.T) {
 func Test_transformTopLevelAtom(t *testing.T) {
 	// dateCoder
 	// bytesCoder
-	// geoPointCoder
 	// TODO
 }
 
@@ -200,6 +200,7 @@ func Test_geoPointCoder(t *testing.T) {
 	var jsonObject types.M
 	var ok bool
 	var expect interface{}
+	var err error
 	/*************************************************/
 	databaseObject = "Incorrect type"
 	jsonObject = gpc.databaseToJSON(databaseObject)
@@ -257,58 +258,75 @@ func Test_geoPointCoder(t *testing.T) {
 	if !ok {
 		t.Error("expect:", "true", "get:", ok)
 	}
-	// /*************************************************/
-	// jsonObject = nil
-	// databaseObject, _ = gpc.jsonToDatabase(jsonObject)
-	// if databaseObject != nil {
-	// 	t.Error("expect:", "nil", "get:", databaseObject)
-	// }
-	// /*************************************************/
-	// jsonObject = types.M{
-	// 	"__type": "File",
-	// 	"name":   "pic.jpg",
-	// }
-	// databaseObject, _ = gpc.jsonToDatabase(jsonObject)
-	// if reflect.DeepEqual("pic.jpg", databaseObject) == false {
-	// 	t.Error("expect:", "pic.jpg", "get:", databaseObject)
-	// }
-	// /*************************************************/
-	// jsonObject = nil
-	// ok = gpc.isValidJSON(jsonObject)
-	// if ok {
-	// 	t.Error("expect:", "false", "get:", ok)
-	// }
-	// /*************************************************/
-	// jsonObject = types.M{}
-	// ok = gpc.isValidJSON(jsonObject)
-	// if ok {
-	// 	t.Error("expect:", "false", "get:", ok)
-	// }
-	// /*************************************************/
-	// jsonObject = types.M{"__type": "Date"}
-	// ok = gpc.isValidJSON(jsonObject)
-	// if ok {
-	// 	t.Error("expect:", "false", "get:", ok)
-	// }
-	// /*************************************************/
-	// jsonObject = types.M{"__type": "File"}
-	// ok = gpc.isValidJSON(jsonObject)
-	// if ok {
-	// 	t.Error("expect:", "false", "get:", ok)
-	// }
-	// /*************************************************/
-	// jsonObject = types.M{"__type": "File", "name": 1024}
-	// ok = gpc.isValidJSON(jsonObject)
-	// if ok {
-	// 	t.Error("expect:", "false", "get:", ok)
-	// }
-	// /*************************************************/
-	// jsonObject = types.M{"__type": "File", "name": "pic.jpg"}
-	// ok = gpc.isValidJSON(jsonObject)
-	// if !ok {
-	// 	t.Error("expect:", "true", "get:", ok)
-	// }
-	// TODO
+	/*************************************************/
+	jsonObject = types.M{
+		"__type":    "GeoPoint",
+		"longitude": "20.0",
+		"latitude":  20.0,
+	}
+	databaseObject, err = gpc.jsonToDatabase(jsonObject)
+	expect = errs.E(errs.InvalidJSON, "invalid longitude")
+	if reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "get:", err)
+	}
+	/*************************************************/
+	jsonObject = types.M{
+		"__type":    "GeoPoint",
+		"longitude": 20.0,
+		"latitude":  "20.0",
+	}
+	databaseObject, err = gpc.jsonToDatabase(jsonObject)
+	expect = errs.E(errs.InvalidJSON, "invalid latitude")
+	if reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "get:", err)
+	}
+	/*************************************************/
+	jsonObject = types.M{
+		"__type":    "GeoPoint",
+		"longitude": 20.0,
+		"latitude":  20.0,
+	}
+	databaseObject, err = gpc.jsonToDatabase(jsonObject)
+	expect = types.S{20.0, 20.0}
+	if err != nil || reflect.DeepEqual(databaseObject, expect) == false {
+		t.Error("expect:", expect, "get:", databaseObject)
+	}
+	/*************************************************/
+	jsonObject = nil
+	ok = gpc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{}
+	ok = gpc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{"__type": "Date"}
+	ok = gpc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{"__type": "GeoPoint"}
+	ok = gpc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{"__type": "GeoPoint", "longitude": 20}
+	ok = gpc.isValidJSON(jsonObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	jsonObject = types.M{"__type": "GeoPoint", "longitude": 20, "latitude": 20}
+	ok = gpc.isValidJSON(jsonObject)
+	if !ok {
+		t.Error("expect:", "true", "get:", ok)
+	}
 }
 
 func Test_fileCoder(t *testing.T) {

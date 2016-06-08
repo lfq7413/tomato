@@ -161,12 +161,105 @@ func Test_nestedMongoObjectToNestedParseObject(t *testing.T) {
 
 func Test_mongoObjectToParseObject(t *testing.T) {
 	// nestedMongoObjectToNestedParseObject
-	// untransformACL
 	// TODO
 }
 
 func Test_untransformACL(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var mongoObject types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	mongoObject = nil
+	result = tf.untransformACL(mongoObject)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{}
+	result = tf.untransformACL(mongoObject)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{}
+	result = tf.untransformACL(mongoObject)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{"_rperm": "Incorrect type"}
+	result = tf.untransformACL(mongoObject)
+	expect = types.M{"ACL": types.M{}}
+	if reflect.DeepEqual(expect, result) == false || reflect.DeepEqual(mongoObject, types.M{}) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{"_rperm": types.S{"userid", "role:xxx"}}
+	result = tf.untransformACL(mongoObject)
+	expect = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"read": true,
+			},
+			"role:xxx": types.M{
+				"read": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false || reflect.DeepEqual(mongoObject, types.M{}) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{"_wperm": "Incorrect type"}
+	result = tf.untransformACL(mongoObject)
+	expect = types.M{"ACL": types.M{}}
+	if reflect.DeepEqual(expect, result) == false || reflect.DeepEqual(mongoObject, types.M{}) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{"_wperm": types.S{"userid", "role:xxx"}}
+	result = tf.untransformACL(mongoObject)
+	expect = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"write": true,
+			},
+			"role:xxx": types.M{
+				"write": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false || reflect.DeepEqual(mongoObject, types.M{}) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_rperm": types.S{"userid", "role:xxx", "*"},
+		"_wperm": types.S{"userid", "role:xxx"},
+	}
+	result = tf.untransformACL(mongoObject)
+	expect = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+			"role:xxx": types.M{
+				"read":  true,
+				"write": true,
+			},
+			"*": types.M{
+				"read": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false || reflect.DeepEqual(mongoObject, types.M{}) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_transformInteriorAtom(t *testing.T) {
@@ -227,6 +320,7 @@ func Test_transformInteriorAtom(t *testing.T) {
 }
 
 func Test_transformInteriorValue(t *testing.T) {
+	// transformUpdateOperator
 	// TODO
 }
 

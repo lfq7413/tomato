@@ -1276,6 +1276,9 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 // }
 func (t *Transform) untransformACL(mongoObject types.M) types.M {
 	output := types.M{}
+	if mongoObject == nil {
+		return output
+	}
 	if mongoObject["_rperm"] == nil && mongoObject["_wperm"] == nil {
 		return output
 	}
@@ -1289,24 +1292,30 @@ func (t *Transform) untransformACL(mongoObject types.M) types.M {
 	if mongoObject["_wperm"] != nil {
 		wperm = utils.A(mongoObject["_wperm"])
 	}
-	for _, v := range rperm {
-		entry := v.(string)
-		if acl[entry] == nil {
-			acl[entry] = types.M{"read": true}
-		} else {
-			per := utils.M(acl[entry])
-			per["read"] = true
-			acl[entry] = per
+	if rperm != nil {
+		for _, v := range rperm {
+			entry := v.(string)
+			if acl[entry] == nil {
+				acl[entry] = types.M{"read": true}
+			} else {
+				var per types.M
+				per = utils.M(acl[entry])
+				per["read"] = true
+				acl[entry] = per
+			}
 		}
 	}
-	for _, v := range wperm {
-		entry := v.(string)
-		if acl[entry] == nil {
-			acl[entry] = types.M{"write": true}
-		} else {
-			per := utils.M(acl[entry])
-			per["write"] = true
-			acl[entry] = per
+	if wperm != nil {
+		for _, v := range wperm {
+			entry := v.(string)
+			if acl[entry] == nil {
+				acl[entry] = types.M{"write": true}
+			} else {
+				var per types.M
+				per = utils.M(acl[entry])
+				per["write"] = true
+				acl[entry] = per
+			}
 		}
 	}
 	output["ACL"] = acl
@@ -1575,7 +1584,7 @@ func (t *Transform) transformInteriorValue(restValue interface{}) (interface{}, 
 
 	if value, ok := restValue.(map[string]interface{}); ok {
 		if _, ok := value["__op"]; ok {
-			// TODO return transformUpdateOperator(restValue, true);
+			return t.transformUpdateOperator(restValue, true)
 		}
 	}
 

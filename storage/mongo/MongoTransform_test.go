@@ -96,7 +96,6 @@ func Test_transformKey(t *testing.T) {
 
 func Test_transformKeyValueForUpdate(t *testing.T) {
 	// transformInteriorValue
-	// transformUpdateOperator
 	// TODO
 }
 
@@ -238,7 +237,198 @@ func Test_transformTopLevelAtom(t *testing.T) {
 }
 
 func Test_transformUpdateOperator(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var operator interface{}
+	var flatten bool
+	var result interface{}
+	var err error
+	var expect interface{}
+	/*************************************************/
+	operator = 1024
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = 1024
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{"key": "value"}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.M{"key": "value"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{"__op": "Delete"}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{"__op": "Delete"}
+	flatten = false
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.M{"__op": "$unset", "arg": ""}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{"__op": "Increment", "amount": 10.0}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = 10.0
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{"__op": "Increment", "amount": 10}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = 10
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{"__op": "Increment", "amount": "10"}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = errs.E(errs.InvalidJSON, "incrementing must provide a number")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	operator = types.M{"__op": "Increment", "amount": 10}
+	flatten = false
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.M{"__op": "$inc", "arg": 10}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "Add",
+		"objects": "not an array",
+	}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = errs.E(errs.InvalidJSON, "objects to add must be an array")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "Add",
+		"objects": types.S{"hello", "world"},
+	}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.S{"hello", "world"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "Add",
+		"objects": types.S{"hello", "world"},
+	}
+	flatten = false
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.M{
+		"__op": "$push",
+		"arg": types.M{
+			"$each": types.S{"hello", "world"},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "AddUnique",
+		"objects": "not an array",
+	}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = errs.E(errs.InvalidJSON, "objects to add must be an array")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "AddUnique",
+		"objects": types.S{"hello", "world"},
+	}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.S{"hello", "world"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "AddUnique",
+		"objects": types.S{"hello", "world"},
+	}
+	flatten = false
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.M{
+		"__op": "$addToSet",
+		"arg": types.M{
+			"$each": types.S{"hello", "world"},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "Remove",
+		"objects": "not an array",
+	}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = errs.E(errs.InvalidJSON, "objects to remove must be an array")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "Remove",
+		"objects": types.S{"hello", "world"},
+	}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.S{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op":    "Remove",
+		"objects": types.S{"hello", "world"},
+	}
+	flatten = false
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = types.M{
+		"__op": "$pullAll",
+		"arg":  types.S{"hello", "world"},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	operator = types.M{
+		"__op": "OtherOp",
+	}
+	flatten = true
+	result, err = tf.transformUpdateOperator(operator, flatten)
+	expect = errs.E(errs.CommandUnavailable, "the "+"OtherOp"+" operator is not supported yet")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
 }
 
 func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
@@ -248,7 +438,6 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 
 func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	// transformInteriorValue
-	// transformUpdateOperator
 	// TODO
 }
 
@@ -582,7 +771,6 @@ func Test_transformInteriorAtom(t *testing.T) {
 }
 
 func Test_transformInteriorValue(t *testing.T) {
-	// transformUpdateOperator
 	// TODO
 }
 

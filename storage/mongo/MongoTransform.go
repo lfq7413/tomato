@@ -582,8 +582,14 @@ func (t *Transform) transformUpdateOperator(operator interface{}, flatten bool) 
 	// 	"arg":10
 	// }
 	case "Increment":
-		if _, ok := operatorMap["amount"].(float64); !ok {
-			// 必须为数字
+		number := false
+		if _, ok := operatorMap["amount"].(float64); ok {
+			number = true
+		}
+		if _, ok := operatorMap["amount"].(int); ok {
+			number = true
+		}
+		if number == false {
 			return nil, errs.E(errs.InvalidJSON, "incrementing must provide a number")
 		}
 		if flatten {

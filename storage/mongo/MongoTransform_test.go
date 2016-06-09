@@ -95,7 +95,6 @@ func Test_transformKey(t *testing.T) {
 }
 
 func Test_transformKeyValueForUpdate(t *testing.T) {
-	// transformTopLevelAtom
 	// transformInteriorValue
 	// transformUpdateOperator
 	// TODO
@@ -104,17 +103,138 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 func Test_transformQueryKeyValue(t *testing.T) {
 	// transformWhere
 	// transformConstraint
-	// transformTopLevelAtom
 	// TODO
 }
 
 func Test_transformConstraint(t *testing.T) {
-	// transformTopLevelAtom
 	// TODO
 }
 
 func Test_transformTopLevelAtom(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var atom interface{}
+	var result interface{}
+	var err error
+	var expect interface{}
+	/*************************************************/
+	atom = nil
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = nil
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = "hello"
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = "hello"
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = 20.0
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = 20.0
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = 20
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = 20
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = true
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = true
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.M{}
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.M{
+		"__type":    "Pointer",
+		"className": "user",
+		"objectId":  "1024",
+	}
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = "user$1024"
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	tmpTime := utils.TimetoString(time.Now().UTC())
+	atom = types.M{
+		"__type": "Date",
+		"iso":    tmpTime,
+	}
+	result, err = tf.transformTopLevelAtom(atom)
+	expect, _ = utils.StringtoTime(tmpTime)
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.M{
+		"__type": "Bytes",
+		"base64": "aGVsbG8=",
+	}
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = []byte("hello")
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.M{
+		"__type":    "GeoPoint",
+		"longitude": -30.0,
+		"latitude":  40.0,
+	}
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = types.S{-30.0, 40.0}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.M{
+		"__type": "File",
+		"name":   "...hello.png",
+	}
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = "...hello.png"
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.M{
+		"__type": "OtherType",
+		"key":    "value",
+	}
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = nil
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.S{"hello", "world"}
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = nil
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = time.Now()
+	result, err = tf.transformTopLevelAtom(atom)
+	expect = errs.E(errs.InternalServerError, "really did not expect value: atom")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
 }
 
 func Test_transformUpdateOperator(t *testing.T) {
@@ -127,7 +247,6 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 }
 
 func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
-	// transformTopLevelAtom
 	// transformInteriorValue
 	// transformUpdateOperator
 	// TODO

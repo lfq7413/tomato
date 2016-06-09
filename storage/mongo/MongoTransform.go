@@ -450,10 +450,10 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 }
 
 // transformTopLevelAtom 转换原子数据
-// options.inArray 为 true，则不进行相应转换
-// options.inObject 为 true，则不进行相应转换
-// force 是否强制转换，true 时如果转换失败则返回错误
 func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error) {
+	if atom == nil {
+		return atom, nil
+	}
 	// 字符串、数字、布尔类型直接返回
 	if _, ok := atom.(string); ok {
 		return atom, nil
@@ -461,13 +461,16 @@ func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error)
 	if _, ok := atom.(float64); ok {
 		return atom, nil
 	}
+	if _, ok := atom.(int); ok {
+		return atom, nil
+	}
 	if _, ok := atom.(bool); ok {
 		return atom, nil
 	}
 
 	// 转换 "__type" 声明的类型
-	if object, ok := atom.(map[string]interface{}); ok {
-		if atom == nil || len(object) == 0 {
+	if object := utils.M(atom); object != nil {
+		if len(object) == 0 {
 			return atom, nil
 		}
 
@@ -527,6 +530,11 @@ func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error)
 			return f.jsonToDatabase(object)
 		}
 
+		return cannotTransform(), nil
+	}
+
+	// 数组类型不转换
+	if object := utils.A(atom); object != nil {
 		return cannotTransform(), nil
 	}
 

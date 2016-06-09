@@ -449,7 +449,7 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 	return answer, nil
 }
 
-// transformTopLevelAtom 转换原子数据
+// transformTopLevelAtom 转换顶层的原子数据
 func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error) {
 	if atom == nil {
 		return atom, nil
@@ -1536,6 +1536,7 @@ func (f fileCoder) isValidJSON(value types.M) bool {
 	return value != nil && utils.S(value["__type"]) == "File" && utils.S(value["name"]) != ""
 }
 
+// transformInteriorAtom 转换基本类型，以及 Pointer Date Bytes 三种类型，数组与 map 类型无法转换
 func (t *Transform) transformInteriorAtom(atom interface{}) (interface{}, error) {
 	if atom == nil {
 		return atom, nil
@@ -1577,9 +1578,17 @@ func (t *Transform) transformInteriorAtom(atom interface{}) (interface{}, error)
 		}
 	}
 
+	if a := utils.M(atom); a != nil {
+		return cannotTransform(), nil
+	}
+	if a := utils.A(atom); a != nil {
+		return cannotTransform(), nil
+	}
+
 	return atom, nil
 }
 
+// transformInteriorValue 转换 map 或者 数组 内的值
 func (t *Transform) transformInteriorValue(restValue interface{}) (interface{}, error) {
 	if restValue == nil {
 		return restValue, nil

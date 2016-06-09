@@ -768,9 +768,36 @@ func Test_transformInteriorAtom(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
+	/*************************************************/
+	atom = types.M{"key": "value"}
+	result, err = tf.transformInteriorAtom(atom)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	atom = types.S{"hello", "world"}
+	result, err = tf.transformInteriorAtom(atom)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_transformInteriorValue(t *testing.T) {
+	tf := NewTransform()
+	var restValue interface{}
+	var result interface{}
+	var err error
+	var expect interface{}
+	/*************************************************/
+	restValue = nil
+	result, err = tf.transformInteriorValue(restValue)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+
 	// TODO
 }
 

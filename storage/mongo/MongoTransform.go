@@ -393,7 +393,11 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 		// 转换 附近 操作符
 		case "$nearSphere":
 			point := utils.M(object[key])
-			answer[key] = types.S{point["longitude"], point["latitude"]}
+			if point == nil {
+				answer[key] = types.S{0, 0}
+			} else {
+				answer[key] = types.S{point["longitude"], point["latitude"]}
+			}
 
 		// 转换 最大距离 操作符，单位是弧度
 		case "$maxDistance":
@@ -407,11 +411,17 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 			if v, ok := object[key].(float64); ok {
 				distance = v / 3959
 			}
+			if v, ok := object[key].(int); ok {
+				distance = float64(v) / 3959
+			}
 			answer["$maxDistance"] = distance
 		case "$maxDistanceInKilometers":
 			var distance float64
 			if v, ok := object[key].(float64); ok {
 				distance = v / 6371
+			}
+			if v, ok := object[key].(int); ok {
+				distance = float64(v) / 6371
 			}
 			answer["$maxDistance"] = distance
 
@@ -421,6 +431,9 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 
 		case "$within":
 			within := utils.M(object[key])
+			if within == nil {
+				return nil, errs.E(errs.InvalidJSON, "malformatted $within arg")
+			}
 			box := utils.A(within["$box"])
 			if box == nil || len(box) != 2 {
 				// 参数不正确
@@ -428,6 +441,9 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 			}
 			box1 := utils.M(box[0])
 			box2 := utils.M(box[1])
+			if box1 == nil || box2 == nil {
+				return nil, errs.E(errs.InvalidJSON, "malformatted $within arg")
+			}
 			// MongoDB 2.4 中 $within 替换为了 $geoWithin
 			answer["$geoWithin"] = types.M{
 				"$box": types.S{

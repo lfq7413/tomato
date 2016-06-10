@@ -100,12 +100,355 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 
 func Test_transformQueryKeyValue(t *testing.T) {
 	// transformWhere
-	// transformConstraint
 	// TODO
 }
 
 func Test_transformConstraint(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var constraint interface{}
+	var inArray bool
+	var result interface{}
+	var err error
+	var expect interface{}
+	/*************************************************/
+	constraint = nil
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = nil
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = 1024
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = nil
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$lt": 10}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$lt": 10}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$lt": 10}
+	inArray = false
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$lt": 10}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$lt": types.M{"key": "value"}}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "bad atom")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$lt": types.M{"key": "value"}}
+	inArray = false
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "bad atom")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$in": types.M{"key": "value"}}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "bad "+"$in"+" value")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$in": types.S{"hello", "world"}}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$in": types.S{"hello", "world"}}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$in": types.S{"hello", "world"}}
+	inArray = false
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$in": types.S{"hello", "world"}}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$in": types.S{types.M{"key": "value"}}}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "bad atom")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$in": types.S{types.M{"key": "value"}}}
+	inArray = false
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "bad atom")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$all": types.M{"key": "value"}}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "bad "+"$all"+" value")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$all": types.S{"hello", "world"}}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$all": types.S{"hello", "world"}}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$regex": 1024}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "bad regex")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$regex": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$regex": "hello"}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$options": "imxs"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidQuery, "got a bad $options")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$options": 1024, "$regex": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidQuery, "got a bad $options")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$options": "hello", "$regex": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidQuery, "got a bad $options")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$options": "imxs", "$regex": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$options": "imxs", "$regex": "hello"}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$nearSphere": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$nearSphere": types.S{0, 0}}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{
+		"$nearSphere": types.M{
+			"longitude": 20,
+			"latitude":  20,
+		},
+	}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$nearSphere": types.S{20, 20}}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$maxDistance": 0.26}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$maxDistance": 0.26}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$maxDistanceInRadians": 0.26}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$maxDistance": 0.26}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$maxDistanceInMiles": 16.0}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$maxDistance": 16.0 / 3959}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$maxDistanceInMiles": 16}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$maxDistance": 16.0 / 3959}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$maxDistanceInKilometers": 16.0}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$maxDistance": 16.0 / 6371}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$maxDistanceInKilometers": 16}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$maxDistance": 16.0 / 6371}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$select": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.CommandUnavailable, "the "+"$select"+" constraint is not supported yet")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$dontSelect": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.CommandUnavailable, "the "+"$dontSelect"+" constraint is not supported yet")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$within": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "malformatted $within arg")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"$within": types.M{}}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "malformatted $within arg")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{
+		"$within": types.M{"$box": "hello"},
+	}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "malformatted $within arg")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{
+		"$within": types.M{
+			"$box": types.S{"hello"},
+		},
+	}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "malformatted $within arg")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{
+		"$within": types.M{
+			"$box": types.S{"hello", "world"},
+		},
+	}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "malformatted $within arg")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{
+		"$within": types.M{
+			"$box": types.S{
+				types.M{
+					"longitude": 20,
+					"latitude":  20,
+				},
+				types.M{
+					"longitude": 30,
+					"latitude":  30,
+				},
+			},
+		},
+	}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{
+		"$geoWithin": types.M{
+			"$box": types.S{
+				types.S{20, 20},
+				types.S{30, 30},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{"$other": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = errs.E(errs.InvalidJSON, "bad constraint: "+"$other")
+	if reflect.DeepEqual(err, expect) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	constraint = types.M{"key": "hello"}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = nil
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_transformTopLevelAtom(t *testing.T) {

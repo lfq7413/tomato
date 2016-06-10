@@ -95,7 +95,6 @@ func Test_transformKey(t *testing.T) {
 }
 
 func Test_transformKeyValueForUpdate(t *testing.T) {
-	// transformInteriorValue
 	// TODO
 }
 
@@ -437,7 +436,6 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 }
 
 func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
-	// transformInteriorValue
 	// TODO
 }
 
@@ -797,8 +795,89 @@ func Test_transformInteriorValue(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
-
-	// TODO
+	/*************************************************/
+	restValue = types.M{"hello$world": "1024"}
+	result, err = tf.transformInteriorValue(restValue)
+	expect = errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
+	if reflect.DeepEqual(expect, err) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	restValue = types.M{"hello.world": "1024"}
+	result, err = tf.transformInteriorValue(restValue)
+	expect = errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
+	if reflect.DeepEqual(expect, err) == false || result != nil {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	restValue = "hello world"
+	result, err = tf.transformInteriorValue(restValue)
+	expect = "hello world"
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restValue = types.M{
+		"__type": "Bytes",
+		"base64": "aGVsbG8=",
+	}
+	result, err = tf.transformInteriorValue(restValue)
+	expect = []byte("hello")
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restValue = types.S{
+		"hello",
+		types.M{
+			"__type": "Bytes",
+			"base64": "aGVsbG8=",
+		},
+	}
+	result, err = tf.transformInteriorValue(restValue)
+	expect = types.S{"hello", []byte("hello")}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restValue = types.M{
+		"__op":    "Add",
+		"objects": types.S{"hello", "world"},
+	}
+	result, err = tf.transformInteriorValue(restValue)
+	expect = types.S{"hello", "world"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restValue = types.M{
+		"key1": "hello world",
+		"key2": types.M{
+			"__type": "Bytes",
+			"base64": "aGVsbG8=",
+		},
+		"key3": types.S{
+			"hello",
+			types.M{
+				"__type": "Bytes",
+				"base64": "aGVsbG8=",
+			},
+		},
+		"key4": types.M{
+			"__op":    "Add",
+			"objects": types.S{"hello", "world"},
+		},
+	}
+	result, err = tf.transformInteriorValue(restValue)
+	expect = types.M{
+		"key1": "hello world",
+		"key2": []byte("hello"),
+		"key3": types.S{"hello", []byte("hello")},
+		"key4": types.S{"hello", "world"},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_dateCoder(t *testing.T) {

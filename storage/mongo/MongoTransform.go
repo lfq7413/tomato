@@ -1594,7 +1594,7 @@ func (t *Transform) transformInteriorValue(restValue interface{}) (interface{}, 
 		return restValue, nil
 	}
 
-	if value, ok := restValue.(map[string]interface{}); ok {
+	if value := utils.M(restValue); value != nil {
 		for k := range value {
 			if strings.Index(k, "$") > -1 || strings.Index(k, ".") > -1 {
 				return nil, errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
@@ -1610,7 +1610,7 @@ func (t *Transform) transformInteriorValue(restValue interface{}) (interface{}, 
 		return value, err
 	}
 
-	if value, ok := restValue.([]interface{}); ok {
+	if value := utils.A(restValue); value != nil {
 		newValue := types.S{}
 		for _, v := range value {
 			r, err := t.transformInteriorValue(v)
@@ -1622,13 +1622,13 @@ func (t *Transform) transformInteriorValue(restValue interface{}) (interface{}, 
 		return newValue, nil
 	}
 
-	if value, ok := restValue.(map[string]interface{}); ok {
+	if value := utils.M(restValue); value != nil {
 		if _, ok := value["__op"]; ok {
 			return t.transformUpdateOperator(restValue, true)
 		}
 	}
 
-	if value, ok := restValue.(map[string]interface{}); ok {
+	if value := utils.M(restValue); value != nil {
 		newValue := types.M{}
 		for k, v := range value {
 			r, err := t.transformInteriorValue(v)

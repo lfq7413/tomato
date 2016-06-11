@@ -22,6 +22,7 @@ func NewTransform() *Transform {
 
 // transformKey ...
 func (t *Transform) transformKey(className, fieldName string, schema types.M) string {
+	// TODO className 没有用到
 	switch fieldName {
 	case "objectId":
 		return "_id"
@@ -483,6 +484,9 @@ func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error)
 	if _, ok := atom.(bool); ok {
 		return atom, nil
 	}
+	if _, ok := atom.(time.Time); ok {
+		return atom, nil
+	}
 
 	// 转换 "__type" 声明的类型
 	if object := utils.M(atom); object != nil {
@@ -717,6 +721,7 @@ func (t *Transform) parseObjectToMongoObjectForCreate(className string, create t
 }
 
 func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, restKey string, restValue interface{}, schema types.M) (string, interface{}, error) {
+	// TODO className 没有用到
 	var transformedValue interface{}
 	var coercedToDate interface{}
 	var err error
@@ -786,20 +791,30 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, r
 		}
 	}
 
+	if restValue == nil {
+		return restKey, restValue, nil
+	}
+
 	if v := utils.M(restValue); v != nil {
 		if ty, ok := v["__type"]; ok {
 			if ty.(string) != "Bytes" {
 				if ty.(string) == "Pointer" {
 					restKey = "_p_" + restKey
-				} else if fields, ok := schema["fields"].(map[string]interface{}); ok {
-					if t, ok := fields[restKey]; ok {
-						if t.(map[string]interface{})["type"].(string) == "Pointer" {
-							restKey = "_p_" + restKey
+				} else if schema != nil {
+					if fields := utils.M(schema["fields"]); fields != nil {
+						if t := utils.M(fields[restKey]); t != nil {
+							if utils.S(t["type"]) == "Pointer" {
+								restKey = "_p_" + restKey
+							}
 						}
 					}
 				}
 			}
 		}
+	}
+
+	if restKey == "ACL" {
+		return "", nil, errs.E(errs.InvalidKeyName, "There was a problem transforming an ACL.")
 	}
 
 	value, err := t.transformTopLevelAtom(restValue)
@@ -810,12 +825,8 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, r
 		return restKey, value, nil
 	}
 
-	if restKey == "ACL" {
-		return "", nil, errs.E(errs.InvalidKeyName, "There was a problem transforming an ACL.")
-	}
-
-	if s, ok := restValue.([]interface{}); ok {
-		value := []interface{}{}
+	if s := utils.A(restValue); s != nil {
+		value := types.S{}
 		for _, restObj := range s {
 			v, err := t.transformInteriorValue(restObj)
 			if err != nil {
@@ -827,7 +838,7 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, r
 	}
 
 	// 处理更新操作中的 "_op"
-	if value, ok := restValue.(map[string]interface{}); ok {
+	if value := utils.M(restValue); value != nil {
 		if _, ok := value["__op"]; ok {
 			v, err := t.transformUpdateOperator(restValue, false)
 			if err != nil {
@@ -838,7 +849,7 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, r
 	}
 
 	// 处理正常的对象
-	if value, ok := restValue.(map[string]interface{}); ok {
+	if value := utils.M(restValue); value != nil {
 		for k := range value {
 			if strings.Index(k, "$") > -1 || strings.Index(k, ".") > -1 {
 				return "", nil, errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
@@ -846,7 +857,7 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, r
 		}
 	}
 
-	if value, ok := restValue.(map[string]interface{}); ok {
+	if value := utils.M(restValue); value != nil {
 		newValue := types.M{}
 		for k, v := range value {
 			r, err := t.transformInteriorValue(v)

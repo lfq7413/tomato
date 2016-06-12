@@ -95,7 +95,177 @@ func Test_transformKey(t *testing.T) {
 }
 
 func Test_transformKeyValueForUpdate(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var restKey string
+	var restValue interface{}
+	var parseFormatSchema types.M
+	var resultKey string
+	var resultValue interface{}
+	var err error
+	var expectKey string
+	var expectValue interface{}
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*************************************************/
+	restKey = "objectId"
+	restValue = "1024"
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_id"
+	expectValue = "1024"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "createdAt"
+	restValue = tmpTimeStr
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_created_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "updatedAt"
+	restValue = tmpTimeStr
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_updated_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "sessionToken"
+	restValue = "abc"
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_session_token"
+	expectValue = "abc"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "expiresAt"
+	restValue = tmpTimeStr
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_expiresAt"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "_rperm"
+	restValue = "r"
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_rperm"
+	expectValue = "r"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "key"
+	restValue = "value"
+	parseFormatSchema = types.M{
+		"fields": types.M{
+			"key": types.M{
+				"type": "Pointer",
+			},
+		},
+	}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_p_key"
+	expectValue = "value"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "key"
+	restValue = types.M{
+		"__type":    "Pointer",
+		"className": "post",
+		"objectId":  "1024",
+	}
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_p_key"
+	expectValue = "post$1024"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "key"
+	restValue = nil
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "key"
+	expectValue = nil
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "key"
+	restValue = "value"
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "key"
+	expectValue = "value"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "key"
+	restValue = types.S{"value"}
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "key"
+	expectValue = types.S{"value"}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "key"
+	restValue = types.M{
+		"__op":   "Increment",
+		"amount": 10,
+	}
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "key"
+	expectValue = types.M{
+		"__op": "$inc",
+		"arg":  10,
+	}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "key"
+	restValue = types.M{
+		"key": "value",
+	}
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "key"
+	expectValue = types.M{
+		"key": "value",
+	}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "key"
+	restValue = []string{"hello"}
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "key"
+	expectValue = []string{"hello"}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
 }
 
 func Test_transformQueryKeyValue(t *testing.T) {
@@ -579,9 +749,9 @@ func Test_transformTopLevelAtom(t *testing.T) {
 	/*************************************************/
 	atom = []string{}
 	result, err = tf.transformTopLevelAtom(atom)
-	expect = errs.E(errs.InternalServerError, "really did not expect value: atom")
-	if reflect.DeepEqual(err, expect) == false || result != nil {
-		t.Error("expect:", expect, "get result:", err)
+	expect = nil
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
 	}
 }
 
@@ -1301,7 +1471,6 @@ func Test_transformWhere(t *testing.T) {
 }
 
 func Test_transformUpdate(t *testing.T) {
-	// transformKeyValueForUpdate
 	// TODO
 }
 

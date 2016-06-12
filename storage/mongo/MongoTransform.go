@@ -56,11 +56,6 @@ func (t *Transform) transformKey(className, fieldName string, schema types.M) st
 // transformKeyValueForUpdate 把传入的键值对转换为数据库中保存的格式
 // restKey API 格式的字段名
 // restValue API 格式的值
-// options 设置项
-// options 有以下几种选择：
-// query: true 表示 restValue 中包含类似 $lt 的查询限制条件
-// update: true 表示 restValue 中包含 __op 操作，类似 Add、Delete，需要进行转换
-// validate: true 表示需要校验字段名
 // 返回转换成 数据库格式的字段名与值
 func (t *Transform) transformKeyValueForUpdate(className, restKey string, restValue interface{}, parseFormatSchema types.M) (string, interface{}, error) {
 	// 检测 key 是否为 内置字段
@@ -87,22 +82,28 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	}
 
 	// 处理特殊字段名
-	fields := parseFormatSchema["fields"].(map[string]interface{})
-	expected := fields[key].(map[string]interface{})
-
-	// 期望类型为 *xxx
-	// post ==> _p_post
-	if expected != nil && expected["type"].(string) == "Pointer" {
-		key = "_p_" + key
+	var expected types.M
+	if parseFormatSchema != nil {
+		if fields := utils.M(parseFormatSchema["fields"]); fields != nil {
+			expected = utils.M(fields[key])
+		}
 	}
-	// 期望类型不存在，但是 restValue 中存在 "__type":"Pointer"
-	if expected == nil && restValue != nil {
-		op := utils.M(restValue)
-		if op != nil && op["__type"] != nil {
+
+	if expected != nil && utils.S(expected["type"]) == "Pointer" {
+		// 期望类型为 *xxx
+		// post ==> _p_post
+		key = "_p_" + key
+	} else if expected == nil {
+		// 期望类型不存在，但是 restValue 中存在 "__type":"Pointer"
+		if op := utils.M(restValue); op != nil {
 			if utils.S(op["__type"]) == "Pointer" {
 				key = "_p_" + key
 			}
 		}
+	}
+
+	if restValue == nil {
+		return key, nil, nil
 	}
 
 	// 转换原子数据
@@ -122,7 +123,7 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	}
 
 	// 转换数组类型
-	if valueArray, ok := restValue.([]interface{}); ok {
+	if valueArray := utils.A(restValue); valueArray != nil {
 		outValue := types.S{}
 		for _, restObj := range valueArray {
 			v, err := t.transformInteriorValue(restObj)
@@ -135,7 +136,7 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	}
 
 	// 处理更新操作中的 "_op"
-	if value, ok := restValue.(map[string]interface{}); ok {
+	if value := utils.M(restValue); value != nil {
 		if _, ok := value["__op"]; ok {
 			v, err := t.transformUpdateOperator(restValue, false)
 			if err != nil {
@@ -146,7 +147,7 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	}
 
 	// 处理正常的对象
-	if value, ok := restValue.(map[string]interface{}); ok {
+	if value := utils.M(restValue); value != nil {
 		newValue := types.M{}
 		for k, v := range value {
 			r, err := t.transformInteriorValue(v)
@@ -559,7 +560,7 @@ func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error)
 	}
 
 	// 其他类型无法转换
-	return nil, errs.E(errs.InternalServerError, "really did not expect value: atom")
+	return cannotTransform(), nil
 }
 
 // transformUpdateOperator 转换更新请求中的操作

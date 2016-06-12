@@ -1471,7 +1471,164 @@ func Test_transformWhere(t *testing.T) {
 }
 
 func Test_transformUpdate(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var className string
+	var update types.M
+	var parseFormatSchema types.M
+	var result types.M
+	var err error
+	var expect types.M
+	/*************************************************/
+	className = "post"
+	update = nil
+	parseFormatSchema = types.M{}
+	result, err = tf.transformUpdate(className, update, parseFormatSchema)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	update = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+	}
+	parseFormatSchema = types.M{}
+	result, err = tf.transformUpdate(className, update, parseFormatSchema)
+	expect = types.M{
+		"$set": types.M{
+			"_auth_data_facebook": types.M{
+				"id": "1024",
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	className = "post"
+	update = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+		},
+	}
+	parseFormatSchema = types.M{}
+	result, err = tf.transformUpdate(className, update, parseFormatSchema)
+	expect = types.M{
+		"$set": types.M{
+			"_rperm": types.S{"userid"},
+			"_wperm": types.S{"userid"},
+			"_acl": types.M{
+				"userid": types.M{
+					"r": true,
+					"w": true,
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	className = "post"
+	update = types.M{
+		"number": types.M{
+			"__op":   "Increment",
+			"amount": 10,
+		},
+		"user": types.M{
+			"__op":   "Increment",
+			"amount": 1,
+		},
+	}
+	parseFormatSchema = types.M{}
+	result, err = tf.transformUpdate(className, update, parseFormatSchema)
+	expect = types.M{
+		"$inc": types.M{
+			"number": 10,
+			"user":   1,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	update = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+		},
+		"number": types.M{
+			"__op":   "Increment",
+			"amount": 10,
+		},
+		"user": types.M{
+			"__op":   "Increment",
+			"amount": 1,
+		},
+		"name": types.M{
+			"__op": "Delete",
+		},
+		"follower": types.M{
+			"__op":    "Add",
+			"objects": types.S{"one", "two"},
+		},
+		"like": types.M{
+			"__op":    "Remove",
+			"objects": types.S{"one", "two"},
+		},
+		"age": 10,
+	}
+	parseFormatSchema = types.M{}
+	result, err = tf.transformUpdate(className, update, parseFormatSchema)
+	expect = types.M{
+		"$set": types.M{
+			"_auth_data_facebook": types.M{
+				"id": "1024",
+			},
+			"_rperm": types.S{"userid"},
+			"_wperm": types.S{"userid"},
+			"_acl": types.M{
+				"userid": types.M{
+					"r": true,
+					"w": true,
+				},
+			},
+			"age": 10,
+		},
+		"$inc": types.M{
+			"number": 10,
+			"user":   1,
+		},
+		"$unset": types.M{
+			"name": "",
+		},
+		"$push": types.M{
+			"follower": types.M{
+				"$each": types.S{"one", "two"},
+			},
+		},
+		"$pullAll": types.M{
+			"like": types.S{"one", "two"},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_nestedMongoObjectToNestedParseObject(t *testing.T) {

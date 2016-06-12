@@ -988,6 +988,9 @@ func (t *Transform) transformWhere(className string, where, schema types.M) (typ
 
 // transformUpdate 转换 update 数据
 func (t *Transform) transformUpdate(className string, update types.M, parseFormatSchema types.M) (types.M, error) {
+	if update == nil {
+		return nil, nil
+	}
 	// 处理第三方登录数据
 	if className == "_User" {
 		update = t.transformAuthData(update)
@@ -1034,8 +1037,8 @@ func (t *Transform) transformUpdate(className string, update types.M, parseForma
 			// }
 			opKey := utils.S(op["__op"])
 			opValue := types.M{}
-			if mongoUpdate[opKey] != nil {
-				opValue = utils.M(mongoUpdate[opKey])
+			if p := utils.M(mongoUpdate[opKey]); p != nil {
+				opValue = p
 			}
 			opValue[key] = op["arg"]
 			mongoUpdate[opKey] = opValue
@@ -1051,8 +1054,8 @@ func (t *Transform) transformUpdate(className string, update types.M, parseForma
 			// 	}
 			// }
 			set := types.M{}
-			if mongoUpdate["$set"] != nil {
-				set = utils.M(mongoUpdate["$set"])
+			if s := utils.M(mongoUpdate["$set"]); s != nil {
+				set = s
 			}
 			set[key] = value
 			mongoUpdate["$set"] = set

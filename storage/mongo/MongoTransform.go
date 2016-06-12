@@ -994,6 +994,9 @@ func (t *Transform) transformACL(restObject types.M) types.M {
 
 // transformWhere 转换 where 查询数据，返回数据库格式的数据
 func (t *Transform) transformWhere(className string, where, schema types.M) (types.M, error) {
+	if where == nil {
+		return nil, nil
+	}
 	// TODO className 没有用到
 	mongoWhere := types.M{}
 	for k, v := range where {

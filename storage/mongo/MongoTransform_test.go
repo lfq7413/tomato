@@ -1728,7 +1728,79 @@ func Test_transformACL(t *testing.T) {
 }
 
 func Test_transformWhere(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var where types.M
+	var schema types.M
+	var result types.M
+	var err error
+	var expect types.M
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*************************************************/
+	where = nil
+	schema = types.M{}
+	result, err = tf.transformWhere("", where, schema)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	where = types.M{"key": types.M{"key": "value"}}
+	schema = types.M{}
+	result, err = tf.transformWhere("", where, schema)
+	expectErr := errs.E(errs.InvalidJSON, "You cannot use this value as a query parameter.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "get result:", err)
+	}
+	/*************************************************/
+	where = types.M{
+		"objectId":             "1024",
+		"createdAt":            tmpTimeStr,
+		"authData.facebook.id": "1024",
+		"user":                 "jack",
+		"number": types.M{
+			"$lt": 25,
+			"$gt": 20,
+		},
+		"skill": "one",
+		"$and": types.S{
+			types.M{"name": "joe"},
+			types.M{"age": 25},
+		},
+		"key": "value",
+	}
+	schema = types.M{
+		"fields": types.M{
+			"user": types.M{
+				"type": "Pointer",
+			},
+			"skill": types.M{
+				"type": "Array",
+			},
+		},
+	}
+	result, err = tf.transformWhere("", where, schema)
+	expect = types.M{
+		"_id":                    "1024",
+		"_created_at":            tmpTime,
+		"_auth_data_facebook.id": "1024",
+		"_p_user":                "jack",
+		"number": types.M{
+			"$lt": 25,
+			"$gt": 20,
+		},
+		"skill": types.M{
+			"$all": types.S{"one"},
+		},
+		"$and": types.S{
+			types.M{"name": "joe"},
+			types.M{"age": 25},
+		},
+		"key": "value",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_transformUpdate(t *testing.T) {

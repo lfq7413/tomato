@@ -781,6 +781,116 @@ func Test_transformUpdateOperator(t *testing.T) {
 }
 
 func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
+	tf := NewTransform()
+	var className string
+	var create types.M
+	var schema types.M
+	var result types.M
+	var err error
+	var expect types.M
+	/*************************************************/
+	className = "_User"
+	create = nil
+	schema = types.M{}
+	result, err = tf.parseObjectToMongoObjectForCreate(className, create, schema)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	create = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+		"name": "joe",
+	}
+	schema = types.M{}
+	result, err = tf.parseObjectToMongoObjectForCreate(className, create, schema)
+	expect = types.M{
+		"_auth_data_facebook": types.M{
+			"id": "1024",
+		},
+		"name": "joe",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	className = "post"
+	create = types.M{
+		"name": "joe",
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+		},
+	}
+	schema = types.M{}
+	result, err = tf.parseObjectToMongoObjectForCreate(className, create, schema)
+	expect = types.M{
+		"_rperm": types.S{"userid"},
+		"_wperm": types.S{"userid"},
+		"_acl": types.M{
+			"userid": types.M{
+				"r": true,
+				"w": true,
+			},
+		},
+		"name": "joe",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	className = "_User"
+	create = types.M{
+		"objectId": "1024",
+		"name":     "joe",
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+		},
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+		"createdAt":        tmpTimeStr,
+		"updatedAt":        tmpTimeStr,
+		"_hashed_password": "password",
+	}
+	schema = types.M{}
+	result, err = tf.parseObjectToMongoObjectForCreate(className, create, schema)
+	expect = types.M{
+		"_id":    "1024",
+		"name":   "joe",
+		"_rperm": types.S{"userid"},
+		"_wperm": types.S{"userid"},
+		"_acl": types.M{
+			"userid": types.M{
+				"r": true,
+				"w": true,
+			},
+		},
+		"_auth_data_facebook": types.M{
+			"id": "1024",
+		},
+		"_created_at":      tmpTime,
+		"_updated_at":      tmpTime,
+		"_hashed_password": "password",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+
 	// TODO
 }
 

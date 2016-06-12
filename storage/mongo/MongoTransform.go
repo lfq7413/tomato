@@ -700,6 +700,9 @@ func (t *Transform) transformUpdateOperator(operator interface{}, flatten bool) 
 
 // parseObjectToMongoObjectForCreate 转换 create 数据
 func (t *Transform) parseObjectToMongoObjectForCreate(className string, create types.M, schema types.M) (types.M, error) {
+	if create == nil {
+		return nil, nil
+	}
 	// 转换第三方登录数据
 	if className == "_User" {
 		create = t.transformAuthData(create)

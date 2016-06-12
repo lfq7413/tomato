@@ -1412,7 +1412,357 @@ func Test_nestedMongoObjectToNestedParseObject(t *testing.T) {
 }
 
 func Test_mongoObjectToParseObject(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var mongoObject interface{}
+	var schema types.M
+	var result interface{}
+	var err error
+	var expect interface{}
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*************************************************/
+	mongoObject = nil
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = "hello"
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = "hello"
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = 10.0
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = 10.0
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = 10
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = 10
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = true
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = true
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.S{"hello", "world"}
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.S{"hello", "world"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = tmpTime
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"__type": "Date",
+		"iso":    tmpTimeStr,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = []byte("hello")
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"__type": "Bytes",
+		"base64": "aGVsbG8=",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_rperm": types.S{"userid"},
+		"_wperm": types.S{"userid"},
+	}
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_id":              "1024",
+		"_hashed_password": "password",
+		"_acl":             "acl",
+		"_session_token":   "abc",
+		"_updated_at":      tmpTime,
+		"_created_at":      tmpTime,
+	}
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"objectId":     "1024",
+		"password":     "password",
+		"sessionToken": "abc",
+		"updatedAt":    tmpTimeStr,
+		"createdAt":    tmpTimeStr,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_auth_data_facebook": types.M{
+			"id": "1024",
+		},
+	}
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_p_post": "abc$123",
+	}
+	schema = nil
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_p_post": "abc$123",
+	}
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_p_post": "abc$123",
+	}
+	schema = types.M{
+		"fields": types.M{},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_p_post": "abc$123",
+	}
+	schema = types.M{
+		"fields": types.M{
+			"post": types.M{
+				"type": "Date",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_p_post": nil,
+	}
+	schema = types.M{
+		"fields": types.M{
+			"post": types.M{
+				"type": "Pointer",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_p_post": "abc",
+	}
+	schema = types.M{
+		"fields": types.M{
+			"post": types.M{
+				"type": "Pointer",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_p_post": "abc$123",
+	}
+	schema = types.M{
+		"fields": types.M{
+			"post": types.M{
+				"type":        "Pointer",
+				"targetClass": "def",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = errs.E(errs.InternalServerError, "pointer to incorrect className")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_p_post": "abc$123",
+	}
+	schema = types.M{
+		"fields": types.M{
+			"post": types.M{
+				"type":        "Pointer",
+				"targetClass": "abc",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"post": types.M{
+			"__type":    "Pointer",
+			"className": "abc",
+			"objectId":  "123",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"_other": "hello",
+	}
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = errs.E(errs.InternalServerError, "bad key in untransform: "+"_other")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"icon": "hello.jpg",
+	}
+	schema = types.M{
+		"fields": types.M{
+			"icon": types.M{
+				"type": "File",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"icon": types.M{
+			"__type": "File",
+			"name":   "hello.jpg",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"location": types.S{30.0, 40.0},
+	}
+	schema = types.M{
+		"fields": types.M{
+			"location": types.M{
+				"type": "GeoPoint",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"location": types.M{
+			"__type":    "GeoPoint",
+			"longitude": 30.0,
+			"latitude":  40.0,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"key": "value",
+	}
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"key": "value",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"key": "value",
+	}
+	schema = types.M{
+		"fields": types.M{
+			"user": types.M{
+				"type":        "Relation",
+				"targetClass": "_User",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"key": "value",
+		"user": types.M{
+			"__type":    "Relation",
+			"className": "_User",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = []string{"hello"}
+	schema = types.M{}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = errs.E(errs.InternalServerError, "unknown object type")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
 }
 
 func Test_untransformACL(t *testing.T) {

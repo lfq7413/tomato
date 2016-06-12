@@ -1123,18 +1123,20 @@ func (t *Transform) nestedMongoObjectToNestedParseObject(mongoObject interface{}
 }
 
 func (t *Transform) mongoObjectToParseObject(className string, mongoObject interface{}, schema types.M) (interface{}, error) {
+	// TODO className 没有用到
 	if mongoObject == nil {
 		return mongoObject, nil
 	}
 
 	// 转换基本类型
 	switch mongoObject.(type) {
-	case string, float64, bool:
+	case string, float64, int, bool:
 		return mongoObject, nil
 
-	case []interface{}:
+	}
+
+	if objs := utils.A(mongoObject); objs != nil {
 		results := types.S{}
-		objs := mongoObject.([]interface{})
 		for _, o := range objs {
 			res, err := t.nestedMongoObjectToNestedParseObject(o)
 			if err != nil {
@@ -1166,7 +1168,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 	}
 
 	// 转换对象类型
-	if object, ok := mongoObject.(map[string]interface{}); ok {
+	if object := utils.M(mongoObject); object != nil {
 		// 转换权限信息
 		restObject := t.untransformACL(object)
 		for key, value := range object {
@@ -1185,13 +1187,25 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 
 			// 时间类型转换为 ISO8601 标准的字符串
 			case "updatedAt", "_updated_at":
-				restObject["updatedAt"] = utils.TimetoString(value.(time.Time))
+				if t, ok := value.(time.Time); ok {
+					restObject["updatedAt"] = utils.TimetoString(t)
+				} else {
+					restObject["updatedAt"] = value
+				}
 
 			case "createdAt", "_created_at":
-				restObject["createdAt"] = utils.TimetoString(value.(time.Time))
+				if t, ok := value.(time.Time); ok {
+					restObject["createdAt"] = utils.TimetoString(t)
+				} else {
+					restObject["createdAt"] = value
+				}
 
 			case "expiresAt", "_expiresAt":
-				restObject["expiresAt"] = utils.TimetoString(value.(time.Time))
+				if t, ok := value.(time.Time); ok {
+					restObject["expiresAt"] = utils.TimetoString(t)
+				} else {
+					restObject["expiresAt"] = value
+				}
 
 			default:
 				// 处理第三方登录数据
@@ -1223,26 +1237,33 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 				// ==>
 				// {
 				// 	"__type":    "Pointer",
-				// 	"className": "post",
+				// 	"className": "abc",
 				// 	"objectId":  "123"
 				// }
 				if strings.HasPrefix(key, "_p_") {
 					newKey := key[3:]
-					fields := schema["fields"].(map[string]interface{})
-					expected := fields[newKey].(map[string]interface{})
+					var expected types.M
+					if schema != nil {
+						if fields := utils.M(schema["fields"]); fields != nil {
+							expected = utils.M(fields[newKey])
+						}
+					}
 					if expected == nil {
 						// 不在 schema 中的指针类型，丢弃
 						break
 					}
-					if expected["type"].(string) != "Pointer" {
+					if utils.S(expected["type"]) != "Pointer" {
 						// schema 中对应的位置不是指针类型，丢弃
 						break
 					}
 					if value == nil {
 						break
 					}
-					objData := strings.Split(value.(string), "$")
-					if expected["targetClass"].(string) != objData[0] {
+					objData := strings.Split(utils.S(value), "$")
+					if len(objData) != 2 {
+						break
+					}
+					if utils.S(expected["targetClass"]) != objData[0] {
 						// 指向了错误的类
 						return nil, errs.E(errs.InternalServerError, "pointer to incorrect className")
 					}
@@ -1256,18 +1277,19 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 					// 转换错误
 					return nil, errs.E(errs.InternalServerError, "bad key in untransform: "+key)
 				} else {
-					// TODO 此处可能会有问题，isNestedObject == true 时，即子对象也会进来
-					// 但是拿子对象的 key 无法从 className 中查询有效的类型
-					// 所以当子对象的某个 key 与 className 中的某个 key 相同时，可能出问题
-					fields := schema["fields"].(map[string]interface{})
-					expectedType := fields[key].(map[string]interface{})
+					var expectedType types.M
+					if schema != nil {
+						if fields := utils.M(schema["fields"]); fields != nil {
+							expectedType = utils.M(fields[key])
+						}
+					}
 					// file 类型
 					// {
 					// 	"__type": "File",
 					// 	"name":   "hello.jpg"
 					// }
 					f := fileCoder{}
-					if expectedType != nil && expectedType["type"].(string) == "File" && f.isValidDatabaseObject(value) {
+					if expectedType != nil && utils.S(expectedType["type"]) == "File" && f.isValidDatabaseObject(value) {
 						restObject[key] = f.databaseToJSON(value)
 						break
 					}
@@ -1278,7 +1300,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 					// 	"latitude":  40
 					// }
 					g := geoPointCoder{}
-					if expectedType != nil && expectedType["type"].(string) == "GeoPoint" && g.isValidDatabaseObject(value) {
+					if expectedType != nil && utils.S(expectedType["type"]) == "GeoPoint" && g.isValidDatabaseObject(value) {
 						restObject[key] = g.databaseToJSON(value)
 						break
 					}
@@ -1293,13 +1315,17 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 		}
 
 		relationFields := types.M{}
-		fields := schema["fields"].(map[string]interface{})
-		for fieldName, v := range fields {
-			fieldType := v.(map[string]interface{})
-			if fieldType["type"].(string) == "Relation" {
-				relationFields[fieldName] = types.M{
-					"__type":    "Relation",
-					"className": fieldType["targetClass"],
+		if schema != nil {
+			if fields := utils.M(schema["fields"]); fields != nil {
+				for fieldName, v := range fields {
+					if fieldType := utils.M(v); fieldType != nil {
+						if utils.S(fieldType["type"]) == "Relation" {
+							relationFields[fieldName] = types.M{
+								"__type":    "Relation",
+								"className": fieldType["targetClass"],
+							}
+						}
+					}
 				}
 			}
 		}

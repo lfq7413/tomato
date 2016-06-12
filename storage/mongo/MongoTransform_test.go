@@ -890,8 +890,6 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
-
-	// TODO
 }
 
 func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
@@ -1308,11 +1306,112 @@ func Test_transformUpdate(t *testing.T) {
 }
 
 func Test_nestedMongoObjectToNestedParseObject(t *testing.T) {
-	// TODO
+	tf := NewTransform()
+	var mongoObject interface{}
+	var result interface{}
+	var err error
+	var expect interface{}
+	/*************************************************/
+	mongoObject = nil
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = nil
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = "hello"
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = "hello"
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = 10.0
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = 10.0
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = 10
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = 10
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = true
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = true
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.S{"hello", "world"}
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = types.S{"hello", "world"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	mongoObject = tmpTime
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = types.M{
+		"__type": "Date",
+		"iso":    tmpTimeStr,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = []byte("hello")
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = types.M{
+		"__type": "Bytes",
+		"base64": "aGVsbG8=",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"name":  "joe",
+		"age":   25,
+		"m":     false,
+		"skill": types.S{"skill1", "skill2"},
+		"date":  tmpTime,
+		"file":  []byte("hello"),
+	}
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = types.M{
+		"name":  "joe",
+		"age":   25,
+		"m":     false,
+		"skill": types.S{"skill1", "skill2"},
+		"date": types.M{
+			"__type": "Date",
+			"iso":    tmpTimeStr,
+		},
+		"file": types.M{
+			"__type": "Bytes",
+			"base64": "aGVsbG8=",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = []string{"hello"}
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = errs.E(errs.InternalServerError, "unknown object type")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "get result:", err)
+	}
 }
 
 func Test_mongoObjectToParseObject(t *testing.T) {
-	// nestedMongoObjectToNestedParseObject
 	// TODO
 }
 

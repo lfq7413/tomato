@@ -1068,12 +1068,13 @@ func (t *Transform) nestedMongoObjectToNestedParseObject(mongoObject interface{}
 
 	// 转换基本类型
 	switch mongoObject.(type) {
-	case string, float64, bool:
+	case string, float64, int, bool:
 		return mongoObject, nil
 
-	case []interface{}:
+	}
+
+	if objs := utils.A(mongoObject); objs != nil {
 		results := types.S{}
-		objs := mongoObject.([]interface{})
 		for _, o := range objs {
 			res, err := t.nestedMongoObjectToNestedParseObject(o)
 			if err != nil {
@@ -1105,7 +1106,7 @@ func (t *Transform) nestedMongoObjectToNestedParseObject(mongoObject interface{}
 	}
 
 	// 转换对象类型
-	if object, ok := mongoObject.(map[string]interface{}); ok {
+	if object := utils.M(mongoObject); object != nil {
 		newObject := types.M{}
 		for k, v := range object {
 			r, err := t.nestedMongoObjectToNestedParseObject(v)

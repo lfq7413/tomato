@@ -179,6 +179,7 @@ func valueAsDate(value interface{}) (time.Time, bool) {
 
 // transformQueryKeyValue 转换查询请求中的键值对
 func (t *Transform) transformQueryKeyValue(className, key string, value interface{}, schema types.M) (string, interface{}, error) {
+	// TODO className 没有用到
 	switch key {
 	case "createdAt":
 		if t, ok := valueAsDate(value); ok {
@@ -194,8 +195,9 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 
 	case "expiresAt":
 		if t, ok := valueAsDate(value); ok {
-			return "expiresAt", t, nil
+			return "_expiresAt", t, nil
 		}
+		key = "_expiresAt"
 
 	case "objectId":
 		return "_id", value, nil
@@ -207,10 +209,20 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 		return key, value, nil
 
 	case "$or":
-		array := value.([]interface{})
+		if value == nil {
+			return "$or", nil, nil
+		}
+		array := utils.A(value)
+		if array == nil {
+			return "$or", nil, nil
+		}
 		querys := types.S{}
 		for _, subQuery := range array {
-			r, err := t.transformWhere(className, subQuery.(map[string]interface{}), schema)
+			sub := utils.M(subQuery)
+			if sub == nil {
+				continue
+			}
+			r, err := t.transformWhere(className, sub, schema)
 			if err != nil {
 				return "", nil, err
 			}
@@ -219,10 +231,20 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 		return "$or", querys, nil
 
 	case "$and":
-		array := value.([]interface{})
+		if value == nil {
+			return "$and", nil, nil
+		}
+		array := utils.A(value)
+		if array == nil {
+			return "$and", nil, nil
+		}
 		querys := types.S{}
 		for _, subQuery := range array {
-			r, err := t.transformWhere(className, subQuery.(map[string]interface{}), schema)
+			sub := utils.M(subQuery)
+			if sub == nil {
+				continue
+			}
+			r, err := t.transformWhere(className, sub, schema)
 			if err != nil {
 				return "", nil, err
 			}
@@ -239,23 +261,21 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 
 	}
 
-	var fields types.M
-	if schema != nil {
-		fields = utils.M(schema["fields"])
-	}
 	var fieldType types.M
-	if fields != nil {
-		fieldType = utils.M(fields[key])
+	if schema != nil {
+		if fields := utils.M(schema["fields"]); fields != nil {
+			fieldType = utils.M(fields[key])
+		}
 	}
 
-	expectedTypeIsArray := schema != nil && fieldType != nil && fieldType["type"].(string) == "Array"
-	expectedTypeIsPointer := schema != nil && fieldType != nil && fieldType["type"].(string) == "Pointer"
+	expectedTypeIsArray := schema != nil && fieldType != nil && utils.S(fieldType["type"]) == "Array"
+	expectedTypeIsPointer := schema != nil && fieldType != nil && utils.S(fieldType["type"]) == "Pointer"
 
 	if expectedTypeIsPointer {
 		key = "_p_" + key
-	} else if schema == nil && value != nil {
-		if v, ok := value.(map[string]interface{}); ok {
-			if v["__type"].(string) == "Pointer" {
+	} else if fieldType == nil {
+		if v := utils.M(value); v != nil {
+			if utils.S(v["__type"]) == "Pointer" {
 				key = "_p_" + key
 			}
 		}
@@ -269,7 +289,7 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 		return key, cValue, nil
 	}
 
-	if _, ok := value.([]interface{}); ok == false && expectedTypeIsArray {
+	if v := utils.A(value); v == nil && expectedTypeIsArray {
 		return key, types.M{"$all": types.S{value}}, nil
 	}
 
@@ -974,6 +994,7 @@ func (t *Transform) transformACL(restObject types.M) types.M {
 
 // transformWhere 转换 where 查询数据，返回数据库格式的数据
 func (t *Transform) transformWhere(className string, where, schema types.M) (types.M, error) {
+	// TODO className 没有用到
 	mongoWhere := types.M{}
 	for k, v := range where {
 		key, value, err := t.transformQueryKeyValue(className, k, v, schema)

@@ -269,8 +269,270 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 }
 
 func Test_transformQueryKeyValue(t *testing.T) {
-	// transformWhere
-	// TODO
+	tf := NewTransform()
+	var key string
+	var value interface{}
+	var schema types.M
+	var resultKey string
+	var resultValue interface{}
+	var err error
+	var expectKey string
+	var expectValue interface{}
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*************************************************/
+	key = "createdAt"
+	value = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_created_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "updatedAt"
+	value = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_updated_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "expiresAt"
+	value = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_expiresAt"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "objectId"
+	value = "1024"
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_id"
+	expectValue = "1024"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "sessionToken"
+	value = "abc"
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_session_token"
+	expectValue = "abc"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "_rperm"
+	value = "abc"
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_rperm"
+	expectValue = "abc"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$or"
+	value = nil
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$or"
+	expectValue = nil
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$or"
+	value = "hello"
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$or"
+	expectValue = nil
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$or"
+	value = types.S{types.M{"name": "joe"}}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$or"
+	expectValue = types.S{types.M{"name": "joe"}}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$or"
+	value = types.S{types.M{"name": "joe"}, "hello"}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$or"
+	expectValue = types.S{types.M{"name": "joe"}}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$or"
+	value = types.S{types.M{"name": "joe"}, types.M{"age": 25}}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$or"
+	expectValue = types.S{types.M{"name": "joe"}, types.M{"age": 25}}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$and"
+	value = nil
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$and"
+	expectValue = nil
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$and"
+	value = "hello"
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$and"
+	expectValue = nil
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$and"
+	value = types.S{types.M{"name": "joe"}}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$and"
+	expectValue = types.S{types.M{"name": "joe"}}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$and"
+	value = types.S{types.M{"name": "joe"}, "hello"}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$and"
+	expectValue = types.S{types.M{"name": "joe"}}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "$and"
+	value = types.S{types.M{"name": "joe"}, types.M{"age": 25}}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "$and"
+	expectValue = types.S{types.M{"name": "joe"}, types.M{"age": 25}}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "authData.facebook.id"
+	value = "1024"
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_auth_data_facebook.id"
+	expectValue = "1024"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "user"
+	value = "1024"
+	schema = types.M{
+		"fields": types.M{
+			"user": types.M{
+				"type": "Pointer",
+			},
+		},
+	}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_p_user"
+	expectValue = "1024"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "user"
+	value = types.M{
+		"__type":    "Pointer",
+		"className": "_User",
+		"objectId":  "1024",
+	}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_p_user"
+	expectValue = "_User$1024"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "age"
+	value = types.M{
+		"$lt": 25,
+		"$gt": 20,
+	}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "age"
+	expectValue = types.M{
+		"$lt": 25,
+		"$gt": 20,
+	}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "skill"
+	value = "one"
+	schema = types.M{
+		"fields": types.M{
+			"skill": types.M{
+				"type": "Array",
+			},
+		},
+	}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "skill"
+	expectValue = types.M{
+		"$all": types.S{"one"},
+	}
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "key"
+	value = "value"
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "key"
+	expectValue = "value"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "key"
+	value = types.M{"key": "value"}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectValue = errs.E(errs.InvalidJSON, "You cannot use this value as a query parameter.")
+	if reflect.DeepEqual(err, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", err)
+	}
 }
 
 func Test_transformConstraint(t *testing.T) {
@@ -1466,7 +1728,6 @@ func Test_transformACL(t *testing.T) {
 }
 
 func Test_transformWhere(t *testing.T) {
-	// transformQueryKeyValue
 	// TODO
 }
 

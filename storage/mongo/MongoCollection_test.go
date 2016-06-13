@@ -18,7 +18,40 @@ func Test_rawFind(t *testing.T) {
 }
 
 func Test_count(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	mc := &MongoCollection{collection: db.C("obj")}
+	var docs interface{}
+	var selector interface{}
+	var count int
+	var expect int
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "joe", "age": 31}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	count = mc.count(selector, nil)
+	expect = 2
+	if count != expect {
+		t.Error("expect:", expect, "get result:", count)
+	}
+	/********************************************************/
+	selector = types.M{"name": "jack"}
+	count = mc.count(selector, nil)
+	expect = 1
+	if count != expect {
+		t.Error("expect:", expect, "get result:", count)
+	}
+	/********************************************************/
+	selector = types.M{"name": "tom"}
+	count = mc.count(selector, nil)
+	expect = 0
+	if count != expect {
+		t.Error("expect:", expect, "get result:", count)
+	}
 }
 
 func Test_findOneAndUpdate(t *testing.T) {

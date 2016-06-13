@@ -48,6 +48,9 @@ func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M
 
 // count 执行 count 操作
 func (m *MongoCollection) count(query interface{}, options types.M) int {
+	if options == nil {
+		options = types.M{}
+	}
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
 		if sort, ok := options["sort"].([]string); ok {

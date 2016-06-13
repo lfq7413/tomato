@@ -14,7 +14,400 @@ func Test_find(t *testing.T) {
 }
 
 func Test_rawFind(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	mc := &MongoCollection{collection: db.C("obj")}
+	var docs interface{}
+	var query interface{}
+	var options types.M
+	var result []types.M
+	var err error
+	var expect interface{}
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	query = types.M{"name": "jone"}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{}
+	if err != nil || (result != nil && len(result) != 0) {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	query = types.M{"name": "joe"}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	query = types.M{}
+	options = types.M{
+		"sort": []string{"age"},
+	}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "002", "name": "jack", "age": 30},
+		types.M{"_id": "003", "name": "tom", "age": 31},
+	}
+	if err != nil || result == nil || len(result) != 3 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	query = types.M{}
+	options = types.M{
+		"sort": []string{"-age"},
+	}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "003", "name": "tom", "age": 31},
+		types.M{"_id": "002", "name": "jack", "age": 30},
+		types.M{"_id": "001", "name": "joe", "age": 25},
+	}
+	if err != nil || result == nil || len(result) != 3 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	query = types.M{}
+	options = types.M{
+		"sort": []string{"name"},
+	}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "002", "name": "jack", "age": 30},
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "003", "name": "tom", "age": 31},
+	}
+	if err != nil || result == nil || len(result) != 3 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	query = types.M{}
+	options = types.M{
+		"sort": []string{"-name"},
+	}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "003", "name": "tom", "age": 31},
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "002", "name": "jack", "age": 30},
+	}
+	if err != nil || result == nil || len(result) != 3 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	query = types.M{}
+	options = types.M{
+		"skip": 1,
+	}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "002", "name": "jack", "age": 30},
+		types.M{"_id": "003", "name": "tom", "age": 31},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	query = types.M{}
+	options = types.M{
+		"limit": 1,
+	}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "age": 25}
+	mc.insertOne(docs)
+	query = types.M{
+		"$or": types.S{types.M{"name": "joe"}, types.M{"age": 25}},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "004", "name": "ann", "age": 25},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "age": 25}
+	mc.insertOne(docs)
+	query = types.M{
+		"$and": types.S{types.M{"name": "joe"}, types.M{"age": 25}},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "skill": types.S{"one", "three", "five"}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "skill": types.S{"two", "three", "six"}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "skill": types.S{"one", "four", "six"}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "skill": types.S{"two", "four", "five"}}
+	mc.insertOne(docs)
+	query = types.M{
+		"skill": types.M{"$all": types.S{"one", "four"}},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "003", "name": "tom", "skill": []interface{}{"one", "four", "six"}},
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "age": 25}
+	mc.insertOne(docs)
+	query = types.M{
+		"age": types.M{"$lt": 30},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "004", "name": "ann", "age": 25},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31, "skill": "one"}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "age": 25}
+	mc.insertOne(docs)
+	query = types.M{
+		"skill": types.M{"$exists": true},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "003", "name": "tom", "age": 31, "skill": "one"},
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "age": 25}
+	mc.insertOne(docs)
+	query = types.M{
+		"age": types.M{"$in": types.S{30, 31}},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "002", "name": "jack", "age": 30},
+		types.M{"_id": "003", "name": "tom", "age": 31},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "age": 25}
+	mc.insertOne(docs)
+	query = types.M{
+		"age": types.M{"$nin": types.S{30, 31}},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "004", "name": "ann", "age": 25},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "age": 25}
+	mc.insertOne(docs)
+	query = types.M{
+		"name": types.M{"$regex": `^j`},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "002", "name": "jack", "age": 30},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "location": types.S{30, 30}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "location": types.S{15, 15}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "location": types.S{20, 20}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "location": types.S{10, 10}}
+	mc.insertOne(docs)
+	index := mgo.Index{
+		Key:  []string{"$2d:location"},
+		Bits: 26,
+	}
+	mc.collection.EnsureIndex(index)
+	query = types.M{
+		"location": types.M{
+			"$nearSphere":  types.S{10, 10},
+			"$maxDistance": 0.15,
+		},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "004", "name": "ann", "location": []interface{}{10, 10}},
+		types.M{"_id": "002", "name": "jack", "location": []interface{}{15, 15}},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "location": types.S{30, 30}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "location": types.S{15, 15}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "location": types.S{20, 20}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "location": types.S{10, 10}}
+	mc.insertOne(docs)
+	query = types.M{
+		"location": types.M{
+			"$geoWithin": types.M{
+				"$box": types.S{
+					types.S{5, 5},
+					types.S{12, 12},
+				},
+			},
+		},
+	}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "004", "name": "ann", "location": []interface{}{10, 10}},
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
 }
 
 func Test_count(t *testing.T) {
@@ -52,6 +445,7 @@ func Test_count(t *testing.T) {
 	if count != expect {
 		t.Error("expect:", expect, "get result:", count)
 	}
+	mc.drop()
 }
 
 func Test_findOneAndUpdate(t *testing.T) {

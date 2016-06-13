@@ -34,11 +34,15 @@ func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M
 	if options["skip"] != nil {
 		if skip, ok := options["skip"].(float64); ok {
 			q = q.Skip(int(skip))
+		} else if skip, ok := options["skip"].(int); ok {
+			q = q.Skip(skip)
 		}
 	}
 	if options["limit"] != nil {
 		if limit, ok := options["limit"].(float64); ok {
 			q = q.Limit(int(limit))
+		} else if limit, ok := options["limit"].(int); ok {
+			q = q.Limit(limit)
 		}
 	}
 	var result []types.M

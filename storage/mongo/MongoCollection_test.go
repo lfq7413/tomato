@@ -240,11 +240,60 @@ func Test_deleteOne(t *testing.T) {
 		t.Error("expect:", nil, "get result:", err)
 	}
 	mc.drop()
-	// TODO
 }
 
 func Test_deleteMany(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	mc := &MongoCollection{collection: db.C("obj")}
+	var docs interface{}
+	var selector interface{}
+	var result []types.M
+	var count int
+	var err error
+	var expect interface{}
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "joe", "age": 31}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	count, err = mc.deleteMany(selector)
+	if err != nil || count != 2 {
+		t.Error("expect:", nil, "get result:", err, count)
+	}
+	result, err = mc.rawFind(nil, nil)
+	expect = []types.M{
+		types.M{"_id": "002", "name": "jack", "age": 30},
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "joe", "age": 31}
+	mc.insertOne(docs)
+	selector = types.M{"name": "tom"}
+	count, err = mc.deleteMany(selector)
+	if err != nil || count != 0 {
+		t.Error("expect:", nil, "get result:", err, count)
+	}
+	result, err = mc.rawFind(nil, nil)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "002", "name": "jack", "age": 30},
+		types.M{"_id": "003", "name": "joe", "age": 31},
+	}
+	if err != nil || result == nil || len(result) != 3 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
 }
 
 func Test_drop(t *testing.T) {

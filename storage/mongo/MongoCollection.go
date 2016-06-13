@@ -35,7 +35,7 @@ func (m *MongoCollection) find(query interface{}, options types.M) ([]types.M, e
 		key := msg[:end]
 		// 添加索引
 		index := mgo.Index{
-			Key:  []string{"$2d:" + key},
+			Key:  []string{"$2dsphere:" + key},
 			Bits: 26,
 		}
 		m.collection.EnsureIndex(index)

@@ -30,11 +30,22 @@ func Test_find(t *testing.T) {
 	mc.insertOne(docs)
 	query = types.M{
 		"location": types.M{
-			"$nearSphere":   types.S{10, 10},
-			"$maxDistancee": 0.15,
+			"$nearSphere": types.M{
+				"$geometry": types.M{
+					"type":        "Point",
+					"coordinates": types.S{10, 10},
+				},
+				"$maxDistance": 1000000,
+			},
 		},
 	}
 	options = types.M{}
+	for i := 0; i < 100; i++ {
+		result, err = mc.find(query, options)
+		if err != nil {
+			t.Error(err)
+		}
+	}
 	result, err = mc.find(query, options)
 	expect = []types.M{
 		types.M{"_id": "004", "name": "ann", "location": []interface{}{10, 10}},
@@ -394,14 +405,19 @@ func Test_rawFind(t *testing.T) {
 	docs = types.M{"_id": "004", "name": "ann", "location": types.S{10, 10}}
 	mc.insertOne(docs)
 	index := mgo.Index{
-		Key:  []string{"$2d:location"},
+		Key:  []string{"$2dsphere:location"},
 		Bits: 26,
 	}
 	mc.collection.EnsureIndex(index)
 	query = types.M{
 		"location": types.M{
-			"$nearSphere":  types.S{10, 10},
-			"$maxDistance": 0.15,
+			"$nearSphere": types.M{
+				"$geometry": types.M{
+					"type":        "Point",
+					"coordinates": types.S{10, 10},
+				},
+				"$maxDistance": 1000000,
+			},
 		},
 	}
 	options = types.M{}

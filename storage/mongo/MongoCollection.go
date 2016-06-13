@@ -8,7 +8,6 @@ import (
 // MongoCollection mongo 表操作对象
 type MongoCollection struct {
 	collection *mgo.Collection
-	transform  *Transform
 }
 
 // find 执行查找操作，自动添加索引
@@ -23,6 +22,9 @@ func (m *MongoCollection) find(query interface{}, options types.M) []types.M {
 
 // rawFind 执行原始查找操作，查找选项包括 sort、skip、limit
 func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M, error) {
+	if options == nil {
+		options = types.M{}
+	}
 	q := m.collection.Find(query)
 	if options["sort"] != nil {
 		if sort, ok := options["sort"].([]string); ok {
@@ -44,7 +46,7 @@ func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M
 	return result, err
 }
 
-// count 执行 count 操作，
+// count 执行 count 操作
 func (m *MongoCollection) count(query interface{}, options types.M) int {
 	q := m.collection.Find(query)
 	if options["sort"] != nil {

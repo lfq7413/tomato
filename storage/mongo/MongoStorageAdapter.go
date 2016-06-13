@@ -38,7 +38,6 @@ func (m *MongoAdapter) collection(name string) *mgo.Collection {
 func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
 	return &MongoCollection{
 		collection: m.collection(m.collectionPrefix + name),
-		transform:  m.transform,
 	}
 }
 
@@ -46,11 +45,9 @@ func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
 func (m *MongoAdapter) SchemaCollection() storage.SchemaCollection {
 	mongoCollection := &MongoCollection{
 		collection: m.collection(m.collectionPrefix + mongoSchemaCollectionName),
-		transform:  m.transform,
 	}
 	return &MongoSchemaCollection{
 		collection: mongoCollection,
-		transform:  m.transform,
 	}
 }
 

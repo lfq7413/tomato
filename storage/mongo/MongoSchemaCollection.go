@@ -12,7 +12,6 @@ import (
 // MongoSchemaCollection _SCHEMA 表操作对象
 type MongoSchemaCollection struct {
 	collection *MongoCollection
-	transform  *Transform
 }
 
 // GetAllSchemas 获取所有 Schema，并转换为 API 格式的数据

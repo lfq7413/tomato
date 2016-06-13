@@ -297,7 +297,33 @@ func Test_deleteMany(t *testing.T) {
 }
 
 func Test_drop(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	mc := &MongoCollection{collection: db.C("obj")}
+	var docs interface{}
+	var result []types.M
+	var err error
+	var expect interface{}
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "joe", "age": 31}
+	mc.insertOne(docs)
+	err = mc.drop()
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	result, err = mc.rawFind(nil, nil)
+	if err != nil || (result != nil && len(result) != 0) {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	/********************************************************/
+	err = mc.drop()
+	if err == nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
 }
 
 func openDB() *mgo.Database {

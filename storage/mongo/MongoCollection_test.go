@@ -205,6 +205,41 @@ func Test_updateMany(t *testing.T) {
 }
 
 func Test_deleteOne(t *testing.T) {
+	db := openDB()
+	defer db.Session.Close()
+	mc := &MongoCollection{collection: db.C("obj")}
+	var docs interface{}
+	var selector interface{}
+	var result []types.M
+	var err error
+	var expect interface{}
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	err = mc.deleteOne(selector)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	result, err = mc.rawFind(nil, nil)
+	expect = types.M{"_id": "002", "name": "jack", "age": 30}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result[0], expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	selector = types.M{"name": "tom"}
+	err = mc.deleteOne(selector)
+	if err.Error() != "not found" {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	mc.drop()
 	// TODO
 }
 

@@ -1,6 +1,8 @@
 package mongo
 
 import (
+	"strings"
+
 	"github.com/lfq7413/tomato/types"
 	"gopkg.in/mgo.v2"
 )
@@ -11,13 +13,47 @@ type MongoCollection struct {
 }
 
 // find 执行查找操作，自动添加索引
-func (m *MongoCollection) find(query interface{}, options types.M) []types.M {
+func (m *MongoCollection) find(query interface{}, options types.M) ([]types.M, error) {
 	result, err := m.rawFind(query, options)
-	if err != nil || result == nil {
-		return []types.M{}
+	if err != nil {
+		msg := err.Error()
+		// 检测是否为 no geoindex 错误
+		if strings.Index(msg, "unable to find index") < 0 || strings.Index(msg, "geoNear") < 0 {
+			return nil, err
+		}
+		// 截取字段名
+		start := strings.Index(msg, "field=")
+		if start < 0 {
+			return nil, err
+		}
+		start = start + len("field=")
+		msg = msg[start:]
+		end := strings.Index(msg, " ")
+		if end < 0 {
+			return nil, err
+		}
+		key := msg[:end]
+		// 添加索引
+		index := mgo.Index{
+			Key:  []string{"$2d:" + key},
+			Bits: 26,
+		}
+		m.collection.EnsureIndex(index)
+		// 再次尝试查询
+		result, err = m.rawFind(query, options)
+		if err != nil {
+			return nil, err
+		}
+		if result == nil {
+			return []types.M{}, nil
+		}
+		return result, nil
 	}
-	// TODO 添加 geo 索引
-	return result
+
+	if result == nil {
+		return []types.M{}, nil
+	}
+	return result, nil
 }
 
 // rawFind 执行原始查找操作，查找选项包括 sort、skip、limit

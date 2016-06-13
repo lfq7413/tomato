@@ -260,7 +260,10 @@ func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([
 	}
 
 	coll := m.adaptiveCollection(className)
-	results := coll.find(mongoWhere, options)
+	results, err := coll.find(mongoWhere, options)
+	if err != nil {
+		return nil, err
+	}
 	objects := []types.M{}
 	for _, result := range results {
 		r, err := m.transform.mongoObjectToParseObject(className, result, schema)
@@ -273,7 +276,7 @@ func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([
 }
 
 // rawFind 仅用于测试
-func (m *MongoAdapter) rawFind(className string, query types.M) []types.M {
+func (m *MongoAdapter) rawFind(className string, query types.M) ([]types.M, error) {
 	coll := m.adaptiveCollection(className)
 	return coll.find(query, types.M{})
 }

@@ -10,6 +10,40 @@ import (
 )
 
 func Test_find(t *testing.T) {
+	db := openDB()
+	defer db.Session.Close()
+	mc := &MongoCollection{collection: db.C("obj")}
+	var docs interface{}
+	var query interface{}
+	var options types.M
+	var result []types.M
+	var err error
+	var expect interface{}
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "location": types.S{30, 30}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "location": types.S{15, 15}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "location": types.S{20, 20}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "004", "name": "ann", "location": types.S{10, 10}}
+	mc.insertOne(docs)
+	query = types.M{
+		"location": types.M{
+			"$nearSphere":   types.S{10, 10},
+			"$maxDistancee": 0.15,
+		},
+	}
+	options = types.M{}
+	result, err = mc.find(query, options)
+	expect = []types.M{
+		types.M{"_id": "004", "name": "ann", "location": []interface{}{10, 10}},
+		types.M{"_id": "002", "name": "jack", "location": []interface{}{15, 15}},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
 	// TODO
 }
 

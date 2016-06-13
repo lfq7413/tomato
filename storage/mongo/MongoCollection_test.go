@@ -22,7 +22,63 @@ func Test_count(t *testing.T) {
 }
 
 func Test_findOneAndUpdate(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	mc := &MongoCollection{collection: db.C("obj")}
+	var docs interface{}
+	var selector interface{}
+	var update interface{}
+	var obj types.M
+	var result []types.M
+	var err error
+	var expect interface{}
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "joe", "age": 31}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	update = types.M{"$set": types.M{"age": 35}}
+	obj = mc.findOneAndUpdate(selector, update)
+	expect = types.M{"_id": "001", "name": "joe", "age": 35}
+	if reflect.DeepEqual(obj, expect) == false {
+		t.Error("expect:", expect, "get result:", obj)
+	}
+	result, err = mc.rawFind(selector, nil)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 35},
+		types.M{"_id": "003", "name": "joe", "age": 31},
+	}
+	if err != nil || result == nil || len(result) != 2 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "joe", "age": 31}
+	mc.insertOne(docs)
+	selector = types.M{"name": "tom"}
+	update = types.M{"$set": types.M{"age": 35}}
+	obj = mc.findOneAndUpdate(selector, update)
+	expect = types.M{}
+	if reflect.DeepEqual(obj, expect) == false {
+		t.Error("expect:", expect, "get result:", obj)
+	}
+	result, err = mc.rawFind(nil, nil)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe", "age": 25},
+		types.M{"_id": "002", "name": "jack", "age": 30},
+		types.M{"_id": "003", "name": "joe", "age": 31},
+	}
+	if err != nil || result == nil || len(result) != 3 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
 }
 
 func Test_insertOne(t *testing.T) {

@@ -3,6 +3,7 @@ package rest
 import (
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -787,7 +788,39 @@ func (w *Write) runDatabaseOperation() error {
 		// 创建对象
 		err := orm.TomatoDBController.Create(w.className, w.data, w.RunOptions)
 		if err != nil {
-			return err
+			if w.className != "_User" {
+				return err
+			}
+			msg := strings.Replace(err.Error(), " ", "", -1)
+			if strings.Index(msg, `{"code":`+strconv.Itoa(errs.DuplicateValue)) != 0 {
+				return err
+			}
+
+			where := types.M{
+				"username": w.data["username"],
+				"objectId": types.M{"$ne": w.objectID()},
+			}
+			results, err := orm.TomatoDBController.Find(w.className, where, types.M{"limit": 1})
+			if err != nil {
+				return err
+			}
+			if len(results) > 0 {
+				return errs.E(errs.UsernameTaken, "Account already exists for this username.")
+			}
+
+			where = types.M{
+				"email":    w.data["email"],
+				"objectId": types.M{"$ne": w.objectID()},
+			}
+			results, err = orm.TomatoDBController.Find(w.className, where, types.M{"limit": 1})
+			if err != nil {
+				return err
+			}
+			if len(results) > 0 {
+				return errs.E(errs.EmailTaken, "Account already exists for this email address.")
+			}
+
+			return errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")
 		}
 		response := types.M{
 			"objectId":  w.data["objectId"],

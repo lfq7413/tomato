@@ -295,6 +295,26 @@ func (m *MongoAdapter) Count(className string, query, schema types.M) (int, erro
 	return c, nil
 }
 
+// ensureUniqueness 创建索引
+func (m *MongoAdapter) ensureUniqueness(className string, fieldNames []string, schema types.M) error {
+	if fieldNames == nil {
+		return nil
+	}
+	mongoFieldNames := []string{}
+	for _, fieldName := range fieldNames {
+		k := m.transform.transformKey(className, fieldName, schema)
+		mongoFieldNames = append(mongoFieldNames, k)
+	}
+	coll := m.adaptiveCollection(className)
+	err := coll.ensureSparseUniqueIndexInBackground(mongoFieldNames)
+	if err != nil {
+		// TODO 处理索引已经存在的情况
+		return nil
+	}
+
+	return nil
+}
+
 func storageAdapterAllCollections(m *MongoAdapter) []*MongoCollection {
 	names := m.getCollectionNames()
 	collections := []*MongoCollection{}

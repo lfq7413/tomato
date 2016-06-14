@@ -180,3 +180,14 @@ func (m *MongoCollection) deleteMany(selector interface{}) (int, error) {
 func (m *MongoCollection) drop() error {
 	return m.collection.DropCollection()
 }
+
+// ensureSparseUniqueIndexInBackground 后台创建索引
+func (m *MongoCollection) ensureSparseUniqueIndexInBackground(indexRequest []string) error {
+	index := mgo.Index{
+		Key:        indexRequest,
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+	return m.collection.EnsureIndex(index)
+}

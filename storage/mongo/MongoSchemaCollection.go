@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
@@ -69,7 +70,15 @@ func (m *MongoSchemaCollection) AddSchema(name string, fields types.M, classLeve
 		return nil, err
 	}
 	mongoObject := mongoSchemaObjectFromNameFields(name, mongoSchema)
-	return mongoSchemaToParseSchema(mongoObject), m.collection.insertOne(mongoObject)
+	// 处理 insertOne 失败的情况，数据库插入失败，检测是否是因为键值重复造成的错误
+	err = m.collection.insertOne(mongoObject)
+	if err != nil && strings.Index(err.Error(), "duplicate key error") > -1 {
+		if strings.Index(err.Error(), "duplicate key error") > -1 {
+			return nil, errors.New("undefined")
+		}
+		return nil, err
+	}
+	return mongoSchemaToParseSchema(mongoObject), err
 }
 
 // UpdateSchema 更新一个表定义

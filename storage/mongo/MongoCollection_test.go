@@ -3,6 +3,7 @@ package mongo
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/lfq7413/tomato/types"
@@ -590,6 +591,22 @@ func Test_insertOne(t *testing.T) {
 	}
 	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result[0], expect) == false {
 		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{
+		"_id":  "1024",
+		"name": "joe",
+	}
+	mc.insertOne(docs)
+	docs = types.M{
+		"_id":  "1024",
+		"name": "joe",
+	}
+	err = mc.insertOne(docs)
+	expect = "E11000 duplicate key error"
+	if err == nil || strings.Index(err.Error(), "duplicate key error") < 0 {
+		t.Error("expect:", expect, "get result:", err)
 	}
 	mc.drop()
 }

@@ -115,7 +115,10 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 
 	result, err := s.collection.AddSchema(className, fields, classLevelPermissions)
 	if err != nil {
-		return nil, err
+		if err.Error() == "undefined" {
+			return nil, errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
+		}
+		return nil, errs.E(errs.InternalServerError, "Database adapter error.")
 	}
 
 	return result, nil

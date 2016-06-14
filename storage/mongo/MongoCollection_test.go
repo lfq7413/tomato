@@ -671,6 +671,130 @@ func Test_updateOne(t *testing.T) {
 	mc.insertOne(docs)
 	docs = types.M{"_id": "002", "name": "jack", "age": 30}
 	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	update = types.M{"$unset": types.M{"age": ""}}
+	err = mc.updateOne(selector, update)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	result, err = mc.rawFind(selector, nil)
+	expect = types.M{"_id": "001", "name": "joe"}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result[0], expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	update = types.M{"$inc": types.M{"age": 10}}
+	err = mc.updateOne(selector, update)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	result, err = mc.rawFind(selector, nil)
+	expect = types.M{"_id": "001", "name": "joe", "age": 35}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result[0], expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "skill": types.S{"one"}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "skill": types.S{"one"}}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	update = types.M{
+		"$push": types.M{
+			"skill": types.M{
+				"$each": types.S{"two", "three"},
+			},
+		},
+	}
+	err = mc.updateOne(selector, update)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	result, err = mc.rawFind(selector, nil)
+	expect = types.M{"_id": "001", "name": "joe", "skill": []interface{}{"one", "two", "three"}}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result[0], expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "skill": types.S{"one"}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "skill": types.S{"one"}}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	update = types.M{
+		"$addToSet": types.M{
+			"skill": types.M{
+				"$each": types.S{"two", "three"},
+			},
+		},
+	}
+	err = mc.updateOne(selector, update)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	result, err = mc.rawFind(selector, nil)
+	expect = types.M{"_id": "001", "name": "joe", "skill": []interface{}{"one", "two", "three"}}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result[0], expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "skill": types.S{"one"}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "skill": types.S{"one"}}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	update = types.M{
+		"$addToSet": types.M{
+			"skill": types.M{
+				"$each": types.S{"one", "two"},
+			},
+		},
+	}
+	err = mc.updateOne(selector, update)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	result, err = mc.rawFind(selector, nil)
+	expect = types.M{"_id": "001", "name": "joe", "skill": []interface{}{"one", "two"}}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result[0], expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "skill": types.S{"one", "two", "three"}}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "skill": types.S{"one"}}
+	mc.insertOne(docs)
+	selector = types.M{"name": "joe"}
+	update = types.M{
+		"$pullAll": types.M{
+			"skill": types.S{"two", "three"},
+		},
+	}
+	err = mc.updateOne(selector, update)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	result, err = mc.rawFind(selector, nil)
+	expect = types.M{"_id": "001", "name": "joe", "skill": []interface{}{"one"}}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(result[0], expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
 	selector = types.M{"name": "tom"}
 	update = types.M{"$set": types.M{"age": 35}}
 	err = mc.updateOne(selector, update)

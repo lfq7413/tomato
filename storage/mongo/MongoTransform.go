@@ -416,36 +416,67 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 		case "$nearSphere":
 			point := utils.M(object[key])
 			if point == nil {
-				answer[key] = types.S{0, 0}
+				answer[key] = types.M{
+					"$geometry": types.M{
+						"type":        "Point",
+						"coordinates": types.S{0, 0},
+					},
+					"$maxDistance": 0,
+				}
 			} else {
-				answer[key] = types.S{point["longitude"], point["latitude"]}
+				answer[key] = types.M{
+					"$geometry": types.M{
+						"type":        "Point",
+						"coordinates": types.S{point["longitude"], point["latitude"]},
+					},
+				}
 			}
 
-		// 转换 最大距离 操作符，单位是弧度
-		case "$maxDistance":
-			answer[key] = object[key]
+		// 转换 最大距离 操作符，单位是弧度，需要转换为 米
+		// 在 MongoDB 2.6 之后，操作符 $nearSphere 最新的使用格式中，$maxDistance 的单位是米
+		// $maxDistance 仅能用于 2dsphere 格式的索引
+		case "$maxDistance", "$maxDistanceInRadians":
+			var nearSphere types.M
+			if nearSphere = utils.M(answer["$nearSphere"]); nearSphere == nil {
+				break
+			}
+			var distance float64
+			if v, ok := object[key].(float64); ok {
+				distance = v * 6371 * 1000
+			} else if v, ok := object[key].(int); ok {
+				distance = float64(v) * 6371 * 1000
+			}
+			nearSphere["$maxDistance"] = distance
+			answer["$nearSphere"] = nearSphere
 
 		// 以下三项在 SDK 中未使用，但是在 REST API 中使用了
-		case "$maxDistanceInRadians":
-			answer["$maxDistance"] = object[key]
 		case "$maxDistanceInMiles":
+			var nearSphere types.M
+			if nearSphere = utils.M(answer["$nearSphere"]); nearSphere == nil {
+				break
+			}
 			var distance float64
 			if v, ok := object[key].(float64); ok {
-				distance = v / 3959
+				distance = v * 1.609344 * 1000
+			} else if v, ok := object[key].(int); ok {
+				distance = float64(v) * 1.609344 * 1000
 			}
-			if v, ok := object[key].(int); ok {
-				distance = float64(v) / 3959
-			}
-			answer["$maxDistance"] = distance
+			nearSphere["$maxDistance"] = distance
+			answer["$nearSphere"] = nearSphere
+
 		case "$maxDistanceInKilometers":
+			var nearSphere types.M
+			if nearSphere = utils.M(answer["$nearSphere"]); nearSphere == nil {
+				break
+			}
 			var distance float64
 			if v, ok := object[key].(float64); ok {
-				distance = v / 6371
+				distance = v * 1000
+			} else if v, ok := object[key].(int); ok {
+				distance = float64(v) * 1000
 			}
-			if v, ok := object[key].(int); ok {
-				distance = float64(v) / 6371
-			}
-			answer["$maxDistance"] = distance
+			nearSphere["$maxDistance"] = distance
+			answer["$nearSphere"] = nearSphere
 
 		case "$select", "$dontSelect":
 			// 暂时不支持该参数

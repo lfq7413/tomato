@@ -698,20 +698,35 @@ func Test_transformConstraint(t *testing.T) {
 	constraint = types.M{"$nearSphere": "hello"}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = types.M{"$nearSphere": types.S{0, 0}}
+	expect = types.M{
+		"$nearSphere": types.M{
+			"$geometry": types.M{
+				"type":        "Point",
+				"coordinates": types.S{0, 0},
+			},
+			"$maxDistance": 0,
+		},
+	}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
 	constraint = types.M{
 		"$nearSphere": types.M{
-			"longitude": 20,
+			"longitude": 30,
 			"latitude":  20,
 		},
 	}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = types.M{"$nearSphere": types.S{20, 20}}
+	expect = types.M{
+		"$nearSphere": types.M{
+			"$geometry": types.M{
+				"type":        "Point",
+				"coordinates": types.S{30, 20},
+			},
+		},
+	}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
@@ -719,47 +734,139 @@ func Test_transformConstraint(t *testing.T) {
 	constraint = types.M{"$maxDistance": 0.26}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = types.M{"$maxDistance": 0.26}
+	expect = types.M{}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
-	constraint = types.M{"$maxDistanceInRadians": 0.26}
+	constraint = types.M{
+		"$nearSphere": types.M{
+			"longitude": 30,
+			"latitude":  20,
+		},
+		"$maxDistance": 0.26,
+	}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = types.M{"$maxDistance": 0.26}
+	expect = types.M{
+		"$nearSphere": types.M{
+			"$geometry": types.M{
+				"type":        "Point",
+				"coordinates": types.S{30, 20},
+			},
+			"$maxDistance": 0.26 * 6371 * 1000,
+		},
+	}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
-	constraint = types.M{"$maxDistanceInMiles": 16.0}
+	constraint = types.M{
+		"$nearSphere": types.M{
+			"longitude": 30,
+			"latitude":  20,
+		},
+		"$maxDistanceInRadians": 0.26,
+	}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = types.M{"$maxDistance": 16.0 / 3959}
+	expect = types.M{
+		"$nearSphere": types.M{
+			"$geometry": types.M{
+				"type":        "Point",
+				"coordinates": types.S{30, 20},
+			},
+			"$maxDistance": 0.26 * 6371 * 1000,
+		},
+	}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
-	constraint = types.M{"$maxDistanceInMiles": 16}
+	constraint = types.M{
+		"$nearSphere": types.M{
+			"longitude": 30,
+			"latitude":  20,
+		},
+		"$maxDistanceInMiles": 16.0,
+	}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = types.M{"$maxDistance": 16.0 / 3959}
+	expect = types.M{
+		"$nearSphere": types.M{
+			"$geometry": types.M{
+				"type":        "Point",
+				"coordinates": types.S{30, 20},
+			},
+			"$maxDistance": 16.0 * 1.609344 * 1000,
+		},
+	}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
-	constraint = types.M{"$maxDistanceInKilometers": 16.0}
+	constraint = types.M{
+		"$nearSphere": types.M{
+			"longitude": 30,
+			"latitude":  20,
+		},
+		"$maxDistanceInMiles": 16,
+	}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = types.M{"$maxDistance": 16.0 / 6371}
+	expect = types.M{
+		"$nearSphere": types.M{
+			"$geometry": types.M{
+				"type":        "Point",
+				"coordinates": types.S{30, 20},
+			},
+			"$maxDistance": 16 * 1.609344 * 1000,
+		},
+	}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
-	constraint = types.M{"$maxDistanceInKilometers": 16}
+	constraint = types.M{
+		"$nearSphere": types.M{
+			"longitude": 30,
+			"latitude":  20,
+		},
+		"$maxDistanceInKilometers": 16.0,
+	}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = types.M{"$maxDistance": 16.0 / 6371}
+	expect = types.M{
+		"$nearSphere": types.M{
+			"$geometry": types.M{
+				"type":        "Point",
+				"coordinates": types.S{30, 20},
+			},
+			"$maxDistance": 16.0 * 1000,
+		},
+	}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{
+		"$nearSphere": types.M{
+			"longitude": 30,
+			"latitude":  20,
+		},
+		"$maxDistanceInKilometers": 16,
+	}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{
+		"$nearSphere": types.M{
+			"$geometry": types.M{
+				"type":        "Point",
+				"coordinates": types.S{30, 20},
+			},
+			"$maxDistance": 16.0 * 1000,
+		},
+	}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}

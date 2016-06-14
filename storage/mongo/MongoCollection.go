@@ -3,6 +3,7 @@ package mongo
 import (
 	"strings"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"gopkg.in/mgo.v2"
 )
@@ -132,7 +133,15 @@ func (m *MongoCollection) findOneAndUpdate(selector interface{}, update interfac
 
 // insertOne 插入一个对象
 func (m *MongoCollection) insertOne(docs interface{}) error {
-	return m.collection.Insert(docs)
+	err := m.collection.Insert(docs)
+	if err != nil {
+		// 键值重复错误单独处理
+		if strings.Index(err.Error(), "duplicate key error") > -1 {
+			return errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")
+		}
+		return err
+	}
+	return nil
 }
 
 // upsertOne 更新一个对象，如果要更新的对象不存在，则插入该对象

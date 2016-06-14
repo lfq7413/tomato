@@ -3,9 +3,9 @@ package mongo
 import (
 	"errors"
 	"reflect"
-	"strings"
 	"testing"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 
 	"gopkg.in/mgo.v2"
@@ -604,8 +604,8 @@ func Test_insertOne(t *testing.T) {
 		"name": "joe",
 	}
 	err = mc.insertOne(docs)
-	expect = "E11000 duplicate key error"
-	if err == nil || strings.Index(err.Error(), "duplicate key error") < 0 {
+	expectErr := errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")
+	if err == nil || err.Error() != expectErr.Error() {
 		t.Error("expect:", expect, "get result:", err)
 	}
 	mc.drop()

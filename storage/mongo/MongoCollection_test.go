@@ -1,6 +1,7 @@
 package mongo
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -978,8 +979,9 @@ func Test_drop(t *testing.T) {
 	}
 	/********************************************************/
 	err = mc.drop()
-	if err == nil {
-		t.Error("expect:", nil, "get result:", err)
+	expectErr := errors.New("ns not found")
+	if err == nil || err.Error() != expectErr.Error() {
+		t.Error("expect:", expect, "get result:", err)
 	}
 }
 

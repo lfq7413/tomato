@@ -75,8 +75,11 @@ func (m *MongoAdapter) CollectionExists(name string) bool {
 
 // DeleteOneSchema 删除指定表
 func (m *MongoAdapter) DeleteOneSchema(name string) error {
-	// TODO 处理类不存在时的情况
-	return m.collection(m.collectionPrefix + name).DropCollection()
+	err := m.collection(m.collectionPrefix + name).DropCollection()
+	if err != nil && err.Error() == "ns not found" {
+		return nil
+	}
+	return err
 }
 
 // DeleteAllSchemas 删除所有表，仅用于测试

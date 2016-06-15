@@ -128,6 +128,7 @@ func (a *Auth) loadRoles() []string {
 	cachedRoles := cache.Role.Get(a.User["objectId"].(string))
 	if cachedRoles != nil {
 		a.FetchedRoles = true
+		a.UserRoles = cachedRoles.([]string)
 		return cachedRoles.([]string)
 	}
 

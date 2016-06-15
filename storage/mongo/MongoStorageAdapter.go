@@ -295,8 +295,8 @@ func (m *MongoAdapter) Count(className string, query, schema types.M) (int, erro
 	return c, nil
 }
 
-// ensureUniqueness 创建索引
-func (m *MongoAdapter) ensureUniqueness(className string, fieldNames []string, schema types.M) error {
+// EnsureUniqueness 创建索引
+func (m *MongoAdapter) EnsureUniqueness(className string, fieldNames []string, schema types.M) error {
 	if fieldNames == nil {
 		return nil
 	}

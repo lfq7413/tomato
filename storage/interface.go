@@ -18,6 +18,7 @@ type Adapter interface {
 	UpdateObjectsByQuery(className string, query, schema, update types.M) error
 	FindOneAndUpdate(className string, query, schema, update types.M) (types.M, error)
 	UpsertOneObject(className string, query, schema, update types.M) error
+	EnsureUniqueness(className string, fieldNames []string, schema types.M) error
 }
 
 // SchemaCollection Schema 集合操作接口

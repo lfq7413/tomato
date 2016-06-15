@@ -3,9 +3,11 @@ package tomato
 import (
 	"github.com/lfq7413/tomato/controllers"
 	_ "github.com/lfq7413/tomato/routers"
+	"github.com/lfq7413/tomato/types"
 
 	"github.com/astaxie/beego"
 	"github.com/lfq7413/tomato/livequery"
+	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/storage"
 )
 
@@ -14,6 +16,8 @@ func Run() {
 
 	storage.OpenDB()
 	defer storage.CloseDB()
+
+	createIndexes()
 
 	if beego.BConfig.RunMode == "dev" {
 		beego.BConfig.WebConfig.DirectoryIndex = true
@@ -29,4 +33,19 @@ func RunLiveQueryServer() {
 	args["pattern"] = "/livequery"
 	args["addr"] = "/8089"
 	livequery.Run(args)
+}
+
+// createIndexes 创建必要的索引
+func createIndexes() {
+	requiredUserFields := types.M{}
+	defaultUserColumns := types.M{}
+	for k, v := range orm.DefaultColumns["_Default"] {
+		defaultUserColumns[k] = v
+	}
+	for k, v := range orm.DefaultColumns["_User"] {
+		defaultUserColumns[k] = v
+	}
+	requiredUserFields["fields"] = defaultUserColumns
+	orm.Adapter.EnsureUniqueness("_User", []string{"username"}, requiredUserFields)
+	orm.Adapter.EnsureUniqueness("_User", []string{"email"}, requiredUserFields)
 }

@@ -307,12 +307,7 @@ func (m *MongoAdapter) ensureUniqueness(className string, fieldNames []string, s
 	}
 	coll := m.adaptiveCollection(className)
 	err := coll.ensureSparseUniqueIndexInBackground(mongoFieldNames)
-	if err != nil {
-		// TODO 处理索引已经存在的情况
-		return nil
-	}
-
-	return nil
+	return err
 }
 
 func storageAdapterAllCollections(m *MongoAdapter) []*MongoCollection {

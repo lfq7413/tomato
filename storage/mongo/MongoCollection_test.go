@@ -1003,7 +1003,100 @@ func Test_drop(t *testing.T) {
 }
 
 func Test_ensureSparseUniqueIndexInBackground(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	mc := &MongoCollection{collection: db.C("obj")}
+	var docs interface{}
+	var indexRequest []string
+	var err error
+	var indexes []mgo.Index
+	var expect mgo.Index
+	var ok bool
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	indexRequest = []string{"name"}
+	err = mc.ensureSparseUniqueIndexInBackground(indexRequest)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	indexes, err = mc.collection.Indexes()
+	expect = mgo.Index{
+		Key:        []string{"name"},
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+	ok = false
+	for _, i := range indexes {
+		if reflect.DeepEqual(i.Key, expect.Key) &&
+			i.Unique == expect.Unique &&
+			i.Background == expect.Background &&
+			i.Sparse == expect.Sparse {
+			ok = true
+			break
+		}
+	}
+	if ok == false {
+		t.Error("expect:", expect, "get result:", nil)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	indexRequest = []string{"skill"}
+	err = mc.ensureSparseUniqueIndexInBackground(indexRequest)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	indexes, err = mc.collection.Indexes()
+	expect = mgo.Index{
+		Key:        []string{"skill"},
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+	ok = false
+	for _, i := range indexes {
+		if reflect.DeepEqual(i.Key, expect.Key) &&
+			i.Unique == expect.Unique &&
+			i.Background == expect.Background &&
+			i.Sparse == expect.Sparse {
+			ok = true
+			break
+		}
+	}
+	if ok == false {
+		t.Error("expect:", expect, "get result:", nil)
+	}
+	mc.drop()
+	/********************************************************/
+	indexRequest = []string{"age"}
+	err = mc.ensureSparseUniqueIndexInBackground(indexRequest)
+	if err != nil {
+		t.Error("expect:", nil, "get result:", err)
+	}
+	indexes, err = mc.collection.Indexes()
+	expect = mgo.Index{
+		Key:        []string{"age"},
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+	ok = false
+	for _, i := range indexes {
+		if reflect.DeepEqual(i.Key, expect.Key) &&
+			i.Unique == expect.Unique &&
+			i.Background == expect.Background &&
+			i.Sparse == expect.Sparse {
+			ok = true
+			break
+		}
+	}
+	if ok == false {
+		t.Error("expect:", expect, "get result:", nil)
+	}
+	mc.drop()
 }
 
 func openDB() *mgo.Database {

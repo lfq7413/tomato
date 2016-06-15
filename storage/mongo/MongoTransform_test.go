@@ -1360,13 +1360,9 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 	/*************************************************/
 	className = "post"
 	create = types.M{
-		"name": "joe",
-		"ACL": types.M{
-			"userid": types.M{
-				"read":  true,
-				"write": true,
-			},
-		},
+		"name":   "joe",
+		"_rperm": types.S{"userid"},
+		"_wperm": types.S{"userid"},
 	}
 	schema = types.M{}
 	result, err = tf.parseObjectToMongoObjectForCreate(className, create, schema)
@@ -1391,12 +1387,8 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 	create = types.M{
 		"objectId": "1024",
 		"name":     "joe",
-		"ACL": types.M{
-			"userid": types.M{
-				"read":  true,
-				"write": true,
-			},
-		},
+		"_rperm":   types.S{"userid"},
+		"_wperm":   types.S{"userid"},
 		"authData": types.M{
 			"facebook": types.M{
 				"id": "1024",
@@ -1787,6 +1779,13 @@ func Test_transformACL(t *testing.T) {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
+	restObject = types.M{"ACL": "hello"}
+	result = tf.transformACL(restObject)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
 	restObject = types.M{
 		"ACL": types.M{
 			"userid": types.M{
@@ -1831,6 +1830,104 @@ func Test_transformACL(t *testing.T) {
 	}
 	if reflect.DeepEqual(restObject, types.M{}) == false {
 		t.Error("expect:", types.M{}, "get result:", restObject)
+	}
+}
+
+func Test_addLegacyACL(t *testing.T) {
+	tf := NewTransform()
+	var restObject types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	restObject = nil
+	result = tf.addLegacyACL(restObject)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{}
+	result = tf.addLegacyACL(restObject)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"key": "value",
+	}
+	result = tf.addLegacyACL(restObject)
+	expect = types.M{
+		"key": "value",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"key":    "value",
+		"_wperm": types.S{"id", "role"},
+	}
+	result = tf.addLegacyACL(restObject)
+	expect = types.M{
+		"key":    "value",
+		"_wperm": types.S{"id", "role"},
+		"_acl": types.M{
+			"id": types.M{
+				"w": true,
+			},
+			"role": types.M{
+				"w": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"key":    "value",
+		"_rperm": types.S{"id", "role"},
+	}
+	result = tf.addLegacyACL(restObject)
+	expect = types.M{
+		"key":    "value",
+		"_rperm": types.S{"id", "role"},
+		"_acl": types.M{
+			"id": types.M{
+				"r": true,
+			},
+			"role": types.M{
+				"r": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	restObject = types.M{
+		"key":    "value",
+		"_rperm": types.S{"id", "role"},
+		"_wperm": types.S{"id"},
+	}
+	result = tf.addLegacyACL(restObject)
+	expect = types.M{
+		"key":    "value",
+		"_rperm": types.S{"id", "role"},
+		"_wperm": types.S{"id"},
+		"_acl": types.M{
+			"id": types.M{
+				"r": true,
+				"w": true,
+			},
+			"role": types.M{
+				"r": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
 	}
 }
 
@@ -1951,12 +2048,8 @@ func Test_transformUpdate(t *testing.T) {
 	/*************************************************/
 	className = "post"
 	update = types.M{
-		"ACL": types.M{
-			"userid": types.M{
-				"read":  true,
-				"write": true,
-			},
-		},
+		"_rperm": types.S{"userid"},
+		"_wperm": types.S{"userid"},
 	}
 	parseFormatSchema = types.M{}
 	result, err = tf.transformUpdate(className, update, parseFormatSchema)
@@ -2006,12 +2099,8 @@ func Test_transformUpdate(t *testing.T) {
 				"id": "1024",
 			},
 		},
-		"ACL": types.M{
-			"userid": types.M{
-				"read":  true,
-				"write": true,
-			},
-		},
+		"_rperm": types.S{"userid"},
+		"_wperm": types.S{"userid"},
 		"number": types.M{
 			"__op":   "Increment",
 			"amount": 10,
@@ -2264,12 +2353,8 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 	schema = types.M{}
 	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
 	expect = types.M{
-		"ACL": types.M{
-			"userid": types.M{
-				"read":  true,
-				"write": true,
-			},
-		},
+		"_rperm": types.S{"userid"},
+		"_wperm": types.S{"userid"},
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)

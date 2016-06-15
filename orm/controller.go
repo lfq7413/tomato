@@ -54,12 +54,12 @@ func (d DBController) CollectionExists(className string) bool {
 // Find 从指定表中查询数据，查询到的数据放入 list 中
 // 如果查询的是 count ，结果也会放入 list，并且只有这一个元素
 // options 中的选项包括：skip、limit、sort、count、acl
-func (d DBController) Find(className string, where, options types.M) (types.S, error) {
+func (d DBController) Find(className string, query, options types.M) (types.S, error) {
 	if options == nil {
 		options = types.M{}
 	}
-	if where == nil {
-		where = types.M{}
+	if query == nil {
+		query = types.M{}
 	}
 
 	isMaster := false
@@ -73,8 +73,8 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	}
 
 	var op string
-	if _, ok := where["objectId"].(string); ok {
-		if len(where) == 1 {
+	if _, ok := query["objectId"].(string); ok {
+		if len(query) == 1 {
 			op = "get"
 		} else {
 			op = "find"
@@ -130,14 +130,14 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	}
 
 	// 处理 $relatedTo
-	d.reduceRelationKeys(className, where)
+	d.reduceRelationKeys(className, query)
 	// 处理 relation 字段上的 $in
-	d.reduceInRelation(className, where, schema)
+	d.reduceInRelation(className, query, schema)
 
 	if isMaster == false {
-		where = d.addPointerPermissions(schema, className, op, where, aclGroup)
+		query = d.addPointerPermissions(schema, className, op, query, aclGroup)
 	}
-	if where == nil {
+	if query == nil {
 		if op == "get" {
 			return nil, errs.E(errs.ObjectNotFound, "Object not found.")
 		}
@@ -146,17 +146,17 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 
 	// 组装 acl 查询条件，查找可被当前用户访问的对象
 	if isMaster == false {
-		where = addReadACL(where, aclGroup)
+		query = addReadACL(query, aclGroup)
 	}
 
-	err = validateQuery(where)
+	err = validateQuery(query)
 	if err != nil {
 		return nil, err
 	}
 
 	// 获取 count
 	if options["count"] != nil {
-		count, err := Adapter.Count(className, where, parseFormatSchema)
+		count, err := Adapter.Count(className, query, parseFormatSchema)
 		if err != nil {
 			return nil, err
 		}
@@ -164,12 +164,13 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 	}
 
 	// 执行查询操作
-	objects, err := Adapter.Find(className, where, parseFormatSchema, options)
+	objects, err := Adapter.Find(className, query, parseFormatSchema, options)
 	if err != nil {
 		return nil, err
 	}
 	results := types.S{}
 	for _, object := range objects {
+		object = untransformObjectACL(object)
 		result := filterSensitiveData(isMaster, aclGroup, className, object)
 		results = append(results, result)
 	}
@@ -177,7 +178,7 @@ func (d DBController) Find(className string, where, options types.M) (types.S, e
 }
 
 // Destroy 从指定表中删除数据
-func (d DBController) Destroy(className string, where types.M, options types.M) error {
+func (d DBController) Destroy(className string, query types.M, options types.M) error {
 	isMaster := false
 	aclGroup := []string{}
 	if acl, ok := options["acl"]; ok {
@@ -195,17 +196,17 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 	}
 
 	if isMaster == false {
-		where = d.addPointerPermissions(schema, className, "delete", where, aclGroup)
-		if where == nil {
+		query = d.addPointerPermissions(schema, className, "delete", query, aclGroup)
+		if query == nil {
 			return errs.E(errs.ObjectNotFound, "Object not found.")
 		}
 	}
 
 	if isMaster == false {
-		where = addWriteACL(where, aclGroup)
+		query = addWriteACL(query, aclGroup)
 	}
 
-	err := validateQuery(where)
+	err := validateQuery(query)
 	if err != nil {
 		return err
 	}
@@ -218,7 +219,7 @@ func (d DBController) Destroy(className string, where types.M, options types.M) 
 		parseFormatSchema["fields"] = types.M{}
 	}
 
-	err = Adapter.DeleteObjectsByQuery(className, where, parseFormatSchema)
+	err = Adapter.DeleteObjectsByQuery(className, query, parseFormatSchema)
 	if err != nil {
 		msg := err.Error()
 		msg = strings.Replace(msg, " ", "", -1)
@@ -236,13 +237,13 @@ var specialKeysForUpdate = []string{"_hashed_password", "_perishable_token", "_e
 
 // Update 更新对象
 // options 中的参数包括：acl、many、upsert
-func (d DBController) Update(className string, where, data, options types.M) (types.M, error) {
+func (d DBController) Update(className string, query, update, options types.M) (types.M, error) {
 	if options == nil {
 		options = types.M{}
 	}
-	originalUpdate := data
+	originalUpdate := update
 	// 复制数据，不要修改原数据
-	data = utils.CopyMap(data)
+	update = utils.CopyMap(update)
 
 	many := options["many"].(bool)
 	upsert := options["upsert"].(bool)
@@ -265,22 +266,22 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		}
 	}
 	// 处理 Relation
-	d.handleRelationUpdates(className, utils.S(where["objectId"]), data)
+	d.handleRelationUpdates(className, utils.S(query["objectId"]), update)
 
 	// 添加用户权限
 	if isMaster == false {
-		where = d.addPointerPermissions(schema, className, "update", where, aclGroup)
+		query = d.addPointerPermissions(schema, className, "update", query, aclGroup)
 	}
-	if where == nil {
+	if query == nil {
 		return types.M{}, nil
 	}
 
 	// 组装 acl 查询条件，查找可被当前用户修改的对象
 	if isMaster == false {
-		where = addWriteACL(where, aclGroup)
+		query = addWriteACL(query, aclGroup)
 	}
 
-	err := validateQuery(where)
+	err := validateQuery(query)
 	if err != nil {
 		return nil, err
 	}
@@ -293,7 +294,7 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		sch["fields"] = types.M{}
 	}
 
-	for fieldName, v := range data {
+	for fieldName, v := range update {
 		if match, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, fieldName); match {
 			return nil, errs.E(errs.InvalidKeyName, "Invalid field name for update: "+fieldName)
 		}
@@ -320,22 +321,23 @@ func (d DBController) Update(className string, where, data, options types.M) (ty
 		}
 	}
 
+	update = transformObjectACL(update)
 	var result types.M
 	if many {
-		err := Adapter.UpdateObjectsByQuery(className, where, sch, data)
+		err := Adapter.UpdateObjectsByQuery(className, query, sch, update)
 		if err != nil {
 			return nil, err
 		}
 		result = types.M{}
 	} else if upsert {
-		err := Adapter.UpsertOneObject(className, where, sch, data)
+		err := Adapter.UpsertOneObject(className, query, sch, update)
 		if err != nil {
 			return nil, err
 		}
 		result = types.M{}
 	} else {
 		var err error
-		result, err = Adapter.FindOneAndUpdate(className, where, sch, data)
+		result, err = Adapter.FindOneAndUpdate(className, query, sch, update)
 		if err != nil {
 			return nil, err
 		}
@@ -380,12 +382,11 @@ func sanitizeDatabaseResult(originalObject, result types.M) types.M {
 }
 
 // Create 创建对象
-func (d DBController) Create(className string, data, options types.M) error {
+func (d DBController) Create(className string, object, options types.M) error {
 	if options == nil {
 		options = types.M{}
 	}
-	// 不要对原数据进行修改
-	data = utils.CopyMap(data)
+	object = transformObjectACL(object)
 
 	isMaster := false
 	aclGroup := []string{}
@@ -411,7 +412,7 @@ func (d DBController) Create(className string, data, options types.M) error {
 	}
 
 	// 处理 Relation
-	err = d.handleRelationUpdates(className, "", data)
+	err = d.handleRelationUpdates(className, "", object)
 	if err != nil {
 		return err
 	}
@@ -427,7 +428,7 @@ func (d DBController) Create(className string, data, options types.M) error {
 	}
 
 	// 无需调用 sanitizeDatabaseResult
-	return Adapter.CreateObject(className, data, sch)
+	return Adapter.CreateObject(className, object, sch)
 }
 
 // validateClassName 校验表名是否合法
@@ -553,7 +554,7 @@ func (d DBController) removeRelation(key, fromClassName, fromID, toID string) er
 }
 
 // ValidateObject 校验对象是否合法
-func (d DBController) ValidateObject(className string, object, where, options types.M) error {
+func (d DBController) ValidateObject(className string, object, query, options types.M) error {
 	schema := d.LoadSchema()
 
 	isMaster := false
@@ -575,7 +576,7 @@ func (d DBController) ValidateObject(className string, object, where, options ty
 		return err
 	}
 
-	err = schema.validateObject(className, object, where)
+	err = schema.validateObject(className, object, query)
 	if err != nil {
 		return err
 	}
@@ -1127,4 +1128,86 @@ func validateQuery(query types.M) error {
 	}
 
 	return nil
+}
+
+// transformObjectACL 转换对象中的 ACL 字段
+func transformObjectACL(result types.M) types.M {
+	if result == nil || result["ACL"] == nil {
+		return result
+	}
+
+	acl := utils.M(result["ACL"])
+	if acl == nil {
+		return result
+	}
+	rperm := types.S{}
+	wperm := types.S{}
+	for entry, v := range acl {
+		perm := utils.M(v)
+		if perm != nil {
+			if perm["read"] != nil {
+				rperm = append(rperm, entry)
+			}
+			if perm["write"] != nil {
+				wperm = append(wperm, entry)
+			}
+		}
+	}
+	result["_rperm"] = rperm
+	result["_wperm"] = wperm
+	delete(result, "ACL")
+
+	return result
+}
+
+// untransformObjectACL 把数据库格式的 ACL 转换为 API 格式
+func untransformObjectACL(output types.M) types.M {
+	if output == nil {
+		return output
+	}
+
+	if output["_rperm"] == nil && output["_wperm"] == nil {
+		return output
+	}
+
+	acl := types.M{}
+	rperm := types.S{}
+	wperm := types.S{}
+	if output["_rperm"] != nil {
+		rperm = utils.A(output["_rperm"])
+	}
+	if output["_wperm"] != nil {
+		wperm = utils.A(output["_wperm"])
+	}
+	if rperm != nil {
+		for _, v := range rperm {
+			entry := v.(string)
+			if acl[entry] == nil {
+				acl[entry] = types.M{"read": true}
+			} else {
+				var per types.M
+				per = utils.M(acl[entry])
+				per["read"] = true
+				acl[entry] = per
+			}
+		}
+	}
+	if wperm != nil {
+		for _, v := range wperm {
+			entry := v.(string)
+			if acl[entry] == nil {
+				acl[entry] = types.M{"write": true}
+			} else {
+				var per types.M
+				per = utils.M(acl[entry])
+				per["write"] = true
+				acl[entry] = per
+			}
+		}
+	}
+	output["ACL"] = acl
+	delete(output, "_rperm")
+	delete(output, "_wperm")
+
+	return output
 }

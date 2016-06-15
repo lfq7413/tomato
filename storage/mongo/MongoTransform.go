@@ -759,8 +759,8 @@ func (t *Transform) parseObjectToMongoObjectForCreate(className string, create t
 	if className == "_User" {
 		create = t.transformAuthData(create)
 	}
-	// 转换权限数据，转换完成之后仅包含权限信息
-	mongoCreate := t.transformACL(create)
+	create = t.addLegacyACL(create)
+	mongoCreate := types.M{}
 
 	// 转换其他字段并添加
 	for k, v := range create {
@@ -957,6 +957,7 @@ func (t *Transform) transformAuthData(restObject types.M) types.M {
 }
 
 // transformACL 转换生成权限信息，并删除源数据中的 ACL 字段
+// 废弃不用
 // {
 // 	"ACL":{
 // 		"userid":{
@@ -997,6 +998,9 @@ func (t *Transform) transformACL(restObject types.M) types.M {
 	}
 
 	acl := utils.M(restObject["ACL"])
+	if acl == nil {
+		return output
+	}
 	rperm := types.S{}
 	wperm := types.S{}
 	_acl := types.M{}
@@ -1053,8 +1057,8 @@ func (t *Transform) transformUpdate(className string, update types.M, parseForma
 
 	mongoUpdate := types.M{}
 	// 转换并设置权限信息
-	acl := t.transformACL(update)
-	if acl["_rperm"] != nil || acl["_wperm"] != nil || acl["_acl"] != nil {
+	acl := t.addLegacyACL(update)
+	if acl["_acl"] != nil {
 		set := types.M{}
 		if acl["_rperm"] != nil {
 			set["_rperm"] = acl["_rperm"]
@@ -1229,7 +1233,16 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 	// 转换对象类型
 	if object := utils.M(mongoObject); object != nil {
 		// 转换权限信息
-		restObject := t.untransformACL(object)
+		restObject := types.M{}
+		if object["_rperm"] != nil {
+			restObject["_rperm"] = object["_rperm"]
+			delete(object, "_rperm")
+		}
+		if object["_wperm"] != nil {
+			restObject["_wperm"] = object["_wperm"]
+			delete(object, "_wperm")
+		}
+
 		for key, value := range object {
 			switch key {
 			case "_id":
@@ -1401,6 +1414,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 }
 
 // untransformACL 把数据库格式的权限信息转换为 API 格式
+// 废弃不用
 // {
 // 	"_rperm":["userid","role:xxx","*"],
 // 	"_wperm":["userid","role:xxx"]
@@ -1757,4 +1771,37 @@ func (t *Transform) transformInteriorValue(restValue interface{}) (interface{}, 
 	}
 
 	return restValue, nil
+}
+
+// addLegacyACL 添加原始的 _acl 信息
+func (t *Transform) addLegacyACL(restObject types.M) types.M {
+	if restObject == nil {
+		return nil
+	}
+
+	restObjectCopy := utils.CopyMap(restObject)
+	_acl := types.M{}
+
+	if wperm := utils.A(restObject["_wperm"]); wperm != nil {
+		for _, entry := range wperm {
+			_acl[utils.S(entry)] = types.M{"w": true}
+		}
+	}
+	if rperm := utils.A(restObject["_rperm"]); rperm != nil {
+		for _, entry := range rperm {
+			var per types.M
+			if per = utils.M(_acl[utils.S(entry)]); per == nil {
+				_acl[utils.S(entry)] = types.M{"r": true}
+			} else {
+				per["r"] = true
+				_acl[utils.S(entry)] = per
+			}
+		}
+	}
+
+	if len(_acl) > 0 {
+		restObjectCopy["_acl"] = _acl
+	}
+
+	return restObjectCopy
 }

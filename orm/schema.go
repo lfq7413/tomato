@@ -100,10 +100,9 @@ func init() {
 
 // Schema schema 操作对象
 type Schema struct {
-	collection storage.SchemaCollection
-	dbAdapter  storage.Adapter
-	data       types.M // data 保存类的字段信息，类型为 API 类型
-	perms      types.M // perms 保存类的操作权限
+	dbAdapter storage.Adapter
+	data      types.M // data 保存类的字段信息，类型为 API 类型
+	perms     types.M // perms 保存类的操作权限
 }
 
 // AddClassIfNotExists 添加类定义，包含默认的字段
@@ -113,7 +112,11 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 		return nil, err
 	}
 
-	result, err := s.collection.AddSchema(className, fields, classLevelPermissions)
+	schema := types.M{
+		"fields":                fields,
+		"classLevelPermissions": classLevelPermissions,
+	}
+	result, err := s.dbAdapter.CreateClass(className, schema)
 	if err != nil {
 		if errs.GetErrorCode(err) == errs.DuplicateValue {
 			return nil, errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
@@ -218,11 +221,15 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 		return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
 	}
 
+	schema, err := s.GetOneSchema(className, false)
+	if err != nil {
+		return err
+	}
 	// 根据字段属性进行相应 对象数据 删除操作
 	name := utils.M(class[fieldName])["type"].(string)
 	if name == "Relation" {
 		// 删除表数据与 schema 中的对应字段
-		err := Adapter.DeleteFields(className, class, []string{fieldName})
+		err := Adapter.DeleteFields(className, schema, []string{fieldName})
 		if err != nil {
 			return err
 		}
@@ -234,12 +241,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	}
 	// 删除其他类型字段 对应的对象数据
 	fieldNames := []string{fieldName}
-	pointerFieldNames := []string{}
-
-	if name == "Pointer" {
-		pointerFieldNames = append(pointerFieldNames, fieldName)
-	}
-	return Adapter.DeleteFields(className, class, fieldNames)
+	return Adapter.DeleteFields(className, schema, fieldNames)
 }
 
 // validateObject 校验对象是否合法
@@ -482,7 +484,7 @@ func (s *Schema) validateField(className, fieldName string, fieldtype types.M, f
 		return nil
 	}
 
-	err := s.collection.AddFieldIfNotExists(className, fieldName, fieldtype)
+	err := s.dbAdapter.AddFieldIfNotExists(className, fieldName, fieldtype)
 	if err != nil {
 		// 失败时也需要重新加载数据，因为这时候可能有其他客户端更新了字段
 		// s.reloadData()
@@ -508,13 +510,7 @@ func (s *Schema) setPermissions(className string, perms types.M, newSchema types
 	if err != nil {
 		return err
 	}
-	metadata := types.M{
-		"_metadata": types.M{"class_permissions": perms},
-	}
-	update := types.M{
-		"$set": metadata,
-	}
-	err = s.collection.UpdateSchema(className, update)
+	err = s.dbAdapter.SetClassLevelPermissions(className, perms)
 	if err != nil {
 		return err
 	}
@@ -555,7 +551,7 @@ func (s *Schema) getExpectedType(className, key string) types.M {
 func (s *Schema) reloadData() {
 	s.data = types.M{}
 	s.perms = types.M{}
-	allSchemas, err := s.GetAllSchemas()
+	allSchemas, err := s.GetAllClasses()
 	if err != nil {
 		return
 	}
@@ -574,8 +570,8 @@ func (s *Schema) reloadData() {
 	}
 }
 
-// GetAllSchemas ...
-func (s *Schema) GetAllSchemas() ([]types.M, error) {
+// GetAllClasses ...
+func (s *Schema) GetAllClasses() ([]types.M, error) {
 	allSchemas, err := Adapter.GetAllClasses()
 	if err != nil {
 		return nil, err
@@ -990,10 +986,9 @@ func injectDefaultSchema(schema types.M) types.M {
 }
 
 // Load 返回一个新的 Schema 结构体
-func Load(collection storage.SchemaCollection, adapter storage.Adapter) *Schema {
+func Load(adapter storage.Adapter) *Schema {
 	schema := &Schema{
-		collection: collection,
-		dbAdapter:  adapter,
+		dbAdapter: adapter,
 	}
 	schema.reloadData()
 	return schema

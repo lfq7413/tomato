@@ -583,8 +583,7 @@ func (d DBController) ValidateObject(className string, object, query, options ty
 // LoadSchema 加载 Schema，仅加载一次
 func (d DBController) LoadSchema() *Schema {
 	if schemaPromise == nil {
-		collection := d.SchemaCollection()
-		schemaPromise = Load(collection, Adapter)
+		schemaPromise = Load(Adapter)
 	}
 	return schemaPromise
 }

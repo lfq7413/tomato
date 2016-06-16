@@ -27,7 +27,7 @@ func (s *SchemasController) Prepare() {
 // @router / [get]
 func (s *SchemasController) HandleFind() {
 	schema := orm.TomatoDBController.LoadSchema()
-	schemas, err := schema.GetAllSchemas()
+	schemas, err := schema.GetAllClasses()
 	if err != nil {
 		s.Data["json"] = types.M{
 			"results": types.S{},

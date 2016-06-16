@@ -46,6 +46,16 @@ func (d DBController) CollectionExists(className string) bool {
 	return Adapter.ClassExists(className)
 }
 
+// PurgeCollection 清除类
+func (d DBController) PurgeCollection(className string) error {
+	schema := d.LoadSchema()
+	sch, err := schema.GetOneSchema(className, false)
+	if err != nil {
+		return err
+	}
+	return Adapter.DeleteObjectsByQuery(className, sch, types.M{})
+}
+
 // Find 从指定表中查询数据，查询到的数据放入 list 中
 // 如果查询的是 count ，结果也会放入 list，并且只有这一个元素
 // options 中的选项包括：skip、limit、sort、count、acl

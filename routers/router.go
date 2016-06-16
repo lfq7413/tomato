@@ -82,6 +82,11 @@ func init() {
 				&controllers.PublicController{},
 			),
 		),
+		beego.NSNamespace("/purge",
+			beego.NSInclude(
+				&controllers.PurgeController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

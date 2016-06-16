@@ -384,6 +384,34 @@ func init() {
 			[]string{"get"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PurgeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PurgeController"],
+		beego.ControllerComments{
+			"HandleDelete",
+			`/:className`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PurgeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PurgeController"],
+		beego.ControllerComments{
+			"Get",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PurgeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PurgeController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PurgeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PurgeController"],
+		beego.ControllerComments{
+			"Post",
+			`/`,
+			[]string{"post"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PushController"],
 		beego.ControllerComments{
 			"HandlePost",

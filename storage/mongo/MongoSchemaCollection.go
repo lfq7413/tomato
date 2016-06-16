@@ -20,8 +20,8 @@ func newMongoSchemaCollection(collection *MongoCollection) *MongoSchemaCollectio
 	}
 }
 
-// GetAllSchemas 获取所有 Schema，并转换为 API 格式的数据
-func (m *MongoSchemaCollection) GetAllSchemas() ([]types.M, error) {
+// getAllSchemas 获取所有 Schema，并转换为 API 格式的数据
+func (m *MongoSchemaCollection) getAllSchemas() ([]types.M, error) {
 	results, err := m.collection.rawFind(types.M{}, types.M{})
 	if err != nil {
 		return nil, err
@@ -33,8 +33,8 @@ func (m *MongoSchemaCollection) GetAllSchemas() ([]types.M, error) {
 	return apiResults, nil
 }
 
-// FindSchema 查找指定的 Schema
-func (m *MongoSchemaCollection) FindSchema(name string) (types.M, error) {
+// findSchema 查找指定的 Schema
+func (m *MongoSchemaCollection) findSchema(name string) (types.M, error) {
 	options := types.M{
 		"limit": 1,
 	}
@@ -48,8 +48,8 @@ func (m *MongoSchemaCollection) FindSchema(name string) (types.M, error) {
 	return mongoSchemaToParseSchema(results[0]), nil
 }
 
-// FindAndDeleteSchema 查找并删除指定的表定义
-func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (types.M, error) {
+// findAndDeleteSchema 查找并删除指定的表定义
+func (m *MongoSchemaCollection) findAndDeleteSchema(name string) (types.M, error) {
 
 	var result types.M
 	change := mgo.Change{
@@ -68,8 +68,8 @@ func (m *MongoSchemaCollection) FindAndDeleteSchema(name string) (types.M, error
 	return result, nil
 }
 
-// AddSchema 添加一个表定义
-func (m *MongoSchemaCollection) AddSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error) {
+// addSchema 添加一个表定义
+func (m *MongoSchemaCollection) addSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error) {
 	mongoSchema, err := mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions)
 	if err != nil {
 		return nil, err
@@ -86,8 +86,8 @@ func (m *MongoSchemaCollection) AddSchema(name string, fields types.M, classLeve
 	return mongoSchemaToParseSchema(mongoObject), err
 }
 
-// UpdateSchema 更新一个表定义
-func (m *MongoSchemaCollection) UpdateSchema(name string, update types.M) error {
+// updateSchema 更新一个表定义
+func (m *MongoSchemaCollection) updateSchema(name string, update types.M) error {
 	return m.collection.updateOne(mongoSchemaQueryFromNameQuery(name, nil), update)
 }
 
@@ -96,9 +96,9 @@ func (m *MongoSchemaCollection) upsertSchema(name string, query, update types.M)
 	return m.collection.upsertOne(mongoSchemaQueryFromNameQuery(name, query), update)
 }
 
-// AddFieldIfNotExists 更新字段
-func (m *MongoSchemaCollection) AddFieldIfNotExists(className string, fieldName string, fieldType types.M) error {
-	schema, err := m.FindSchema(className)
+// addFieldIfNotExists 更新字段
+func (m *MongoSchemaCollection) addFieldIfNotExists(className string, fieldName string, fieldType types.M) error {
+	schema, err := m.findSchema(className)
 	if err != nil {
 		return err
 	}

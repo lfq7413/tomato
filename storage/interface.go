@@ -4,12 +4,11 @@ import "github.com/lfq7413/tomato/types"
 
 // Adapter 数据库操作适配器接口
 type Adapter interface {
-	SchemaCollection() SchemaCollection
 	ClassExists(name string) bool
 	SetClassLevelPermissions(className string, CLPs types.M) error
 	CreateClass(className string, schema types.M) (types.M, error)
 	AddFieldIfNotExists(className, fieldName string, fieldType types.M) error
-	DeleteClass(className string) error
+	DeleteClass(className string) (types.M, error)
 	DeleteAllClasses() error
 	DeleteFields(className string, schema types.M, fieldNames []string) error
 	CreateObject(className string, schema, object types.M) error
@@ -22,14 +21,4 @@ type Adapter interface {
 	FindOneAndUpdate(className string, schema, query, update types.M) (types.M, error)
 	UpsertOneObject(className string, schema, query, update types.M) error
 	EnsureUniqueness(className string, schema types.M, fieldNames []string) error
-}
-
-// SchemaCollection Schema 集合操作接口
-type SchemaCollection interface {
-	GetAllSchemas() ([]types.M, error)
-	FindSchema(name string) (types.M, error)
-	FindAndDeleteSchema(name string) (types.M, error)
-	AddSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error)
-	UpdateSchema(name string, update types.M) error
-	AddFieldIfNotExists(className string, fieldName string, fieldType types.M) error
 }

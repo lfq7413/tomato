@@ -41,8 +41,8 @@ func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
 	return newMongoCollection(rawCollection)
 }
 
-// SchemaCollection 组装 _SCHEMA 表操作对象
-func (m *MongoAdapter) SchemaCollection() storage.SchemaCollection {
+// schemaCollection 组装 _SCHEMA 表操作对象
+func (m *MongoAdapter) schemaCollection() *MongoSchemaCollection {
 	collection := m.adaptiveCollection(mongoSchemaCollectionName)
 	return newMongoSchemaCollection(collection)
 }
@@ -71,7 +71,7 @@ func (m *MongoAdapter) ClassExists(name string) bool {
 
 // SetClassLevelPermissions 设置类级别权限
 func (m *MongoAdapter) SetClassLevelPermissions(className string, CLPs types.M) error {
-	schemaCollection := m.SchemaCollection()
+	schemaCollection := m.schemaCollection()
 	update := types.M{
 		"$set": types.M{
 			"_metadata": types.M{
@@ -79,34 +79,33 @@ func (m *MongoAdapter) SetClassLevelPermissions(className string, CLPs types.M) 
 			},
 		},
 	}
-	return schemaCollection.UpdateSchema(className, update)
+	return schemaCollection.updateSchema(className, update)
 }
 
 // CreateClass 创建类
 func (m *MongoAdapter) CreateClass(className string, schema types.M) (types.M, error) {
-	schemaCollection := m.SchemaCollection()
-	return schemaCollection.AddSchema(className, utils.M(schema["fields"]), utils.M(schema["classLevelPermissions"]))
+	schemaCollection := m.schemaCollection()
+	return schemaCollection.addSchema(className, utils.M(schema["fields"]), utils.M(schema["classLevelPermissions"]))
 }
 
 // AddFieldIfNotExists 添加字段定义
 func (m *MongoAdapter) AddFieldIfNotExists(className, fieldName string, fieldType types.M) error {
-	schemaCollection := m.SchemaCollection()
-	return schemaCollection.AddFieldIfNotExists(className, fieldName, fieldType)
+	schemaCollection := m.schemaCollection()
+	return schemaCollection.addFieldIfNotExists(className, fieldName, fieldType)
 }
 
 // DeleteClass 删除指定表
-func (m *MongoAdapter) DeleteClass(className string) error {
+func (m *MongoAdapter) DeleteClass(className string) (types.M, error) {
 	coll := m.adaptiveCollection(className)
 	err := coll.drop()
 	if err != nil {
 		if err.Error() == "ns not found" {
-			return nil
+			return nil, nil
 		}
-		return err
+		return nil, err
 	}
-	schemaCollection := m.SchemaCollection()
-	_, err = schemaCollection.FindAndDeleteSchema(className)
-	return err
+	schemaCollection := m.schemaCollection()
+	return schemaCollection.findAndDeleteSchema(className)
 }
 
 // DeleteAllClasses 删除所有表，仅用于测试
@@ -159,8 +158,8 @@ func (m *MongoAdapter) DeleteFields(className string, schema types.M, fieldNames
 		return err
 	}
 	// 更新 schema
-	schemaCollection := m.SchemaCollection()
-	err = schemaCollection.UpdateSchema(className, schemaUpdate)
+	schemaCollection := m.schemaCollection()
+	err = schemaCollection.updateSchema(className, schemaUpdate)
 	if err != nil {
 		return err
 	}
@@ -179,12 +178,12 @@ func (m *MongoAdapter) CreateObject(className string, schema, object types.M) er
 
 // GetClass ...
 func (m *MongoAdapter) GetClass(className string) (types.M, error) {
-	return m.SchemaCollection().FindSchema(className)
+	return m.schemaCollection().findSchema(className)
 }
 
 // GetAllClasses ...
 func (m *MongoAdapter) GetAllClasses() ([]types.M, error) {
-	return m.SchemaCollection().GetAllSchemas()
+	return m.schemaCollection().getAllSchemas()
 }
 
 // getCollectionNames 获取数据库中当前已经存在的表名

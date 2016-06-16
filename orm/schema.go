@@ -234,7 +234,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 			return err
 		}
 		// 删除 _Join table 数据
-		err = Adapter.DeleteClass("_Join:" + fieldName + ":" + className)
+		_, err = Adapter.DeleteClass("_Join:" + fieldName + ":" + className)
 		if err != nil {
 			return err
 		}

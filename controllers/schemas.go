@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"strings"
-
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
@@ -154,42 +152,9 @@ func (s *SchemasController) HandleDelete() {
 		return
 	}
 
-	// 从 _SCHEMA 表中删除类信息，清除相关的 _Join 表
-	coll := orm.TomatoDBController.SchemaCollection()
-	document, err := coll.FindAndDeleteSchema(className)
-	if err != nil {
-		s.Data["json"] = errs.ErrorToMap(err)
-		s.ServeJSON()
-		return
-	}
-	if document != nil {
-		err = removeJoinTables(document)
-		if err != nil {
-			s.Data["json"] = errs.ErrorToMap(err)
-			s.ServeJSON()
-			return
-		}
-	}
 	s.Data["json"] = types.M{}
 	s.ServeJSON()
 	return
-}
-
-// removeJoinTables 清除类中的所有关联表
-// 需要查找的类型： "field":"relation<otherClass>"
-// 需要删除的表明： "_Join:field:className"
-func removeJoinTables(mongoSchema types.M) error {
-	for field, v := range mongoSchema {
-		fieldType := utils.S(v)
-		if field != "_metadata" && strings.HasPrefix(fieldType, "relation<") {
-			collectionName := "_Join:" + field + ":" + utils.S(mongoSchema["_id"])
-			err := orm.Adapter.DeleteClass(collectionName)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 // Delete ...

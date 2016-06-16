@@ -41,11 +41,6 @@ func (d DBController) WithoutValidation() *DBController {
 	}
 }
 
-// SchemaCollection 获取 Schema 表
-func (d DBController) SchemaCollection() storage.SchemaCollection {
-	return Adapter.SchemaCollection()
-}
-
 // CollectionExists 检测表是否存在
 func (d DBController) CollectionExists(className string) bool {
 	return Adapter.ClassExists(className)
@@ -983,6 +978,12 @@ func filterSensitiveData(isMaster bool, aclGroup []string, className string, obj
 
 // DeleteSchema 删除类
 func (d *DBController) DeleteSchema(className string) error {
+	schemaController := d.LoadSchema()
+	schema, err := schemaController.GetOneSchema(className, false)
+	if err != nil {
+		return nil
+	}
+
 	exist := d.CollectionExists(className)
 	if exist == false {
 		return nil
@@ -994,7 +995,26 @@ func (d *DBController) DeleteSchema(className string) error {
 	if count > 0 {
 		return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
 	}
-	return Adapter.DeleteClass(className)
+
+	result, err := Adapter.DeleteClass(className)
+	if err != nil {
+		return err
+	}
+	if result != nil && schema != nil {
+		if fields := utils.M(schema); fields != nil {
+			for fieldName, v := range fields {
+				if fieldType := utils.M(v); fieldType != nil {
+					if utils.S(fieldType["type"]) == "Relation" {
+						_, err = Adapter.DeleteClass(joinTableName(className, fieldName))
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // addPointerPermissions 添加查询用户权限，perms[className][readUserFields] 中保存的是字段名，该字段中的内容是：有权限进行读操作的用户

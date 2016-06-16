@@ -140,20 +140,21 @@ func (w *Write) getUserAndRoleACL() error {
 
 // validateClientClassCreation 检测是否允许创建类
 func (w *Write) validateClientClassCreation() error {
-	sysClass := orm.SystemClasses
 	if config.TConfig.AllowClientClassCreation {
 		return nil
 	}
 	if w.auth.IsMaster {
 		return nil
 	}
-	for _, v := range sysClass {
+	for _, v := range orm.SystemClasses {
 		if v == w.className {
 			return nil
 		}
 	}
 	// 允许操作已存在的表
-	if orm.TomatoDBController.CollectionExists(w.className) {
+	schema := orm.TomatoDBController.LoadSchema()
+	hasClass := schema.HasClass(w.className)
+	if hasClass {
 		return nil
 	}
 	// 无法操作不存在的表

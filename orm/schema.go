@@ -129,7 +129,7 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 
 // UpdateClass 更新类
 func (s *Schema) UpdateClass(className string, submittedFields types.M, classLevelPermissions types.M) (types.M, error) {
-	if s.hasClass(className) == false {
+	if s.HasClass(className) == false {
 		return nil, errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
 	// 组装已存在的字段
@@ -211,7 +211,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 
 	s.reloadData()
 
-	hasClass := s.hasClass(className)
+	hasClass := s.HasClass(className)
 	if hasClass == false {
 		return errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
@@ -518,24 +518,10 @@ func (s *Schema) setPermissions(className string, perms types.M, newSchema types
 	return nil
 }
 
-// hasClass Schema 中是否存在类定义
-func (s *Schema) hasClass(className string) bool {
+// HasClass Schema 中是否存在类定义
+func (s *Schema) HasClass(className string) bool {
 	s.reloadData()
 	return s.data[className] != nil
-}
-
-// hasKeys 指定类中是否存在指定字段
-func (s *Schema) hasKeys(className string, keys []string) bool {
-	for _, key := range keys {
-		if s.data[className] == nil {
-			return false
-		}
-		class := utils.M(s.data[className])
-		if class[key] == nil {
-			return false
-		}
-	}
-	return true
 }
 
 // getExpectedType 获取期望的字段类型

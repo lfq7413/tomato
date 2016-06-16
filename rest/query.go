@@ -205,7 +205,6 @@ func (q *Query) redirectClassNameForKey() error {
 
 // validateClientClassCreation 验证当前请求是否能创建类
 func (q *Query) validateClientClassCreation() error {
-	sysClass := orm.SystemClasses
 	// 检测配置项是否允许
 	if config.TConfig.AllowClientClassCreation {
 		return nil
@@ -214,15 +213,18 @@ func (q *Query) validateClientClassCreation() error {
 		return nil
 	}
 	// 允许操作系统表
-	for _, v := range sysClass {
+	for _, v := range orm.SystemClasses {
 		if v == q.className {
 			return nil
 		}
 	}
 	// 允许操作已存在的表
-	if orm.TomatoDBController.CollectionExists(q.className) {
+	schema := orm.TomatoDBController.LoadSchema()
+	hasClass := schema.HasClass(q.className)
+	if hasClass {
 		return nil
 	}
+
 	// 无法操作不存在的表
 	return errs.E(errs.OperationForbidden, "This user is not allowed to access non-existent class: "+q.className)
 }

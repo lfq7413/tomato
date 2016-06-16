@@ -48,7 +48,7 @@ func (d DBController) SchemaCollection() storage.SchemaCollection {
 
 // CollectionExists 检测表是否存在
 func (d DBController) CollectionExists(className string) bool {
-	return Adapter.CollectionExists(className)
+	return Adapter.ClassExists(className)
 }
 
 // Find 从指定表中查询数据，查询到的数据放入 list 中

@@ -36,23 +36,18 @@ func (m *MongoAdapter) collection(name string) *mgo.Collection {
 
 // adaptiveCollection 组装 mongo 表操作对象
 func (m *MongoAdapter) adaptiveCollection(name string) *MongoCollection {
-	return &MongoCollection{
-		collection: m.collection(m.collectionPrefix + name),
-	}
+	rawCollection := m.collection(m.collectionPrefix + name)
+	return newMongoCollection(rawCollection)
 }
 
 // SchemaCollection 组装 _SCHEMA 表操作对象
 func (m *MongoAdapter) SchemaCollection() storage.SchemaCollection {
-	mongoCollection := &MongoCollection{
-		collection: m.collection(m.collectionPrefix + mongoSchemaCollectionName),
-	}
-	return &MongoSchemaCollection{
-		collection: mongoCollection,
-	}
+	collection := m.adaptiveCollection(mongoSchemaCollectionName)
+	return newMongoSchemaCollection(collection)
 }
 
-// CollectionExists 检测数据库中是否存在指定表
-func (m *MongoAdapter) CollectionExists(name string) bool {
+// ClassExists 检测数据库中是否存在指定类
+func (m *MongoAdapter) ClassExists(name string) bool {
 	name = m.collectionPrefix + name
 	if m.collectionList == nil {
 		m.collectionList = m.getCollectionNames()

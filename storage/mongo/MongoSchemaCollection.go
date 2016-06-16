@@ -1,7 +1,6 @@
 package mongo
 
 import (
-	"errors"
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
@@ -13,6 +12,12 @@ import (
 // MongoSchemaCollection _SCHEMA 表操作对象
 type MongoSchemaCollection struct {
 	collection *MongoCollection
+}
+
+func newMongoSchemaCollection(collection *MongoCollection) *MongoSchemaCollection {
+	return &MongoSchemaCollection{
+		collection: collection,
+	}
 }
 
 // GetAllSchemas 获取所有 Schema，并转换为 API 格式的数据
@@ -72,9 +77,9 @@ func (m *MongoSchemaCollection) AddSchema(name string, fields types.M, classLeve
 	mongoObject := mongoSchemaObjectFromNameFields(name, mongoSchema)
 	// 处理 insertOne 失败的情况，数据库插入失败，检测是否是因为键值重复造成的错误
 	err = m.collection.insertOne(mongoObject)
-	if err != nil && strings.Index(err.Error(), "duplicate key error") > -1 {
+	if err != nil {
 		if strings.Index(err.Error(), "duplicate key error") > -1 {
-			return nil, errors.New("undefined")
+			return nil, errs.E(errs.DuplicateValue, "Class already exists.")
 		}
 		return nil, err
 	}

@@ -13,6 +13,12 @@ type MongoCollection struct {
 	collection *mgo.Collection
 }
 
+func newMongoCollection(collection *mgo.Collection) *MongoCollection {
+	return &MongoCollection{
+		collection: collection,
+	}
+}
+
 // find 执行查找操作，自动添加索引
 func (m *MongoCollection) find(query interface{}, options types.M) ([]types.M, error) {
 	result, err := m.rawFind(query, options)

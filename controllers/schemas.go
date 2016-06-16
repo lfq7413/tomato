@@ -183,7 +183,7 @@ func removeJoinTables(mongoSchema types.M) error {
 		fieldType := utils.S(v)
 		if field != "_metadata" && strings.HasPrefix(fieldType, "relation<") {
 			collectionName := "_Join:" + field + ":" + utils.S(mongoSchema["_id"])
-			err := orm.Adapter.DeleteOneSchema(collectionName)
+			err := orm.Adapter.DeleteClass(collectionName)
 			if err != nil {
 				return err
 			}

@@ -7,6 +7,7 @@ import (
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 
 	"gopkg.in/mgo.v2"
 )
@@ -68,17 +69,48 @@ func (m *MongoAdapter) ClassExists(name string) bool {
 	return false
 }
 
-// DeleteOneSchema 删除指定表
-func (m *MongoAdapter) DeleteOneSchema(name string) error {
-	err := m.collection(m.collectionPrefix + name).DropCollection()
-	if err != nil && err.Error() == "ns not found" {
-		return nil
+// SetClassLevelPermissions 设置类级别权限
+func (m *MongoAdapter) SetClassLevelPermissions(className string, CLPs types.M) error {
+	schemaCollection := m.SchemaCollection()
+	update := types.M{
+		"$set": types.M{
+			"_metadata": types.M{
+				"class_permissions": CLPs,
+			},
+		},
 	}
+	return schemaCollection.UpdateSchema(className, update)
+}
+
+// CreateClass 创建类
+func (m *MongoAdapter) CreateClass(className string, schema types.M) (types.M, error) {
+	schemaCollection := m.SchemaCollection()
+	return schemaCollection.AddSchema(className, utils.M(schema["fields"]), utils.M(schema["classLevelPermissions"]))
+}
+
+// AddFieldIfNotExists 添加字段定义
+func (m *MongoAdapter) AddFieldIfNotExists(className, fieldName string, fieldType types.M) error {
+	schemaCollection := m.SchemaCollection()
+	return schemaCollection.AddFieldIfNotExists(className, fieldName, fieldType)
+}
+
+// DeleteClass 删除指定表
+func (m *MongoAdapter) DeleteClass(className string) error {
+	coll := m.adaptiveCollection(className)
+	err := coll.drop()
+	if err != nil {
+		if err.Error() == "ns not found" {
+			return nil
+		}
+		return err
+	}
+	schemaCollection := m.SchemaCollection()
+	_, err = schemaCollection.FindAndDeleteSchema(className)
 	return err
 }
 
-// DeleteAllSchemas 删除所有表，仅用于测试
-func (m *MongoAdapter) DeleteAllSchemas() error {
+// DeleteAllClasses 删除所有表，仅用于测试
+func (m *MongoAdapter) DeleteAllClasses() error {
 	collections := storageAdapterAllCollections(m)
 	for _, collection := range collections {
 		err := collection.drop()
@@ -91,29 +123,22 @@ func (m *MongoAdapter) DeleteAllSchemas() error {
 }
 
 // DeleteFields 删除字段
-func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNames []string) error {
-	// 查找非指针字段名
-	nonPointerFieldNames := []string{}
+func (m *MongoAdapter) DeleteFields(className string, schema types.M, fieldNames []string) error {
+	var fields types.M
+	if schema != nil {
+		fields = utils.M(schema["fields"])
+	}
+	mongoFormatNames := []string{}
 	for _, fieldName := range fieldNames {
-		in := false
-		for _, pointerFieldName := range pointerFieldNames {
-			if fieldName == pointerFieldName {
-				in = true
-				break
+		if fields != nil {
+			fieldType := utils.M(fields[fieldName])
+			if fieldType != nil && utils.S(fieldType["type"]) == "Pointer" {
+				mongoFormatNames = append(mongoFormatNames, "_p_"+fieldName)
 			}
 		}
-		if in == false {
-			nonPointerFieldNames = append(nonPointerFieldNames, fieldName)
-		}
+		mongoFormatNames = append(mongoFormatNames, fieldName)
 	}
-	// 转换为 mongo 格式
-	var mongoFormatNames []string
-	for _, pointerFieldName := range pointerFieldNames {
-		nonPointerFieldNames = append(nonPointerFieldNames, "_p_"+pointerFieldName)
-	}
-	mongoFormatNames = nonPointerFieldNames
 
-	// 组装表数据更新语句
 	unset := types.M{}
 	for _, name := range mongoFormatNames {
 		unset[name] = nil
@@ -143,7 +168,7 @@ func (m *MongoAdapter) DeleteFields(className string, fieldNames, pointerFieldNa
 }
 
 // CreateObject 创建对象
-func (m *MongoAdapter) CreateObject(className string, object types.M, schema types.M) error {
+func (m *MongoAdapter) CreateObject(className string, schema, object types.M) error {
 	mongoObject, err := m.transform.parseObjectToMongoObjectForCreate(className, object, schema)
 	if err != nil {
 		return err
@@ -152,13 +177,13 @@ func (m *MongoAdapter) CreateObject(className string, object types.M, schema typ
 	return coll.insertOne(mongoObject)
 }
 
-// GetOneSchema ...
-func (m *MongoAdapter) GetOneSchema(className string) (types.M, error) {
+// GetClass ...
+func (m *MongoAdapter) GetClass(className string) (types.M, error) {
 	return m.SchemaCollection().FindSchema(className)
 }
 
-// GetAllSchemas ...
-func (m *MongoAdapter) GetAllSchemas() ([]types.M, error) {
+// GetAllClasses ...
+func (m *MongoAdapter) GetAllClasses() ([]types.M, error) {
 	return m.SchemaCollection().GetAllSchemas()
 }
 
@@ -172,7 +197,7 @@ func (m *MongoAdapter) getCollectionNames() []string {
 }
 
 // DeleteObjectsByQuery 删除符合条件的所有对象
-func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, schema types.M) error {
+func (m *MongoAdapter) DeleteObjectsByQuery(className string, schema, query types.M) error {
 	collection := m.adaptiveCollection(className)
 
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
@@ -192,7 +217,7 @@ func (m *MongoAdapter) DeleteObjectsByQuery(className string, query types.M, sch
 }
 
 // UpdateObjectsByQuery ...
-func (m *MongoAdapter) UpdateObjectsByQuery(className string, query, schema, update types.M) error {
+func (m *MongoAdapter) UpdateObjectsByQuery(className string, schema, query, update types.M) error {
 	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
 	if err != nil {
 		return err
@@ -206,7 +231,7 @@ func (m *MongoAdapter) UpdateObjectsByQuery(className string, query, schema, upd
 }
 
 // FindOneAndUpdate ...
-func (m *MongoAdapter) FindOneAndUpdate(className string, query, schema, update types.M) (types.M, error) {
+func (m *MongoAdapter) FindOneAndUpdate(className string, schema, query, update types.M) (types.M, error) {
 	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
 	if err != nil {
 		return nil, err
@@ -220,7 +245,7 @@ func (m *MongoAdapter) FindOneAndUpdate(className string, query, schema, update 
 }
 
 // UpsertOneObject ...
-func (m *MongoAdapter) UpsertOneObject(className string, query, schema, update types.M) error {
+func (m *MongoAdapter) UpsertOneObject(className string, schema, query, update types.M) error {
 	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
 	if err != nil {
 		return err
@@ -234,7 +259,7 @@ func (m *MongoAdapter) UpsertOneObject(className string, query, schema, update t
 }
 
 // Find ...
-func (m *MongoAdapter) Find(className string, query, schema, options types.M) ([]types.M, error) {
+func (m *MongoAdapter) Find(className string, schema, query, options types.M) ([]types.M, error) {
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return nil, err
@@ -280,7 +305,7 @@ func (m *MongoAdapter) rawFind(className string, query types.M) ([]types.M, erro
 }
 
 // Count ...
-func (m *MongoAdapter) Count(className string, query, schema types.M) (int, error) {
+func (m *MongoAdapter) Count(className string, schema, query types.M) (int, error) {
 	coll := m.adaptiveCollection(className)
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
@@ -291,7 +316,7 @@ func (m *MongoAdapter) Count(className string, query, schema types.M) (int, erro
 }
 
 // EnsureUniqueness 创建索引
-func (m *MongoAdapter) EnsureUniqueness(className string, fieldNames []string, schema types.M) error {
+func (m *MongoAdapter) EnsureUniqueness(className string, schema types.M, fieldNames []string) error {
 	if fieldNames == nil {
 		return nil
 	}

@@ -222,12 +222,12 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	name := utils.M(class[fieldName])["type"].(string)
 	if name == "Relation" {
 		// 删除表数据与 schema 中的对应字段
-		err := Adapter.DeleteFields(className, []string{fieldName}, []string{})
+		err := Adapter.DeleteFields(className, class, []string{fieldName})
 		if err != nil {
 			return err
 		}
 		// 删除 _Join table 数据
-		err = Adapter.DeleteOneSchema("_Join:" + fieldName + ":" + className)
+		err = Adapter.DeleteClass("_Join:" + fieldName + ":" + className)
 		if err != nil {
 			return err
 		}
@@ -239,7 +239,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	if name == "Pointer" {
 		pointerFieldNames = append(pointerFieldNames, fieldName)
 	}
-	return Adapter.DeleteFields(className, fieldNames, pointerFieldNames)
+	return Adapter.DeleteFields(className, class, fieldNames)
 }
 
 // validateObject 校验对象是否合法
@@ -576,7 +576,7 @@ func (s *Schema) reloadData() {
 
 // GetAllSchemas ...
 func (s *Schema) GetAllSchemas() ([]types.M, error) {
-	allSchemas, err := Adapter.GetAllSchemas()
+	allSchemas, err := Adapter.GetAllClasses()
 	if err != nil {
 		return nil, err
 	}
@@ -597,7 +597,7 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (type
 		}
 	}
 
-	schema, err := Adapter.GetOneSchema(className)
+	schema, err := Adapter.GetClass(className)
 	if err != nil {
 		return nil, err
 	}

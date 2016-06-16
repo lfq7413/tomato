@@ -46,6 +46,6 @@ func createIndexes() {
 		defaultUserColumns[k] = v
 	}
 	requiredUserFields["fields"] = defaultUserColumns
-	orm.Adapter.EnsureUniqueness("_User", []string{"username"}, requiredUserFields)
-	orm.Adapter.EnsureUniqueness("_User", []string{"email"}, requiredUserFields)
+	orm.Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"username"})
+	orm.Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"email"})
 }

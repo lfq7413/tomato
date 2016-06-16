@@ -156,7 +156,7 @@ func (d DBController) Find(className string, query, options types.M) (types.S, e
 
 	// 获取 count
 	if options["count"] != nil {
-		count, err := Adapter.Count(className, query, parseFormatSchema)
+		count, err := Adapter.Count(className, parseFormatSchema, query)
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +164,7 @@ func (d DBController) Find(className string, query, options types.M) (types.S, e
 	}
 
 	// 执行查询操作
-	objects, err := Adapter.Find(className, query, parseFormatSchema, options)
+	objects, err := Adapter.Find(className, parseFormatSchema, query, options)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (d DBController) Destroy(className string, query types.M, options types.M) 
 		parseFormatSchema["fields"] = types.M{}
 	}
 
-	err = Adapter.DeleteObjectsByQuery(className, query, parseFormatSchema)
+	err = Adapter.DeleteObjectsByQuery(className, parseFormatSchema, query)
 	if err != nil {
 		// 排除 _Session，避免在修改密码时因为没有 Session 失败
 		if className == "_Session" && errs.GetErrorCode(err) == errs.ObjectNotFound {
@@ -322,20 +322,20 @@ func (d DBController) Update(className string, query, update, options types.M) (
 	update = transformObjectACL(update)
 	var result types.M
 	if many {
-		err := Adapter.UpdateObjectsByQuery(className, query, sch, update)
+		err := Adapter.UpdateObjectsByQuery(className, sch, query, update)
 		if err != nil {
 			return nil, err
 		}
 		result = types.M{}
 	} else if upsert {
-		err := Adapter.UpsertOneObject(className, query, sch, update)
+		err := Adapter.UpsertOneObject(className, sch, query, update)
 		if err != nil {
 			return nil, err
 		}
 		result = types.M{}
 	} else {
 		var err error
-		result, err = Adapter.FindOneAndUpdate(className, query, sch, update)
+		result, err = Adapter.FindOneAndUpdate(className, sch, query, update)
 		if err != nil {
 			return nil, err
 		}
@@ -426,7 +426,7 @@ func (d DBController) Create(className string, object, options types.M) error {
 	}
 
 	// 无需调用 sanitizeDatabaseResult
-	return Adapter.CreateObject(className, object, sch)
+	return Adapter.CreateObject(className, sch, object)
 }
 
 // validateClassName 校验表名是否合法
@@ -529,7 +529,7 @@ func (d DBController) addRelation(key, fromClassName, fromID, toID string) error
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	return Adapter.UpsertOneObject(className, doc, relationSchema, doc)
+	return Adapter.UpsertOneObject(className, relationSchema, doc, doc)
 }
 
 // removeRelation 把对象 id 从 _Join 表中删除，表名为 _Join:key:fromClassName
@@ -539,7 +539,7 @@ func (d DBController) removeRelation(key, fromClassName, fromID, toID string) er
 		"owningId":  fromID,
 	}
 	className := "_Join:" + key + ":" + fromClassName
-	err := Adapter.DeleteObjectsByQuery(className, doc, relationSchema)
+	err := Adapter.DeleteObjectsByQuery(className, relationSchema, doc)
 	if err != nil {
 		if errs.GetErrorCode(err) == errs.ObjectNotFound {
 			return nil
@@ -592,7 +592,7 @@ func (d DBController) LoadSchema() *Schema {
 // DeleteEverything 删除所有表数据，仅用于测试
 func (d DBController) DeleteEverything() {
 	schemaPromise = nil
-	Adapter.DeleteAllSchemas()
+	Adapter.DeleteAllClasses()
 }
 
 // RedirectClassNameForKey 返回指定类的字段所对应的类型
@@ -716,7 +716,7 @@ func (d DBController) reduceRelationKeys(className string, query types.M) {
 // relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
 func (d DBController) relatedIds(className, key, owningID string) types.S {
 	ids := types.S{}
-	results, err := Adapter.Find(joinTableName(className, key), types.M{"owningId": owningID}, relationSchema, types.M{})
+	results, err := Adapter.Find(joinTableName(className, key), relationSchema, types.M{"owningId": owningID}, types.M{})
 	if err != nil {
 		return ids
 	}
@@ -950,7 +950,7 @@ func (d DBController) owningIds(className, key string, relatedIds types.S) types
 			"$in": relatedIds,
 		},
 	}
-	results, err := Adapter.Find(joinTableName(className, key), query, relationSchema, types.M{})
+	results, err := Adapter.Find(joinTableName(className, key), relationSchema, query, types.M{})
 	if err != nil {
 		return ids
 	}
@@ -995,7 +995,7 @@ func (d *DBController) DeleteSchema(className string) error {
 	if count > 0 {
 		return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
 	}
-	return Adapter.DeleteOneSchema(className)
+	return Adapter.DeleteClass(className)
 }
 
 // addPointerPermissions 添加查询用户权限，perms[className][readUserFields] 中保存的是字段名，该字段中的内容是：有权限进行读操作的用户

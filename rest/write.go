@@ -3,7 +3,6 @@ package rest
 import (
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -791,8 +790,7 @@ func (w *Write) runDatabaseOperation() error {
 			if w.className != "_User" {
 				return err
 			}
-			msg := strings.Replace(err.Error(), " ", "", -1)
-			if strings.Index(msg, `{"code":`+strconv.Itoa(errs.DuplicateValue)) != 0 {
+			if errs.GetErrorCode(err) != errs.DuplicateValue {
 				return err
 			}
 

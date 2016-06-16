@@ -221,10 +221,8 @@ func (d DBController) Destroy(className string, query types.M, options types.M) 
 
 	err = Adapter.DeleteObjectsByQuery(className, query, parseFormatSchema)
 	if err != nil {
-		msg := err.Error()
-		msg = strings.Replace(msg, " ", "", -1)
 		// 排除 _Session，避免在修改密码时因为没有 Session 失败
-		if className == "_Session" && strings.Index(msg, `"code":`+strconv.Itoa(errs.ObjectNotFound)) > -1 {
+		if className == "_Session" && errs.GetErrorCode(err) == errs.ObjectNotFound {
 			return nil
 		}
 		return err
@@ -543,9 +541,7 @@ func (d DBController) removeRelation(key, fromClassName, fromID, toID string) er
 	className := "_Join:" + key + ":" + fromClassName
 	err := Adapter.DeleteObjectsByQuery(className, doc, relationSchema)
 	if err != nil {
-		msg := err.Error()
-		msg = strings.Replace(msg, " ", "", -1)
-		if strings.Index(msg, `"code":`+strconv.Itoa(errs.ObjectNotFound)) > -1 {
+		if errs.GetErrorCode(err) == errs.ObjectNotFound {
 			return nil
 		}
 		return err

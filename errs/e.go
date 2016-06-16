@@ -31,6 +31,36 @@ func ErrorMessageToMap(code int, msg string) types.M {
 	return types.M{"code": code, "error": msg}
 }
 
+// GetErrorCode 获取 error 中的 code
+func GetErrorCode(e error) int {
+	var result types.M
+	errMsg := e.Error()
+	err := json.Unmarshal([]byte(errMsg), &result)
+	if err != nil {
+		return 0
+	}
+	if c, ok := result["code"].(float64); ok {
+		return int(c)
+	} else if c, ok := result["code"].(int); ok {
+		return c
+	}
+	return 0
+}
+
+// GetErrorMessage 获取 error 中的 Message
+func GetErrorMessage(e error) string {
+	var result types.M
+	errMsg := e.Error()
+	err := json.Unmarshal([]byte(errMsg), &result)
+	if err != nil {
+		return errMsg
+	}
+	if msg, ok := result["error"].(string); ok {
+		return msg
+	}
+	return errMsg
+}
+
 // OtherCause ...
 // Error code indicating some error other than those enumerated here.
 var OtherCause = -1

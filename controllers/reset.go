@@ -1,9 +1,6 @@
 package controllers
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
@@ -25,9 +22,7 @@ func (r *ResetController) HandleResetRequest() {
 	email := r.JSONBody["email"].(string)
 	err := rest.SendPasswordResetEmail(email)
 	if err != nil {
-		msg := err.Error()
-		msg = strings.Replace(msg, " ", "", -1)
-		if strings.Index(msg, `"code":`+strconv.Itoa(errs.ObjectNotFound)) > -1 {
+		if errs.GetErrorCode(err) == errs.ObjectNotFound {
 			err = errs.E(errs.EmailNotFound, "No user found with email "+email)
 		}
 

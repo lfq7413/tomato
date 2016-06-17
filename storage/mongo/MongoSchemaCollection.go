@@ -289,10 +289,13 @@ func mongoSchemaToParseSchema(schema types.M) types.M {
 
 // parseFieldTypeToMongoFieldType 返回数据库中存储的字段类型
 func parseFieldTypeToMongoFieldType(t types.M) string {
-	fieldType := t["type"].(string)
+	if t == nil {
+		return ""
+	}
+	fieldType := utils.S(t["type"])
 	targetClass := ""
 	if fieldType == "Pointer" || fieldType == "Relation" {
-		targetClass = t["targetClass"].(string)
+		targetClass = utils.S(t["targetClass"])
 	}
 	switch fieldType {
 	case "Pointer":

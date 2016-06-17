@@ -129,7 +129,7 @@ func mongoSchemaQueryFromNameQuery(name string, query types.M) types.M {
 	return mongoSchemaObjectFromNameFields(name, query)
 }
 
-// mongoSchemaObjectFromNameFields 从表名及字段列表组装 mongo 查询对象
+// mongoSchemaObjectFromNameFields 从表名及字段列表组装 mongo 对象
 func mongoSchemaObjectFromNameFields(name string, fields types.M) types.M {
 	object := types.M{
 		"_id": name,

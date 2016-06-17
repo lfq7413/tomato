@@ -15,13 +15,11 @@ func Test_getAllSchemas(t *testing.T) {
 }
 
 func Test_findSchema(t *testing.T) {
-	// mongoSchemaQueryFromNameQuery
 	// mongoSchemaToParseSchema
 	// TODO
 }
 
 func Test_findAndDeleteSchema(t *testing.T) {
-	// mongoSchemaQueryFromNameQuery
 	// TODO
 }
 
@@ -46,12 +44,39 @@ func Test_addFieldIfNotExists(t *testing.T) {
 }
 
 func Test_mongoSchemaQueryFromNameQuery(t *testing.T) {
-	// mongoSchemaObjectFromNameFields
-	// TODO
+	// 测试用例与 mongoSchemaObjectFromNameFields 相同
 }
 
 func Test_mongoSchemaObjectFromNameFields(t *testing.T) {
-	// TODO
+	var name string
+	var fields types.M
+	var result types.M
+	var expect types.M
+	/*****************************************************/
+	name = "user"
+	fields = nil
+	result = mongoSchemaObjectFromNameFields(name, fields)
+	expect = types.M{
+		"_id": name,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	name = "user"
+	fields = types.M{
+		"key":  "string",
+		"key1": "*_User",
+	}
+	result = mongoSchemaObjectFromNameFields(name, fields)
+	expect = types.M{
+		"_id":  name,
+		"key":  "string",
+		"key1": "*_User",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_mongoFieldToParseSchemaField(t *testing.T) {

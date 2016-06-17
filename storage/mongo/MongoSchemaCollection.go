@@ -70,13 +70,10 @@ func (m *MongoSchemaCollection) findAndDeleteSchema(name string) (types.M, error
 
 // addSchema 添加一个表定义
 func (m *MongoSchemaCollection) addSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error) {
-	mongoSchema, err := mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions)
-	if err != nil {
-		return nil, err
-	}
+	mongoSchema := mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions)
 	mongoObject := mongoSchemaObjectFromNameFields(name, mongoSchema)
 	// 处理 insertOne 失败的情况，数据库插入失败，检测是否是因为键值重复造成的错误
-	err = m.collection.insertOne(mongoObject)
+	err := m.collection.insertOne(mongoObject)
 	if err != nil {
 		if strings.Index(err.Error(), "duplicate key error") > -1 {
 			return nil, errs.E(errs.DuplicateValue, "Class already exists.")
@@ -324,7 +321,7 @@ func parseFieldTypeToMongoFieldType(t types.M) string {
 }
 
 // mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
-func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) (types.M, error) {
+func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) types.M {
 	mongoObject := types.M{
 		"_id":       className,
 		"objectId":  "string",
@@ -333,23 +330,16 @@ func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, c
 	}
 
 	// 添加其他字段
-	for fieldName, v := range fields {
-		mongoObject[fieldName] = parseFieldTypeToMongoFieldType(v.(map[string]interface{}))
+	if fields != nil {
+		for fieldName, v := range fields {
+			mongoObject[fieldName] = parseFieldTypeToMongoFieldType(utils.M(v))
+		}
 	}
 
 	// 添加 CLP
-	var metadata types.M
-	if mongoObject["_metadata"] == nil && utils.M(mongoObject["_metadata"]) == nil {
-		metadata = types.M{}
-	} else {
-		metadata = utils.M(mongoObject["_metadata"])
+	if classLevelPermissions != nil {
+		mongoObject["_metadata"] = types.M{"class_permissions": classLevelPermissions}
 	}
-	if classLevelPermissions == nil {
-		delete(metadata, "class_permissions")
-	} else {
-		metadata["class_permissions"] = classLevelPermissions
-	}
-	mongoObject["_metadata"] = metadata
 
-	return mongoObject, nil
+	return mongoObject
 }

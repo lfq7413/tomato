@@ -80,11 +80,136 @@ func Test_mongoSchemaObjectFromNameFields(t *testing.T) {
 }
 
 func Test_mongoFieldToParseSchemaField(t *testing.T) {
-	// TODO
+	var ty string
+	var result types.M
+	var expect types.M
+	/*****************************************************/
+	ty = ""
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "*user"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type":        "Pointer",
+		"targetClass": "user",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "relation<user>"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type":        "Relation",
+		"targetClass": "user",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "number"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "Number",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "string"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "String",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "boolean"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "Boolean",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "date"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "Date",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "map"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "Object",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "object"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "Object",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "array"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "Array",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "geopoint"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "GeoPoint",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "file"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "File",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "bytes"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{
+		"type": "Bytes",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	ty = "other"
+	result = mongoFieldToParseSchemaField(ty)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_mongoSchemaFieldsToParseSchemaFields(t *testing.T) {
-	// mongoFieldToParseSchemaField
 	// TODO
 }
 

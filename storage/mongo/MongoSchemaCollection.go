@@ -144,6 +144,9 @@ func mongoSchemaObjectFromNameFields(name string, fields types.M) types.M {
 
 // mongoFieldToParseSchemaField 把数据库格式的字段类型转换为 API 格式
 func mongoFieldToParseSchemaField(t string) types.M {
+	if t == "" {
+		return types.M{}
+	}
 	// *abc ==> {"type":"Pointer", "targetClass":"abc"}
 	if t[0] == '*' {
 		return types.M{

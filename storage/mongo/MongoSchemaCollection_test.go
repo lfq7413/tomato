@@ -210,11 +210,77 @@ func Test_mongoFieldToParseSchemaField(t *testing.T) {
 }
 
 func Test_mongoSchemaFieldsToParseSchemaFields(t *testing.T) {
-	// TODO
+	var schema types.M
+	var result types.M
+	var expect types.M
+	/*****************************************************/
+	schema = nil
+	result = mongoSchemaFieldsToParseSchemaFields(schema)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{}
+	result = mongoSchemaFieldsToParseSchemaFields(schema)
+	expect = types.M{
+		"ACL":       types.M{"type": "ACL"},
+		"createdAt": types.M{"type": "Date"},
+		"updatedAt": types.M{"type": "Date"},
+		"objectId":  types.M{"type": "String"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{
+		"_id":                 "string",
+		"_metadata":           "object",
+		"_client_permissions": "object",
+	}
+	result = mongoSchemaFieldsToParseSchemaFields(schema)
+	expect = types.M{
+		"ACL":       types.M{"type": "ACL"},
+		"createdAt": types.M{"type": "Date"},
+		"updatedAt": types.M{"type": "Date"},
+		"objectId":  types.M{"type": "String"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{
+		"_id":                 "string",
+		"_metadata":           "object",
+		"_client_permissions": "object",
+		"key1":                "*user",
+		"key2":                "relation<user>",
+		"key3":                "string",
+	}
+	result = mongoSchemaFieldsToParseSchemaFields(schema)
+	expect = types.M{
+		"key1": types.M{
+			"type":        "Pointer",
+			"targetClass": "user",
+		},
+		"key2": types.M{
+			"type":        "Relation",
+			"targetClass": "user",
+		},
+		"key3": types.M{
+			"type": "String",
+		},
+		"ACL":       types.M{"type": "ACL"},
+		"createdAt": types.M{"type": "Date"},
+		"updatedAt": types.M{"type": "Date"},
+		"objectId":  types.M{"type": "String"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_mongoSchemaToParseSchema(t *testing.T) {
-	// mongoSchemaFieldsToParseSchemaFields
 	// TODO
 }
 

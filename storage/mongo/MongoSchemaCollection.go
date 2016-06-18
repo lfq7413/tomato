@@ -212,6 +212,10 @@ var nonFieldSchemaKeys = []string{"_id", "_metadata", "_client_permissions"}
 // mongoSchemaFieldsToParseSchemaFields 转换数据库格式的字段到 API类型，排除掉 nonFieldSchemaKeys 中的字段
 func mongoSchemaFieldsToParseSchemaFields(schema types.M) types.M {
 	fieldNames := []string{}
+	response := types.M{}
+	if schema == nil {
+		return response
+	}
 	for k := range schema {
 		t := false
 		// 排除 nonFieldSchemaKeys
@@ -225,7 +229,6 @@ func mongoSchemaFieldsToParseSchemaFields(schema types.M) types.M {
 			fieldNames = append(fieldNames, k)
 		}
 	}
-	response := types.M{}
 	// 转换普通字段
 	for _, v := range fieldNames {
 		response[v] = mongoFieldToParseSchemaField(utils.S(schema[v]))

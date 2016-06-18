@@ -10,12 +10,10 @@ import (
 )
 
 func Test_getAllSchemas(t *testing.T) {
-	// mongoSchemaToParseSchema
 	// TODO
 }
 
 func Test_findSchema(t *testing.T) {
-	// mongoSchemaToParseSchema
 	// TODO
 }
 
@@ -24,8 +22,6 @@ func Test_findAndDeleteSchema(t *testing.T) {
 }
 
 func Test_addSchema(t *testing.T) {
-	// mongoSchemaObjectFromNameFields
-	// mongoSchemaToParseSchema
 	// TODO
 }
 
@@ -281,7 +277,121 @@ func Test_mongoSchemaFieldsToParseSchemaFields(t *testing.T) {
 }
 
 func Test_mongoSchemaToParseSchema(t *testing.T) {
-	// TODO
+	var schema types.M
+	var result types.M
+	var expect types.M
+	/*****************************************************/
+	schema = nil
+	result = mongoSchemaToParseSchema(schema)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{
+		"_id": "user",
+	}
+	result = mongoSchemaToParseSchema(schema)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"ACL":       types.M{"type": "ACL"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"objectId":  types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{
+		"_id": "user",
+		"_metadata": types.M{
+			"class_permissions": types.M{
+				"find":   types.M{"*": true},
+				"get":    types.M{"*": true},
+				"create": types.M{"*": true},
+				"update": types.M{"*": true},
+			},
+		},
+	}
+	result = mongoSchemaToParseSchema(schema)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"ACL":       types.M{"type": "ACL"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"objectId":  types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{},
+			"addField": types.M{},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{
+		"_id":  "user",
+		"key1": "*user",
+		"key2": "relation<user>",
+		"key3": "string",
+		"_metadata": types.M{
+			"class_permissions": types.M{
+				"find":   types.M{"*": true},
+				"get":    types.M{"*": true},
+				"create": types.M{"*": true},
+				"update": types.M{"*": true},
+			},
+		},
+	}
+	result = mongoSchemaToParseSchema(schema)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key1": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+			"key2": types.M{
+				"type":        "Relation",
+				"targetClass": "user",
+			},
+			"key3": types.M{
+				"type": "String",
+			},
+			"ACL":       types.M{"type": "ACL"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"objectId":  types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{},
+			"addField": types.M{},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_parseFieldTypeToMongoFieldType(t *testing.T) {

@@ -270,12 +270,14 @@ var defaultCLPS = types.M{
 
 // mongoSchemaToParseSchema 把数据库格式的数据转换为 API 格式
 func mongoSchemaToParseSchema(schema types.M) types.M {
+	if schema == nil {
+		return types.M{}
+	}
 	// 复制 schema["_metadata"]["class_permissions"] 到 classLevelPermissions 中
-	clps := utils.CopyMap(defaultCLPS)
-	if schema["_metadata"] != nil && utils.M(schema["_metadata"]) != nil {
-		metadata := utils.M(schema["_metadata"])
-		if metadata["class_permissions"] != nil && utils.M(metadata["class_permissions"]) != nil {
-			classPermissions := utils.M(metadata["class_permissions"])
+	var clps types.M
+	clps = utils.CopyMap(defaultCLPS)
+	if metadata := utils.M(schema["_metadata"]); metadata != nil {
+		if classPermissions := utils.M(metadata["class_permissions"]); classPermissions != nil {
 			clps = utils.CopyMap(emptyCLPS)
 			for k, v := range classPermissions {
 				clps[k] = v

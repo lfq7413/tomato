@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 
 	"gopkg.in/mgo.v2"
@@ -22,7 +23,244 @@ func Test_findAndDeleteSchema(t *testing.T) {
 }
 
 func Test_addSchema(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	msc := getSchemaCollection(db)
+	var name string
+	var fields types.M
+	var classLevelPermissions types.M
+	var result types.M
+	var results []types.M
+	var err error
+	var expect types.M
+	/*****************************************************/
+	name = "user"
+	fields = nil
+	classLevelPermissions = nil
+	result, err = msc.addSchema(name, fields, classLevelPermissions)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = msc.collection.find(types.M{"_id": "user"}, types.M{})
+	expect = types.M{
+		"_id":       "user",
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	if len(results) == 1 && reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	name = "user"
+	fields = types.M{}
+	classLevelPermissions = nil
+	result, err = msc.addSchema(name, fields, classLevelPermissions)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = msc.collection.find(types.M{"_id": "user"}, types.M{})
+	expect = types.M{
+		"_id":       "user",
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	if len(results) == 1 && reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	name = "user"
+	fields = types.M{
+		"k1": types.M{
+			"type":        "Pointer",
+			"targetClass": "user",
+		},
+		"k2": types.M{
+			"type":        "Relation",
+			"targetClass": "user",
+		},
+		"k3": types.M{
+			"type": "String",
+		},
+	}
+	classLevelPermissions = nil
+	result, err = msc.addSchema(name, fields, classLevelPermissions)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"k1": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+			"k2": types.M{
+				"type":        "Relation",
+				"targetClass": "user",
+			},
+			"k3":        types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = msc.collection.find(types.M{"_id": "user"}, types.M{})
+	expect = types.M{
+		"_id":       "user",
+		"k1":        "*user",
+		"k2":        "relation<user>",
+		"k3":        "string",
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	if len(results) == 1 && reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	name = "user"
+	fields = types.M{
+		"k1": types.M{
+			"type":        "Pointer",
+			"targetClass": "user",
+		},
+		"k2": types.M{
+			"type":        "Relation",
+			"targetClass": "user",
+		},
+		"k3": types.M{
+			"type": "String",
+		},
+	}
+	classLevelPermissions = types.M{
+		"find":   types.M{"*": true},
+		"get":    types.M{"*": true},
+		"create": types.M{"*": true},
+		"update": types.M{"*": true},
+	}
+	result, err = msc.addSchema(name, fields, classLevelPermissions)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"k1": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+			"k2": types.M{
+				"type":        "Relation",
+				"targetClass": "user",
+			},
+			"k3":        types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{},
+			"addField": types.M{},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = msc.collection.find(types.M{"_id": "user"}, types.M{})
+	expect = types.M{
+		"_id":       "user",
+		"k1":        "*user",
+		"k2":        "relation<user>",
+		"k3":        "string",
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+		"_metadata": types.M{
+			"class_permissions": types.M{
+				"find":   types.M{"*": true},
+				"get":    types.M{"*": true},
+				"create": types.M{"*": true},
+				"update": types.M{"*": true},
+			},
+		},
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	if len(results) == 1 && reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	name = "user"
+	fields = types.M{}
+	classLevelPermissions = nil
+	result, err = msc.addSchema(name, fields, classLevelPermissions)
+	result, err = msc.addSchema(name, fields, classLevelPermissions)
+	expectErr := errs.E(errs.DuplicateValue, "Class already exists.")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	msc.collection.drop()
 }
 
 func Test_updateSchema(t *testing.T) {

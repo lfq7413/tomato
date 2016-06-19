@@ -75,7 +75,7 @@ func (m *MongoSchemaCollection) addSchema(name string, fields types.M, classLeve
 	// 处理 insertOne 失败的情况，数据库插入失败，检测是否是因为键值重复造成的错误
 	err := m.collection.insertOne(mongoObject)
 	if err != nil {
-		if strings.Index(err.Error(), "duplicate key error") > -1 {
+		if errs.GetErrorCode(err) == errs.DuplicateValue {
 			return nil, errs.E(errs.DuplicateValue, "Class already exists.")
 		}
 		return nil, err

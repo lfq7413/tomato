@@ -407,12 +407,93 @@ func Test_updateSchema(t *testing.T) {
 }
 
 func Test_upsertSchema(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	msc := getSchemaCollection(db)
+	var name string
+	var fields types.M
+	var classLevelPermissions types.M
+	var results []types.M
+	var update types.M
+	var query types.M
+	var err error
+	var expect types.M
+	/*****************************************************/
+	name = "user"
+	fields = types.M{
+		"key": types.M{
+			"type": "String",
+		},
+	}
+	classLevelPermissions = nil
+	msc.addSchema(name, fields, classLevelPermissions)
+	query = types.M{
+		"key": "string",
+	}
+	update = types.M{
+		"$set": types.M{
+			"key1": "string",
+		},
+	}
+	err = msc.upsertSchema(name, query, update)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	results, err = msc.collection.find(types.M{"_id": "user"}, types.M{})
+	expect = types.M{
+		"_id":       "user",
+		"key":       "string",
+		"key1":      "string",
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	if len(results) == 1 && reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	name = "user"
+	fields = types.M{
+		"key": types.M{
+			"type": "String",
+		},
+	}
+	classLevelPermissions = nil
+	msc.addSchema(name, fields, classLevelPermissions)
+	query = types.M{
+		"key": "string",
+	}
+	update = types.M{
+		"$set": types.M{
+			"key1": "string",
+		},
+	}
+	name = "user2"
+	err = msc.upsertSchema(name, query, update)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	results, err = msc.collection.find(types.M{"_id": "user2"}, types.M{})
+	expect = types.M{
+		"_id":  "user2",
+		"key":  "string",
+		"key1": "string",
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	if len(results) == 1 && reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
 }
 
 func Test_addFieldIfNotExists(t *testing.T) {
 	// findSchema
-	// upsertSchema
 	// TODO
 }
 

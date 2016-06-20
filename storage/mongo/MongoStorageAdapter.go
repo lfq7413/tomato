@@ -84,6 +84,7 @@ func (m *MongoAdapter) SetClassLevelPermissions(className string, CLPs types.M) 
 
 // CreateClass 创建类
 func (m *MongoAdapter) CreateClass(className string, schema types.M) (types.M, error) {
+	schema = convertParseSchemaToMongoSchema(schema)
 	schemaCollection := m.schemaCollection()
 	return schemaCollection.addSchema(className, utils.M(schema["fields"]), utils.M(schema["classLevelPermissions"]))
 }
@@ -168,6 +169,7 @@ func (m *MongoAdapter) DeleteFields(className string, schema types.M, fieldNames
 
 // CreateObject 创建对象
 func (m *MongoAdapter) CreateObject(className string, schema, object types.M) error {
+	schema = convertParseSchemaToMongoSchema(schema)
 	mongoObject, err := m.transform.parseObjectToMongoObjectForCreate(className, object, schema)
 	if err != nil {
 		return err
@@ -197,6 +199,7 @@ func (m *MongoAdapter) getCollectionNames() []string {
 
 // DeleteObjectsByQuery 删除符合条件的所有对象
 func (m *MongoAdapter) DeleteObjectsByQuery(className string, schema, query types.M) error {
+	schema = convertParseSchemaToMongoSchema(schema)
 	collection := m.adaptiveCollection(className)
 
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
@@ -217,6 +220,7 @@ func (m *MongoAdapter) DeleteObjectsByQuery(className string, schema, query type
 
 // UpdateObjectsByQuery ...
 func (m *MongoAdapter) UpdateObjectsByQuery(className string, schema, query, update types.M) error {
+	schema = convertParseSchemaToMongoSchema(schema)
 	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
 	if err != nil {
 		return err
@@ -231,6 +235,7 @@ func (m *MongoAdapter) UpdateObjectsByQuery(className string, schema, query, upd
 
 // FindOneAndUpdate ...
 func (m *MongoAdapter) FindOneAndUpdate(className string, schema, query, update types.M) (types.M, error) {
+	schema = convertParseSchemaToMongoSchema(schema)
 	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
 	if err != nil {
 		return nil, err
@@ -245,6 +250,7 @@ func (m *MongoAdapter) FindOneAndUpdate(className string, schema, query, update 
 
 // UpsertOneObject ...
 func (m *MongoAdapter) UpsertOneObject(className string, schema, query, update types.M) error {
+	schema = convertParseSchemaToMongoSchema(schema)
 	mongoUpdate, err := m.transform.transformUpdate(className, update, schema)
 	if err != nil {
 		return err
@@ -259,6 +265,7 @@ func (m *MongoAdapter) UpsertOneObject(className string, schema, query, update t
 
 // Find ...
 func (m *MongoAdapter) Find(className string, schema, query, options types.M) ([]types.M, error) {
+	schema = convertParseSchemaToMongoSchema(schema)
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return nil, err
@@ -305,6 +312,7 @@ func (m *MongoAdapter) rawFind(className string, query types.M) ([]types.M, erro
 
 // Count ...
 func (m *MongoAdapter) Count(className string, schema, query types.M) (int, error) {
+	schema = convertParseSchemaToMongoSchema(schema)
 	coll := m.adaptiveCollection(className)
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
@@ -316,6 +324,7 @@ func (m *MongoAdapter) Count(className string, schema, query types.M) (int, erro
 
 // EnsureUniqueness 创建索引
 func (m *MongoAdapter) EnsureUniqueness(className string, schema types.M, fieldNames []string) error {
+	schema = convertParseSchemaToMongoSchema(schema)
 	if fieldNames == nil {
 		return nil
 	}
@@ -343,4 +352,20 @@ func storageAdapterAllCollections(m *MongoAdapter) []*MongoCollection {
 	}
 
 	return collections
+}
+
+func convertParseSchemaToMongoSchema(schema types.M) types.M {
+	if schema == nil {
+		return schema
+	}
+
+	if fields := utils.M(schema["fields"]); fields != nil {
+		delete(fields, "_rperm")
+		delete(fields, "_wperm")
+		if utils.S(schema["className"]) == "_User" {
+			delete(fields, "_hashed_password")
+		}
+	}
+
+	return schema
 }

@@ -400,17 +400,18 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 
 		// 转换 $options 操作符
 		case "$options":
-			options := utils.S(object[key])
-			if answer["$regex"] == nil || options == "" {
-				// 无效值
-				return nil, errs.E(errs.InvalidQuery, "got a bad $options")
-			}
-			b, _ := regexp.MatchString(`^[imxs]+$`, options)
-			if b == false {
-				// 无效值
-				return nil, errs.E(errs.InvalidQuery, "got a bad $options")
-			}
-			answer[key] = options
+			// options := utils.S(object[key])
+			// if answer["$regex"] == nil || options == "" {
+			// 	// 无效值
+			// 	return nil, errs.E(errs.InvalidQuery, "got a bad $options")
+			// }
+			// b, _ := regexp.MatchString(`^[imxs]+$`, options)
+			// if b == false {
+			// 	// 无效值
+			// 	return nil, errs.E(errs.InvalidQuery, "got a bad $options")
+			// }
+			// answer[key] = options
+			answer[key] = object[key]
 
 		// 转换 附近 操作符
 		case "$nearSphere":
@@ -764,7 +765,7 @@ func (t *Transform) parseObjectToMongoObjectForCreate(className string, create t
 
 	// 转换其他字段并添加
 	for k, v := range create {
-		key, value, err := t.parseObjectKeyValueToMongoObjectKeyValue(className, k, v, schema)
+		key, value, err := t.parseObjectKeyValueToMongoObjectKeyValue(k, v, schema)
 		if err != nil {
 			return nil, err
 		}
@@ -772,47 +773,44 @@ func (t *Transform) parseObjectToMongoObjectForCreate(className string, create t
 			mongoCreate[key] = value
 		}
 	}
+	if mongoCreate["createdAt"] != nil {
+		var date interface{}
+		var err error
+		if t, ok := mongoCreate["createdAt"].(string); ok {
+			date, err = utils.StringtoTime(t)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			date = mongoCreate["createdAt"]
+		}
+		mongoCreate["_created_at"] = date
+		delete(mongoCreate, "createdAt")
+	}
+	if mongoCreate["updatedAt"] != nil {
+		var date interface{}
+		var err error
+		if t, ok := mongoCreate["updatedAt"].(string); ok {
+			date, err = utils.StringtoTime(t)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			date = mongoCreate["updatedAt"]
+		}
+		mongoCreate["_updated_at"] = date
+		delete(mongoCreate, "updatedAt")
+	}
 	return mongoCreate, nil
 }
 
-func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(className string, restKey string, restValue interface{}, schema types.M) (string, interface{}, error) {
-	// TODO className 没有用到
+func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(restKey string, restValue interface{}, schema types.M) (string, interface{}, error) {
 	var transformedValue interface{}
 	var coercedToDate interface{}
 	var err error
 	switch restKey {
 	case "objectId":
 		return "_id", restValue, nil
-
-	case "createdAt":
-		transformedValue, err = t.transformTopLevelAtom(restValue)
-		if err != nil {
-			return "", nil, err
-		}
-		if v, ok := transformedValue.(string); ok {
-			coercedToDate, err = utils.StringtoTime(v)
-			if err != nil {
-				return "", nil, err
-			}
-		} else {
-			coercedToDate = transformedValue
-		}
-		return "_created_at", coercedToDate, nil
-
-	case "updatedAt":
-		transformedValue, err = t.transformTopLevelAtom(restValue)
-		if err != nil {
-			return "", nil, err
-		}
-		if v, ok := transformedValue.(string); ok {
-			coercedToDate, err = utils.StringtoTime(v)
-			if err != nil {
-				return "", nil, err
-			}
-		} else {
-			coercedToDate = transformedValue
-		}
-		return "_updated_at", coercedToDate, nil
 
 	case "expiresAt":
 		transformedValue, err = t.transformTopLevelAtom(restValue)
@@ -1249,7 +1247,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 				restObject["objectId"] = value
 
 			case "_hashed_password":
-				restObject["password"] = value
+				restObject["_hashed_password"] = value
 
 			case "_acl", "_email_verify_token", "_perishable_token", "_tombstone":
 				// 以上字段不添加到结果中

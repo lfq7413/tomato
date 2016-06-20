@@ -666,25 +666,9 @@ func Test_transformConstraint(t *testing.T) {
 	constraint = types.M{"$options": "imxs"}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)
-	expect = errs.E(errs.InvalidQuery, "got a bad $options")
-	if reflect.DeepEqual(err, expect) == false || result != nil {
-		t.Error("expect:", expect, "get result:", err)
-	}
-	/*************************************************/
-	constraint = types.M{"$options": 1024, "$regex": "hello"}
-	inArray = true
-	result, err = tf.transformConstraint(constraint, inArray)
-	expect = errs.E(errs.InvalidQuery, "got a bad $options")
-	if reflect.DeepEqual(err, expect) == false || result != nil {
-		t.Error("expect:", expect, "get result:", err)
-	}
-	/*************************************************/
-	constraint = types.M{"$options": "hello", "$regex": "hello"}
-	inArray = true
-	result, err = tf.transformConstraint(constraint, inArray)
-	expect = errs.E(errs.InvalidQuery, "got a bad $options")
-	if reflect.DeepEqual(err, expect) == false || result != nil {
-		t.Error("expect:", expect, "get result:", err)
+	expect = types.M{"$options": "imxs"}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
 	constraint = types.M{"$options": "imxs", "$regex": "hello"}
@@ -1439,7 +1423,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "objectId"
 	restValue = "123456"
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_id"
 	expectValue = "123456"
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1449,9 +1433,9 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "createdAt"
 	restValue = tmpTimeStr
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
-	expectKey = "_created_at"
-	expectValue = tmpTime
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "createdAt"
+	expectValue = tmpTimeStr
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
 	}
@@ -1459,8 +1443,21 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "createdAt"
 	restValue = tmpTime
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
-	expectKey = "_created_at"
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "createdAt"
+	expectValue = tmpTime
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
+	restKey = "createdAt"
+	restValue = types.M{
+		"__type": "Date",
+		"iso":    tmpTimeStr,
+	}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "createdAt"
 	expectValue = tmpTime
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
@@ -1469,9 +1466,9 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "updatedAt"
 	restValue = tmpTimeStr
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
-	expectKey = "_updated_at"
-	expectValue = tmpTime
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "updatedAt"
+	expectValue = tmpTimeStr
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
 	}
@@ -1479,8 +1476,21 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "updatedAt"
 	restValue = tmpTime
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
-	expectKey = "_updated_at"
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "updatedAt"
+	expectValue = tmpTime
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
+	restKey = "updatedAt"
+	restValue = types.M{
+		"__type": "Date",
+		"iso":    tmpTimeStr,
+	}
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "updatedAt"
 	expectValue = tmpTime
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
@@ -1489,7 +1499,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "expiresAt"
 	restValue = tmpTimeStr
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_expiresAt"
 	expectValue = tmpTime
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1499,7 +1509,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "expiresAt"
 	restValue = tmpTime
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_expiresAt"
 	expectValue = tmpTime
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1509,7 +1519,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "_email_verify_token"
 	restValue = "abcd"
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_email_verify_token"
 	expectValue = "abcd"
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1519,7 +1529,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "sessionToken"
 	restValue = "abcd"
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_session_token"
 	expectValue = "abcd"
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1529,7 +1539,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "authData.facebook.id"
 	restValue = "abcd"
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectValue = errs.E(errs.InvalidKeyName, "can only query on "+restKey)
 	if reflect.DeepEqual(expectValue, err) == false {
 		t.Error("expect:", expectValue, "get result:", err)
@@ -1538,7 +1548,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "_auth_data_facebook"
 	restValue = "abcd"
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_auth_data_facebook"
 	expectValue = "abcd"
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1548,7 +1558,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "key"
 	restValue = nil
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "key"
 	expectValue = nil
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1562,7 +1572,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 		"objectId":  "1024",
 	}
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_p_key"
 	expectValue = "user$1024"
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1582,7 +1592,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 			},
 		},
 	}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_p_key"
 	expectValue = types.M{
 		"__type":    "OtherPointer",
@@ -1596,7 +1606,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "ACL"
 	restValue = "abcd"
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectValue = errs.E(errs.InvalidKeyName, "There was a problem transforming an ACL.")
 	if reflect.DeepEqual(expectValue, err) == false {
 		t.Error("expect:", expectValue, "get result:", err)
@@ -1605,7 +1615,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "key"
 	restValue = "value"
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "key"
 	expectValue = "value"
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1615,7 +1625,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "key"
 	restValue = types.S{"hello", "world"}
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "key"
 	expectValue = types.S{"hello", "world"}
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
@@ -1628,7 +1638,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 		"amount": 10,
 	}
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "key"
 	expectValue = types.M{
 		"__op": "$inc",
@@ -1641,7 +1651,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "key"
 	restValue = types.M{"key$": "value"}
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectValue = errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
 	if reflect.DeepEqual(expectValue, err) == false {
 		t.Error("expect:", expectValue, "get result:", err)
@@ -1650,7 +1660,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	restKey = "key"
 	restValue = types.M{"key.": "value"}
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectValue = errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
 	if reflect.DeepEqual(expectValue, err) == false {
 		t.Error("expect:", expectValue, "get result:", err)
@@ -1661,7 +1671,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 		"subKey": "subValue",
 	}
 	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue("", restKey, restValue, schema)
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "key"
 	expectValue = types.M{
 		"subKey": "subValue",
@@ -2371,11 +2381,11 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 	schema = types.M{}
 	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
 	expect = types.M{
-		"objectId":     "1024",
-		"password":     "password",
-		"sessionToken": "abc",
-		"updatedAt":    tmpTimeStr,
-		"createdAt":    tmpTimeStr,
+		"objectId":         "1024",
+		"_hashed_password": "password",
+		"sessionToken":     "abc",
+		"updatedAt":        tmpTimeStr,
+		"createdAt":        tmpTimeStr,
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)

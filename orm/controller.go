@@ -420,7 +420,7 @@ func (d DBController) Create(className string, object, options types.M) error {
 		return err
 	}
 
-	err = schema.enforceClassExists(className, false)
+	err = schema.enforceClassExists(className)
 	if err != nil {
 		return err
 	}

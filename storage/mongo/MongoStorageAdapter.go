@@ -354,6 +354,7 @@ func storageAdapterAllCollections(m *MongoAdapter) []*MongoCollection {
 	return collections
 }
 
+// convertParseSchemaToMongoSchema 删除不必要字段
 func convertParseSchemaToMongoSchema(schema types.M) types.M {
 	if schema == nil {
 		return schema

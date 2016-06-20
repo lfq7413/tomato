@@ -22,7 +22,7 @@ var requiredColumns map[string][]string
 // SystemClasses 系统表
 var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product", "_PushStatus"}
 
-var volatileClasses = []string{"_PushStatus"}
+var volatileClasses = []string{"_PushStatus", "_Hooks", "_GlobalConfig"}
 
 func init() {
 	DefaultColumns = map[string]types.M{
@@ -113,10 +113,12 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 	}
 
 	schema := types.M{
+		"className":             className,
 		"fields":                fields,
 		"classLevelPermissions": classLevelPermissions,
 	}
-	result, err := s.dbAdapter.CreateClass(className, schema)
+	result, err := s.dbAdapter.CreateClass(className, convertSchemaToAdapterSchema(schema))
+	result = convertAdapterSchemaToParseSchema(result)
 	if err != nil {
 		if errs.GetErrorCode(err) == errs.DuplicateValue {
 			return nil, errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
@@ -150,6 +152,9 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 		}
 	}
 
+	delete(existingFields, "_rperm")
+	delete(existingFields, "_wperm")
+
 	// 组装写入数据库的数据
 	newSchema := buildMergedSchemaObject(existingFields, submittedFields)
 	err := s.validateSchemaData(className, newSchema, classLevelPermissions)
@@ -178,7 +183,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	// 校验并插入字段
 	for _, fieldName := range insertedFields {
 		fieldType := submittedFields[fieldName].(map[string]interface{})
-		err := s.validateField(className, fieldName, fieldType, false)
+		err := s.enforceFieldExists(className, fieldName, fieldType, false)
 		if err != nil {
 			return nil, err
 		}
@@ -247,7 +252,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 // validateObject 校验对象是否合法
 func (s *Schema) validateObject(className string, object, query types.M) error {
 	geocount := 0
-	err := s.enforceClassExists(className, false)
+	err := s.enforceClassExists(className)
 	if err != nil {
 		return err
 	}
@@ -344,13 +349,10 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	return errs.E(errs.OperationForbidden, "Permission denied for this action.")
 }
 
-// enforceClassExists 校验类名 freeze 为 true 时，不进行更新
-func (s *Schema) enforceClassExists(className string, freeze bool) error {
+// enforceClassExists 校验类名
+func (s *Schema) enforceClassExists(className string) error {
 	if s.data[className] != nil {
 		return nil
-	}
-	if freeze {
-		return errs.E(errs.InvalidJSON, "schema is frozen, cannot add: "+className)
 	}
 
 	// 添加不存在的类定义
@@ -359,11 +361,12 @@ func (s *Schema) enforceClassExists(className string, freeze bool) error {
 
 	}
 	s.reloadData()
-	err = s.enforceClassExists(className, true)
-	if err != nil {
-		return errs.E(errs.InvalidJSON, "schema class name does not revalidate")
+
+	if s.data[className] != nil {
+		return nil
 	}
-	return nil
+
+	return errs.E(errs.InvalidJSON, "Failed to add "+className)
 }
 
 // validateNewClass 校验新建的类
@@ -447,10 +450,8 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 	return nil
 }
 
-// validateField 校验并插入字段，freeze 为 true 时不进行修改
-func (s *Schema) validateField(className, fieldName string, fieldtype types.M, freeze bool) error {
-	s.reloadData()
-
+// enforceFieldExists 校验并插入字段，freeze 为 true 时不进行修改
+func (s *Schema) enforceFieldExists(className, fieldName string, fieldtype types.M, freeze bool) error {
 	if strings.Index(fieldName, ".") > 0 {
 		fieldName = strings.Split(fieldName, ".")[0]
 		fieldtype = types.M{
@@ -462,26 +463,17 @@ func (s *Schema) validateField(className, fieldName string, fieldtype types.M, f
 		return errs.E(errs.InvalidKeyName, "Invalid field name: "+fieldName)
 	}
 
-	expected := utils.M(utils.M(s.data[className])[fieldName])
-	if expected != nil {
-		if expected["type"].(string) == "map" {
-			expected["type"] = "Object"
-		}
-		if expected["type"].(string) == fieldtype["type"].(string) && expected["targetClass"].(string) == fieldtype["targetClass"].(string) {
-			return nil
-		}
-		// 类型不符
-		return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+fieldName+"; expected "+expected["type"].(string)+" but got "+fieldtype["type"].(string))
-	}
-
-	if freeze {
-		// 不能修改
-		return errs.E(errs.InvalidJSON, "schema is frozen, cannot add "+fieldName+" field")
-	}
-
-	// 没有当前要添加的字段，当字段类型为空时，不做更新
-	if fieldtype == nil || fieldtype["type"].(string) == "" {
+	if fieldtype == nil || len(fieldtype) == 0 {
 		return nil
+	}
+
+	s.reloadData()
+
+	expectedType := s.getExpectedType(className, fieldName)
+	if expectedType != nil {
+		if dbTypeMatchesObjectType(expectedType, fieldtype) == false {
+			return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+fieldName+"; expected "+utils.S(expectedType["type"])+" but got "+utils.S(fieldtype["type"]))
+		}
 	}
 
 	err := s.dbAdapter.AddFieldIfNotExists(className, fieldName, fieldtype)
@@ -492,11 +484,9 @@ func (s *Schema) validateField(className, fieldName string, fieldtype types.M, f
 	}
 
 	s.reloadData()
-	// 再次尝试校验字段，本次不做更新
-	err = s.validateField(className, fieldName, fieldtype, true)
-	if err != nil {
-		// 字段依然无法校验通过
-		return errs.E(errs.InvalidJSON, "schema key will not revalidate")
+	// 再次尝试校验字段
+	if dbTypeMatchesObjectType(s.getExpectedType(className, fieldName), fieldtype) == false {
+		return errs.E(errs.InvalidJSON, "Could not add field "+fieldName)
 	}
 	return nil
 }
@@ -525,10 +515,14 @@ func (s *Schema) HasClass(className string) bool {
 }
 
 // getExpectedType 获取期望的字段类型
-func (s *Schema) getExpectedType(className, key string) types.M {
+func (s *Schema) getExpectedType(className, fieldName string) types.M {
 	if s.data != nil && s.data[className] != nil {
 		cls := utils.M(s.data[className])
-		return utils.M(cls[key])
+		expectedType := utils.M(cls[fieldName])
+		if utils.S(expectedType["type"]) == "map" {
+			expectedType["type"] = "Object"
+		}
+		return expectedType
 	}
 	return nil
 }
@@ -588,7 +582,7 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (type
 
 // thenValidateField 校验字段，并且不对 schema 进行修改
 func thenValidateField(schema *Schema, className, key string, fieldtype types.M) error {
-	return schema.validateField(className, key, fieldtype, true)
+	return schema.enforceFieldExists(className, key, fieldtype, true)
 }
 
 // thenValidateRequiredColumns 校验必须的字段
@@ -953,22 +947,109 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 // injectDefaultSchema 为 schema 添加默认字段
 func injectDefaultSchema(schema types.M) types.M {
 	newSchema := types.M{}
+	newfields := types.M{}
 	fields := schema["fields"].(map[string]interface{})
+	for k, v := range fields {
+		newfields[k] = v
+	}
 	defaultFieldsSchema := DefaultColumns["_Default"]
 	for k, v := range defaultFieldsSchema {
-		fields[k] = v
+		newfields[k] = v
 	}
 	defaultSchema := DefaultColumns[schema["className"].(string)]
 	if defaultSchema != nil {
 		for k, v := range defaultSchema {
-			fields[k] = v
+			newfields[k] = v
 		}
 	}
-	newSchema["fields"] = fields
+	newSchema["fields"] = newfields
 	newSchema["className"] = schema["className"]
 	newSchema["classLevelPermissions"] = schema["classLevelPermissions"]
 
 	return newSchema
+}
+
+// convertSchemaToAdapterSchema 转换 schema 为 Adapter 使用的类型：添加默认字段，删除不必要的字段
+// {
+// 	ACL:{type:ACL}
+// 	password:{type:string}
+// 	key:{type:string}
+// }
+// ==>
+// {
+// 	key:{type:string}
+// 	_rperm:{type:Array}
+// 	_wperm:{type:Array}
+// 	_hashed_password:{type:string}
+// }
+func convertSchemaToAdapterSchema(schema types.M) types.M {
+	if schema == nil {
+		return schema
+	}
+	schema = injectDefaultSchema(schema)
+	if fields := utils.M(schema["fields"]); fields != nil {
+		delete(fields, "ACL")
+		fields["_rperm"] = types.M{"type": "Array"}
+		fields["_wperm"] = types.M{"type": "Array"}
+		if utils.S(schema["className"]) == "_User" {
+			delete(fields, "password")
+			fields["_hashed_password"] = types.M{"type": "String"}
+		}
+	}
+
+	return schema
+}
+
+// convertAdapterSchemaToParseSchema 转换 Adapter 中使用的 schema 为普通类型
+// {
+// 	key:{type:string}
+// 	_rperm:{type:Array}
+// 	_wperm:{type:Array}
+// 	_hashed_password:{type:string}
+// }
+// ==>
+// {
+// 	ACL:{type:ACL}
+// 	password:{type:string}
+// 	key:{type:string}
+// }
+func convertAdapterSchemaToParseSchema(schema types.M) types.M {
+	if schema == nil {
+		return schema
+	}
+	if fields := utils.M(schema["fields"]); fields != nil {
+		delete(fields, "_rperm")
+		delete(fields, "_wperm")
+		fields["ACL"] = types.M{"type": "ACL"}
+		if utils.S(schema["className"]) == "_User" {
+			delete(fields, "_hashed_password")
+			fields["password"] = types.M{"type": "String"}
+		}
+	}
+
+	return schema
+}
+
+func dbTypeMatchesObjectType(dbType, objectType types.M) bool {
+	if dbType == nil && objectType == nil {
+		return true
+	}
+	if dbType != nil && objectType == nil {
+		return false
+	}
+	if dbType == nil && objectType != nil {
+		return false
+	}
+	if utils.S(dbType["type"]) != utils.S(objectType["type"]) {
+		return false
+	}
+	if utils.S(dbType["targetClass"]) != utils.S(objectType["targetClass"]) {
+		return false
+	}
+	if utils.S(dbType["type"]) == utils.S(objectType["type"]) {
+		return true
+	}
+	return false
 }
 
 // Load 返回一个新的 Schema 结构体

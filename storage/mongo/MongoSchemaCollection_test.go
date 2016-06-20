@@ -15,7 +15,55 @@ func Test_getAllSchemas(t *testing.T) {
 }
 
 func Test_findSchema(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	msc := getSchemaCollection(db)
+	var name string
+	var fields types.M
+	var classLevelPermissions types.M
+	var result types.M
+	// var results []types.M
+	var err error
+	var expect types.M
+	/*****************************************************/
+	name = "user"
+	fields = nil
+	classLevelPermissions = nil
+	msc.addSchema(name, fields, classLevelPermissions)
+	result, err = msc.findSchema(name)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	name = "user"
+	fields = nil
+	classLevelPermissions = nil
+	msc.addSchema(name, fields, classLevelPermissions)
+	name = "user2"
+	result, err = msc.findSchema(name)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	msc.collection.drop()
 }
 
 func Test_findAndDeleteSchema(t *testing.T) {

@@ -88,12 +88,15 @@ func (d DBController) Find(className string, query, options types.M) (types.S, e
 		op = "find"
 	}
 
+	classExists := true
+
 	schema := d.LoadSchema()
-	parseFormatSchema, err := schema.GetOneSchema(className, false)
+	parseFormatSchema, err := schema.GetOneSchema(className, isMaster)
 	if err != nil {
 		return nil, err
 	}
 	if len(parseFormatSchema) == 0 {
+		classExists = false
 		parseFormatSchema["fields"] = types.M{}
 	}
 
@@ -161,11 +164,18 @@ func (d DBController) Find(className string, query, options types.M) (types.S, e
 
 	// 获取 count
 	if options["count"] != nil {
+		if classExists == false {
+			return types.S{0}, nil
+		}
 		count, err := Adapter.Count(className, parseFormatSchema, query)
 		if err != nil {
 			return nil, err
 		}
 		return types.S{count}, nil
+	}
+
+	if classExists == false {
+		return types.S{}, nil
 	}
 
 	// 执行查询操作
@@ -391,6 +401,15 @@ func (d DBController) Create(className string, object, options types.M) error {
 	}
 	object = transformObjectACL(object)
 
+	object["createdAt"] = types.M{
+		"__type": "Date",
+		"iso":    object["createdAt"],
+	}
+	object["updatedAt"] = types.M{
+		"__type": "Date",
+		"iso":    object["updatedAt"],
+	}
+
 	isMaster := false
 	aclGroup := []string{}
 	if acl, ok := options["acl"]; ok {
@@ -431,7 +450,7 @@ func (d DBController) Create(className string, object, options types.M) error {
 	}
 
 	// 无需调用 sanitizeDatabaseResult
-	return Adapter.CreateObject(className, sch, object)
+	return Adapter.CreateObject(className, convertSchemaToAdapterSchema(sch), object)
 }
 
 // validateClassName 校验表名是否合法
@@ -971,6 +990,9 @@ func filterSensitiveData(isMaster bool, aclGroup []string, className string, obj
 		return object
 	}
 	// 以下单独处理 _User 类
+	object["password"] = object["_hashed_password"]
+	delete(object, "_hashed_password")
+
 	delete(object, "sessionToken")
 	if isMaster {
 		return object
@@ -998,7 +1020,7 @@ func (d *DBController) DeleteSchema(className string) error {
 	if exist == false {
 		return nil
 	}
-	count, err := Adapter.Count(className, types.M{}, types.M{})
+	count, err := Adapter.Count(className, types.M{"fields": types.M{}}, types.M{})
 	if err != nil {
 		return err
 	}
@@ -1137,6 +1159,19 @@ func validateQuery(query types.M) error {
 	}
 
 	for key := range query {
+		// 检测 $options 是否为 imxs
+		if condition := utils.M(query[key]); condition != nil {
+			if condition["$regex"] != nil {
+				if op, ok := condition["$options"].(string); ok {
+					b, _ := regexp.MatchString(`^[imxs]+$`, op)
+					if b == false {
+						// 无效值
+						return errs.E(errs.InvalidQuery, "Bad $options value for query: "+op)
+					}
+				}
+			}
+		}
+
 		include := false
 		for _, v := range specialQuerykeys {
 			if key == v {

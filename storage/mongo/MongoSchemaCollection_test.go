@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/lfq7413/tomato/errs"
@@ -653,8 +654,105 @@ func Test_upsertSchema(t *testing.T) {
 }
 
 func Test_addFieldIfNotExists(t *testing.T) {
-	// findSchema
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	msc := getSchemaCollection(db)
+	var className string
+	var fieldName string
+	var fieldType types.M
+	// var name string
+	var fields types.M
+	var classLevelPermissions types.M
+	var results []types.M
+	// var update types.M
+	// var query types.M
+	var err error
+	var expect types.M
+	var expectErr error
+	/*****************************************************/
+	className = "user"
+	fieldName = "key1"
+	fieldType = types.M{
+		"type": "String",
+	}
+	err = msc.addFieldIfNotExists(className, fieldName, fieldType)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	className = "user"
+	fields = types.M{
+		"key1": types.M{
+			"type": "GeoPoint",
+		},
+	}
+	classLevelPermissions = nil
+	msc.addSchema(className, fields, classLevelPermissions)
+	className = "user"
+	fieldName = "key1"
+	fieldType = types.M{
+		"type": "GeoPoint",
+	}
+	err = msc.addFieldIfNotExists(className, fieldName, fieldType)
+	expectErr = errs.E(errs.IncorrectType, "MongoDB only supports one GeoPoint field in a class.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	className = "user"
+	fields = types.M{
+		"key1": types.M{
+			"type": "String",
+		},
+	}
+	classLevelPermissions = nil
+	msc.addSchema(className, fields, classLevelPermissions)
+	className = "user"
+	fieldName = "key1"
+	fieldType = types.M{
+		"type": "Boolean",
+	}
+	err = msc.addFieldIfNotExists(className, fieldName, fieldType)
+	if strings.Index(err.Error(), "duplicate key error") < 0 {
+		t.Error("expect:", "duplicate key error", "result:", err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	className = "user"
+	fields = types.M{
+		"key1": types.M{
+			"type": "String",
+		},
+	}
+	classLevelPermissions = nil
+	msc.addSchema(className, fields, classLevelPermissions)
+	className = "user"
+	fieldName = "key2"
+	fieldType = types.M{
+		"type": "Boolean",
+	}
+	err = msc.addFieldIfNotExists(className, fieldName, fieldType)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	results, err = msc.collection.find(types.M{"_id": "user"}, types.M{})
+	expect = types.M{
+		"_id":       "user",
+		"key1":      "string",
+		"key2":      "boolean",
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	if len(results) == 1 && reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
 }
 
 func Test_mongoSchemaQueryFromNameQuery(t *testing.T) {

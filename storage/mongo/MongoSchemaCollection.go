@@ -105,12 +105,15 @@ func (m *MongoSchemaCollection) addFieldIfNotExists(className string, fieldName 
 	if schema == nil || len(schema) == 0 {
 		return nil
 	}
-	if fieldType["type"].(string) == "GeoPoint" {
-		fields := schema["fields"].(map[string]interface{})
-		for _, v := range fields {
-			existingField := v.(map[string]interface{})
-			if existingField["type"].(string) == "GeoPoint" {
-				return errs.E(errs.IncorrectType, "MongoDB only supports one GeoPoint field in a class.")
+
+	if fieldType != nil || utils.S(fieldType["type"]) == "GeoPoint" {
+		if fields := utils.M(schema["fields"]); fields != nil {
+			for _, v := range fields {
+				if existingField := utils.M(v); existingField != nil {
+					if utils.S(existingField["type"]) == "GeoPoint" {
+						return errs.E(errs.IncorrectType, "MongoDB only supports one GeoPoint field in a class.")
+					}
+				}
 			}
 		}
 	}

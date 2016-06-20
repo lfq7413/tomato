@@ -27,6 +27,9 @@ func (m *MongoSchemaCollection) getAllSchemas() ([]types.M, error) {
 		return nil, err
 	}
 	apiResults := []types.M{}
+	if results == nil {
+		return apiResults, nil
+	}
 	for _, result := range results {
 		apiResults = append(apiResults, mongoSchemaToParseSchema(result))
 	}

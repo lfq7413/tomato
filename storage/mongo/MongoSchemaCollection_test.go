@@ -11,7 +11,75 @@ import (
 )
 
 func Test_getAllSchemas(t *testing.T) {
-	// TODO
+	db := openDB()
+	defer db.Session.Close()
+	msc := getSchemaCollection(db)
+	var name string
+	var fields types.M
+	var classLevelPermissions types.M
+	var results []types.M
+	var err error
+	var expect []types.M
+	/*****************************************************/
+	name = "user"
+	fields = nil
+	classLevelPermissions = nil
+	msc.addSchema(name, fields, classLevelPermissions)
+	name = "user1"
+	msc.addSchema(name, fields, classLevelPermissions)
+	results, err = msc.getAllSchemas()
+	expect = []types.M{
+		types.M{
+			"className": "user",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{
+				"find":     types.M{"*": true},
+				"get":      types.M{"*": true},
+				"create":   types.M{"*": true},
+				"update":   types.M{"*": true},
+				"delete":   types.M{"*": true},
+				"addField": types.M{"*": true},
+			},
+		},
+		types.M{
+			"className": "user1",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{
+				"find":     types.M{"*": true},
+				"get":      types.M{"*": true},
+				"create":   types.M{"*": true},
+				"update":   types.M{"*": true},
+				"delete":   types.M{"*": true},
+				"addField": types.M{"*": true},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	name = "user"
+	fields = nil
+	classLevelPermissions = nil
+	msc.addSchema(name, fields, classLevelPermissions)
+	msc.findAndDeleteSchema(name)
+	results, err = msc.getAllSchemas()
+	expect = []types.M{}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	msc.collection.drop()
 }
 
 func Test_findSchema(t *testing.T) {
@@ -22,7 +90,6 @@ func Test_findSchema(t *testing.T) {
 	var fields types.M
 	var classLevelPermissions types.M
 	var result types.M
-	// var results []types.M
 	var err error
 	var expect types.M
 	/*****************************************************/

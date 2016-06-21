@@ -1323,10 +1323,8 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 	/*************************************************/
 	className = "_User"
 	create = types.M{
-		"authData": types.M{
-			"facebook": types.M{
-				"id": "1024",
-			},
+		"_auth_data_facebook": types.M{
+			"id": "1024",
 		},
 		"name": "joe",
 	}
@@ -1373,10 +1371,8 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 		"name":     "joe",
 		"_rperm":   types.S{"userid"},
 		"_wperm":   types.S{"userid"},
-		"authData": types.M{
-			"facebook": types.M{
-				"id": "1024",
-			},
+		"_auth_data_facebook": types.M{
+			"id": "1024",
 		},
 		"createdAt":        tmpTimeStr,
 		"updatedAt":        tmpTimeStr,
@@ -1628,22 +1624,6 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "key"
 	expectValue = types.S{"hello", "world"}
-	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
-		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
-	}
-	/*************************************************/
-	restKey = "key"
-	restValue = types.M{
-		"__op":   "Increment",
-		"amount": 10,
-	}
-	schema = types.M{}
-	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
-	expectKey = "key"
-	expectValue = types.M{
-		"__op": "$inc",
-		"arg":  10,
-	}
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
 	}
@@ -2037,10 +2017,8 @@ func Test_transformUpdate(t *testing.T) {
 	/*************************************************/
 	className = "_User"
 	update = types.M{
-		"authData": types.M{
-			"facebook": types.M{
-				"id": "1024",
-			},
+		"_auth_data_facebook": types.M{
+			"id": "1024",
 		},
 	}
 	parseFormatSchema = types.M{}
@@ -2104,10 +2082,8 @@ func Test_transformUpdate(t *testing.T) {
 	/*************************************************/
 	className = "_User"
 	update = types.M{
-		"authData": types.M{
-			"facebook": types.M{
-				"id": "1024",
-			},
+		"_auth_data_facebook": types.M{
+			"id": "1024",
 		},
 		"_rperm": types.S{"userid"},
 		"_wperm": types.S{"userid"},

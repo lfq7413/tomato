@@ -756,10 +756,6 @@ func (t *Transform) parseObjectToMongoObjectForCreate(className string, create t
 	if create == nil {
 		return nil, nil
 	}
-	// 转换第三方登录数据
-	if className == "_User" {
-		create = t.transformAuthData(create)
-	}
 	create = t.addLegacyACL(create)
 	mongoCreate := types.M{}
 
@@ -890,17 +886,6 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(restKey string, res
 		return restKey, value, nil
 	}
 
-	// 处理更新操作中的 "_op"
-	if value := utils.M(restValue); value != nil {
-		if _, ok := value["__op"]; ok {
-			v, err := t.transformUpdateOperator(restValue, false)
-			if err != nil {
-				return "", nil, err
-			}
-			return restKey, v, nil
-		}
-	}
-
 	// 处理正常的对象
 	if value := utils.M(restValue); value != nil {
 		for k := range value {
@@ -926,6 +911,7 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(restKey string, res
 }
 
 // transformAuthData 转换第三方登录数据
+// 废弃不用
 // {
 // 	"authData": {
 // 		"facebook": {...}
@@ -955,7 +941,7 @@ func (t *Transform) transformAuthData(restObject types.M) types.M {
 }
 
 // transformACL 转换生成权限信息，并删除源数据中的 ACL 字段
-// 废弃不用
+// 废弃不用，逻辑转移到 orm/controller.go/transformObjectACL
 // {
 // 	"ACL":{
 // 		"userid":{
@@ -1047,10 +1033,6 @@ func (t *Transform) transformWhere(className string, where, schema types.M) (typ
 func (t *Transform) transformUpdate(className string, update types.M, parseFormatSchema types.M) (types.M, error) {
 	if update == nil {
 		return nil, nil
-	}
-	// 处理第三方登录数据
-	if className == "_User" {
-		update = t.transformAuthData(update)
 	}
 
 	mongoUpdate := types.M{}
@@ -1412,7 +1394,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 }
 
 // untransformACL 把数据库格式的权限信息转换为 API 格式
-// 废弃不用
+// 废弃不用，逻辑转移到 orm/controller.go/untransformObjectACL
 // {
 // 	"_rperm":["userid","role:xxx","*"],
 // 	"_wperm":["userid","role:xxx"]

@@ -335,6 +335,7 @@ func (d DBController) Update(className string, query, update, options types.M) (
 	}
 
 	update = transformObjectACL(update)
+	transformAuthData(className, update, sch)
 	var result types.M
 	if many {
 		err := Adapter.UpdateObjectsByQuery(className, sch, query, update)
@@ -450,6 +451,9 @@ func (d DBController) Create(className string, object, options types.M) error {
 	if err != nil {
 		return err
 	}
+
+	transformAuthData(className, object, sch)
+	flattenUpdateOperatorsForCreate(object)
 
 	// 无需调用 sanitizeDatabaseResult
 	return Adapter.CreateObject(className, convertSchemaToAdapterSchema(sch), object)
@@ -1274,4 +1278,88 @@ func untransformObjectACL(output types.M) types.M {
 	delete(output, "_wperm")
 
 	return output
+}
+
+// transformAuthData 转换第三方登录数据
+// 原始位置 MongoTransform.go/transformAuthData
+// {
+// 	"authData": {
+// 		"facebook": {...}
+// 	}
+// }
+// ==>
+// {
+// 	"_auth_data_facebook": {...}
+// }
+func transformAuthData(className string, object, schema types.M) {
+	if className == "_User" {
+		if authData := utils.M(object["authData"]); authData != nil {
+			for provider, providerData := range authData {
+				fieldName := "_auth_data_" + provider
+
+				if providerData == nil || utils.M(providerData) == nil || len(utils.M(providerData)) == 0 {
+					object[fieldName] = types.M{
+						"__op": "Delete",
+					}
+				} else {
+					object[fieldName] = providerData
+					if schema != nil {
+						if fields := utils.M(schema["fields"]); fields != nil {
+							fields[fieldName] = types.M{"type": "Object"}
+						}
+					}
+				}
+			}
+			delete(object, "authData")
+		}
+	}
+}
+
+// flattenUpdateOperatorsForCreate 处理 Create 数据中的 __op 操作符
+func flattenUpdateOperatorsForCreate(object types.M) error {
+	if object == nil {
+		return nil
+	}
+	for key, v := range object {
+		if value := utils.M(v); value != nil && utils.S(value["__op"]) != "" {
+			switch utils.S(value["__op"]) {
+			case "Increment":
+				if a, ok := value["amount"].(float64); ok {
+					object[key] = a
+				} else if a, ok := value["amount"].(int); ok {
+					object[key] = a
+				} else {
+					return errs.E(errs.InvalidJSON, "objects to add must be an number")
+				}
+
+			case "Add":
+				if objects := utils.A(value["objects"]); objects != nil {
+					object[key] = objects
+				} else {
+					return errs.E(errs.InvalidJSON, "objects to add must be an array")
+				}
+
+			case "AddUnique":
+				if objects := utils.A(value["objects"]); objects != nil {
+					object[key] = objects
+				} else {
+					return errs.E(errs.InvalidJSON, "objects to add must be an array")
+				}
+
+			case "Remove":
+				if objects := utils.A(value["objects"]); objects != nil {
+					object[key] = types.S{}
+				} else {
+					return errs.E(errs.InvalidJSON, "objects to add must be an array")
+				}
+
+			case "Delete":
+				delete(object, key)
+
+			default:
+				return errs.E(errs.CommandUnavailable, "The "+utils.S(value["__op"])+" operator is not supported yet.")
+			}
+		}
+	}
+	return nil
 }

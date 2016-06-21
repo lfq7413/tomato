@@ -911,7 +911,7 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(restKey string, res
 }
 
 // transformAuthData 转换第三方登录数据
-// 废弃不用
+// 废弃不用 逻辑转移到 controller.go/transformAuthData
 // {
 // 	"authData": {
 // 		"facebook": {...}

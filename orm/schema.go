@@ -552,8 +552,8 @@ func (s *Schema) reloadData() {
 		return
 	}
 	for _, schema := range allSchemas {
-		s.data[schema["className"].(string)] = schema
-		s.perms[schema["className"].(string)] = schema["classLevelPermissions"]
+		s.data[utils.S(schema["className"])] = injectDefaultSchema(schema)["fields"]
+		s.perms[utils.S(schema["className"])] = schema["classLevelPermissions"]
 	}
 
 	for _, className := range volatileClasses {

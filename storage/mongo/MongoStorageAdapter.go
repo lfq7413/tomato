@@ -388,7 +388,6 @@ func convertParseSchemaToMongoSchema(schema types.M) types.M {
 }
 
 // mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
-// 原始位置 MongoSchemaCollection.go/mongoSchemaFromFieldsAndClassNameAndCLP
 func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) types.M {
 	mongoObject := types.M{
 		"_id":       className,

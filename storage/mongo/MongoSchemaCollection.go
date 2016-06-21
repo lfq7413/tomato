@@ -329,28 +329,3 @@ func parseFieldTypeToMongoFieldType(t types.M) string {
 		return ""
 	}
 }
-
-// mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
-// 废弃不用，逻辑转移到 MongoStorageAdapter.go/mongoSchemaFromFieldsAndClassNameAndCLP
-// func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) types.M {
-// 	mongoObject := types.M{
-// 		"_id":       className,
-// 		"objectId":  "string",
-// 		"updatedAt": "string",
-// 		"createdAt": "string",
-// 	}
-
-// 	// 添加其他字段
-// 	if fields != nil {
-// 		for fieldName, v := range fields {
-// 			mongoObject[fieldName] = parseFieldTypeToMongoFieldType(utils.M(v))
-// 		}
-// 	}
-
-// 	// 添加 CLP
-// 	if classLevelPermissions != nil {
-// 		mongoObject["_metadata"] = types.M{"class_permissions": classLevelPermissions}
-// 	}
-
-// 	return mongoObject
-// }

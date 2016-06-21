@@ -1,6 +1,11 @@
 package mongo
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+
+	"github.com/lfq7413/tomato/types"
+)
 
 func Test_ClassExists(t *testing.T) {
 	// TODO
@@ -87,5 +92,98 @@ func Test_convertParseSchemaToMongoSchema(t *testing.T) {
 }
 
 func Test_mongoSchemaFromFieldsAndClassNameAndCLP(t *testing.T) {
-	// TODO
+	var fields types.M
+	var className string
+	var classLevelPermissions types.M
+	var result types.M
+	var expect types.M
+	/*****************************************************/
+	fields = nil
+	className = "user"
+	classLevelPermissions = nil
+	result = mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions)
+	expect = types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	fields = types.M{
+		"key1": types.M{
+			"type":        "Pointer",
+			"targetClass": "_User",
+		},
+		"key2": types.M{
+			"type":        "Relation",
+			"targetClass": "_User",
+		},
+		"loc": types.M{
+			"type": "GeoPoint",
+		},
+	}
+	className = "user"
+	classLevelPermissions = nil
+	result = mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions)
+	expect = types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+		"key1":      "*_User",
+		"key2":      "relation<_User>",
+		"loc":       "geopoint",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	fields = types.M{
+		"key1": types.M{
+			"type":        "Pointer",
+			"targetClass": "_User",
+		},
+		"key2": types.M{
+			"type":        "Relation",
+			"targetClass": "_User",
+		},
+		"loc": types.M{
+			"type": "GeoPoint",
+		},
+	}
+	className = "user"
+	classLevelPermissions = types.M{
+		"find":     types.M{"*": true},
+		"get":      types.M{"*": true},
+		"create":   types.M{"*": true},
+		"update":   types.M{"*": true},
+		"delete":   types.M{"*": true},
+		"addField": types.M{"*": true},
+	}
+	result = mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions)
+	expect = types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+		"key1":      "*_User",
+		"key2":      "relation<_User>",
+		"loc":       "geopoint",
+		"_metadata": types.M{
+			"class_permissions": types.M{
+				"find":     types.M{"*": true},
+				"get":      types.M{"*": true},
+				"create":   types.M{"*": true},
+				"update":   types.M{"*": true},
+				"delete":   types.M{"*": true},
+				"addField": types.M{"*": true},
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }

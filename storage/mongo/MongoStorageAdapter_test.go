@@ -88,7 +88,64 @@ func Test_storageAdapterAllCollections(t *testing.T) {
 }
 
 func Test_convertParseSchemaToMongoSchema(t *testing.T) {
-	// TODO
+	var schema types.M
+	var result types.M
+	var expect types.M
+	/*****************************************************/
+	schema = nil
+	result = convertParseSchemaToMongoSchema(schema)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{}
+	result = convertParseSchemaToMongoSchema(schema)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{
+		"className": "user",
+		"fields": types.M{
+			"name":             types.M{"type": "string"},
+			"_rperm":           types.M{"type": "array"},
+			"_wperm":           types.M{"type": "array"},
+			"_hashed_password": types.M{"type": "string"},
+		},
+	}
+	result = convertParseSchemaToMongoSchema(schema)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"name":             types.M{"type": "string"},
+			"_hashed_password": types.M{"type": "string"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	schema = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"name":             types.M{"type": "string"},
+			"_rperm":           types.M{"type": "array"},
+			"_wperm":           types.M{"type": "array"},
+			"_hashed_password": types.M{"type": "string"},
+		},
+	}
+	result = convertParseSchemaToMongoSchema(schema)
+	expect = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"name": types.M{"type": "string"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_mongoSchemaFromFieldsAndClassNameAndCLP(t *testing.T) {

@@ -131,12 +131,16 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 
 // UpdateClass 更新类
 func (s *Schema) UpdateClass(className string, submittedFields types.M, classLevelPermissions types.M) (types.M, error) {
-	if s.HasClass(className) == false {
+	schema, err := s.GetOneSchema(className, false)
+	if err != nil {
+		return nil, err
+	}
+	if schema == nil || len(schema) == 0 || utils.M(schema["fields"]) == nil {
 		return nil, errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
+
 	// 组装已存在的字段
-	existingFields := utils.CopyMap(utils.M(s.data[className]))
-	existingFields["_id"] = className
+	existingFields := utils.M(schema["fields"])
 
 	// 校验对字段的操作是否合法
 	for name, v := range submittedFields {
@@ -157,7 +161,11 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 
 	// 组装写入数据库的数据
 	newSchema := buildMergedSchemaObject(existingFields, submittedFields)
-	err := s.validateSchemaData(className, newSchema, classLevelPermissions)
+	existingFieldNames := []string{}
+	for k := range existingFields {
+		existingFieldNames = append(existingFieldNames, k)
+	}
+	err = s.validateSchemaData(className, newSchema, classLevelPermissions, existingFieldNames)
 	if err != nil {
 		return nil, err
 	}
@@ -214,39 +222,38 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 		return errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be changed")
 	}
 
-	s.reloadData()
-
-	hasClass := s.HasClass(className)
-	if hasClass == false {
-		return errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
-	}
-
-	class := utils.M(s.data[className])
-	if class[fieldName] == nil {
-		return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
-	}
-
 	schema, err := s.GetOneSchema(className, false)
 	if err != nil {
 		return err
 	}
+	if schema == nil || len(schema) == 0 || utils.M(schema["fields"]) == nil {
+		return errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
+	}
+
+	fields := utils.M(schema["fields"])
+	if fields[fieldName] == nil {
+		return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
+	}
+
 	// 根据字段属性进行相应 对象数据 删除操作
-	name := utils.M(class[fieldName])["type"].(string)
-	if name == "Relation" {
-		// 删除表数据与 schema 中的对应字段
-		err := Adapter.DeleteFields(className, schema, []string{fieldName})
-		if err != nil {
-			return err
-		}
-		// 删除 _Join table 数据
-		_, err = Adapter.DeleteClass("_Join:" + fieldName + ":" + className)
-		if err != nil {
-			return err
+	if fieldType := utils.M(fields[fieldName]); fieldType != nil {
+		if utils.S(fieldType["type"]) == "Relation" {
+			// 删除表数据与 schema 中的对应字段
+			err := Adapter.DeleteFields(className, schema, []string{fieldName})
+			if err != nil {
+				return err
+			}
+			// 删除 _Join table 数据
+			_, err = Adapter.DeleteClass("_Join:" + fieldName + ":" + className)
+			if err != nil {
+				return err
+			}
+			return nil
 		}
 	}
+
 	// 删除其他类型字段 对应的对象数据
-	fieldNames := []string{fieldName}
-	return Adapter.DeleteFields(className, schema, fieldNames)
+	return Adapter.DeleteFields(className, schema, []string{fieldName})
 }
 
 // validateObject 校验对象是否合法
@@ -379,12 +386,22 @@ func (s *Schema) validateNewClass(className string, fields types.M, classLevelPe
 		return errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
 	}
 
-	return s.validateSchemaData(className, fields, classLevelPermissions)
+	return s.validateSchemaData(className, fields, classLevelPermissions, []string{})
 }
 
 // validateSchemaData 校验 Schema 数据
-func (s *Schema) validateSchemaData(className string, fields types.M, classLevelPermissions types.M) error {
+func (s *Schema) validateSchemaData(className string, fields types.M, classLevelPermissions types.M, existingFieldNames []string) error {
 	for fieldName, v := range fields {
+		exist := false
+		for _, k := range existingFieldNames {
+			if fieldName == k {
+				exist = true
+				break
+			}
+		}
+		if exist {
+			continue
+		}
 		if fieldNameIsValid(fieldName) == false {
 			return errs.E(errs.InvalidKeyName, "invalid field name: "+fieldName)
 		}

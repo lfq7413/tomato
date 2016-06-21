@@ -1193,6 +1193,7 @@ func validateQuery(query types.M) error {
 }
 
 // transformObjectACL 转换对象中的 ACL 字段
+// 原始位置：MongoTransform.go/transformACL
 func transformObjectACL(result types.M) types.M {
 	if result == nil || result["ACL"] == nil {
 		return result
@@ -1223,6 +1224,7 @@ func transformObjectACL(result types.M) types.M {
 }
 
 // untransformObjectACL 把数据库格式的 ACL 转换为 API 格式
+// 原始位置：MongoTransform.go/untransformACL
 func untransformObjectACL(output types.M) types.M {
 	if output == nil {
 		return output

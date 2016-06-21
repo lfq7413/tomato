@@ -83,10 +83,26 @@ func (m *MongoAdapter) SetClassLevelPermissions(className string, CLPs types.M) 
 }
 
 // CreateClass 创建类
+// 原始位置 MongoSchemaCollection.go/addSchema
 func (m *MongoAdapter) CreateClass(className string, schema types.M) (types.M, error) {
 	schema = convertParseSchemaToMongoSchema(schema)
+	if schema == nil {
+		return types.M{}, nil
+	}
+	mongoObject := mongoSchemaFromFieldsAndClassNameAndCLP(utils.M(schema["fields"]), className, utils.M(schema["classLevelPermissions"]))
+	mongoObject["_id"] = className
+
 	schemaCollection := m.schemaCollection()
-	return schemaCollection.addSchema(className, utils.M(schema["fields"]), utils.M(schema["classLevelPermissions"]))
+	// 处理 insertOne 失败的情况，数据库插入失败，检测是否是因为键值重复造成的错误
+	err := schemaCollection.collection.insertOne(mongoObject)
+	if err != nil {
+		if errs.GetErrorCode(err) == errs.DuplicateValue {
+			return nil, errs.E(errs.DuplicateValue, "Class already exists.")
+		}
+		return nil, err
+	}
+
+	return mongoSchemaToParseSchema(mongoObject), nil
 }
 
 // AddFieldIfNotExists 添加字段定义
@@ -369,4 +385,29 @@ func convertParseSchemaToMongoSchema(schema types.M) types.M {
 	}
 
 	return schema
+}
+
+// mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
+// 原始位置 MongoSchemaCollection.go/mongoSchemaFromFieldsAndClassNameAndCLP
+func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) types.M {
+	mongoObject := types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+
+	// 添加其他字段
+	if fields != nil {
+		for fieldName, v := range fields {
+			mongoObject[fieldName] = parseFieldTypeToMongoFieldType(utils.M(v))
+		}
+	}
+
+	// 添加 CLP
+	if classLevelPermissions != nil {
+		mongoObject["_metadata"] = types.M{"class_permissions": classLevelPermissions}
+	}
+
+	return mongoObject
 }

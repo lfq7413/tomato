@@ -72,9 +72,10 @@ func (m *MongoSchemaCollection) findAndDeleteSchema(name string) (types.M, error
 }
 
 // addSchema 添加一个表定义
+// 废弃不用，逻辑转移到 MongoStorageAdapter/CreateClass
 func (m *MongoSchemaCollection) addSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error) {
 	mongoSchema := mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions)
-	mongoObject := mongoSchemaObjectFromNameFields(name, mongoSchema)
+	mongoObject := mongoSchemaQueryFromNameQuery(name, mongoSchema)
 	// 处理 insertOne 失败的情况，数据库插入失败，检测是否是因为键值重复造成的错误
 	err := m.collection.insertOne(mongoObject)
 	if err != nil {
@@ -132,16 +133,11 @@ func (m *MongoSchemaCollection) addFieldIfNotExists(className string, fieldName 
 
 // mongoSchemaQueryFromNameQuery 从表名及查询条件组装 mongo 查询对象
 func mongoSchemaQueryFromNameQuery(name string, query types.M) types.M {
-	return mongoSchemaObjectFromNameFields(name, query)
-}
-
-// mongoSchemaObjectFromNameFields 从表名及字段列表组装 mongo 对象
-func mongoSchemaObjectFromNameFields(name string, fields types.M) types.M {
 	object := types.M{
 		"_id": name,
 	}
-	if fields != nil {
-		for k, v := range fields {
+	if query != nil {
+		for k, v := range query {
 			object[k] = v
 		}
 	}
@@ -335,25 +331,26 @@ func parseFieldTypeToMongoFieldType(t types.M) string {
 }
 
 // mongoSchemaFromFieldsAndClassNameAndCLP 把字段属性转换为数据库中保存的类型
-func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) types.M {
-	mongoObject := types.M{
-		"_id":       className,
-		"objectId":  "string",
-		"updatedAt": "string",
-		"createdAt": "string",
-	}
+// 废弃不用，逻辑转移到 MongoStorageAdapter.go/mongoSchemaFromFieldsAndClassNameAndCLP
+// func mongoSchemaFromFieldsAndClassNameAndCLP(fields types.M, className string, classLevelPermissions types.M) types.M {
+// 	mongoObject := types.M{
+// 		"_id":       className,
+// 		"objectId":  "string",
+// 		"updatedAt": "string",
+// 		"createdAt": "string",
+// 	}
 
-	// 添加其他字段
-	if fields != nil {
-		for fieldName, v := range fields {
-			mongoObject[fieldName] = parseFieldTypeToMongoFieldType(utils.M(v))
-		}
-	}
+// 	// 添加其他字段
+// 	if fields != nil {
+// 		for fieldName, v := range fields {
+// 			mongoObject[fieldName] = parseFieldTypeToMongoFieldType(utils.M(v))
+// 		}
+// 	}
 
-	// 添加 CLP
-	if classLevelPermissions != nil {
-		mongoObject["_metadata"] = types.M{"class_permissions": classLevelPermissions}
-	}
+// 	// 添加 CLP
+// 	if classLevelPermissions != nil {
+// 		mongoObject["_metadata"] = types.M{"class_permissions": classLevelPermissions}
+// 	}
 
-	return mongoObject
-}
+// 	return mongoObject
+// }

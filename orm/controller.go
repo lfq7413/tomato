@@ -439,10 +439,12 @@ func (d DBController) Create(className string, object, options types.M) error {
 		return err
 	}
 
-	err = schema.enforceClassExists(className)
+	err = schema.EnforceClassExists(className)
 	if err != nil {
 		return err
 	}
+
+	schema.reloadData()
 
 	sch, err := schema.GetOneSchema(className, true)
 	if err != nil {

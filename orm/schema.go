@@ -35,7 +35,6 @@ func init() {
 		"_User": types.M{
 			"username":      types.M{"type": "String"},
 			"password":      types.M{"type": "String"},
-			"authData":      types.M{"type": "Object"},
 			"email":         types.M{"type": "String"},
 			"emailVerified": types.M{"type": "Boolean"},
 		},
@@ -259,7 +258,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 // validateObject 校验对象是否合法
 func (s *Schema) validateObject(className string, object, query types.M) error {
 	geocount := 0
-	err := s.enforceClassExists(className)
+	err := s.EnforceClassExists(className)
 	if err != nil {
 		return err
 	}
@@ -286,8 +285,8 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 			// 每个对象都隐含 ACL 字段
 			continue
 		}
-		// 校验字段与字段类型
-		err = thenValidateField(s, className, fieldName, expected)
+		// 添加字段
+		err = s.enforceFieldExists(className, fieldName, expected, false)
 		if err != nil {
 			return err
 		}
@@ -356,8 +355,8 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	return errs.E(errs.OperationForbidden, "Permission denied for this action.")
 }
 
-// enforceClassExists 校验类名
-func (s *Schema) enforceClassExists(className string) error {
+// EnforceClassExists 校验类名
+func (s *Schema) EnforceClassExists(className string) error {
 	if s.data[className] != nil {
 		return nil
 	}
@@ -595,11 +594,6 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (type
 		return nil, err
 	}
 	return injectDefaultSchema(schema), nil
-}
-
-// thenValidateField 校验字段，并且不对 schema 进行修改
-func thenValidateField(schema *Schema, className, key string, fieldtype types.M) error {
-	return schema.enforceFieldExists(className, key, fieldtype, true)
 }
 
 // thenValidateRequiredColumns 校验必须的字段
@@ -1039,6 +1033,7 @@ func convertAdapterSchemaToParseSchema(schema types.M) types.M {
 		delete(fields, "_wperm")
 		fields["ACL"] = types.M{"type": "ACL"}
 		if utils.S(schema["className"]) == "_User" {
+			delete(fields, "authData")
 			delete(fields, "_hashed_password")
 			fields["password"] = types.M{"type": "String"}
 		}

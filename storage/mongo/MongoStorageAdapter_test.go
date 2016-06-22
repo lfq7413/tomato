@@ -31,7 +31,29 @@ func Test_DeleteClass(t *testing.T) {
 }
 
 func Test_DeleteAllClasses(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var err error
+	var names []string
+	/*****************************************************/
+	err = adapter.DeleteAllClasses()
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	names = adapter.getCollectionNames()
+	if names != nil && len(names) != 0 {
+		t.Error("expect:", 0, "result:", len(names))
+	}
+	/*****************************************************/
+	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
+	adapter.adaptiveCollection("user1").insertOne(types.M{"_id": "01"})
+	err = adapter.DeleteAllClasses()
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	names = adapter.getCollectionNames()
+	if names != nil && len(names) != 0 {
+		t.Error("expect:", 0, "result:", len(names))
+	}
 }
 
 func Test_DeleteFields(t *testing.T) {

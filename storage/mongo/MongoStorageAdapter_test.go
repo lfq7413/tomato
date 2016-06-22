@@ -4,6 +4,9 @@ import (
 	"reflect"
 	"testing"
 
+	"gopkg.in/mgo.v2"
+
+	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 )
 
@@ -48,6 +51,28 @@ func Test_GetAllClasses(t *testing.T) {
 }
 
 func Test_getCollectionNames(t *testing.T) {
+	adapter := getAdapter()
+	var names []string
+	/*****************************************************************/
+	names = adapter.getCollectionNames()
+	if names != nil && len(names) > 0 {
+		t.Error("expect:", 0, "result:", len(names))
+	}
+	/*****************************************************************/
+	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
+	adapter.adaptiveCollection("user1").insertOne(types.M{"_id": "01"})
+	names = adapter.getCollectionNames()
+	if names == nil || len(names) != 2 {
+		t.Error("expect:", 2, "result:", len(names))
+	} else {
+		expect := []string{"tomatouser", "tomatouser1"}
+		if reflect.DeepEqual(expect, names) == false {
+			t.Error("expect:", expect, "result:", names)
+		}
+	}
+	adapter.adaptiveCollection("user").drop()
+	adapter.adaptiveCollection("user1").drop()
+
 	// TODO
 }
 
@@ -243,4 +268,23 @@ func Test_mongoSchemaFromFieldsAndClassNameAndCLP(t *testing.T) {
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
+}
+
+func getAdapter() *MongoAdapter {
+	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
+	return NewMongoAdapter("tomato")
+}
+
+func newMongoDB(url string) *storage.Database {
+	session, err := mgo.Dial(url)
+	if err != nil {
+		panic(err)
+	}
+	session.SetMode(mgo.Monotonic, true)
+	database := session.DB("")
+	db := &storage.Database{
+		MongoSession:  session,
+		MongoDatabase: database,
+	}
+	return db
 }

@@ -276,8 +276,42 @@ func Test_AddFieldIfNotExists(t *testing.T) {
 }
 
 func Test_DeleteClass(t *testing.T) {
-	// schema
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var result types.M
+	var err error
+	var expect types.M
+	/*****************************************************/
+	className = "user"
+	result, err = adapter.DeleteClass(className)
+	expect = nil
+	if err != nil || result != nil {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/*****************************************************/
+	className = "user"
+	adapter.adaptiveCollection(className).insertOne(types.M{"_id": "1024"})
+	adapter.CreateClass(className, nil)
+	result, err = adapter.DeleteClass(className)
+	expect = types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	} else {
+		results, err := adapter.adaptiveCollection(className).find(types.M{}, types.M{})
+		if results != nil && len(results) > 0 {
+			t.Error("expect:", 0, "result:", results, err)
+		}
+		results, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+		if results != nil && len(results) > 0 {
+			t.Error("expect:", 0, "result:", results, err)
+		}
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_DeleteAllClasses(t *testing.T) {

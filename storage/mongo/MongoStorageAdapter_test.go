@@ -16,8 +16,66 @@ func Test_ClassExists(t *testing.T) {
 }
 
 func Test_SetClassLevelPermissions(t *testing.T) {
-	// schema
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var clps types.M
+	var err error
+	var result []types.M
+	var expect types.M
+	/*****************************************************/
+	className = "user"
+	clps = nil
+	adapter.CreateClass(className, nil)
+	err = adapter.SetClassLevelPermissions(className, clps)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	result, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+	expect = types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+		"_metadata": types.M{
+			"class_permissions": types.M{},
+		},
+	}
+	if err != nil || result == nil || reflect.DeepEqual(expect, result[0]) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	clps = types.M{
+		"find":   types.M{"*": true},
+		"get":    types.M{"*": true},
+		"create": types.M{"*": true},
+		"update": types.M{"*": true},
+	}
+	adapter.CreateClass(className, nil)
+	err = adapter.SetClassLevelPermissions(className, clps)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	result, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+	expect = types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+		"_metadata": types.M{
+			"class_permissions": types.M{
+				"find":   types.M{"*": true},
+				"get":    types.M{"*": true},
+				"create": types.M{"*": true},
+				"update": types.M{"*": true},
+			},
+		},
+	}
+	if err != nil || result == nil || reflect.DeepEqual(expect, result[0]) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_CreateClass(t *testing.T) {
@@ -271,8 +329,7 @@ func Test_CreateClass(t *testing.T) {
 }
 
 func Test_AddFieldIfNotExists(t *testing.T) {
-	// schema
-	// TODO
+	// 测试用例与 MongoSchemaCollection.addFieldIfNotExists 相同
 }
 
 func Test_DeleteClass(t *testing.T) {

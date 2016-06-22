@@ -12,7 +12,42 @@ import (
 )
 
 func Test_ClassExists(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var name string
+	var exist bool
+	/*****************************************************/
+	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
+	adapter.adaptiveCollection("user2").insertOne(types.M{"_id": "01"})
+	name = "user"
+	exist = adapter.ClassExists(name)
+	if exist == false {
+		t.Error("expect:", true, "result:", exist)
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
+	adapter.adaptiveCollection("user2").insertOne(types.M{"_id": "01"})
+	name = "user3"
+	exist = adapter.ClassExists(name)
+	if exist == true {
+		t.Error("expect:", false, "result:", exist)
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
+	adapter.adaptiveCollection("user2").insertOne(types.M{"_id": "01"})
+	name = "user3"
+	exist = adapter.ClassExists(name)
+	if exist == true {
+		t.Error("expect:", false, "result:", exist)
+	}
+	adapter.adaptiveCollection("user3").insertOne(types.M{"_id": "01"})
+	name = "user3"
+	exist = adapter.ClassExists(name)
+	if exist == false {
+		t.Error("expect:", true, "result:", exist)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_SetClassLevelPermissions(t *testing.T) {

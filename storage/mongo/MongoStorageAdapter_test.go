@@ -350,8 +350,44 @@ func Test_CreateObject(t *testing.T) {
 }
 
 func Test_GetClass(t *testing.T) {
-	// schema
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var result types.M
+	var err error
+	var expect types.M
+	/*****************************************************/
+	className = "user"
+	result, err = adapter.GetClass(className)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	adapter.CreateClass(className, nil)
+	result, err = adapter.GetClass(className)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_GetAllClasses(t *testing.T) {

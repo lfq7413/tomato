@@ -144,12 +144,17 @@ func (m *MongoAdapter) DeleteFields(className string, schema types.M, fieldNames
 	if schema != nil {
 		fields = utils.M(schema["fields"])
 	}
+	if fieldNames == nil || len(fieldNames) == 0 {
+		return nil
+	}
 	mongoFormatNames := []string{}
 	for _, fieldName := range fieldNames {
 		if fields != nil {
-			fieldType := utils.M(fields[fieldName])
-			if fieldType != nil && utils.S(fieldType["type"]) == "Pointer" {
-				mongoFormatNames = append(mongoFormatNames, "_p_"+fieldName)
+			if fieldType := utils.M(fields[fieldName]); fieldType != nil {
+				if utils.S(fieldType["type"]) == "Pointer" {
+					mongoFormatNames = append(mongoFormatNames, "_p_"+fieldName)
+					continue
+				}
 			}
 		}
 		mongoFormatNames = append(mongoFormatNames, fieldName)
@@ -164,7 +169,7 @@ func (m *MongoAdapter) DeleteFields(className string, schema types.M, fieldNames
 	// 组装 schema 更新语句
 	unset2 := types.M{}
 	for _, name := range fieldNames {
-		unset[name] = nil
+		unset2[name] = nil
 	}
 	schemaUpdate := types.M{"$unset": unset2}
 

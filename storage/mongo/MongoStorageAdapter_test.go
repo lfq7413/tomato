@@ -341,8 +341,93 @@ func Test_DeleteAllClasses(t *testing.T) {
 }
 
 func Test_DeleteFields(t *testing.T) {
-	// schema
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var fieldNames []string
+	var err error
+	var results []types.M
+	var expect types.M
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	fieldNames = nil
+	err = adapter.DeleteFields(className, schema, fieldNames)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	fieldNames = []string{}
+	err = adapter.DeleteFields(className, schema, fieldNames)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	fieldNames = []string{"key"}
+	adapter.adaptiveCollection(className).insertOne(types.M{"_id": "01", "key": "hello"})
+	adapter.CreateClass(className, schema)
+	err = adapter.DeleteFields(className, schema, fieldNames)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	results, err = adapter.adaptiveCollection(className).find(types.M{"_id": "01"}, types.M{})
+	expect = types.M{
+		"_id": "01",
+	}
+	if err != nil || results == nil || len(results) != 1 || reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	results, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+	expect = types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if err != nil || results == nil || len(results) != 1 || reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	schema = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "Pointer"},
+		},
+	}
+	fieldNames = []string{"key"}
+	adapter.adaptiveCollection(className).insertOne(types.M{"_id": "01", "_p_key": "hello"})
+	adapter.CreateClass(className, schema)
+	err = adapter.DeleteFields(className, schema, fieldNames)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	results, err = adapter.adaptiveCollection(className).find(types.M{"_id": "01"}, types.M{})
+	expect = types.M{
+		"_id": "01",
+	}
+	if err != nil || results == nil || len(results) != 1 || reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	results, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+	expect = types.M{
+		"_id":       className,
+		"objectId":  "string",
+		"updatedAt": "string",
+		"createdAt": "string",
+	}
+	if err != nil || results == nil || len(results) != 1 || reflect.DeepEqual(expect, results[0]) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_CreateObject(t *testing.T) {

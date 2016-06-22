@@ -53,12 +53,12 @@ func Test_GetAllClasses(t *testing.T) {
 func Test_getCollectionNames(t *testing.T) {
 	adapter := getAdapter()
 	var names []string
-	/*****************************************************************/
+	/*****************************************************/
 	names = adapter.getCollectionNames()
 	if names != nil && len(names) > 0 {
 		t.Error("expect:", 0, "result:", len(names))
 	}
-	/*****************************************************************/
+	/*****************************************************/
 	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
 	adapter.adaptiveCollection("user1").insertOne(types.M{"_id": "01"})
 	names = adapter.getCollectionNames()
@@ -72,8 +72,6 @@ func Test_getCollectionNames(t *testing.T) {
 	}
 	adapter.adaptiveCollection("user").drop()
 	adapter.adaptiveCollection("user1").drop()
-
-	// TODO
 }
 
 func Test_DeleteObjectsByQuery(t *testing.T) {
@@ -109,7 +107,47 @@ func Test_EnsureUniqueness(t *testing.T) {
 }
 
 func Test_storageAdapterAllCollections(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var result []*MongoCollection
+	var expect []*MongoCollection
+	/*****************************************************/
+	result = storageAdapterAllCollections(adapter)
+	expect = []*MongoCollection{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*****************************************************/
+	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
+	adapter.adaptiveCollection("user1").insertOne(types.M{"_id": "01"})
+	result = storageAdapterAllCollections(adapter)
+	if result == nil || len(result) != 2 {
+		t.Error("expect:", 2, "result:", len(result))
+	} else {
+		expect := []string{"tomatouser", "tomatouser1"}
+		names := []string{result[0].collection.Name, result[1].collection.Name}
+		if reflect.DeepEqual(expect, names) == false {
+			t.Error("expect:", expect, "result:", names)
+		}
+	}
+	adapter.adaptiveCollection("user").drop()
+	adapter.adaptiveCollection("user1").drop()
+	/*****************************************************/
+	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
+	adapter.adaptiveCollection("user1").insertOne(types.M{"_id": "01"})
+	adapter.adaptiveCollection("user.system.id").insertOne(types.M{"_id": "01"})
+	result = storageAdapterAllCollections(adapter)
+	if result == nil || len(result) != 2 {
+		t.Error("expect:", 2, "result:", len(result))
+	} else {
+		expect := []string{"tomatouser", "tomatouser1"}
+		names := []string{result[0].collection.Name, result[1].collection.Name}
+		if reflect.DeepEqual(expect, names) == false {
+			t.Error("expect:", expect, "result:", names)
+		}
+	}
+	adapter.adaptiveCollection("user").drop()
+	adapter.adaptiveCollection("user1").drop()
+	adapter.adaptiveCollection("ser.system.id").drop()
 }
 
 func Test_convertParseSchemaToMongoSchema(t *testing.T) {

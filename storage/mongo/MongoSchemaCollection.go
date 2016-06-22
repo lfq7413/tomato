@@ -72,7 +72,7 @@ func (m *MongoSchemaCollection) findAndDeleteSchema(name string) (types.M, error
 }
 
 // addSchema 添加一个表定义
-// 废弃不用，逻辑转移到 MongoStorageAdapter/CreateClass
+// 仅用于测试，逻辑转移到 MongoStorageAdapter/CreateClass
 func (m *MongoSchemaCollection) addSchema(name string, fields types.M, classLevelPermissions types.M) (types.M, error) {
 	mongoSchema := mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions)
 	mongoObject := mongoSchemaQueryFromNameQuery(name, mongoSchema)

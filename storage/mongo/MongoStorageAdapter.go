@@ -87,7 +87,7 @@ func (m *MongoAdapter) SetClassLevelPermissions(className string, CLPs types.M) 
 func (m *MongoAdapter) CreateClass(className string, schema types.M) (types.M, error) {
 	schema = convertParseSchemaToMongoSchema(schema)
 	if schema == nil {
-		return types.M{}, nil
+		schema = types.M{}
 	}
 	mongoObject := mongoSchemaFromFieldsAndClassNameAndCLP(utils.M(schema["fields"]), className, utils.M(schema["classLevelPermissions"]))
 	mongoObject["_id"] = className

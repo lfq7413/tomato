@@ -6,6 +6,7 @@ import (
 
 	"gopkg.in/mgo.v2"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 )
@@ -15,18 +16,267 @@ func Test_ClassExists(t *testing.T) {
 }
 
 func Test_SetClassLevelPermissions(t *testing.T) {
+	// schema
 	// TODO
 }
 
 func Test_CreateClass(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var result types.M
+	var err error
+	var expect types.M
+	var results []types.M
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	result, err = adapter.CreateClass(className, schema)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	} else {
+		results, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+		expect = types.M{
+			"_id":       className,
+			"objectId":  "string",
+			"updatedAt": "string",
+			"createdAt": "string",
+		}
+		if results == nil || len(results) != 1 {
+			t.Error("expect:", expect, "result:", results, err)
+		} else {
+			if reflect.DeepEqual(expect, results[0]) == false {
+				t.Error("expect:", expect, "result:", results[0], err)
+			}
+		}
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	result, err = adapter.CreateClass(className, schema)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	} else {
+		results, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+		expect = types.M{
+			"_id":       className,
+			"objectId":  "string",
+			"updatedAt": "string",
+			"createdAt": "string",
+		}
+		if results == nil || len(results) != 1 {
+			t.Error("expect:", expect, "result:", results, err)
+		} else {
+			if reflect.DeepEqual(expect, results[0]) == false {
+				t.Error("expect:", expect, "result:", results[0], err)
+			}
+		}
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	schema = types.M{
+		"fields": types.M{
+			"k1": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+			"k2": types.M{
+				"type":        "Relation",
+				"targetClass": "user",
+			},
+			"k3": types.M{
+				"type": "String",
+			},
+		},
+	}
+	result, err = adapter.CreateClass(className, schema)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"k1": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+			"k2": types.M{
+				"type":        "Relation",
+				"targetClass": "user",
+			},
+			"k3":        types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	} else {
+		results, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+		expect = types.M{
+			"_id":       className,
+			"k1":        "*user",
+			"k2":        "relation<user>",
+			"k3":        "string",
+			"objectId":  "string",
+			"updatedAt": "string",
+			"createdAt": "string",
+		}
+		if results == nil || len(results) != 1 {
+			t.Error("expect:", expect, "result:", results, err)
+		} else {
+			if reflect.DeepEqual(expect, results[0]) == false {
+				t.Error("expect:", expect, "result:", results[0], err)
+			}
+		}
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	schema = types.M{
+		"fields": types.M{
+			"k1": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+			"k2": types.M{
+				"type":        "Relation",
+				"targetClass": "user",
+			},
+			"k3": types.M{
+				"type": "String",
+			},
+		},
+		"classLevelPermissions": types.M{
+			"find":   types.M{"*": true},
+			"get":    types.M{"*": true},
+			"create": types.M{"*": true},
+			"update": types.M{"*": true},
+		},
+	}
+	result, err = adapter.CreateClass(className, schema)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"k1": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+			"k2": types.M{
+				"type":        "Relation",
+				"targetClass": "user",
+			},
+			"k3":        types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{},
+			"addField": types.M{},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	} else {
+		results, err = adapter.schemaCollection().collection.find(types.M{"_id": className}, types.M{})
+		expect = types.M{
+			"_id":       className,
+			"k1":        "*user",
+			"k2":        "relation<user>",
+			"k3":        "string",
+			"objectId":  "string",
+			"updatedAt": "string",
+			"createdAt": "string",
+			"_metadata": types.M{
+				"class_permissions": types.M{
+					"find":   types.M{"*": true},
+					"get":    types.M{"*": true},
+					"create": types.M{"*": true},
+					"update": types.M{"*": true},
+				},
+			},
+		}
+		if results == nil || len(results) != 1 {
+			t.Error("expect:", expect, "result:", results, err)
+		} else {
+			if reflect.DeepEqual(expect, results[0]) == false {
+				t.Error("expect:", expect, "result:", results[0], err)
+			}
+		}
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	result, err = adapter.CreateClass(className, schema)
+	result, err = adapter.CreateClass(className, schema)
+	expectErr := errs.E(errs.DuplicateValue, "Class already exists.")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_AddFieldIfNotExists(t *testing.T) {
+	// schema
 	// TODO
 }
 
 func Test_DeleteClass(t *testing.T) {
+	// schema
 	// TODO
 }
 
@@ -57,6 +307,7 @@ func Test_DeleteAllClasses(t *testing.T) {
 }
 
 func Test_DeleteFields(t *testing.T) {
+	// schema
 	// TODO
 }
 
@@ -65,10 +316,12 @@ func Test_CreateObject(t *testing.T) {
 }
 
 func Test_GetClass(t *testing.T) {
+	// schema
 	// TODO
 }
 
 func Test_GetAllClasses(t *testing.T) {
+	// schema
 	// TODO
 }
 

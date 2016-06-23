@@ -13,88 +13,83 @@ import (
 // clpValidKeys 类级别的权限 列表
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField", "readUserFields", "writeUserFields"}
 
-// DefaultColumns 所有类的默认字段，以及系统类的默认字段
-var DefaultColumns map[string]types.M
-
-// requiredColumns 类必须要有的字段
-var requiredColumns map[string][]string
-
 // SystemClasses 系统表
 var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product", "_PushStatus"}
 
 var volatileClasses = []string{"_PushStatus", "_Hooks", "_GlobalConfig"}
 
-func init() {
-	DefaultColumns = map[string]types.M{
-		"_Default": types.M{
-			"objectId":  types.M{"type": "String"},
-			"createdAt": types.M{"type": "Date"},
-			"updatedAt": types.M{"type": "Date"},
-			"ACL":       types.M{"type": "ACL"},
-		},
-		"_User": types.M{
-			"username":      types.M{"type": "String"},
-			"password":      types.M{"type": "String"},
-			"email":         types.M{"type": "String"},
-			"emailVerified": types.M{"type": "Boolean"},
-		},
-		"_Installation": types.M{
-			"installationId":   types.M{"type": "String"},
-			"deviceToken":      types.M{"type": "String"},
-			"channels":         types.M{"type": "Array"},
-			"deviceType":       types.M{"type": "String"},
-			"pushType":         types.M{"type": "String"},
-			"GCMSenderId":      types.M{"type": "String"},
-			"timeZone":         types.M{"type": "String"},
-			"localeIdentifier": types.M{"type": "String"},
-			"badge":            types.M{"type": "Number"},
-			"appVersion":       types.M{"type": "String"},
-			"appName":          types.M{"type": "String"},
-			"appIdentifier":    types.M{"type": "String"},
-			"parseVersion":     types.M{"type": "String"},
-		},
-		"_Role": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
-		},
-		"_Session": types.M{
-			"restricted":     types.M{"type": "Boolean"},
-			"user":           types.M{"type": "Pointer", "targetClass": "_User"},
-			"installationId": types.M{"type": "String"},
-			"sessionToken":   types.M{"type": "String"},
-			"expiresAt":      types.M{"type": "Date"},
-			"createdWith":    types.M{"type": "Object"},
-		},
-		"_Product": types.M{
-			"productIdentifier": types.M{"type": "String"},
-			"download":          types.M{"type": "File"},
-			"downloadName":      types.M{"type": "String"},
-			"icon":              types.M{"type": "File"},
-			"order":             types.M{"type": "Number"},
-			"title":             types.M{"type": "String"},
-			"subtitle":          types.M{"type": "String"},
-		},
-		"_PushStatus": types.M{
-			"pushTime":      types.M{"type": "String"},
-			"source":        types.M{"type": "String"}, // rest or webui
-			"query":         types.M{"type": "String"}, // the stringified JSON query
-			"payload":       types.M{"type": "Object"}, // the JSON payload,
-			"title":         types.M{"type": "String"},
-			"expiry":        types.M{"type": "Number"},
-			"status":        types.M{"type": "String"},
-			"numSent":       types.M{"type": "Number"},
-			"numFailed":     types.M{"type": "Number"},
-			"pushHash":      types.M{"type": "String"},
-			"errorMessage":  types.M{"type": "Object"},
-			"sentPerType":   types.M{"type": "Object"},
-			"failedPerType": types.M{"type": "Object"},
-		},
-	}
-	requiredColumns = map[string][]string{
-		"_Product": []string{"productIdentifier", "icon", "order", "title", "subtitle"},
-		"_Role":    []string{"name", "ACL"},
-	}
+// DefaultColumns 所有类的默认字段，以及系统类的默认字段
+var DefaultColumns = map[string]types.M{
+	"_Default": types.M{
+		"objectId":  types.M{"type": "String"},
+		"createdAt": types.M{"type": "Date"},
+		"updatedAt": types.M{"type": "Date"},
+		"ACL":       types.M{"type": "ACL"},
+	},
+	"_User": types.M{
+		"username":      types.M{"type": "String"},
+		"password":      types.M{"type": "String"},
+		"email":         types.M{"type": "String"},
+		"emailVerified": types.M{"type": "Boolean"},
+	},
+	"_Installation": types.M{
+		"installationId":   types.M{"type": "String"},
+		"deviceToken":      types.M{"type": "String"},
+		"channels":         types.M{"type": "Array"},
+		"deviceType":       types.M{"type": "String"},
+		"pushType":         types.M{"type": "String"},
+		"GCMSenderId":      types.M{"type": "String"},
+		"timeZone":         types.M{"type": "String"},
+		"localeIdentifier": types.M{"type": "String"},
+		"badge":            types.M{"type": "Number"},
+		"appVersion":       types.M{"type": "String"},
+		"appName":          types.M{"type": "String"},
+		"appIdentifier":    types.M{"type": "String"},
+		"parseVersion":     types.M{"type": "String"},
+	},
+	"_Role": types.M{
+		"name":  types.M{"type": "String"},
+		"users": types.M{"type": "Relation", "targetClass": "_User"},
+		"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+	},
+	"_Session": types.M{
+		"restricted":     types.M{"type": "Boolean"},
+		"user":           types.M{"type": "Pointer", "targetClass": "_User"},
+		"installationId": types.M{"type": "String"},
+		"sessionToken":   types.M{"type": "String"},
+		"expiresAt":      types.M{"type": "Date"},
+		"createdWith":    types.M{"type": "Object"},
+	},
+	"_Product": types.M{
+		"productIdentifier": types.M{"type": "String"},
+		"download":          types.M{"type": "File"},
+		"downloadName":      types.M{"type": "String"},
+		"icon":              types.M{"type": "File"},
+		"order":             types.M{"type": "Number"},
+		"title":             types.M{"type": "String"},
+		"subtitle":          types.M{"type": "String"},
+	},
+	"_PushStatus": types.M{
+		"pushTime":      types.M{"type": "String"},
+		"source":        types.M{"type": "String"}, // rest or webui
+		"query":         types.M{"type": "String"}, // the stringified JSON query
+		"payload":       types.M{"type": "Object"}, // the JSON payload,
+		"title":         types.M{"type": "String"},
+		"expiry":        types.M{"type": "Number"},
+		"status":        types.M{"type": "String"},
+		"numSent":       types.M{"type": "Number"},
+		"numFailed":     types.M{"type": "Number"},
+		"pushHash":      types.M{"type": "String"},
+		"errorMessage":  types.M{"type": "Object"},
+		"sentPerType":   types.M{"type": "Object"},
+		"failedPerType": types.M{"type": "Object"},
+	},
+}
+
+// requiredColumns 类必须要有的字段
+var requiredColumns = map[string][]string{
+	"_Product": []string{"productIdentifier", "icon", "order", "title", "subtitle"},
+	"_Role":    []string{"name", "ACL"},
 }
 
 // Schema schema 操作对象
@@ -238,12 +233,12 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	if fieldType := utils.M(fields[fieldName]); fieldType != nil {
 		if utils.S(fieldType["type"]) == "Relation" {
 			// 删除表数据与 schema 中的对应字段
-			err := Adapter.DeleteFields(className, schema, []string{fieldName})
+			err := s.dbAdapter.DeleteFields(className, schema, []string{fieldName})
 			if err != nil {
 				return err
 			}
 			// 删除 _Join table 数据
-			_, err = Adapter.DeleteClass("_Join:" + fieldName + ":" + className)
+			_, err = s.dbAdapter.DeleteClass("_Join:" + fieldName + ":" + className)
 			if err != nil {
 				return err
 			}
@@ -252,7 +247,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	}
 
 	// 删除其他类型字段 对应的对象数据
-	return Adapter.DeleteFields(className, schema, []string{fieldName})
+	return s.dbAdapter.DeleteFields(className, schema, []string{fieldName})
 }
 
 // validateObject 校验对象是否合法
@@ -568,7 +563,7 @@ func (s *Schema) reloadData() {
 
 // GetAllClasses ...
 func (s *Schema) GetAllClasses() ([]types.M, error) {
-	allSchemas, err := Adapter.GetAllClasses()
+	allSchemas, err := s.dbAdapter.GetAllClasses()
 	if err != nil {
 		return nil, err
 	}
@@ -589,7 +584,7 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (type
 		}
 	}
 
-	schema, err := Adapter.GetClass(className)
+	schema, err := s.dbAdapter.GetClass(className)
 	if err != nil {
 		return nil, err
 	}

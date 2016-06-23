@@ -791,7 +791,151 @@ func Test_UpsertOneObject(t *testing.T) {
 }
 
 func Test_Find(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var query types.M
+	var options types.M
+	var results []types.M
+	var err error
+	var object types.M
+	var expect []types.M
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	// tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	object = types.M{
+		"objectId":  "01",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       3,
+	}
+	adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "02",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       1,
+	}
+	adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "03",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       2,
+	}
+	adapter.CreateObject(className, schema, object)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{}
+	options = nil
+	results, err = adapter.Find(className, schema, query, options)
+	expect = []types.M{
+		types.M{
+			"objectId":  "01",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       3,
+		},
+		types.M{
+			"objectId":  "02",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       1,
+		},
+		types.M{
+			"objectId":  "03",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       2,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{}
+	options = types.M{
+		"sort": []string{"key"},
+	}
+	results, err = adapter.Find(className, schema, query, options)
+	expect = []types.M{
+		types.M{
+			"objectId":  "02",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       1,
+		},
+		types.M{
+			"objectId":  "03",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       2,
+		},
+		types.M{
+			"objectId":  "01",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       3,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{}
+	options = types.M{
+		"sort": []string{"-key"},
+	}
+	results, err = adapter.Find(className, schema, query, options)
+	expect = []types.M{
+		types.M{
+			"objectId":  "01",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       3,
+		},
+		types.M{
+			"objectId":  "03",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       2,
+		},
+		types.M{
+			"objectId":  "02",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       1,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{"key": 3}
+	options = types.M{}
+	results, err = adapter.Find(className, schema, query, options)
+	expect = []types.M{
+		types.M{
+			"objectId":  "01",
+			"updatedAt": tmpTimeStr,
+			"createdAt": tmpTimeStr,
+			"key":       3,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+
+	adapter.DeleteAllClasses()
 }
 
 func Test_AdapterRawFind(t *testing.T) {

@@ -286,27 +286,33 @@ func (m *MongoAdapter) UpsertOneObject(className string, schema, query, update t
 
 // Find ...
 func (m *MongoAdapter) Find(className string, schema, query, options types.M) ([]types.M, error) {
+	if options == nil {
+		options = types.M{}
+	}
 	schema = convertParseSchemaToMongoSchema(schema)
 	mongoWhere, err := m.transform.transformWhere(className, query, schema)
 	if err != nil {
 		return nil, err
 	}
-	if options["sort"] != nil {
-		keys := options["sort"].([]string)
-		mongoSort := []string{}
-		for _, key := range keys {
-			var mongoKey string
-			var prefix string
+	if _, ok := options["sort"]; ok {
+		if keys, ok := options["sort"].([]string); ok {
+			mongoSort := []string{}
+			for _, key := range keys {
+				var mongoKey string
+				var prefix string
 
-			if strings.HasPrefix(key, "-") {
-				prefix = "-"
-				key = key[1:]
+				if strings.HasPrefix(key, "-") {
+					prefix = "-"
+					key = key[1:]
+				}
+
+				mongoKey = prefix + m.transform.transformKey(className, key, schema)
+				mongoSort = append(mongoSort, mongoKey)
 			}
-
-			mongoKey = prefix + m.transform.transformKey(className, key, schema)
-			mongoSort = append(mongoSort, mongoKey)
+			options["sort"] = mongoSort
+		} else {
+			delete(options, "sort")
 		}
-		options["sort"] = mongoSort
 	}
 
 	coll := m.adaptiveCollection(className)
@@ -320,7 +326,7 @@ func (m *MongoAdapter) Find(className string, schema, query, options types.M) ([
 		if err != nil {
 			return nil, err
 		}
-		objects = append(objects, r.(map[string]interface{}))
+		objects = append(objects, utils.M(r))
 	}
 	return objects, nil
 }

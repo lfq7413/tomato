@@ -3,12 +3,14 @@ package mongo
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"gopkg.in/mgo.v2"
 
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 func Test_ClassExists(t *testing.T) {
@@ -523,7 +525,127 @@ func Test_DeleteFields(t *testing.T) {
 }
 
 func Test_CreateObject(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var object types.M
+	var err error
+	var result []types.M
+	var expect types.M
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	object = types.M{
+		"objectId":  "1024",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+	}
+	err = adapter.CreateObject(className, schema, object)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	result, err = adapter.adaptiveCollection(className).find(types.M{"_id": "1024"}, types.M{})
+	expect = types.M{
+		"_id":         "1024",
+		"_updated_at": tmpTime.Local(),
+		"_created_at": tmpTime.Local(),
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(expect, result[0]) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	object = types.M{
+		"objectId":  "1024",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key": types.M{
+			"__type":    "Pointer",
+			"className": "abc",
+			"objectId":  "123",
+		},
+	}
+	err = adapter.CreateObject(className, schema, object)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	result, err = adapter.adaptiveCollection(className).find(types.M{"_id": "1024"}, types.M{})
+	expect = types.M{
+		"_id":         "1024",
+		"_updated_at": tmpTime.Local(),
+		"_created_at": tmpTime.Local(),
+		"_p_key":      "abc$123",
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(expect, result[0]) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	schema = types.M{
+		"fields": types.M{
+			"key": types.M{
+				"type": "Pointer",
+			},
+		},
+	}
+	object = types.M{
+		"objectId":  "1024",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key": types.M{
+			"__type":    "Other",
+			"className": "abc",
+			"objectId":  "123",
+		},
+	}
+	err = adapter.CreateObject(className, schema, object)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	result, err = adapter.adaptiveCollection(className).find(types.M{"_id": "1024"}, types.M{})
+	expect = types.M{
+		"_id":         "1024",
+		"_updated_at": tmpTime.Local(),
+		"_created_at": tmpTime.Local(),
+		"_p_key": types.M{
+			"__type":    "Other",
+			"className": "abc",
+			"objectId":  "123",
+		},
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(expect, result[0]) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	object = types.M{
+		"objectId":  "1024",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+	}
+	err = adapter.CreateObject(className, schema, object)
+	err = adapter.CreateObject(className, schema, object)
+	expectErr := errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	result, err = adapter.adaptiveCollection(className).find(types.M{"_id": "1024"}, types.M{})
+	expect = types.M{
+		"_id":         "1024",
+		"_updated_at": tmpTime.Local(),
+		"_created_at": tmpTime.Local(),
+	}
+	if err != nil || result == nil || len(result) != 1 || reflect.DeepEqual(expect, result[0]) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_GetClass(t *testing.T) {

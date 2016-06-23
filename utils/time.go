@@ -14,7 +14,7 @@ func StringtoTime(s string) (time.Time, error) {
 
 // TimetoString ...
 func TimetoString(t time.Time) string {
-	return t.Format(ISO8601)
+	return t.UTC().Format(ISO8601)
 }
 
 // UnixmillitoTime ...

@@ -1355,7 +1355,44 @@ func Test_Count(t *testing.T) {
 }
 
 func Test_EnsureUniqueness(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var fieldNames []string
+	var err error
+	var indexes []mgo.Index
+	var expect mgo.Index
+	var ok bool
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	fieldNames = []string{"username"}
+	err = adapter.EnsureUniqueness(className, schema, fieldNames)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	indexes, err = adapter.adaptiveCollection(className).collection.Indexes()
+	expect = mgo.Index{
+		Key:        []string{"username"},
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+	ok = false
+	for _, i := range indexes {
+		if reflect.DeepEqual(i.Key, expect.Key) &&
+			i.Unique == expect.Unique &&
+			i.Background == expect.Background &&
+			i.Sparse == expect.Sparse {
+			ok = true
+			break
+		}
+	}
+	if ok == false {
+		t.Error("expect:", expect, "get result:", indexes)
+	}
+
+	adapter.DeleteAllClasses()
 }
 
 func Test_storageAdapterAllCollections(t *testing.T) {

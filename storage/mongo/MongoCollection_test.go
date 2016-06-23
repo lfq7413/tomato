@@ -1038,7 +1038,7 @@ func Test_ensureSparseUniqueIndexInBackground(t *testing.T) {
 		}
 	}
 	if ok == false {
-		t.Error("expect:", expect, "get result:", nil)
+		t.Error("expect:", expect, "get result:", indexes)
 	}
 	mc.drop()
 	/********************************************************/
@@ -1067,7 +1067,7 @@ func Test_ensureSparseUniqueIndexInBackground(t *testing.T) {
 		}
 	}
 	if ok == false {
-		t.Error("expect:", expect, "get result:", nil)
+		t.Error("expect:", expect, "get result:", indexes)
 	}
 	mc.drop()
 	/********************************************************/
@@ -1094,7 +1094,7 @@ func Test_ensureSparseUniqueIndexInBackground(t *testing.T) {
 		}
 	}
 	if ok == false {
-		t.Error("expect:", expect, "get result:", nil)
+		t.Error("expect:", expect, "get result:", indexes)
 	}
 	mc.drop()
 }

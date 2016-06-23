@@ -938,6 +938,67 @@ func Test_Find(t *testing.T) {
 }
 
 func Test_AdapterRawFind(t *testing.T) {
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var query types.M
+	var results []types.M
+	var err error
+	var object types.M
+	var expect []types.M
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	object = types.M{
+		"objectId":  "01",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       3,
+	}
+	adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "02",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       1,
+	}
+	adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "03",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       2,
+	}
+	adapter.CreateObject(className, schema, object)
+	/*****************************************************/
+	className = "user"
+	query = types.M{}
+	results, err = adapter.rawFind(className, query)
+	expect = []types.M{
+		types.M{
+			"_id":         "01",
+			"_updated_at": tmpTime.Local(),
+			"_created_at": tmpTime.Local(),
+			"key":         3,
+		},
+		types.M{
+			"_id":         "02",
+			"_updated_at": tmpTime.Local(),
+			"_created_at": tmpTime.Local(),
+			"key":         1,
+		},
+		types.M{
+			"_id":         "03",
+			"_updated_at": tmpTime.Local(),
+			"_created_at": tmpTime.Local(),
+			"key":         2,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
 	// TODO
 }
 

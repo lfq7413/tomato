@@ -396,7 +396,7 @@ func Test_DeleteClass(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	} else {
-		results, err := adapter.adaptiveCollection(className).find(types.M{}, types.M{})
+		results, err := adapter.rawFind(className, types.M{})
 		if results != nil && len(results) > 0 {
 			t.Error("expect:", 0, "result:", results, err)
 		}
@@ -472,7 +472,7 @@ func Test_DeleteFields(t *testing.T) {
 	if err != nil {
 		t.Error("expect:", nil, "result:", err)
 	}
-	results, err = adapter.adaptiveCollection(className).find(types.M{"_id": "01"}, types.M{})
+	results, err = adapter.rawFind(className, types.M{"_id": "01"})
 	expect = types.M{
 		"_id": "01",
 	}
@@ -504,7 +504,7 @@ func Test_DeleteFields(t *testing.T) {
 	if err != nil {
 		t.Error("expect:", nil, "result:", err)
 	}
-	results, err = adapter.adaptiveCollection(className).find(types.M{"_id": "01"}, types.M{})
+	results, err = adapter.rawFind(className, types.M{"_id": "01"})
 	expect = types.M{
 		"_id": "01",
 	}
@@ -546,7 +546,7 @@ func Test_CreateObject(t *testing.T) {
 	if err != nil {
 		t.Error("expect:", nil, "result:", err)
 	}
-	result, err = adapter.adaptiveCollection(className).find(types.M{"_id": "1024"}, types.M{})
+	result, err = adapter.rawFind(className, types.M{"_id": "1024"})
 	expect = types.M{
 		"_id":         "1024",
 		"_updated_at": tmpTime.Local(),
@@ -573,7 +573,7 @@ func Test_CreateObject(t *testing.T) {
 	if err != nil {
 		t.Error("expect:", nil, "result:", err)
 	}
-	result, err = adapter.adaptiveCollection(className).find(types.M{"_id": "1024"}, types.M{})
+	result, err = adapter.rawFind(className, types.M{"_id": "1024"})
 	expect = types.M{
 		"_id":         "1024",
 		"_updated_at": tmpTime.Local(),
@@ -607,7 +607,7 @@ func Test_CreateObject(t *testing.T) {
 	if err != nil {
 		t.Error("expect:", nil, "result:", err)
 	}
-	result, err = adapter.adaptiveCollection(className).find(types.M{"_id": "1024"}, types.M{})
+	result, err = adapter.rawFind(className, types.M{"_id": "1024"})
 	expect = types.M{
 		"_id":         "1024",
 		"_updated_at": tmpTime.Local(),
@@ -636,7 +636,7 @@ func Test_CreateObject(t *testing.T) {
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
 	}
-	result, err = adapter.adaptiveCollection(className).find(types.M{"_id": "1024"}, types.M{})
+	result, err = adapter.rawFind(className, types.M{"_id": "1024"})
 	expect = types.M{
 		"_id":         "1024",
 		"_updated_at": tmpTime.Local(),
@@ -801,7 +801,6 @@ func Test_Find(t *testing.T) {
 	var object types.M
 	var expect []types.M
 	tmpTimeStr := utils.TimetoString(time.Now().UTC())
-	// tmpTime, _ := utils.StringtoTime(tmpTimeStr)
 	/*****************************************************/
 	className = "user"
 	schema = nil
@@ -943,7 +942,68 @@ func Test_AdapterRawFind(t *testing.T) {
 }
 
 func Test_Count(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var query types.M
+	var count int
+	var err error
+	var object types.M
+	var expect int
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	object = types.M{
+		"objectId":  "01",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       3,
+	}
+	adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "02",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       1,
+	}
+	adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "03",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       2,
+	}
+	adapter.CreateObject(className, schema, object)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{}
+	count, err = adapter.Count(className, schema, query)
+	expect = 3
+	if err != nil || count != expect {
+		t.Error("expect:", expect, "result:", count, err)
+	}
+	/*****************************************************/
+	className = "user1"
+	schema = nil
+	query = types.M{}
+	count, err = adapter.Count(className, schema, query)
+	expect = 0
+	if err != nil || count != expect {
+		t.Error("expect:", expect, "result:", count, err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{"key": 3}
+	count, err = adapter.Count(className, schema, query)
+	expect = 1
+	if err != nil || count != expect {
+		t.Error("expect:", expect, "result:", count, err)
+	}
+
+	adapter.DeleteAllClasses()
 }
 
 func Test_EnsureUniqueness(t *testing.T) {

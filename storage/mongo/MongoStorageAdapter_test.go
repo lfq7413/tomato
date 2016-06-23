@@ -779,7 +779,87 @@ func Test_DeleteObjectsByQuery(t *testing.T) {
 }
 
 func Test_UpdateObjectsByQuery(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var query types.M
+	var update types.M
+	var err error
+	var object types.M
+	var results []types.M
+	var expect []types.M
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	object = types.M{
+		"objectId":  "01",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       3,
+	}
+	adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "02",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       1,
+	}
+	adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "03",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       1,
+	}
+	adapter.CreateObject(className, schema, object)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{
+		"key": 1,
+	}
+	update = types.M{
+		"key": 30,
+	}
+	err = adapter.UpdateObjectsByQuery(className, schema, query, update)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	results, err = adapter.rawFind(className, types.M{"key": 30})
+	expect = []types.M{
+		types.M{
+			"_id":         "02",
+			"_updated_at": tmpTime.Local(),
+			"_created_at": tmpTime.Local(),
+			"key":         30,
+		},
+		types.M{
+			"_id":         "03",
+			"_updated_at": tmpTime.Local(),
+			"_created_at": tmpTime.Local(),
+			"key":         30,
+		},
+	}
+	if err != nil || results == nil || len(results) == 0 || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{
+		"objectId": "04",
+	}
+	update = types.M{
+		"key": 30,
+	}
+	err = adapter.UpdateObjectsByQuery(className, schema, query, update)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+
+	adapter.DeleteAllClasses()
 }
 
 func Test_FindOneAndUpdate(t *testing.T) {

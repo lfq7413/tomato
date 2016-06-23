@@ -783,7 +783,74 @@ func Test_UpdateObjectsByQuery(t *testing.T) {
 }
 
 func Test_FindOneAndUpdate(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var className string
+	var schema types.M
+	var query types.M
+	var update types.M
+	var result types.M
+	var err error
+	var object types.M
+	var results []types.M
+	var expect interface{}
+	tmpTimeStr := utils.TimetoString(time.Now().UTC())
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	object = types.M{
+		"objectId":  "01",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       3,
+	}
+	adapter.CreateObject(className, schema, object)
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{
+		"objectId": "01",
+	}
+	update = types.M{
+		"key": 30,
+	}
+	result, err = adapter.FindOneAndUpdate(className, schema, query, update)
+	expect = types.M{
+		"_id":         "01",
+		"_updated_at": tmpTime.Local(),
+		"_created_at": tmpTime.Local(),
+		"key":         30,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = adapter.rawFind(className, types.M{"_id": "01"})
+	expect = []types.M{
+		types.M{
+			"_id":         "01",
+			"_updated_at": tmpTime.Local(),
+			"_created_at": tmpTime.Local(),
+			"key":         30,
+		},
+	}
+	if err != nil || results == nil || len(results) == 0 || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = nil
+	query = types.M{
+		"objectId": "02",
+	}
+	update = types.M{
+		"key": 30,
+	}
+	result, err = adapter.FindOneAndUpdate(className, schema, query, update)
+	if err != nil || result == nil {
+		t.Error("expect:", types.M{}, "result:", result, err)
+	}
+
+	adapter.DeleteAllClasses()
 }
 
 func Test_UpsertOneObject(t *testing.T) {

@@ -9,7 +9,6 @@ import (
 
 func Test_AddClassIfNotExists(t *testing.T) {
 	// validateNewClass
-	// convertSchemaToAdapterSchema
 	// TODO
 }
 
@@ -273,7 +272,62 @@ func Test_injectDefaultSchema(t *testing.T) {
 }
 
 func Test_convertSchemaToAdapterSchema(t *testing.T) {
-	// TODO
+	var schema types.M
+	var result types.M
+	var expect types.M
+	/************************************************************/
+	schema = nil
+	result = convertSchemaToAdapterSchema(schema)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"className": "user",
+	}
+	result = convertSchemaToAdapterSchema(schema)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"_rperm":    types.M{"type": "Array"},
+			"_wperm":    types.M{"type": "Array"},
+		},
+		"classLevelPermissions": nil,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	result = convertSchemaToAdapterSchema(schema)
+	expect = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"objectId":         types.M{"type": "String"},
+			"createdAt":        types.M{"type": "Date"},
+			"updatedAt":        types.M{"type": "Date"},
+			"key":              types.M{"type": "String"},
+			"username":         types.M{"type": "String"},
+			"_hashed_password": types.M{"type": "String"},
+			"email":            types.M{"type": "String"},
+			"emailVerified":    types.M{"type": "Boolean"},
+			"_rperm":           types.M{"type": "Array"},
+			"_wperm":           types.M{"type": "Array"},
+		},
+		"classLevelPermissions": nil,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_convertAdapterSchemaToParseSchema(t *testing.T) {

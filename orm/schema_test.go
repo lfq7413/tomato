@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 )
 
@@ -149,12 +150,62 @@ func Test_fieldTypeIsInvalid(t *testing.T) {
 }
 
 func Test_validateCLP(t *testing.T) {
-	// verifyPermissionKey
 	// TODO
 }
 
 func Test_verifyPermissionKey(t *testing.T) {
-	// TODO
+	var key string
+	var err error
+	var expect error
+	/************************************************************/
+	key = "0123456789abcdefghij0123"
+	err = verifyPermissionKey(key)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	key = "role:1024"
+	err = verifyPermissionKey(key)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	key = "*"
+	err = verifyPermissionKey(key)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	key = "abcd"
+	err = verifyPermissionKey(key)
+	expect = errs.E(errs.InvalidJSON, key+" is not a valid key for class level permissions")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	key = "*abc"
+	err = verifyPermissionKey(key)
+	expect = errs.E(errs.InvalidJSON, key+" is not a valid key for class level permissions")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	key = "role:*abc"
+	err = verifyPermissionKey(key)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	key = "@mail"
+	err = verifyPermissionKey(key)
+	expect = errs.E(errs.InvalidJSON, key+" is not a valid key for class level permissions")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
 }
 
 func Test_buildMergedSchemaObject(t *testing.T) {

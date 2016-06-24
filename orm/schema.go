@@ -863,15 +863,12 @@ var permissionKeyRegex = []string{userIDRegex, roleRegex, publicRegex}
 // verifyPermissionKey 校验 CLP 中各种操作包含的角色名是否合法
 // 可以是24位的用户 ID，可以是角色名 role:abc ,可以是公共权限 *
 func verifyPermissionKey(key string) error {
-	result := false
 	for _, v := range permissionKeyRegex {
-		b, _ := regexp.MatchString(v, key)
-		result = result || b
+		if b, _ := regexp.MatchString(v, key); b {
+			return nil
+		}
 	}
-	if result == false {
-		return errs.E(errs.InvalidJSON, key+" is not a valid key for class level permissions")
-	}
-	return nil
+	return errs.E(errs.InvalidJSON, key+" is not a valid key for class level permissions")
 }
 
 // buildMergedSchemaObject 组装数据库类型的 existingFields 与 API 类型的 putRequest，

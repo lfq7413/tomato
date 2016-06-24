@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/lfq7413/tomato/types"
@@ -9,7 +10,6 @@ import (
 func Test_AddClassIfNotExists(t *testing.T) {
 	// validateNewClass
 	// convertSchemaToAdapterSchema
-	// convertAdapterSchemaToParseSchema
 	// TODO
 }
 
@@ -175,7 +175,88 @@ func Test_convertSchemaToAdapterSchema(t *testing.T) {
 }
 
 func Test_convertAdapterSchemaToParseSchema(t *testing.T) {
-	// TODO
+	var schema types.M
+	var result types.M
+	var expect types.M
+	/************************************************************/
+	schema = nil
+	result = convertAdapterSchemaToParseSchema(schema)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{}
+	result = convertAdapterSchemaToParseSchema(schema)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"fields": types.M{
+			"_rperm": types.M{"type": "Array"},
+			"_wperm": types.M{"type": "Array"},
+			"key":    types.M{"type": "String"},
+		},
+	}
+	result = convertAdapterSchemaToParseSchema(schema)
+	expect = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+			"ACL": types.M{"type": "ACL"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"_rperm":           types.M{"type": "Array"},
+			"_wperm":           types.M{"type": "Array"},
+			"key":              types.M{"type": "String"},
+			"authData":         types.M{"type": "String"},
+			"_hashed_password": types.M{"type": "String"},
+		},
+	}
+	result = convertAdapterSchemaToParseSchema(schema)
+	expect = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"key":      types.M{"type": "String"},
+			"ACL":      types.M{"type": "ACL"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"className": "other",
+		"fields": types.M{
+			"_rperm":           types.M{"type": "Array"},
+			"_wperm":           types.M{"type": "Array"},
+			"key":              types.M{"type": "String"},
+			"authData":         types.M{"type": "String"},
+			"_hashed_password": types.M{"type": "String"},
+		},
+	}
+	result = convertAdapterSchemaToParseSchema(schema)
+	expect = types.M{
+		"className": "other",
+		"fields": types.M{
+			"key":              types.M{"type": "String"},
+			"ACL":              types.M{"type": "ACL"},
+			"authData":         types.M{"type": "String"},
+			"_hashed_password": types.M{"type": "String"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_dbTypeMatchesObjectType(t *testing.T) {

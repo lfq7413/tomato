@@ -94,17 +94,14 @@ func Test_getExpectedType(t *testing.T) {
 
 func Test_reloadData(t *testing.T) {
 	// GetAllClasses
-	// injectDefaultSchema
 	// TODO
 }
 
 func Test_GetAllClasses(t *testing.T) {
-	// injectDefaultSchema
 	// TODO
 }
 
 func Test_GetOneSchema(t *testing.T) {
-	// injectDefaultSchema
 	// TODO
 }
 
@@ -166,11 +163,116 @@ func Test_buildMergedSchemaObject(t *testing.T) {
 }
 
 func Test_injectDefaultSchema(t *testing.T) {
-	// TODO
+	var schema types.M
+	var result types.M
+	var expect types.M
+	/************************************************************/
+	schema = nil
+	result = injectDefaultSchema(schema)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"className": "user",
+	}
+	result = injectDefaultSchema(schema)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": nil,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	result = injectDefaultSchema(schema)
+	expect = types.M{
+		"className": "user",
+		"fields": types.M{
+			"objectId":  types.M{"type": "String"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+			"key":       types.M{"type": "String"},
+		},
+		"classLevelPermissions": nil,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	result = injectDefaultSchema(schema)
+	expect = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"objectId":      types.M{"type": "String"},
+			"createdAt":     types.M{"type": "Date"},
+			"updatedAt":     types.M{"type": "Date"},
+			"ACL":           types.M{"type": "ACL"},
+			"key":           types.M{"type": "String"},
+			"username":      types.M{"type": "String"},
+			"password":      types.M{"type": "String"},
+			"email":         types.M{"type": "String"},
+			"emailVerified": types.M{"type": "Boolean"},
+		},
+		"classLevelPermissions": nil,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	schema = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"find": types.M{"*": true},
+		},
+	}
+	result = injectDefaultSchema(schema)
+	expect = types.M{
+		"className": "_User",
+		"fields": types.M{
+			"objectId":      types.M{"type": "String"},
+			"createdAt":     types.M{"type": "Date"},
+			"updatedAt":     types.M{"type": "Date"},
+			"ACL":           types.M{"type": "ACL"},
+			"key":           types.M{"type": "String"},
+			"username":      types.M{"type": "String"},
+			"password":      types.M{"type": "String"},
+			"email":         types.M{"type": "String"},
+			"emailVerified": types.M{"type": "Boolean"},
+		},
+		"classLevelPermissions": types.M{
+			"find": types.M{"*": true},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_convertSchemaToAdapterSchema(t *testing.T) {
-	// injectDefaultSchema
 	// TODO
 }
 

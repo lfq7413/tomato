@@ -952,9 +952,15 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 
 // injectDefaultSchema 为 schema 添加默认字段
 func injectDefaultSchema(schema types.M) types.M {
+	if schema == nil {
+		return nil
+	}
 	newSchema := types.M{}
 	newfields := types.M{}
-	fields := schema["fields"].(map[string]interface{})
+	fields := utils.M(schema["fields"])
+	if fields == nil {
+		fields = types.M{}
+	}
 	for k, v := range fields {
 		newfields[k] = v
 	}
@@ -962,7 +968,7 @@ func injectDefaultSchema(schema types.M) types.M {
 	for k, v := range defaultFieldsSchema {
 		newfields[k] = v
 	}
-	defaultSchema := DefaultColumns[schema["className"].(string)]
+	defaultSchema := DefaultColumns[utils.S(schema["className"])]
 	if defaultSchema != nil {
 		for k, v := range defaultSchema {
 			newfields[k] = v

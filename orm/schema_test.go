@@ -26,7 +26,6 @@ func Test_UpdateClass(t *testing.T) {
 
 func Test_deleteField(t *testing.T) {
 	// ClassNameIsValid
-	// fieldNameIsValid
 	// fieldNameIsValidForClass
 	// GetOneSchema
 	// TODO
@@ -60,7 +59,6 @@ func Test_validateNewClass(t *testing.T) {
 }
 
 func Test_validateSchemaData(t *testing.T) {
-	// fieldNameIsValid
 	// fieldNameIsValidForClass
 	// fieldTypeIsInvalid
 	// validateCLP
@@ -72,7 +70,6 @@ func Test_validateRequiredColumns(t *testing.T) {
 }
 
 func Test_enforceFieldExists(t *testing.T) {
-	// fieldNameIsValid
 	// getExpectedType
 	// TODO
 }
@@ -123,7 +120,6 @@ func Test_getObjectType(t *testing.T) {
 
 func Test_ClassNameIsValid(t *testing.T) {
 	// joinClassIsValid
-	// fieldNameIsValid
 	// TODO
 }
 
@@ -136,7 +132,44 @@ func Test_joinClassIsValid(t *testing.T) {
 }
 
 func Test_fieldNameIsValid(t *testing.T) {
-	// TODO
+	var fieldName string
+	var ok bool
+	var expect bool
+	/************************************************************/
+	fieldName = "abc_123"
+	ok = fieldNameIsValid(fieldName)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "abc123"
+	ok = fieldNameIsValid(fieldName)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "123abc"
+	ok = fieldNameIsValid(fieldName)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "*abc"
+	ok = fieldNameIsValid(fieldName)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "abc@123"
+	ok = fieldNameIsValid(fieldName)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
 }
 
 func Test_fieldNameIsValidForClass(t *testing.T) {

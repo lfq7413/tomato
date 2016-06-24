@@ -1,6 +1,10 @@
 package orm
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/lfq7413/tomato/types"
+)
 
 func Test_AddClassIfNotExists(t *testing.T) {
 	// validateNewClass
@@ -70,7 +74,6 @@ func Test_validateRequiredColumns(t *testing.T) {
 func Test_enforceFieldExists(t *testing.T) {
 	// fieldNameIsValid
 	// getExpectedType
-	// dbTypeMatchesObjectType
 	// TODO
 }
 
@@ -176,7 +179,74 @@ func Test_convertAdapterSchemaToParseSchema(t *testing.T) {
 }
 
 func Test_dbTypeMatchesObjectType(t *testing.T) {
-	// TODO
+	var dbType types.M
+	var objectType types.M
+	var ok bool
+	var expect bool
+	/************************************************************/
+	dbType = nil
+	objectType = nil
+	ok = dbTypeMatchesObjectType(dbType, objectType)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	dbType = types.M{}
+	objectType = nil
+	ok = dbTypeMatchesObjectType(dbType, objectType)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	dbType = nil
+	objectType = types.M{}
+	ok = dbTypeMatchesObjectType(dbType, objectType)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	dbType = types.M{"type": "String"}
+	objectType = types.M{}
+	ok = dbTypeMatchesObjectType(dbType, objectType)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	dbType = types.M{"type": "String"}
+	objectType = types.M{"type": "Date"}
+	ok = dbTypeMatchesObjectType(dbType, objectType)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	dbType = types.M{"type": "Pointer", "targetClass": "abc"}
+	objectType = types.M{"type": "Pointer", "targetClass": "def"}
+	ok = dbTypeMatchesObjectType(dbType, objectType)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	dbType = types.M{"type": "Pointer", "targetClass": "abc"}
+	objectType = types.M{"type": "Pointer", "targetClass": "abc"}
+	ok = dbTypeMatchesObjectType(dbType, objectType)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	dbType = types.M{"type": "String"}
+	objectType = types.M{"type": "String"}
+	ok = dbTypeMatchesObjectType(dbType, objectType)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
 }
 
 func Test_Load(t *testing.T) {

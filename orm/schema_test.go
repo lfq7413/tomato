@@ -117,7 +117,6 @@ func Test_getObjectType(t *testing.T) {
 }
 
 func Test_ClassNameIsValid(t *testing.T) {
-	// joinClassIsValid
 	// TODO
 }
 
@@ -126,7 +125,44 @@ func Test_InvalidClassNameMessage(t *testing.T) {
 }
 
 func Test_joinClassIsValid(t *testing.T) {
-	// TODO
+	var className string
+	var ok bool
+	var expect bool
+	/************************************************************/
+	className = "_Join:abc:def"
+	ok = joinClassIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "_Join:abc123:def123"
+	ok = joinClassIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "_Join:_abc123:def_123"
+	ok = joinClassIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "abc"
+	ok = joinClassIsValid(className)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "_Join:@123:!def"
+	ok = joinClassIsValid(className)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
 }
 
 func Test_fieldNameIsValid(t *testing.T) {

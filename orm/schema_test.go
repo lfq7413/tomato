@@ -52,7 +52,6 @@ func Test_EnforceClassExists(t *testing.T) {
 }
 
 func Test_validateNewClass(t *testing.T) {
-	// InvalidClassNameMessage
 	// validateSchemaData
 	// TODO
 }
@@ -121,7 +120,16 @@ func Test_ClassNameIsValid(t *testing.T) {
 }
 
 func Test_InvalidClassNameMessage(t *testing.T) {
-	// TODO
+	var className string
+	var result string
+	var expect string
+	/************************************************************/
+	className = "abc"
+	result = InvalidClassNameMessage(className)
+	expect = "Invalid classname: abc, classnames can only have alphanumeric characters and _, and must start with an alpha character "
+	if result != expect {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_joinClassIsValid(t *testing.T) {
@@ -263,7 +271,6 @@ func Test_fieldNameIsValidForClass(t *testing.T) {
 
 func Test_fieldTypeIsInvalid(t *testing.T) {
 	// ClassNameIsValid
-	// InvalidClassNameMessage
 	// TODO
 }
 

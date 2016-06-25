@@ -26,7 +26,6 @@ func Test_UpdateClass(t *testing.T) {
 
 func Test_deleteField(t *testing.T) {
 	// ClassNameIsValid
-	// fieldNameIsValidForClass
 	// GetOneSchema
 	// TODO
 }
@@ -59,7 +58,6 @@ func Test_validateNewClass(t *testing.T) {
 }
 
 func Test_validateSchemaData(t *testing.T) {
-	// fieldNameIsValidForClass
 	// fieldTypeIsInvalid
 	// validateCLP
 	// TODO
@@ -173,7 +171,58 @@ func Test_fieldNameIsValid(t *testing.T) {
 }
 
 func Test_fieldNameIsValidForClass(t *testing.T) {
-	// TODO
+	var fieldName string
+	var className string
+	var ok bool
+	var expect bool
+	/************************************************************/
+	fieldName = ""
+	className = ""
+	ok = fieldNameIsValidForClass(fieldName, className)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "abc"
+	className = ""
+	ok = fieldNameIsValidForClass(fieldName, className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "objectId"
+	className = ""
+	ok = fieldNameIsValidForClass(fieldName, className)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "abc"
+	className = "_User"
+	ok = fieldNameIsValidForClass(fieldName, className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "username"
+	className = "_User"
+	ok = fieldNameIsValidForClass(fieldName, className)
+	expect = false
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	fieldName = "key"
+	className = "class"
+	ok = fieldNameIsValidForClass(fieldName, className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
 }
 
 func Test_fieldTypeIsInvalid(t *testing.T) {

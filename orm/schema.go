@@ -747,6 +747,9 @@ var validNonRelationOrPointerTypes = []string{
 // fieldTypeIsInvalid 检测字段类型是否合法
 func fieldTypeIsInvalid(t types.M) error {
 	var invalidJSONError = errs.E(errs.InvalidJSON, "invalid JSON")
+	if t == nil {
+		return invalidJSONError
+	}
 	fieldType := ""
 	if v, ok := t["type"].(string); ok {
 		fieldType = v

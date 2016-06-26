@@ -56,7 +56,6 @@ func Test_validateNewClass(t *testing.T) {
 }
 
 func Test_validateSchemaData(t *testing.T) {
-	// fieldTypeIsInvalid
 	// validateCLP
 	// TODO
 }
@@ -313,6 +312,186 @@ func Test_fieldNameIsValidForClass(t *testing.T) {
 }
 
 func Test_fieldTypeIsInvalid(t *testing.T) {
+	var tp types.M
+	var err error
+	var expect error
+	/************************************************************/
+	tp = nil
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.InvalidJSON, "invalid JSON")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.InvalidJSON, "invalid JSON")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{"type": 1024}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.InvalidJSON, "invalid JSON")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{"type": "Pointer"}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.MissingRequiredFieldError, "type Pointer needs a class name")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type":        "Pointer",
+		"targetClass": 1024,
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.InvalidJSON, "invalid JSON")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type":        "Pointer",
+		"targetClass": "@abc",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.InvalidClassName, "Invalid classname: @abc, classnames can only have alphanumeric characters and _, and must start with an alpha character ")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type":        "Pointer",
+		"targetClass": "abc",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{"type": "Relation"}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.MissingRequiredFieldError, "type Relation needs a class name")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type":        "Relation",
+		"targetClass": 1024,
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.InvalidJSON, "invalid JSON")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type":        "Relation",
+		"targetClass": "@abc",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.InvalidClassName, "Invalid classname: @abc, classnames can only have alphanumeric characters and _, and must start with an alpha character ")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type":        "Relation",
+		"targetClass": "abc",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "Number",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "String",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "Boolean",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "Date",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "Object",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "Array",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "GeoPoint",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "File",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	tp = types.M{
+		"type": "Other",
+	}
+	err = fieldTypeIsInvalid(tp)
+	expect = errs.E(errs.IncorrectType, "invalid field type: Other")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+
 	// TODO
 }
 

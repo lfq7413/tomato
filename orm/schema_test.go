@@ -25,7 +25,6 @@ func Test_UpdateClass(t *testing.T) {
 }
 
 func Test_deleteField(t *testing.T) {
-	// ClassNameIsValid
 	// GetOneSchema
 	// TODO
 }
@@ -116,7 +115,51 @@ func Test_getObjectType(t *testing.T) {
 }
 
 func Test_ClassNameIsValid(t *testing.T) {
-	// TODO
+	var className string
+	var ok bool
+	var expect bool
+	/************************************************************/
+	className = "_User"
+	ok = ClassNameIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "_Installation"
+	ok = ClassNameIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "_Role"
+	ok = ClassNameIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "_Session"
+	ok = ClassNameIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "_Join:abc:123"
+	ok = ClassNameIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	className = "abc"
+	ok = ClassNameIsValid(className)
+	expect = true
+	if ok != expect {
+		t.Error("expect:", expect, "result:", ok)
+	}
 }
 
 func Test_InvalidClassNameMessage(t *testing.T) {
@@ -270,7 +313,6 @@ func Test_fieldNameIsValidForClass(t *testing.T) {
 }
 
 func Test_fieldTypeIsInvalid(t *testing.T) {
-	// ClassNameIsValid
 	// TODO
 }
 

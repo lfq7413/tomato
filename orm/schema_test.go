@@ -105,12 +105,209 @@ func Test_thenValidateRequiredColumns(t *testing.T) {
 }
 
 func Test_getType(t *testing.T) {
-	// getObjectType
 	// TODO
 }
 
 func Test_getObjectType(t *testing.T) {
-	// TODO
+	var object interface{}
+	var result types.M
+	var err error
+	var expect interface{}
+	/************************************************************/
+	object = []interface{}{1, 2, 3}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "Array"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__type":    "Pointer",
+		"className": "abc",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{
+		"type":        "Pointer",
+		"targetClass": "abc",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__type": "File",
+		"name":   "abc",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "File"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__type": "Date",
+		"iso":    "abc",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "Date"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__type":    "GeoPoint",
+		"latitude":  10,
+		"longitude": 10,
+	}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "GeoPoint"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__type": "Bytes",
+		"base64": "abc",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "Bytes"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__type": "Other",
+	}
+	result, err = getObjectType(object)
+	expect = errs.E(errs.IncorrectType, "This is not a valid Other")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"$ne": types.M{
+			"__type":    "Pointer",
+			"className": "abc",
+		},
+	}
+	result, err = getObjectType(object)
+	expect = types.M{
+		"type":        "Pointer",
+		"targetClass": "abc",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__op": "Increment",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "Number"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__op": "Delete",
+	}
+	result, err = getObjectType(object)
+	expect = nil
+	if err != nil || result != nil {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__op": "Add",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "Array"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__op": "AddUnique",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "Array"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__op": "Remove",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "Array"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__op": "AddRelation",
+		"objects": types.S{
+			types.M{
+				"className": "abc",
+			},
+		},
+	}
+	result, err = getObjectType(object)
+	expect = types.M{
+		"type":        "Relation",
+		"targetClass": "abc",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__op": "RemoveRelation",
+		"objects": types.S{
+			types.M{
+				"className": "abc",
+			},
+		},
+	}
+	result, err = getObjectType(object)
+	expect = types.M{
+		"type":        "Relation",
+		"targetClass": "abc",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__op": "Batch",
+		"ops": types.S{
+			types.M{
+				"__type": "File",
+				"name":   "abc",
+			},
+		},
+	}
+	result, err = getObjectType(object)
+	expect = types.M{
+		"type": "File",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{"__op": "Other"}
+	result, err = getObjectType(object)
+	expect = errs.E(errs.IncorrectType, "unexpected op: Other")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{"key": "value"}
+	result, err = getObjectType(object)
+	expect = types.M{"type": "object"}
+	if err != nil || reflect.DeepEqual(expect, expect) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
 }
 
 func Test_ClassNameIsValid(t *testing.T) {
@@ -491,8 +688,6 @@ func Test_fieldTypeIsInvalid(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
-
-	// TODO
 }
 
 func Test_validateCLP(t *testing.T) {

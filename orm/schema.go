@@ -617,8 +617,7 @@ func getObjectType(obj interface{}) (types.M, error) {
 	if utils.A(obj) != nil {
 		return types.M{"type": "Array"}, nil
 	}
-	if utils.M(obj) != nil {
-		object := utils.M(obj)
+	if object := utils.M(obj); object != nil {
 		if object["__type"] != nil {
 			t := utils.S(object["__type"])
 			switch t {
@@ -639,7 +638,7 @@ func getObjectType(obj interface{}) (types.M, error) {
 				}
 			case "GeoPoint":
 				if object["latitude"] != nil && object["longitude"] != nil {
-					return types.M{"type": "Geopoint"}, nil
+					return types.M{"type": "GeoPoint"}, nil
 				}
 			case "Bytes":
 				if object["base64"] != nil {
@@ -663,15 +662,18 @@ func getObjectType(obj interface{}) (types.M, error) {
 			case "Add", "AddUnique", "Remove":
 				return types.M{"type": "Array"}, nil
 			case "AddRelation", "RemoveRelation":
-				objects := utils.A(object["objects"])
-				o := utils.M(objects[0])
-				return types.M{
-					"type":        "Relation",
-					"targetClass": utils.S(o["className"]),
-				}, nil
+				if objects := utils.A(object["objects"]); objects != nil && len(objects) > 0 {
+					if o := utils.M(objects[0]); o != nil && o["className"] != "" {
+						return types.M{
+							"type":        "Relation",
+							"targetClass": utils.S(o["className"]),
+						}, nil
+					}
+				}
 			case "Batch":
-				ops := utils.A(object["ops"])
-				return getObjectType(ops[0])
+				if ops := utils.A(object["ops"]); ops != nil && len(ops) > 0 {
+					return getObjectType(ops[0])
+				}
 			default:
 				// 无效操作
 				return nil, errs.E(errs.IncorrectType, "unexpected op: "+op)

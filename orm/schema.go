@@ -603,9 +603,9 @@ func getType(obj interface{}) (types.M, error) {
 		return types.M{"type": "Boolean"}, nil
 	case string:
 		return types.M{"type": "String"}, nil
-	case float64:
+	case float64, int:
 		return types.M{"type": "Number"}, nil
-	case map[string]interface{}, []interface{}:
+	case map[string]interface{}, []interface{}, types.M, types.S:
 		return getObjectType(obj)
 	default:
 		return nil, errs.E(errs.IncorrectType, "bad obj. can not get type")

@@ -3,6 +3,7 @@ package orm
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
@@ -105,7 +106,79 @@ func Test_thenValidateRequiredColumns(t *testing.T) {
 }
 
 func Test_getType(t *testing.T) {
-	// TODO
+	var object interface{}
+	var result types.M
+	var err error
+	var expect interface{}
+	/************************************************************/
+	object = true
+	result, err = getType(object)
+	expect = types.M{"type": "Boolean"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = "hello"
+	result, err = getType(object)
+	expect = types.M{"type": "String"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = 1024
+	result, err = getType(object)
+	expect = types.M{"type": "Number"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = 10.24
+	result, err = getType(object)
+	expect = types.M{"type": "Number"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__type": "Date",
+		"iso":    "abc",
+	}
+	result, err = getType(object)
+	expect = types.M{"type": "Date"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = map[string]interface{}{
+		"__type": "File",
+		"name":   "abc",
+	}
+	result, err = getType(object)
+	expect = types.M{"type": "File"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.S{1, 2, 3}
+	result, err = getType(object)
+	expect = types.M{"type": "Array"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = []interface{}{1, 2, 3}
+	result, err = getType(object)
+	expect = types.M{"type": "Array"}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = time.Now()
+	result, err = getType(object)
+	expect = errs.E(errs.IncorrectType, "bad obj. can not get type")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
 }
 
 func Test_getObjectType(t *testing.T) {

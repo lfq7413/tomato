@@ -16,7 +16,6 @@ func Test_AddClassIfNotExists(t *testing.T) {
 
 func Test_UpdateClass(t *testing.T) {
 	// GetOneSchema
-	// buildMergedSchemaObject
 	// validateSchemaData
 	// deleteField
 	// reloadData
@@ -1032,7 +1031,82 @@ func Test_verifyPermissionKey(t *testing.T) {
 }
 
 func Test_buildMergedSchemaObject(t *testing.T) {
-	// TODO
+	var existingFields types.M
+	var putRequest types.M
+	var result types.M
+	var expect types.M
+	/************************************************************/
+	existingFields = nil
+	putRequest = nil
+	result = buildMergedSchemaObject(existingFields, putRequest)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	existingFields = types.M{}
+	putRequest = types.M{}
+	result = buildMergedSchemaObject(existingFields, putRequest)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	existingFields = types.M{
+		"_id":           "_User",
+		"objectId":      types.M{"type": "String"},
+		"createdAt":     types.M{"type": "Date"},
+		"updatedAt":     types.M{"type": "Date"},
+		"ACL":           types.M{"type": "ACL"},
+		"username":      types.M{"type": "String"},
+		"password":      types.M{"type": "String"},
+		"email":         types.M{"type": "String"},
+		"emailVerified": types.M{"type": "Boolean"},
+		"name":          types.M{"type": "String"},
+		"skill":         types.M{"type": "Array"},
+	}
+	putRequest = types.M{
+		"age":   types.M{"type": "Number"},
+		"skill": types.M{"__op": "Delete"},
+	}
+	result = buildMergedSchemaObject(existingFields, putRequest)
+	expect = types.M{
+		"name": types.M{"type": "String"},
+		"age":  types.M{"type": "Number"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	existingFields = types.M{
+		"_id":           "user",
+		"objectId":      types.M{"type": "String"},
+		"createdAt":     types.M{"type": "Date"},
+		"updatedAt":     types.M{"type": "Date"},
+		"ACL":           types.M{"type": "ACL"},
+		"username":      types.M{"type": "String"},
+		"password":      types.M{"type": "String"},
+		"email":         types.M{"type": "String"},
+		"emailVerified": types.M{"type": "Boolean"},
+		"name":          types.M{"type": "String"},
+		"skill":         types.M{"type": "Array"},
+	}
+	putRequest = types.M{
+		"age":   types.M{"type": "Number"},
+		"skill": types.M{"__op": "Delete"},
+	}
+	result = buildMergedSchemaObject(existingFields, putRequest)
+	expect = types.M{
+		"username":      types.M{"type": "String"},
+		"password":      types.M{"type": "String"},
+		"email":         types.M{"type": "String"},
+		"emailVerified": types.M{"type": "Boolean"},
+		"name":          types.M{"type": "String"},
+		"age":           types.M{"type": "Number"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_injectDefaultSchema(t *testing.T) {

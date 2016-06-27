@@ -881,9 +881,16 @@ func verifyPermissionKey(key string) error {
 // buildMergedSchemaObject 组装数据库类型的 existingFields 与 API 类型的 putRequest，
 // 返回值中不包含默认字段，返回的是 API 类型的数据
 func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M {
+	if existingFields == nil {
+		existingFields = types.M{}
+	}
+	if putRequest == nil {
+		putRequest = types.M{}
+	}
 	newSchema := types.M{}
 
 	sysSchemaField := []string{}
+	// TODO _id 的来源？
 	id := utils.S(existingFields["_id"])
 	for k, v := range DefaultColumns {
 		// 如果是系统预定义的表，则取出默认字段
@@ -918,8 +925,7 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 			}
 			// 处理要删除的字段，要删除的字段不加入返回数据中
 			fieldIsDeleted := false
-			if putRequest[oldField] != nil {
-				op := utils.M(putRequest[oldField])
+			if op := utils.M(putRequest[oldField]); op != nil {
 				if utils.S(op["__op"]) == "Delete" {
 					fieldIsDeleted = true
 				}
@@ -932,22 +938,23 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 
 	// 处理需要更新的字段
 	for newField, v := range putRequest {
-		op := utils.M(v)
-		// 不处理 objectId，不处理要删除的字段，跳过系统默认字段，其余字段加入返回数据中
-		if newField != "objectId" && utils.S(op["__op"]) != "Delete" {
-			if len(sysSchemaField) > 0 {
-				t := false
-				for _, s := range sysSchemaField {
-					if s == newField {
-						t = true
-						break
+		if op := utils.M(v); op != nil {
+			// 不处理 objectId，不处理要删除的字段，跳过系统默认字段，其余字段加入返回数据中
+			if newField != "objectId" && utils.S(op["__op"]) != "Delete" {
+				if len(sysSchemaField) > 0 {
+					t := false
+					for _, s := range sysSchemaField {
+						if s == newField {
+							t = true
+							break
+						}
+					}
+					if t == true {
+						continue
 					}
 				}
-				if t == true {
-					continue
-				}
+				newSchema[newField] = v
 			}
-			newSchema[newField] = v
 		}
 	}
 

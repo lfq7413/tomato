@@ -57,7 +57,6 @@ func Test_validateNewClass(t *testing.T) {
 }
 
 func Test_validateSchemaData(t *testing.T) {
-	// validateCLP
 	// TODO
 }
 
@@ -71,7 +70,6 @@ func Test_enforceFieldExists(t *testing.T) {
 }
 
 func Test_setPermissions(t *testing.T) {
-	// validateCLP
 	// reloadData
 	// TODO
 }
@@ -764,7 +762,218 @@ func Test_fieldTypeIsInvalid(t *testing.T) {
 }
 
 func Test_validateCLP(t *testing.T) {
-	// TODO
+	var perms types.M
+	var fields types.M
+	var err error
+	var expect error
+	/************************************************************/
+	perms = nil
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"get": types.M{"012345678901234567890123": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"find": types.M{"012345678901234567890123": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"create": types.M{"012345678901234567890123": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"update": types.M{"012345678901234567890123": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"delete": types.M{"012345678901234567890123": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"addField": types.M{"012345678901234567890123": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"other": types.M{"012345678901234567890123": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "other is not a valid operation for class level permissions")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"readUserFields": types.S{"key1", "key2"},
+	}
+	fields = types.M{
+		"key1": types.M{
+			"type":        "Pointer",
+			"targetClass": "_User",
+		},
+		"key2": types.M{
+			"type":        "Pointer",
+			"targetClass": "_User",
+		},
+	}
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"writeUserFields": types.S{"key1", "key2"},
+	}
+	fields = types.M{
+		"key1": types.M{
+			"type":        "Pointer",
+			"targetClass": "_User",
+		},
+		"key2": types.M{
+			"type":        "Pointer",
+			"targetClass": "_User",
+		},
+	}
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"readUserFields": "hello",
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "this perms[operation] is not a valid value for class level permissions readUserFields")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"readUserFields": types.S{"key1", "key2"},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "key1 is not a valid column for class level pointer permissions readUserFields")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"readUserFields": types.S{"key1", "key2"},
+	}
+	fields = types.M{}
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "key1 is not a valid column for class level pointer permissions readUserFields")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"readUserFields": types.S{"key1", "key2"},
+	}
+	fields = types.M{"key1": 1024}
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "key1 is not a valid column for class level pointer permissions readUserFields")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"readUserFields": types.S{"key1", "key2"},
+	}
+	fields = types.M{
+		"key1": types.M{
+			"type": "Other",
+		},
+	}
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "key1 is not a valid column for class level pointer permissions readUserFields")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"get": types.M{"abc": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "abc is not a valid key for class level permissions")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"get": types.M{"role:abc": false},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "false is not a valid value for class level permissions get:role:abc:false")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
+		"get": types.M{"role:abc": "hello"},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = errs.E(errs.InvalidJSON, "this perm is not a valid value for class level permissions get:role:abc:perm")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
 }
 
 func Test_verifyPermissionKey(t *testing.T) {

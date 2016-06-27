@@ -819,35 +819,37 @@ func validateCLP(perms types.M, fields types.M) error {
 		}
 
 		if operation == "readUserFields" || operation == "writeUserFields" {
-			if p, ok := perm.([]interface{}); ok {
+			if p := utils.A(perm); p != nil {
 				for _, v := range p {
-					key := v.(string)
+					key := utils.S(v)
 					// 字段类型必须为指向 _User 的指针类型
-					if fields[key] != nil {
-						if t, ok := fields[key].(map[string]interface{}); ok {
-							if t["type"].(string) == "Pointer" && t["targetClass"].(string) == "_User" {
+					if fields != nil && fields[key] != nil {
+						if t := utils.M(fields[key]); t != nil {
+							if utils.S(t["type"]) == "Pointer" && utils.S(t["targetClass"]) == "_User" {
 								continue
 							}
 						}
 					}
 					return errs.E(errs.InvalidJSON, key+" is not a valid column for class level pointer permissions "+operation)
 				}
-				return nil
+				continue
 			}
 			return errs.E(errs.InvalidJSON, "this perms[operation] is not a valid value for class level permissions "+operation)
 		}
 
-		for key, p := range utils.M(perm) {
-			err := verifyPermissionKey(key)
-			if err != nil {
-				return err
-			}
-			if v, ok := p.(bool); ok {
-				if v == false {
-					return errs.E(errs.InvalidJSON, "false is not a valid value for class level permissions "+operation+":"+key+":false")
+		if p := utils.M(perm); p != nil {
+			for key, value := range p {
+				err := verifyPermissionKey(key)
+				if err != nil {
+					return err
 				}
-			} else {
-				return errs.E(errs.InvalidJSON, "this perm is not a valid value for class level permissions "+operation+":"+key+":perm")
+				if v, ok := value.(bool); ok {
+					if v == false {
+						return errs.E(errs.InvalidJSON, "false is not a valid value for class level permissions "+operation+":"+key+":false")
+					}
+				} else {
+					return errs.E(errs.InvalidJSON, "this perm is not a valid value for class level permissions "+operation+":"+key+":perm")
+				}
 			}
 		}
 	}

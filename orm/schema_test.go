@@ -73,7 +73,41 @@ func Test_setPermissions(t *testing.T) {
 }
 
 func Test_HasClass(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var result bool
+	var expect bool
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	/************************************************************/
+	className = "class"
+	result = schama.HasClass(className)
+	expect = false
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/************************************************************/
+	className = "post"
+	result = schama.HasClass(className)
+	expect = true
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+
+	adapter.DeleteAllClasses()
 }
 
 func Test_getExpectedType(t *testing.T) {

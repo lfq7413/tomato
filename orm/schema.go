@@ -579,7 +579,10 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (type
 	if allowVolatileClasses {
 		for _, name := range volatileClasses {
 			if name == className {
-				return s.data[className].(map[string]interface{}), nil
+				if s.data != nil && utils.M(s.data[className]) != nil {
+					return utils.M(s.data[className]), nil
+				}
+				return types.M{}, nil
 			}
 		}
 	}
@@ -587,6 +590,9 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (type
 	schema, err := s.dbAdapter.GetClass(className)
 	if err != nil {
 		return nil, err
+	}
+	if schema == nil || len(schema) == 0 {
+		return types.M{}, nil
 	}
 	return injectDefaultSchema(schema), nil
 }

@@ -19,7 +19,6 @@ func Test_AddClassIfNotExists(t *testing.T) {
 }
 
 func Test_UpdateClass(t *testing.T) {
-	// GetOneSchema
 	// validateSchemaData
 	// deleteField
 	// reloadData
@@ -29,7 +28,6 @@ func Test_UpdateClass(t *testing.T) {
 }
 
 func Test_deleteField(t *testing.T) {
-	// GetOneSchema
 	// TODO
 }
 
@@ -231,7 +229,152 @@ func Test_GetAllClasses(t *testing.T) {
 }
 
 func Test_GetOneSchema(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var allowVolatileClasses bool
+	var result types.M
+	var err error
+	var expect types.M
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	className = "class"
+	allowVolatileClasses = false
+	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	className = "post"
+	allowVolatileClasses = false
+	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	expect = types.M{
+		"className": "post",
+		"fields": types.M{
+			"key1":      types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	className = "post"
+	allowVolatileClasses = true
+	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	expect = types.M{
+		"className": "post",
+		"fields": types.M{
+			"key1":      types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	className = "_PushStatus"
+	allowVolatileClasses = true
+	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	schama.data = types.M{
+		"_PushStatus": types.M{
+			"fields": types.M{
+				"key1": types.M{"type": "String"},
+			},
+		},
+	}
+	className = "_PushStatus"
+	allowVolatileClasses = true
+	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	expect = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 ////////////////////////////////////////////////////////////

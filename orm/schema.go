@@ -550,7 +550,8 @@ func (s *Schema) reloadData() {
 		if schema == nil {
 			continue
 		}
-		s.data[utils.S(schema["className"])] = injectDefaultSchema(schema)["fields"]
+		// allSchemas 中的数据，已经经过了 injectDefaultSchema 处理
+		s.data[utils.S(schema["className"])] = schema["fields"]
 		s.perms[utils.S(schema["className"])] = schema["classLevelPermissions"]
 	}
 

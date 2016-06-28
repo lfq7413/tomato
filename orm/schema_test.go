@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -22,7 +23,6 @@ func Test_UpdateClass(t *testing.T) {
 	// validateSchemaData
 	// deleteField
 	// enforceFieldExists
-	// setPermissions
 	// TODO
 }
 
@@ -69,7 +69,73 @@ func Test_enforceFieldExists(t *testing.T) {
 }
 
 func Test_setPermissions(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var perms types.M
+	var newSchema types.M
+	var err error
+	var expect interface{}
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	className = "class"
+	perms = types.M{
+		"get": types.M{"*": true},
+	}
+	newSchema = nil
+	err = schama.setPermissions(className, perms, newSchema)
+	expect = errors.New("not found")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	className = "post"
+	perms = types.M{
+		"get": types.M{"*": true},
+	}
+	newSchema = nil
+	err = schama.setPermissions(className, perms, newSchema)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	expect = types.M{
+		"get":      types.M{"*": true},
+		"create":   types.M{},
+		"find":     types.M{},
+		"update":   types.M{},
+		"delete":   types.M{},
+		"addField": types.M{},
+	}
+	if reflect.DeepEqual(expect, schama.perms[className]) == false {
+		t.Error("expect:", expect, "result:", schama.perms[className])
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_HasClass(t *testing.T) {

@@ -530,7 +530,7 @@ func (s *Schema) getExpectedType(className, fieldName string) types.M {
 	if s.data != nil && s.data[className] != nil {
 		cls := utils.M(s.data[className])
 		expectedType := utils.M(cls[fieldName])
-		if utils.S(expectedType["type"]) == "map" {
+		if expectedType != nil && utils.S(expectedType["type"]) == "map" {
 			expectedType["type"] = "Object"
 		}
 		return expectedType

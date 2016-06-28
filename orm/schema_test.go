@@ -65,7 +65,6 @@ func Test_validateRequiredColumns(t *testing.T) {
 }
 
 func Test_enforceFieldExists(t *testing.T) {
-	// getExpectedType
 	// TODO
 }
 
@@ -78,7 +77,79 @@ func Test_HasClass(t *testing.T) {
 }
 
 func Test_getExpectedType(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var fieldName string
+	var result types.M
+	var expect types.M
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	schama.reloadData()
+	className = "class"
+	fieldName = "field"
+	result = schama.getExpectedType(className, fieldName)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	schama.reloadData()
+	className = "post"
+	fieldName = "field"
+	result = schama.getExpectedType(className, fieldName)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	schama.reloadData()
+	className = "post"
+	fieldName = "key1"
+	result = schama.getExpectedType(className, fieldName)
+	expect = types.M{"type": "String"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_reloadData(t *testing.T) {

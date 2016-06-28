@@ -22,7 +22,6 @@ func Test_AddClassIfNotExists(t *testing.T) {
 func Test_UpdateClass(t *testing.T) {
 	// validateSchemaData
 	// deleteField
-	// enforceFieldExists
 	// TODO
 }
 
@@ -32,7 +31,6 @@ func Test_deleteField(t *testing.T) {
 
 func Test_validateObject(t *testing.T) {
 	// EnforceClassExists
-	// enforceFieldExists
 	// thenValidateRequiredColumns
 	// TODO
 }
@@ -65,7 +63,136 @@ func Test_validateRequiredColumns(t *testing.T) {
 }
 
 func Test_enforceFieldExists(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var fieldName string
+	var fieldtype types.M
+	var err error
+	var expect error
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	className = "post"
+	fieldName = "key2"
+	fieldtype = types.M{
+		"type": "String",
+	}
+	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	className = "post"
+	fieldName = "key2.key"
+	fieldtype = types.M{
+		"type": "String",
+	}
+	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	className = "post"
+	fieldName = "@key2"
+	fieldtype = types.M{
+		"type": "String",
+	}
+	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	expect = errs.E(errs.InvalidKeyName, "Invalid field name: "+fieldName)
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	className = "post"
+	fieldName = "key2"
+	fieldtype = nil
+	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	className = "post"
+	fieldName = "key2"
+	fieldtype = types.M{}
+	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	className = "post"
+	fieldName = "key1"
+	fieldtype = types.M{
+		"type": "Number",
+	}
+	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	expect = errs.E(errs.IncorrectType, "schema mismatch for post.key1; expected String but got Number")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	className = "post"
+	fieldName = "key1"
+	fieldtype = types.M{
+		"type": "String",
+	}
+	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_setPermissions(t *testing.T) {

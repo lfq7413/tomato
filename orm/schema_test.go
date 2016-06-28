@@ -5,7 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/mgo.v2"
+
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/storage"
+	"github.com/lfq7413/tomato/storage/mongo"
 	"github.com/lfq7413/tomato/types"
 )
 
@@ -83,12 +87,147 @@ func Test_getExpectedType(t *testing.T) {
 }
 
 func Test_reloadData(t *testing.T) {
-	// GetAllClasses
 	// TODO
 }
 
 func Test_GetAllClasses(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var result []types.M
+	var err error
+	var expect []types.M
+	/************************************************************/
+	result, err = schama.GetAllClasses()
+	expect = []types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	result, err = schama.GetAllClasses()
+	expect = []types.M{
+		types.M{
+			"className": "post",
+			"fields": types.M{
+				"key1":      types.M{"type": "String"},
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{
+				"find":     types.M{"*": true},
+				"get":      types.M{"*": true},
+				"create":   types.M{"*": true},
+				"update":   types.M{"*": true},
+				"delete":   types.M{"*": true},
+				"addField": types.M{"*": true},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("_User", class)
+	result, err = schama.GetAllClasses()
+	expect = []types.M{
+		types.M{
+			"className": "_User",
+			"fields": types.M{
+				"key1":          types.M{"type": "String"},
+				"objectId":      types.M{"type": "String"},
+				"updatedAt":     types.M{"type": "Date"},
+				"createdAt":     types.M{"type": "Date"},
+				"ACL":           types.M{"type": "ACL"},
+				"username":      types.M{"type": "String"},
+				"password":      types.M{"type": "String"},
+				"email":         types.M{"type": "String"},
+				"emailVerified": types.M{"type": "Boolean"},
+			},
+			"classLevelPermissions": types.M{
+				"find":     types.M{"*": true},
+				"get":      types.M{"*": true},
+				"create":   types.M{"*": true},
+				"update":   types.M{"*": true},
+				"delete":   types.M{"*": true},
+				"addField": types.M{"*": true},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	result, err = schama.GetAllClasses()
+	expect = []types.M{
+		types.M{
+			"className": "post",
+			"fields": types.M{
+				"key1":      types.M{"type": "String"},
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{
+				"find":     types.M{"*": true},
+				"get":      types.M{"*": true},
+				"create":   types.M{"*": true},
+				"update":   types.M{"*": true},
+				"delete":   types.M{"*": true},
+				"addField": types.M{"*": true},
+			},
+		},
+		types.M{
+			"className": "user",
+			"fields": types.M{
+				"key1":      types.M{"type": "String"},
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{
+				"find":     types.M{"*": true},
+				"get":      types.M{"*": true},
+				"create":   types.M{"*": true},
+				"update":   types.M{"*": true},
+				"delete":   types.M{"*": true},
+				"addField": types.M{"*": true},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_GetOneSchema(t *testing.T) {
@@ -1437,4 +1576,30 @@ func Test_dbTypeMatchesObjectType(t *testing.T) {
 func Test_Load(t *testing.T) {
 	// reloadData
 	// TODO
+	getSchema()
+}
+
+func getSchema() *Schema {
+	return &Schema{
+		dbAdapter: getAdapter(),
+	}
+}
+
+func getAdapter() *mongo.MongoAdapter {
+	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
+	return mongo.NewMongoAdapter("tomato")
+}
+
+func newMongoDB(url string) *storage.Database {
+	session, err := mgo.Dial(url)
+	if err != nil {
+		panic(err)
+	}
+	session.SetMode(mgo.Monotonic, true)
+	database := session.DB("")
+	db := &storage.Database{
+		MongoSession:  session,
+		MongoDatabase: database,
+	}
+	return db
 }

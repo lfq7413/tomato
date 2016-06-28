@@ -547,6 +547,9 @@ func (s *Schema) reloadData() {
 		return
 	}
 	for _, schema := range allSchemas {
+		if schema == nil {
+			continue
+		}
 		s.data[utils.S(schema["className"])] = injectDefaultSchema(schema)["fields"]
 		s.perms[utils.S(schema["className"])] = schema["classLevelPermissions"]
 	}

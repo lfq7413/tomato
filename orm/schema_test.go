@@ -21,7 +21,6 @@ func Test_AddClassIfNotExists(t *testing.T) {
 func Test_UpdateClass(t *testing.T) {
 	// validateSchemaData
 	// deleteField
-	// reloadData
 	// enforceFieldExists
 	// setPermissions
 	// TODO
@@ -71,12 +70,10 @@ func Test_enforceFieldExists(t *testing.T) {
 }
 
 func Test_setPermissions(t *testing.T) {
-	// reloadData
 	// TODO
 }
 
 func Test_HasClass(t *testing.T) {
-	// reloadData
 	// TODO
 }
 
@@ -85,7 +82,112 @@ func Test_getExpectedType(t *testing.T) {
 }
 
 func Test_reloadData(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var expect types.M
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("_User", class)
+	schama.reloadData()
+	expect = types.M{
+		"post": types.M{
+			"key1":      types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"_User": types.M{
+			"key1":          types.M{"type": "String"},
+			"objectId":      types.M{"type": "String"},
+			"updatedAt":     types.M{"type": "Date"},
+			"createdAt":     types.M{"type": "Date"},
+			"ACL":           types.M{"type": "ACL"},
+			"username":      types.M{"type": "String"},
+			"password":      types.M{"type": "String"},
+			"email":         types.M{"type": "String"},
+			"emailVerified": types.M{"type": "Boolean"},
+		},
+		"_PushStatus": types.M{
+			"className": "_PushStatus",
+			"fields": types.M{
+				"objectId":      types.M{"type": "String"},
+				"updatedAt":     types.M{"type": "Date"},
+				"createdAt":     types.M{"type": "Date"},
+				"ACL":           types.M{"type": "ACL"},
+				"pushTime":      types.M{"type": "String"},
+				"source":        types.M{"type": "String"},
+				"query":         types.M{"type": "String"},
+				"payload":       types.M{"type": "Object"},
+				"title":         types.M{"type": "String"},
+				"expiry":        types.M{"type": "Number"},
+				"status":        types.M{"type": "String"},
+				"numSent":       types.M{"type": "Number"},
+				"numFailed":     types.M{"type": "Number"},
+				"pushHash":      types.M{"type": "String"},
+				"errorMessage":  types.M{"type": "Object"},
+				"sentPerType":   types.M{"type": "Object"},
+				"failedPerType": types.M{"type": "Object"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		"_Hooks": types.M{
+			"className": "_Hooks",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		"_GlobalConfig": types.M{
+			"className": "_GlobalConfig",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+	}
+	if reflect.DeepEqual(expect, schama.data) == false {
+		t.Error("expect:", expect, "result:", schama.data)
+	}
+	expect = types.M{
+		"post": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+		"_User": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if reflect.DeepEqual(expect, schama.perms) == false {
+		t.Error("expect:", expect, "result:", schama.perms)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_GetAllClasses(t *testing.T) {
@@ -1717,9 +1819,8 @@ func Test_dbTypeMatchesObjectType(t *testing.T) {
 }
 
 func Test_Load(t *testing.T) {
-	// reloadData
 	// TODO
-	getSchema()
+	// getSchema()
 }
 
 func getSchema() *Schema {

@@ -436,13 +436,15 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 	if columns == nil || len(columns) == 0 {
 		return nil
 	}
+	if object == nil {
+		object = types.M{}
+	}
 
 	missingColumns := []string{}
 	for _, column := range columns {
 		if query != nil && query["objectId"] != nil {
 			// 类必须的字段，不能进行删除操作
-			if object[column] != nil && utils.M(object[column]) != nil {
-				o := utils.M(object[column])
+			if o := utils.M(object[column]); o != nil {
 				if utils.S(o["__op"]) == "Delete" {
 					missingColumns = append(missingColumns, column)
 				}

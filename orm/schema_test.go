@@ -59,7 +59,81 @@ func Test_validateSchemaData(t *testing.T) {
 }
 
 func Test_validateRequiredColumns(t *testing.T) {
-	// TODO
+	schama := getSchema()
+	var className string
+	var object types.M
+	var query types.M
+	var err error
+	var expect error
+	/************************************************************/
+	className = "user"
+	object = nil
+	query = nil
+	err = schama.validateRequiredColumns(className, object, query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	className = "_Role"
+	object = types.M{
+		"name": "joe",
+	}
+	query = nil
+	err = schama.validateRequiredColumns(className, object, query)
+	expect = errs.E(errs.IncorrectType, "ACL is required.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	className = "_Role"
+	object = types.M{
+		"name": "joe",
+		"ACL": types.M{
+			"__op": "Delete",
+		},
+	}
+	query = types.M{
+		"objectId": "1024",
+	}
+	err = schama.validateRequiredColumns(className, object, query)
+	expect = errs.E(errs.IncorrectType, "ACL is required.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	className = "_Product"
+	object = types.M{
+		"productIdentifier": "1024",
+		"icon":              "a.jpg",
+		"order":             "name",
+		"title":             "tomato",
+	}
+	query = nil
+	err = schama.validateRequiredColumns(className, object, query)
+	expect = errs.E(errs.IncorrectType, "subtitle is required.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	className = "_Product"
+	object = types.M{
+		"productIdentifier": "1024",
+		"icon":              "a.jpg",
+		"order":             "name",
+		"title":             "tomato",
+		"subtitle": types.M{
+			"__op": "Delete",
+		},
+	}
+	query = types.M{
+		"objectId": "1024",
+	}
+	err = schama.validateRequiredColumns(className, object, query)
+	expect = errs.E(errs.IncorrectType, "subtitle is required.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
 }
 
 func Test_enforceFieldExists(t *testing.T) {
@@ -780,8 +854,7 @@ func Test_GetOneSchema(t *testing.T) {
 ////////////////////////////////////////////////////////////
 
 func Test_thenValidateRequiredColumns(t *testing.T) {
-	// validateRequiredColumns
-	// TODO
+	// 测试用例与 validateRequiredColumns 相同
 }
 
 func Test_getType(t *testing.T) {

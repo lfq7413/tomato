@@ -112,13 +112,13 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 		"classLevelPermissions": classLevelPermissions,
 	}
 	result, err := s.dbAdapter.CreateClass(className, convertSchemaToAdapterSchema(schema))
-	result = convertAdapterSchemaToParseSchema(result)
 	if err != nil {
 		if errs.GetErrorCode(err) == errs.DuplicateValue {
 			return nil, errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
 		}
 		return nil, err
 	}
+	result = convertAdapterSchemaToParseSchema(result)
 
 	return result, nil
 }

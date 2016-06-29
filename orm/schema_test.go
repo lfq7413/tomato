@@ -15,7 +15,63 @@ import (
 )
 
 func Test_AddClassIfNotExists(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var fields types.M
+	var classLevelPermissions types.M
+	var result types.M
+	var err error
+	var expect interface{}
+	/************************************************************/
+	className = "post"
+	fields = types.M{
+		"key": types.M{"type": "String"},
+	}
+	classLevelPermissions = nil
+	result, err = schama.AddClassIfNotExists(className, fields, classLevelPermissions)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"key":       types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	className = "post"
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "post"
+	fields = types.M{
+		"key": types.M{"type": "String"},
+	}
+	classLevelPermissions = nil
+	result, err = schama.AddClassIfNotExists(className, fields, classLevelPermissions)
+	expect = errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_UpdateClass(t *testing.T) {
@@ -201,12 +257,10 @@ func Test_deleteField(t *testing.T) {
 		t.Error("expect:", class, "result:", r2)
 	}
 	adapter.DeleteAllClasses()
-	// TODO
 }
 
 func Test_validateObject(t *testing.T) {
 	// EnforceClassExists
-	// thenValidateRequiredColumns
 	// TODO
 }
 
@@ -360,7 +414,6 @@ func Test_validatePermission(t *testing.T) {
 }
 
 func Test_EnforceClassExists(t *testing.T) {
-	// AddClassIfNotExists
 	// TODO
 }
 
@@ -2675,7 +2728,6 @@ func Test_dbTypeMatchesObjectType(t *testing.T) {
 
 func Test_Load(t *testing.T) {
 	// TODO
-	// getSchema()
 }
 
 func getSchema() *Schema {

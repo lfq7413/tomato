@@ -336,9 +336,6 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 		return nil
 	}
 
-	if s.perms[className] == nil && utils.M(s.perms[className])[operation] == nil {
-		return nil
-	}
 	classPerms := utils.M(s.perms[className])
 
 	var permissionField string
@@ -352,7 +349,7 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 		return errs.E(errs.OperationForbidden, "Permission denied for this action.")
 	}
 
-	if v, ok := classPerms[permissionField].([]interface{}); ok && len(v) > 0 {
+	if v := utils.A(classPerms[permissionField]); v != nil && len(v) > 0 {
 		return nil
 	}
 

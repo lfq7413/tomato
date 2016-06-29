@@ -131,7 +131,55 @@ func Test_testBaseCLP(t *testing.T) {
 }
 
 func Test_validatePermission(t *testing.T) {
-	// TODO
+	schama := getSchema()
+	var className string
+	var aclGroup []string
+	var operation string
+	var err error
+	var expect error
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"create": types.M{"role:1024": true},
+		},
+	}
+	className = "post"
+	aclGroup = []string{"role:abc"}
+	operation = "create"
+	err = schama.validatePermission(className, aclGroup, operation)
+	expect = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get": types.M{"role:1024": true},
+		},
+	}
+	className = "post"
+	aclGroup = []string{"role:abc"}
+	operation = "get"
+	err = schama.validatePermission(className, aclGroup, operation)
+	expect = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get":            types.M{"role:1024": true},
+			"readUserFields": types.S{"key"},
+		},
+	}
+	className = "post"
+	aclGroup = []string{"role:abc"}
+	operation = "get"
+	err = schama.validatePermission(className, aclGroup, operation)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
 }
 
 func Test_EnforceClassExists(t *testing.T) {

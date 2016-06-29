@@ -385,6 +385,12 @@ func (s *Schema) validateNewClass(className string, fields types.M, classLevelPe
 
 // validateSchemaData 校验 Schema 数据
 func (s *Schema) validateSchemaData(className string, fields types.M, classLevelPermissions types.M, existingFieldNames []string) error {
+	if fields == nil {
+		return nil
+	}
+	if existingFieldNames == nil {
+		existingFieldNames = []string{}
+	}
 	for fieldName, v := range fields {
 		exist := false
 		for _, k := range existingFieldNames {
@@ -402,7 +408,7 @@ func (s *Schema) validateSchemaData(className string, fields types.M, classLevel
 		if fieldNameIsValidForClass(fieldName, className) == false {
 			return errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be added")
 		}
-		err := fieldTypeIsInvalid(v.(map[string]interface{}))
+		err := fieldTypeIsInvalid(utils.M(v))
 		if err != nil {
 			return err
 		}
@@ -416,9 +422,8 @@ func (s *Schema) validateSchemaData(className string, fields types.M, classLevel
 
 	geoPoints := []string{}
 	for key, v := range fields {
-		if v != nil {
-			fieldData := v.(map[string]interface{})
-			if fieldData["type"].(string) == "GeoPoint" {
+		if fieldData := utils.M(v); fieldData != nil {
+			if utils.S(fieldData["type"]) == "GeoPoint" {
 				geoPoints = append(geoPoints, key)
 			}
 		}

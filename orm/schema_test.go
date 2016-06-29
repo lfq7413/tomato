@@ -260,7 +260,6 @@ func Test_deleteField(t *testing.T) {
 }
 
 func Test_validateObject(t *testing.T) {
-	// EnforceClassExists
 	// TODO
 }
 
@@ -414,7 +413,45 @@ func Test_validatePermission(t *testing.T) {
 }
 
 func Test_EnforceClassExists(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var err error
+	/************************************************************/
+	className = "post"
+	err = schama.EnforceClassExists(className)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	className = "user"
+	adapter.CreateClass(className, class)
+	className = "user"
+	err = schama.EnforceClassExists(className)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	className = "skill"
+	adapter.CreateClass(className, class)
+	schama.reloadData()
+	className = "skill"
+	err = schama.EnforceClassExists(className)
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_validateNewClass(t *testing.T) {

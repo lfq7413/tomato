@@ -358,7 +358,7 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 
 // EnforceClassExists 校验类名
 func (s *Schema) EnforceClassExists(className string) error {
-	if s.data[className] != nil {
+	if s.data != nil && s.data[className] != nil {
 		return nil
 	}
 

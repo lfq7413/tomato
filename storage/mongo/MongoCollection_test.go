@@ -71,11 +71,21 @@ func Test_rawFind(t *testing.T) {
 	var err error
 	var expect interface{}
 	/********************************************************/
+	query = types.M{"name": "jone"}
+	options = types.M{}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{}
+	if err != nil || (result != nil && len(result) != 0) {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
 	docs = types.M{"_id": "001", "name": "joe", "age": 25}
 	mc.insertOne(docs)
 	docs = types.M{"_id": "002", "name": "jack", "age": 30}
 	mc.insertOne(docs)
 	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
 	query = types.M{"name": "jone"}
 	options = types.M{}
 	result, err = mc.rawFind(query, options)

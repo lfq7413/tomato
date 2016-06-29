@@ -19,11 +19,188 @@ func Test_AddClassIfNotExists(t *testing.T) {
 }
 
 func Test_UpdateClass(t *testing.T) {
-	// deleteField
 	// TODO
 }
 
 func Test_deleteField(t *testing.T) {
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var fieldName string
+	var className string
+	var err error
+	var expect error
+	var r1 types.M
+	var r2 []types.M
+	/************************************************************/
+	fieldName = "abc"
+	className = "@abc"
+	err = schama.deleteField(fieldName, className)
+	expect = errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	fieldName = "@abc"
+	className = "abc"
+	err = schama.deleteField(fieldName, className)
+	expect = errs.E(errs.InvalidKeyName, "invalid field name: @abc")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	fieldName = "objectId"
+	className = "abc"
+	err = schama.deleteField(fieldName, className)
+	expect = errs.E(errs.ChangedImmutableFieldError, "field objectId cannot be changed")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	fieldName = "key"
+	className = "abc"
+	err = schama.deleteField(fieldName, className)
+	expect = errs.E(errs.InvalidClassName, "Class abc does not exist.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	className = "abc"
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	fieldName = "key"
+	className = "abc"
+	err = schama.deleteField(fieldName, className)
+	expect = errs.E(errs.ClassNotEmpty, "Field key does not exist, cannot delete.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	className = "abc"
+	class = types.M{
+		"fields": types.M{
+			"key":  types.M{"type": "String"},
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	class = types.M{
+		"objectId": "1024",
+		"key":      "hello",
+		"key1":     "world",
+	}
+	adapter.CreateObject(className, types.M{}, class)
+
+	fieldName = "key"
+	className = "abc"
+	err = schama.deleteField(fieldName, className)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	// 检查 schema
+	r1, _ = adapter.GetClass(className)
+	class = types.M{
+		"key1":      types.M{"type": "String"},
+		"objectId":  types.M{"type": "String"},
+		"updatedAt": types.M{"type": "Date"},
+		"createdAt": types.M{"type": "Date"},
+		"ACL":       types.M{"type": "ACL"},
+	}
+	if reflect.DeepEqual(class, r1["fields"]) == false {
+		t.Error("expect:", class, "result:", r1)
+	}
+	// 检查数据
+	r2, _ = adapter.Find(className, types.M{}, types.M{}, types.M{})
+	class = types.M{
+		"objectId": "1024",
+		"key1":     "world",
+	}
+	if r2 == nil || len(r2) == 0 || reflect.DeepEqual(class, r2[0]) == false {
+		t.Error("expect:", class, "result:", r2)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	className = "abc"
+	class = types.M{
+		"fields": types.M{
+			"key":  types.M{"type": "Relation", "targetClass": "user"},
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "_Join:key:abc"
+	class = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "abc"
+	class = types.M{
+		"objectId": "1024",
+		"key":      "hello",
+		"key1":     "world",
+	}
+	adapter.CreateObject(className, types.M{}, class)
+	className = "_Join:key:abc"
+	class = types.M{
+		"objectId":  "1024",
+		"relatedId": "123",
+		"owningId":  "456",
+	}
+	adapter.CreateObject(className, types.M{}, class)
+
+	fieldName = "key"
+	className = "abc"
+	err = schama.deleteField(fieldName, className)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	// 检查 schema
+	className = "abc"
+	r1, _ = adapter.GetClass(className)
+	class = types.M{
+		"key1":      types.M{"type": "String"},
+		"objectId":  types.M{"type": "String"},
+		"updatedAt": types.M{"type": "Date"},
+		"createdAt": types.M{"type": "Date"},
+		"ACL":       types.M{"type": "ACL"},
+	}
+	if reflect.DeepEqual(class, r1["fields"]) == false {
+		t.Error("expect:", class, "result:", r1)
+	}
+	// 检查 schema
+	className = "_Join:key:abc"
+	r1, _ = adapter.GetClass(className)
+	class = types.M{}
+	if reflect.DeepEqual(class, r1) == false {
+		t.Error("expect:", class, "result:", r1)
+	}
+	// 检查数据
+	className = "abc"
+	r2, _ = adapter.Find(className, types.M{}, types.M{}, types.M{})
+	class = types.M{
+		"objectId": "1024",
+		"key1":     "world",
+	}
+	if r2 == nil || len(r2) == 0 || reflect.DeepEqual(class, r2[0]) == false {
+		t.Error("expect:", class, "result:", r2)
+	}
+	// 检查 Join 数据
+	className = "_Join:key:abc"
+	r2, _ = adapter.Find(className, types.M{}, types.M{}, types.M{})
+	if r2 != nil && reflect.DeepEqual([]types.M{}, r2) == false {
+		t.Error("expect:", class, "result:", r2)
+	}
+	adapter.DeleteAllClasses()
 	// TODO
 }
 

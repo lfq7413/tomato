@@ -225,7 +225,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	}
 
 	fields := utils.M(schema["fields"])
-	if fields[fieldName] == nil {
+	if fields == nil || fields[fieldName] == nil {
 		return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
 	}
 

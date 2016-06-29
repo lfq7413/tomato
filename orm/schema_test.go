@@ -34,11 +34,103 @@ func Test_validateObject(t *testing.T) {
 }
 
 func Test_testBaseCLP(t *testing.T) {
-	// TODO
+	schama := getSchema()
+	var className string
+	var aclGroup []string
+	var operation string
+	var ok bool
+	var expect bool
+	/************************************************************/
+	schama.perms = nil
+	className = "post"
+	aclGroup = nil
+	operation = "get"
+	ok = schama.testBaseCLP(className, aclGroup, operation)
+	expect = true
+	if reflect.DeepEqual(expect, ok) == false {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	schama.perms = types.M{}
+	className = "post"
+	aclGroup = nil
+	operation = "get"
+	ok = schama.testBaseCLP(className, aclGroup, operation)
+	expect = true
+	if reflect.DeepEqual(expect, ok) == false {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{},
+	}
+	className = "post"
+	aclGroup = nil
+	operation = "get"
+	ok = schama.testBaseCLP(className, aclGroup, operation)
+	expect = true
+	if reflect.DeepEqual(expect, ok) == false {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get": types.M{"*": true},
+		},
+	}
+	className = "post"
+	aclGroup = nil
+	operation = "get"
+	ok = schama.testBaseCLP(className, aclGroup, operation)
+	expect = true
+	if reflect.DeepEqual(expect, ok) == false {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get": types.M{},
+		},
+	}
+	className = "post"
+	aclGroup = nil
+	operation = "get"
+	ok = schama.testBaseCLP(className, aclGroup, operation)
+	expect = false
+	if reflect.DeepEqual(expect, ok) == false {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get": types.M{},
+		},
+	}
+	className = "post"
+	aclGroup = []string{"role:1024"}
+	operation = "get"
+	ok = schama.testBaseCLP(className, aclGroup, operation)
+	expect = false
+	if reflect.DeepEqual(expect, ok) == false {
+		t.Error("expect:", expect, "result:", ok)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get": types.M{"role:1024": true},
+		},
+	}
+	className = "post"
+	aclGroup = []string{"role:1024"}
+	operation = "get"
+	ok = schama.testBaseCLP(className, aclGroup, operation)
+	expect = true
+	if reflect.DeepEqual(expect, ok) == false {
+		t.Error("expect:", expect, "result:", ok)
+	}
 }
 
 func Test_validatePermission(t *testing.T) {
-	// testBaseCLP
 	// TODO
 }
 

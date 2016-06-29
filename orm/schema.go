@@ -296,16 +296,25 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 
 // testBaseCLP 校验用户是否有权限对表进行指定操作
 func (s *Schema) testBaseCLP(className string, aclGroup []string, operation string) bool {
-	if s.perms[className] == nil && utils.M(s.perms[className])[operation] == nil {
+	if s.perms == nil {
 		return true
 	}
 	classPerms := utils.M(s.perms[className])
+	if classPerms == nil {
+		return true
+	}
 	perms := utils.M(classPerms[operation])
+	if perms == nil {
+		return true
+	}
 	// 当前操作的权限是公开的
 	if _, ok := perms["*"]; ok {
 		return true
 	}
 
+	if aclGroup == nil {
+		return false
+	}
 	// 查找 acl 中的角色信息是否在权限列表中，找到一个即可
 	found := false
 	for _, v := range aclGroup {

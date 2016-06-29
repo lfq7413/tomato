@@ -15,7 +15,6 @@ import (
 )
 
 func Test_AddClassIfNotExists(t *testing.T) {
-	// validateNewClass
 	// TODO
 }
 
@@ -49,7 +48,67 @@ func Test_EnforceClassExists(t *testing.T) {
 }
 
 func Test_validateNewClass(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var fields types.M
+	var classLevelPermissions types.M
+	var err error
+	var expect error
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	schama.reloadData()
+	className = "post"
+	fields = nil
+	classLevelPermissions = nil
+	err = schama.validateNewClass(className, fields, classLevelPermissions)
+	expect = errs.E(errs.InvalidClassName, "Class post already exists.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	schama.reloadData()
+	className = "@post"
+	fields = nil
+	classLevelPermissions = nil
+	err = schama.validateNewClass(className, fields, classLevelPermissions)
+	expect = errs.E(errs.InvalidClassName, InvalidClassNameMessage("@post"))
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key1": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("post", class)
+	schama.reloadData()
+	className = "user"
+	fields = types.M{
+		"key": types.M{"type": "String"},
+	}
+	classLevelPermissions = nil
+	err = schama.validateNewClass(className, fields, classLevelPermissions)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func Test_validateSchemaData(t *testing.T) {

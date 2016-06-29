@@ -372,7 +372,7 @@ func (s *Schema) EnforceClassExists(className string) error {
 
 // validateNewClass 校验新建的类
 func (s *Schema) validateNewClass(className string, fields types.M, classLevelPermissions types.M) error {
-	if s.data[className] != nil {
+	if s.data != nil && s.data[className] != nil {
 		return errs.E(errs.InvalidClassName, "Class "+className+" already exists.")
 	}
 

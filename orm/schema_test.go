@@ -2992,7 +2992,143 @@ func Test_dbTypeMatchesObjectType(t *testing.T) {
 }
 
 func Test_Load(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	var schama *Schema
+	var class types.M
+	var expectData types.M
+	var expectPerms types.M
+	/************************************************************/
+	schama = Load(adapter)
+	expectData = types.M{
+		"_PushStatus": types.M{
+			"className": "_PushStatus",
+			"fields": types.M{
+				"objectId":      types.M{"type": "String"},
+				"updatedAt":     types.M{"type": "Date"},
+				"createdAt":     types.M{"type": "Date"},
+				"ACL":           types.M{"type": "ACL"},
+				"pushTime":      types.M{"type": "String"},
+				"source":        types.M{"type": "String"},
+				"query":         types.M{"type": "String"},
+				"payload":       types.M{"type": "Object"},
+				"title":         types.M{"type": "String"},
+				"expiry":        types.M{"type": "Number"},
+				"status":        types.M{"type": "String"},
+				"numSent":       types.M{"type": "Number"},
+				"numFailed":     types.M{"type": "Number"},
+				"pushHash":      types.M{"type": "String"},
+				"errorMessage":  types.M{"type": "Object"},
+				"sentPerType":   types.M{"type": "Object"},
+				"failedPerType": types.M{"type": "Object"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		"_Hooks": types.M{
+			"className": "_Hooks",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		"_GlobalConfig": types.M{
+			"className": "_GlobalConfig",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+	}
+	expectPerms = types.M{}
+	if reflect.DeepEqual(expectData, schama.data) == false {
+		t.Error("expect:", expectData, "result:", schama.data)
+	}
+	if reflect.DeepEqual(expectPerms, schama.perms) == false {
+		t.Error("expect:", expectPerms, "result:", schama.perms)
+	}
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass("user", class)
+	schama = Load(adapter)
+	expectData = types.M{
+		"user": types.M{
+			"key":       types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"_PushStatus": types.M{
+			"className": "_PushStatus",
+			"fields": types.M{
+				"objectId":      types.M{"type": "String"},
+				"updatedAt":     types.M{"type": "Date"},
+				"createdAt":     types.M{"type": "Date"},
+				"ACL":           types.M{"type": "ACL"},
+				"pushTime":      types.M{"type": "String"},
+				"source":        types.M{"type": "String"},
+				"query":         types.M{"type": "String"},
+				"payload":       types.M{"type": "Object"},
+				"title":         types.M{"type": "String"},
+				"expiry":        types.M{"type": "Number"},
+				"status":        types.M{"type": "String"},
+				"numSent":       types.M{"type": "Number"},
+				"numFailed":     types.M{"type": "Number"},
+				"pushHash":      types.M{"type": "String"},
+				"errorMessage":  types.M{"type": "Object"},
+				"sentPerType":   types.M{"type": "Object"},
+				"failedPerType": types.M{"type": "Object"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		"_Hooks": types.M{
+			"className": "_Hooks",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		"_GlobalConfig": types.M{
+			"className": "_GlobalConfig",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"updatedAt": types.M{"type": "Date"},
+				"createdAt": types.M{"type": "Date"},
+				"ACL":       types.M{"type": "ACL"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+	}
+	expectPerms = types.M{
+		"user": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if reflect.DeepEqual(expectData, schama.data) == false {
+		t.Error("expect:", expectData, "result:", schama.data)
+	}
+	if reflect.DeepEqual(expectPerms, schama.perms) == false {
+		t.Error("expect:", expectPerms, "result:", schama.perms)
+	}
+	adapter.DeleteAllClasses()
 }
 
 func getSchema() *Schema {

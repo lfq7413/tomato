@@ -260,7 +260,61 @@ func Test_deleteField(t *testing.T) {
 }
 
 func Test_validateObject(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var className string
+	var object types.M
+	var query types.M
+	var err error
+	var expect error
+	/************************************************************/
+	className = "user"
+	object = types.M{
+		"key": "hello",
+	}
+	query = types.M{}
+	err = schama.validateObject(className, object, query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	className = "user"
+	object = types.M{
+		"key": time.Now(),
+	}
+	query = types.M{}
+	err = schama.validateObject(className, object, query)
+	expect = errs.E(errs.IncorrectType, "bad obj. can not get type")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	className = "user"
+	object = types.M{
+		"key": types.M{
+			"__type":    "GeoPoint",
+			"latitude":  20,
+			"longitude": 20,
+		},
+		"key1": types.M{
+			"__type":    "GeoPoint",
+			"latitude":  20,
+			"longitude": 20,
+		},
+	}
+	query = types.M{}
+	err = schama.validateObject(className, object, query)
+	expect = errs.E(errs.IncorrectType, "there can only be one geopoint field in a class")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
 }
 
 func Test_testBaseCLP(t *testing.T) {

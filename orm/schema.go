@@ -258,6 +258,10 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 		return err
 	}
 
+	if object == nil {
+		object = types.M{}
+	}
+
 	for fieldName, v := range object {
 		if v == nil {
 			continue
@@ -269,7 +273,7 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 		if expected == nil {
 			continue
 		}
-		if expected["type"].(string) == "GeoPoint" {
+		if utils.S(expected["type"]) == "GeoPoint" {
 			geocount++
 		}
 		if geocount > 1 {

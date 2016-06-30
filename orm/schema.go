@@ -135,10 +135,19 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 
 	// 组装已存在的字段
 	existingFields := utils.M(schema["fields"])
+	if existingFields == nil {
+		existingFields = types.M{}
+	}
 
 	// 校验对字段的操作是否合法
+	if submittedFields == nil {
+		submittedFields = types.M{}
+	}
 	for name, v := range submittedFields {
 		field := utils.M(v)
+		if field == nil {
+			continue
+		}
 		op := utils.S(field["__op"])
 		if existingFields[name] != nil && op != "Delete" {
 			// 字段已存在，不能更新
@@ -154,7 +163,9 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	delete(existingFields, "_wperm")
 
 	// 组装写入数据库的数据
+	existingFields["_id"] = className
 	newSchema := buildMergedSchemaObject(existingFields, submittedFields)
+	delete(existingFields, "_id")
 	existingFieldNames := []string{}
 	for k := range existingFields {
 		existingFieldNames = append(existingFieldNames, k)
@@ -168,6 +179,9 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	insertedFields := []string{}
 	for name, v := range submittedFields {
 		field := utils.M(v)
+		if field == nil {
+			continue
+		}
 		op := utils.S(field["__op"])
 		if op == "Delete" {
 			err := s.deleteField(name, className)
@@ -184,7 +198,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 
 	// 校验并插入字段
 	for _, fieldName := range insertedFields {
-		fieldType := submittedFields[fieldName].(map[string]interface{})
+		fieldType := utils.M(submittedFields[fieldName])
 		err := s.enforceFieldExists(className, fieldName, fieldType, false)
 		if err != nil {
 			return nil, err

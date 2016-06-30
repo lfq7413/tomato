@@ -75,7 +75,181 @@ func Test_AddClassIfNotExists(t *testing.T) {
 }
 
 func Test_UpdateClass(t *testing.T) {
-	// TODO
+	adapter := getAdapter()
+	schama := getSchema()
+	var class types.M
+	var className string
+	var submittedFields types.M
+	var classLevelPermissions types.M
+	var result types.M
+	var err error
+	var expect interface{}
+	/************************************************************/
+	className = "user"
+	submittedFields = nil
+	classLevelPermissions = nil
+	result, err = schama.UpdateClass(className, submittedFields, classLevelPermissions)
+	expect = errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "user"
+	submittedFields = types.M{
+		"key": types.M{"type": "String"},
+	}
+	classLevelPermissions = nil
+	result, err = schama.UpdateClass(className, submittedFields, classLevelPermissions)
+	expect = errs.E(errs.ClassNotEmpty, "Field key exists, cannot update.")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "user"
+	submittedFields = types.M{
+		"key1": types.M{"__op": "Delete"},
+	}
+	classLevelPermissions = nil
+	result, err = schama.UpdateClass(className, submittedFields, classLevelPermissions)
+	expect = errs.E(errs.ClassNotEmpty, "Field key1 does not exist, cannot delete.")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "user"
+	submittedFields = types.M{
+		"key1": types.M{"type": "String"},
+	}
+	classLevelPermissions = nil
+	result, err = schama.UpdateClass(className, submittedFields, classLevelPermissions)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"key":       types.M{"type": "String"},
+			"key1":      types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "user"
+	submittedFields = types.M{
+		"key1": types.M{"type": "String"},
+		"key":  types.M{"__op": "Delete"},
+	}
+	classLevelPermissions = nil
+	result, err = schama.UpdateClass(className, submittedFields, classLevelPermissions)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"key1":      types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "user"
+	submittedFields = types.M{
+		"key1": types.M{"type": "String"},
+		"key":  types.M{"__op": "Delete"},
+	}
+	classLevelPermissions = types.M{
+		"find":   types.M{"*": true},
+		"get":    types.M{"*": true},
+		"create": types.M{"*": true},
+		"update": types.M{"*": true},
+		"delete": types.M{"*": true},
+	}
+	result, err = schama.UpdateClass(className, submittedFields, classLevelPermissions)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"key1":      types.M{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     types.M{"*": true},
+			"get":      types.M{"*": true},
+			"create":   types.M{"*": true},
+			"update":   types.M{"*": true},
+			"delete":   types.M{"*": true},
+			"addField": types.M{},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
 }
 
 func Test_deleteField(t *testing.T) {

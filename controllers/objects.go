@@ -163,6 +163,11 @@ func (o *ObjectsController) Prepare() {
 		o.ServeJSON()
 		return
 	}
+	// 登录时删除 Token
+	url := o.Ctx.Input.URL()
+	if strings.HasSuffix(url, "/login/") {
+		info.SessionToken = ""
+	}
 	// 生成当前会话用户权限信息
 	if info.SessionToken == "" {
 		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: false}

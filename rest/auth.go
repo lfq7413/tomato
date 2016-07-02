@@ -49,25 +49,26 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 		"sessionToken": sessionToken,
 	}
 
+	sessionErr := errs.E(errs.InvalidSessionToken, "invalid session token")
 	query, err := NewQuery(Master(), "_Session", restWhere, restOptions)
 	if err != nil {
-		return Nobody(), nil
+		return nil, sessionErr
 	}
 	response, err := query.Execute()
 	if err != nil {
-		return Nobody(), nil
+		return nil, sessionErr
 	}
 
 	if response == nil || response["results"] == nil {
-		return Nobody(), nil
+		return nil, sessionErr
 	}
 	results := utils.A(response["results"])
 	if results == nil || len(results) != 1 {
-		return Nobody(), nil
+		return nil, sessionErr
 	}
 	result := utils.M(results[0])
 	if result == nil || result["user"] == nil {
-		return Nobody(), nil
+		return nil, sessionErr
 	}
 
 	now := time.Now().UTC()

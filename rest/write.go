@@ -748,7 +748,7 @@ func (w *Write) runDatabaseOperation() error {
 			w.data["ACL"] = acl
 		}
 		// 执行更新
-		response, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions)
+		response, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions, false)
 		if err != nil {
 			return err
 		}

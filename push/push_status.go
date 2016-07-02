@@ -20,7 +20,7 @@ type pushStatus struct {
 func newPushStatus() *pushStatus {
 	p := &pushStatus{
 		objectID: utils.CreateObjectID(),
-		db:       orm.TomatoDBController.WithoutValidation(),
+		db:       orm.TomatoDBController,
 	}
 	return p
 }
@@ -73,7 +73,7 @@ func (p *pushStatus) setRunning() {
 		"status":    "running",
 		"updatedAt": utils.TimetoString(time.Now().UTC()),
 	}
-	p.db.Update(pushStatusCollection, where, update, types.M{})
+	p.db.Update(pushStatusCollection, where, update, types.M{}, false)
 }
 
 // complete 推送完成，传入数据格式如下
@@ -132,7 +132,7 @@ func (p *pushStatus) complete(results []types.M) {
 		"failedPerType": failedPerType,
 		"updatedAt":     utils.TimetoString(time.Now().UTC()),
 	}
-	p.db.Update(pushStatusCollection, where, types.M{"$set": update}, types.M{})
+	p.db.Update(pushStatusCollection, where, types.M{"$set": update}, types.M{}, false)
 }
 
 // fail 处理推送失败的情况
@@ -145,5 +145,5 @@ func (p *pushStatus) fail(err error) {
 	where := types.M{
 		"objectId": p.status["objectId"],
 	}
-	p.db.Update(pushStatusCollection, where, types.M{"$set": update}, types.M{})
+	p.db.Update(pushStatusCollection, where, types.M{"$set": update}, types.M{}, false)
 }

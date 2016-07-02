@@ -122,12 +122,12 @@ func SendPasswordResetEmail(email string) error {
 // setPasswordResetToken 设置修改密码 token
 func setPasswordResetToken(email string) types.M {
 	token := utils.CreateToken()
-	db := orm.TomatoDBController.WithoutValidation()
+	db := orm.TomatoDBController
 	where := types.M{"email": email}
 	update := types.M{
 		"_perishable_token": token,
 	}
-	r, err := db.Update("_User", where, update, types.M{})
+	r, err := db.Update("_User", where, update, types.M{}, true)
 	if err != nil {
 		return nil
 	}
@@ -154,7 +154,7 @@ func VerifyEmail(username, token string) bool {
 		return false
 	}
 
-	db := orm.TomatoDBController.WithoutValidation()
+	db := orm.TomatoDBController
 	where := types.M{
 		"username":            username,
 		"_email_verify_token": token,
@@ -162,7 +162,7 @@ func VerifyEmail(username, token string) bool {
 	update := types.M{
 		"emailVerified": true,
 	}
-	document, err := db.Update("_User", where, update, types.M{})
+	document, err := db.Update("_User", where, update, types.M{}, false)
 	if err != nil {
 		return false
 	}
@@ -175,7 +175,7 @@ func VerifyEmail(username, token string) bool {
 
 // CheckResetTokenValidity 检查要重置密码的用户与 token 是否存在
 func CheckResetTokenValidity(username, token string) types.M {
-	db := orm.TomatoDBController.WithoutValidation()
+	db := orm.TomatoDBController
 	where := types.M{
 		"username":          username,
 		"_perishable_token": token,
@@ -205,12 +205,12 @@ func UpdatePassword(username, token, newPassword string) error {
 	}
 
 	// 清空重置密码 token
-	db := orm.TomatoDBController.WithoutValidation()
+	db := orm.TomatoDBController
 	selector := types.M{"username": username}
 	update := types.M{
 		"_perishable_token": types.M{"__op": "Delete"},
 	}
-	_, err = db.Update("_User", selector, update, types.M{})
+	_, err = db.Update("_User", selector, update, types.M{}, false)
 
 	return err
 }

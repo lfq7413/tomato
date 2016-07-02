@@ -24,21 +24,11 @@ var schemaPromise *Schema
 // init 初始化 Mongo 适配器
 func init() {
 	Adapter = mongo.NewMongoAdapter("tomato")
-	TomatoDBController = &DBController{
-		skipValidation: false,
-	}
+	TomatoDBController = &DBController{}
 }
 
 // DBController 数据库操作类
 type DBController struct {
-	skipValidation bool
-}
-
-// WithoutValidation 返回不进行字段校验的数据库操作对象
-func (d *DBController) WithoutValidation() *DBController {
-	return &DBController{
-		skipValidation: true,
-	}
 }
 
 // CollectionExists 检测表是否存在
@@ -250,7 +240,8 @@ var specialKeysForUpdate = []string{"_hashed_password", "_perishable_token", "_e
 
 // Update 更新对象
 // options 中的参数包括：acl、many、upsert
-func (d *DBController) Update(className string, query, update, options types.M) (types.M, error) {
+// skipSanitization 默认为 false
+func (d *DBController) Update(className string, query, update, options types.M, skipSanitization bool) (types.M, error) {
 	if options == nil {
 		options = types.M{}
 	}
@@ -361,7 +352,7 @@ func (d *DBController) Update(className string, query, update, options types.M) 
 		return nil, errs.E(errs.ObjectNotFound, "Object not found.")
 	}
 
-	if d.skipValidation {
+	if skipSanitization {
 		return result, nil
 	}
 
@@ -461,9 +452,6 @@ func (d *DBController) Create(className string, object, options types.M) error {
 
 // validateClassName 校验表名是否合法
 func (d *DBController) validateClassName(className string) error {
-	if d.skipValidation {
-		return nil
-	}
 	if ClassNameIsValid(className) == false {
 		return errs.E(errs.InvalidClassName, "invalid className: "+className)
 	}

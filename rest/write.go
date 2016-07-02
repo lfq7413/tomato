@@ -18,15 +18,16 @@ import (
 
 // Write ...
 type Write struct {
-	auth         *Auth
-	className    string
-	query        types.M
-	data         types.M
-	originalData types.M
-	storage      types.M
-	RunOptions   types.M
-	response     types.M
-	updatedAt    string
+	auth                       *Auth
+	className                  string
+	query                      types.M
+	data                       types.M
+	originalData               types.M
+	storage                    types.M
+	RunOptions                 types.M
+	response                   types.M
+	updatedAt                  string
+	responseShouldHaveUsername bool
 }
 
 // NewWrite 可用于 create 和 update ， create 时 	query 为 nil
@@ -47,15 +48,16 @@ func NewWrite(
 	// query,data 可能会被修改，所以先复制出来
 	// response 为最终返回的结果，其中包含三个字段：response、status、location
 	write := &Write{
-		auth:         auth,
-		className:    className,
-		query:        utils.CopyMap(query),
-		data:         utils.CopyMap(data),
-		originalData: originalData,
-		storage:      types.M{},
-		RunOptions:   types.M{},
-		response:     nil,
-		updatedAt:    utils.TimetoString(time.Now().UTC()),
+		auth:                       auth,
+		className:                  className,
+		query:                      utils.CopyMap(query),
+		data:                       utils.CopyMap(data),
+		originalData:               originalData,
+		storage:                    types.M{},
+		RunOptions:                 types.M{},
+		response:                   nil,
+		updatedAt:                  utils.TimetoString(time.Now().UTC()),
+		responseShouldHaveUsername: false,
 	}
 	return write, nil
 }
@@ -642,6 +644,7 @@ func (w *Write) transformUser() error {
 		// 如果是 create 请求，则生成随机 ID
 		if w.query == nil {
 			w.data["username"] = utils.CreateObjectID()
+			w.responseShouldHaveUsername = true
 		}
 	} else {
 		objectID := types.M{
@@ -824,6 +827,9 @@ func (w *Write) runDatabaseOperation() error {
 		response := types.M{
 			"objectId":  w.data["objectId"],
 			"createdAt": w.data["createdAt"],
+		}
+		if w.responseShouldHaveUsername {
+			response["username"] = w.data["username"]
 		}
 		// 如果回调函数修改过数据，则将其复制到返回结果中
 		if w.storage["changedByTrigger"] != nil {

@@ -1322,14 +1322,14 @@ func flattenUpdateOperatorsForCreate(object types.M) error {
 
 			case "Add":
 				if objects := utils.A(value["objects"]); objects != nil {
-					object[key] = objects
+					object[key] = value["objects"]
 				} else {
 					return errs.E(errs.InvalidJSON, "objects to add must be an array")
 				}
 
 			case "AddUnique":
 				if objects := utils.A(value["objects"]); objects != nil {
-					object[key] = objects
+					object[key] = value["objects"]
 				} else {
 					return errs.E(errs.InvalidJSON, "objects to add must be an array")
 				}

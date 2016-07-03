@@ -1,6 +1,12 @@
 package orm
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+
+	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/types"
+)
 
 func Test_CollectionExists(t *testing.T) {
 	// TODO
@@ -49,7 +55,6 @@ func Test_Create(t *testing.T) {
 	// LoadSchema
 	// handleRelationUpdates
 	// transformAuthData
-	// flattenUpdateOperatorsForCreate
 	// TODO
 }
 
@@ -176,5 +181,183 @@ func Test_transformAuthData(t *testing.T) {
 }
 
 func Test_flattenUpdateOperatorsForCreate(t *testing.T) {
-	// TODO
+	var object types.M
+	var err error
+	var expect interface{}
+	/**********************************************************/
+	object = nil
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = nil
+	if err != nil || object != nil {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{"key": "value"}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = types.M{"key": "value"}
+	if err != nil || reflect.DeepEqual(object, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{"key": "value"},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = types.M{
+		"key": types.M{"key": "value"},
+	}
+	if err != nil || reflect.DeepEqual(object, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":   "Increment",
+			"amount": 10.24,
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = types.M{
+		"key": 10.24,
+	}
+	if err != nil || reflect.DeepEqual(object, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":   "Increment",
+			"amount": 1024,
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = types.M{
+		"key": 1024,
+	}
+	if err != nil || reflect.DeepEqual(object, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":   "Increment",
+			"amount": "hello",
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = errs.E(errs.InvalidJSON, "objects to add must be an number")
+	if err == nil || reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op": "Increment",
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = errs.E(errs.InvalidJSON, "objects to add must be an number")
+	if err == nil || reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":    "Add",
+			"objects": types.S{"abc", "def"},
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = types.M{
+		"key": types.S{"abc", "def"},
+	}
+	if err != nil || reflect.DeepEqual(object, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":    "Add",
+			"objects": "hello",
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = errs.E(errs.InvalidJSON, "objects to add must be an array")
+	if err == nil || reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":    "AddUnique",
+			"objects": types.S{"abc", "def"},
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = types.M{
+		"key": types.S{"abc", "def"},
+	}
+	if err != nil || reflect.DeepEqual(object, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":    "AddUnique",
+			"objects": "hello",
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = errs.E(errs.InvalidJSON, "objects to add must be an array")
+	if err == nil || reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":    "Remove",
+			"objects": types.S{"abc", "def"},
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = types.M{
+		"key": types.S{},
+	}
+	if err != nil || reflect.DeepEqual(object, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op":    "Remove",
+			"objects": "hello",
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = errs.E(errs.InvalidJSON, "objects to add must be an array")
+	if err == nil || reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op": "Delete",
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(object, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": types.M{
+			"__op": "Other",
+		},
+	}
+	err = flattenUpdateOperatorsForCreate(object)
+	expect = errs.E(errs.CommandUnavailable, "The Other operator is not supported yet.")
+	if err == nil || reflect.DeepEqual(err, expect) == false {
+		t.Error("expect:", expect, "result:", object, err)
+	}
 }

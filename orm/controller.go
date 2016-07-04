@@ -1216,7 +1216,26 @@ func transformObjectACL(result types.M) types.M {
 }
 
 // untransformObjectACL 把数据库格式的 ACL 转换为 API 格式
-// 原始位置：MongoTransform.go/untransformACL
+// {
+// 	"_rperm":["userid","role:xxx","*"],
+// 	"_wperm":["userid","role:xxx"]
+// }
+// ==>
+// {
+// 	"ACL":{
+// 		"userid":{
+// 			"read":true,
+// 			"write":true
+// 		},
+// 		"role:xxx":{
+// 			"read":true,
+// 			"write":true
+// 		}
+// 		"*":{
+// 			"read":true
+// 		}
+// 	}
+// }
 func untransformObjectACL(output types.M) types.M {
 	if output == nil {
 		return output
@@ -1269,7 +1288,6 @@ func untransformObjectACL(output types.M) types.M {
 }
 
 // transformAuthData 转换第三方登录数据
-// 原始位置 MongoTransform.go/transformAuthData
 // {
 // 	"authData": {
 // 		"facebook": {...}

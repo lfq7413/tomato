@@ -24,7 +24,6 @@ func Test_Find(t *testing.T) {
 	// addPointerPermissions
 	// addReadACL
 	// validateQuery
-	// untransformObjectACL
 	// filterSensitiveData
 	// TODO
 }
@@ -171,7 +170,93 @@ func Test_transformObjectACL(t *testing.T) {
 }
 
 func Test_untransformObjectACL(t *testing.T) {
-	// TODO
+	var output types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	output = nil
+	result = untransformObjectACL(output)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	output = types.M{}
+	result = untransformObjectACL(output)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	output = types.M{"_rperm": "Incorrect type"}
+	result = untransformObjectACL(output)
+	expect = types.M{"ACL": types.M{}}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	output = types.M{"_rperm": types.S{"userid", "role:xxx"}}
+	result = untransformObjectACL(output)
+	expect = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"read": true,
+			},
+			"role:xxx": types.M{
+				"read": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	output = types.M{"_wperm": "Incorrect type"}
+	result = untransformObjectACL(output)
+	expect = types.M{"ACL": types.M{}}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	output = types.M{"_wperm": types.S{"userid", "role:xxx"}}
+	result = untransformObjectACL(output)
+	expect = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"write": true,
+			},
+			"role:xxx": types.M{
+				"write": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	output = types.M{
+		"_rperm": types.S{"userid", "role:xxx", "*"},
+		"_wperm": types.S{"userid", "role:xxx"},
+	}
+	result = untransformObjectACL(output)
+	expect = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+			"role:xxx": types.M{
+				"read":  true,
+				"write": true,
+			},
+			"*": types.M{
+				"read": true,
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_transformAuthData(t *testing.T) {

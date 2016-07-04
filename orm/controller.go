@@ -365,16 +365,14 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 // sanitizeDatabaseResult 处理数据库返回结果
 func sanitizeDatabaseResult(originalObject, result types.M) types.M {
 	response := types.M{}
-	if result == nil {
+	if originalObject == nil || result == nil {
 		return response
 	}
 
 	// 检测是否是对字段的操作
 	for key, value := range originalObject {
-		if value != nil && utils.M(value) != nil {
-			keyUpdate := utils.M(value)
-			if keyUpdate["__op"] != nil {
-				op := utils.S(keyUpdate["__op"])
+		if keyUpdate := utils.M(value); keyUpdate != nil {
+			if op := utils.S(keyUpdate["__op"]); op != "" {
 				if op == "Add" || op == "AddUnique" || op == "Remove" || op == "Increment" {
 					// 只把操作的字段放入返回结果中
 					response[key] = result[key]

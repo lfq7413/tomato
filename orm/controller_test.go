@@ -36,7 +36,6 @@ func Test_Update(t *testing.T) {
 	// LoadSchema
 	// handleRelationUpdates
 	// addPointerPermissions
-	// sanitizeDatabaseResult
 	// TODO
 }
 
@@ -130,7 +129,94 @@ func Test_addPointerPermissions(t *testing.T) {
 //////////////////////////////////////////////////////
 
 func Test_sanitizeDatabaseResult(t *testing.T) {
-	// TODO
+	var originalObject types.M
+	var object types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	originalObject = nil
+	object = nil
+	result = sanitizeDatabaseResult(originalObject, object)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	originalObject = types.M{
+		"key": types.M{
+			"__op":    "Add",
+			"objects": types.S{"hello", "world"},
+		},
+		"key2": "hello",
+	}
+	object = types.M{
+		"key":  types.S{"hello", "world"},
+		"key2": "hello",
+	}
+	result = sanitizeDatabaseResult(originalObject, object)
+	expect = types.M{
+		"key": types.S{"hello", "world"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	originalObject = types.M{
+		"key": types.M{
+			"__op":    "AddUnique",
+			"objects": types.S{"hello", "world"},
+		},
+		"key2": "hello",
+	}
+	object = types.M{
+		"key":  types.S{"hello", "world"},
+		"key2": "hello",
+	}
+	result = sanitizeDatabaseResult(originalObject, object)
+	expect = types.M{
+		"key": types.S{"hello", "world"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	originalObject = types.M{
+		"key": types.M{
+			"__op":    "Remove",
+			"objects": types.S{"hello", "world"},
+		},
+		"key2": "hello",
+	}
+	object = types.M{
+		"key":  types.S{"value"},
+		"key2": "hello",
+	}
+	result = sanitizeDatabaseResult(originalObject, object)
+	expect = types.M{
+		"key": types.S{"value"},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	originalObject = types.M{
+		"key": types.M{
+			"__op":   "Increment",
+			"amount": 10,
+		},
+		"key2": "hello",
+	}
+	object = types.M{
+		"key":  20,
+		"key2": "hello",
+	}
+	result = sanitizeDatabaseResult(originalObject, object)
+	expect = types.M{
+		"key": 20,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_keysForQuery(t *testing.T) {

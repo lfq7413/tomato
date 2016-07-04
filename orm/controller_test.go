@@ -6,6 +6,7 @@ import (
 
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 func Test_CollectionExists(t *testing.T) {
@@ -42,13 +43,11 @@ func Test_Update(t *testing.T) {
 	// addPointerPermissions
 	// addWriteACL
 	// validateQuery
-	// transformObjectACL
 	// sanitizeDatabaseResult
 	// TODO
 }
 
 func Test_Create(t *testing.T) {
-	// transformObjectACL
 	// validateClassName
 	// LoadSchema
 	// handleRelationUpdates
@@ -166,7 +165,57 @@ func Test_validateQuery(t *testing.T) {
 }
 
 func Test_transformObjectACL(t *testing.T) {
-	// TODO
+	var object types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	object = nil
+	result = transformObjectACL(object)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	object = types.M{}
+	result = transformObjectACL(object)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	object = types.M{"ACL": "hello"}
+	result = transformObjectACL(object)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	object = types.M{
+		"ACL": types.M{
+			"userid": types.M{
+				"read":  true,
+				"write": true,
+			},
+			"role:xxx": types.M{
+				"read":  true,
+				"write": true,
+			},
+			"*": types.M{
+				"read": true,
+			},
+		},
+	}
+	result = transformObjectACL(object)
+	expect = types.M{
+		"_rperm": types.S{"userid", "role:xxx", "*"},
+		"_wperm": types.S{"userid", "role:xxx"},
+	}
+	if utils.CompareArray(expect["_rperm"], result["_rperm"]) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	if utils.CompareArray(expect["_wperm"], result["_wperm"]) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_untransformObjectACL(t *testing.T) {
@@ -285,6 +334,15 @@ func Test_transformAuthData(t *testing.T) {
 	/*************************************************/
 	className = "_User"
 	object = types.M{}
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = types.M{"authData": nil}
 	schema = nil
 	transformAuthData(className, object, schema)
 	expect = types.M{}

@@ -1185,14 +1185,38 @@ func validateQuery(query types.M) error {
 }
 
 // transformObjectACL 转换对象中的 ACL 字段
-// 原始位置：MongoTransform.go/transformACL
+// {
+// 	"ACL":{
+// 		"userid":{
+// 			"read":true,
+// 			"write":true
+// 		},
+// 		"role:xxx":{
+// 			"read":true,
+// 			"write":true
+// 		}
+// 		"*":{
+// 			"read":true
+// 		}
+// 	}
+// }
+// ==>
+// {
+// 	"_rperm":["userid","role:xxx","*"],
+// 	"_wperm":["userid","role:xxx"],
+// }
 func transformObjectACL(result types.M) types.M {
-	if result == nil || result["ACL"] == nil {
+	if result == nil {
+		return result
+	}
+
+	if _, ok := result["ACL"]; ok == false {
 		return result
 	}
 
 	acl := utils.M(result["ACL"])
 	if acl == nil {
+		delete(result, "ACL")
 		return result
 	}
 	rperm := types.S{}
@@ -1298,7 +1322,10 @@ func untransformObjectACL(output types.M) types.M {
 // 	"_auth_data_facebook": {...}
 // }
 func transformAuthData(className string, object, schema types.M) {
-	if className == "_User" && object != nil && object["authData"] != nil {
+	if className == "_User" && object != nil {
+		if _, ok := object["authData"]; ok == false {
+			return
+		}
 		if authData := utils.M(object["authData"]); authData != nil {
 			for provider, providerData := range authData {
 				fieldName := "_auth_data_" + provider

@@ -138,7 +138,18 @@ func Test_keysForQuery(t *testing.T) {
 }
 
 func Test_joinTableName(t *testing.T) {
-	// TODO
+	var className string
+	var key string
+	var result string
+	var expect string
+	/*************************************************/
+	className = "user"
+	key = "name"
+	result = joinTableName(className, key)
+	expect = "_Join:name:user"
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_filterSensitiveData(t *testing.T) {

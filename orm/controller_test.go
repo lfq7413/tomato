@@ -24,7 +24,6 @@ func Test_Find(t *testing.T) {
 	// reduceInRelation
 	// addPointerPermissions
 	// addReadACL
-	// validateQuery
 	// filterSensitiveData
 	// TODO
 }
@@ -33,7 +32,6 @@ func Test_Destroy(t *testing.T) {
 	// LoadSchema
 	// addPointerPermissions
 	// addWriteACL
-	// validateQuery
 	// TODO
 }
 
@@ -42,7 +40,6 @@ func Test_Update(t *testing.T) {
 	// handleRelationUpdates
 	// addPointerPermissions
 	// addWriteACL
-	// validateQuery
 	// sanitizeDatabaseResult
 	// TODO
 }
@@ -161,7 +158,128 @@ func Test_addReadACL(t *testing.T) {
 }
 
 func Test_validateQuery(t *testing.T) {
-	// TODO
+	var query types.M
+	var err error
+	var expect error
+	/*************************************************/
+	query = nil
+	err = validateQuery(query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{"ACL": "ACL"}
+	err = validateQuery(query)
+	expect = errs.E(errs.InvalidQuery, "Cannot query on ACL.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"key": types.M{
+			"$regex":   "hello",
+			"$options": "imxs",
+		},
+	}
+	err = validateQuery(query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"key": types.M{
+			"$regex":   "hello",
+			"$options": "abc",
+		},
+	}
+	err = validateQuery(query)
+	expect = errs.E(errs.InvalidQuery, "Bad $options value for query: abc")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"_rperm":              "hello",
+		"_wperm":              "hello",
+		"_perishable_token":   "hello",
+		"_email_verify_token": "hello",
+	}
+	err = validateQuery(query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"_other": "hello",
+	}
+	err = validateQuery(query)
+	expect = errs.E(errs.InvalidKeyName, "Invalid key name: _other")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"$or": "hello",
+	}
+	err = validateQuery(query)
+	expect = errs.E(errs.InvalidQuery, "Bad $or format - use an array value.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"$or": types.S{"hello", "world"},
+	}
+	err = validateQuery(query)
+	expect = errs.E(errs.InvalidQuery, "Bad $or format - invalid sub query.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"$or": types.S{
+			types.M{"key": "value"},
+			types.M{"key": "value"},
+		},
+	}
+	err = validateQuery(query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"$and": "hello",
+	}
+	err = validateQuery(query)
+	expect = errs.E(errs.InvalidQuery, "Bad $and format - use an array value.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"$and": types.S{"hello", "world"},
+	}
+	err = validateQuery(query)
+	expect = errs.E(errs.InvalidQuery, "Bad $and format - invalid sub query.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"$and": types.S{
+			types.M{"key": "value"},
+			types.M{"key": "value"},
+		},
+	}
+	err = validateQuery(query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
 }
 
 func Test_transformObjectACL(t *testing.T) {

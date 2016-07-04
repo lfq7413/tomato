@@ -1127,9 +1127,13 @@ func validateQuery(query types.M) error {
 	}
 
 	if or, ok := query["$or"]; ok {
-		if arr, ok := or.([]interface{}); ok {
+		if arr := utils.A(or); arr != nil {
 			for _, a := range arr {
-				err := validateQuery(a.(map[string]interface{}))
+				subQuery := utils.M(a)
+				if subQuery == nil {
+					return errs.E(errs.InvalidQuery, "Bad $or format - invalid sub query.")
+				}
+				err := validateQuery(subQuery)
 				if err != nil {
 					return err
 				}
@@ -1140,9 +1144,13 @@ func validateQuery(query types.M) error {
 	}
 
 	if and, ok := query["$and"]; ok {
-		if arr, ok := and.([]interface{}); ok {
+		if arr := utils.A(and); arr != nil {
 			for _, a := range arr {
-				err := validateQuery(a.(map[string]interface{}))
+				subQuery := utils.M(a)
+				if subQuery == nil {
+					return errs.E(errs.InvalidQuery, "Bad $and format - invalid sub query.")
+				}
+				err := validateQuery(subQuery)
 				if err != nil {
 					return err
 				}

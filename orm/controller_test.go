@@ -23,7 +23,6 @@ func Test_Find(t *testing.T) {
 	// reduceRelationKeys
 	// reduceInRelation
 	// addPointerPermissions
-	// addReadACL
 	// filterSensitiveData
 	// TODO
 }
@@ -154,7 +153,48 @@ func Test_addWriteACL(t *testing.T) {
 }
 
 func Test_addReadACL(t *testing.T) {
-	// TODO
+	var query types.M
+	var acl []string
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	query = nil
+	acl = nil
+	result = addReadACL(query, acl)
+	expect = types.M{
+		"_rperm": types.M{
+			"$in": types.S{nil, "*"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{"key": "hello"}
+	acl = nil
+	result = addReadACL(query, acl)
+	expect = types.M{
+		"key": "hello",
+		"_rperm": types.M{
+			"$in": types.S{nil, "*"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{"key": "hello"}
+	acl = []string{"role:1024"}
+	result = addReadACL(query, acl)
+	expect = types.M{
+		"key": "hello",
+		"_rperm": types.M{
+			"$in": types.S{nil, "*", "role:1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_validateQuery(t *testing.T) {

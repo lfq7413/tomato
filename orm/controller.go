@@ -1106,6 +1106,12 @@ func addWriteACL(query types.M, acl []string) types.M {
 }
 
 func addReadACL(query types.M, acl []string) types.M {
+	if query == nil {
+		query = types.M{}
+	}
+	if acl == nil {
+		acl = []string{}
+	}
 	newQuery := utils.CopyMap(query)
 	orParts := types.S{nil, "*"}
 	for _, a := range acl {

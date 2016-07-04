@@ -983,15 +983,23 @@ func filterSensitiveData(isMaster bool, aclGroup []string, className string, obj
 	if className != "_User" {
 		return object
 	}
+	if object == nil {
+		return object
+	}
 	// 以下单独处理 _User 类
-	object["password"] = object["_hashed_password"]
-	delete(object, "_hashed_password")
+	if _, ok := object["_hashed_password"]; ok {
+		object["password"] = object["_hashed_password"]
+		delete(object, "_hashed_password")
+	}
 
 	delete(object, "sessionToken")
 	if isMaster {
 		return object
 	}
 	// 当前用户返回所有信息
+	if aclGroup == nil {
+		aclGroup = []string{}
+	}
 	id := utils.S(object["objectId"])
 	for _, v := range aclGroup {
 		if v == id {

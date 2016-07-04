@@ -23,7 +23,6 @@ func Test_Find(t *testing.T) {
 	// reduceRelationKeys
 	// reduceInRelation
 	// addPointerPermissions
-	// filterSensitiveData
 	// TODO
 }
 
@@ -143,7 +142,115 @@ func Test_joinTableName(t *testing.T) {
 }
 
 func Test_filterSensitiveData(t *testing.T) {
-	// TODO
+	var isMaster bool
+	var aclGroup []string
+	var className string
+	var object types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	className = "other"
+	isMaster = false
+	aclGroup = nil
+	object = types.M{"key": "value"}
+	result = filterSensitiveData(isMaster, aclGroup, className, object)
+	expect = types.M{"key": "value"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	isMaster = false
+	aclGroup = nil
+	object = nil
+	result = filterSensitiveData(isMaster, aclGroup, className, object)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	isMaster = false
+	aclGroup = nil
+	object = types.M{"_hashed_password": "1024"}
+	result = filterSensitiveData(isMaster, aclGroup, className, object)
+	expect = types.M{"password": "1024"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	isMaster = false
+	aclGroup = nil
+	object = types.M{
+		"_hashed_password": "1024",
+		"sessionToken":     "abc",
+	}
+	result = filterSensitiveData(isMaster, aclGroup, className, object)
+	expect = types.M{"password": "1024"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	isMaster = false
+	aclGroup = nil
+	object = types.M{
+		"_hashed_password": "1024",
+		"sessionToken":     "abc",
+		"authData": types.M{
+			"facebook": types.M{"id": "1024"},
+		},
+	}
+	result = filterSensitiveData(isMaster, aclGroup, className, object)
+	expect = types.M{"password": "1024"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	isMaster = true
+	aclGroup = nil
+	object = types.M{
+		"_hashed_password": "1024",
+		"sessionToken":     "abc",
+		"authData": types.M{
+			"facebook": types.M{"id": "1024"},
+		},
+	}
+	result = filterSensitiveData(isMaster, aclGroup, className, object)
+	expect = types.M{
+		"password": "1024",
+		"authData": types.M{
+			"facebook": types.M{"id": "1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	className = "_User"
+	isMaster = false
+	aclGroup = []string{"1024"}
+	object = types.M{
+		"objectId":         "1024",
+		"_hashed_password": "1024",
+		"sessionToken":     "abc",
+		"authData": types.M{
+			"facebook": types.M{"id": "1024"},
+		},
+	}
+	result = filterSensitiveData(isMaster, aclGroup, className, object)
+	expect = types.M{
+		"objectId": "1024",
+		"password": "1024",
+		"authData": types.M{
+			"facebook": types.M{"id": "1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_addWriteACL(t *testing.T) {

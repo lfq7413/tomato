@@ -657,8 +657,12 @@ func (d *DBController) canAddField(schema *Schema, className string, object type
 }
 
 // keysForQuery 从查询条件中查找字段名
+// 暂未使用
 func keysForQuery(query types.M) []string {
 	answer := []string{}
+	if query == nil {
+		return answer
+	}
 
 	var s interface{}
 	if query["$and"] != nil {
@@ -669,6 +673,9 @@ func keysForQuery(query types.M) []string {
 
 	if s != nil {
 		sublist := utils.A(s)
+		if sublist == nil {
+			return answer
+		}
 		for _, v := range sublist {
 			subquery := utils.M(v)
 			answer = append(answer, keysForQuery(subquery)...)

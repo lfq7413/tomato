@@ -134,7 +134,86 @@ func Test_sanitizeDatabaseResult(t *testing.T) {
 }
 
 func Test_keysForQuery(t *testing.T) {
-	// TODO
+	var query types.M
+	var result []string
+	var expect []string
+	/*************************************************/
+	query = nil
+	result = keysForQuery(query)
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{
+		"$and": 1024,
+	}
+	result = keysForQuery(query)
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{
+		"$and": types.S{"hello"},
+	}
+	result = keysForQuery(query)
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{
+		"$and": types.S{
+			types.M{"key": "hello"},
+			types.M{"key2": "hello"},
+		},
+	}
+	result = keysForQuery(query)
+	expect = []string{"key", "key2"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{
+		"$or": 1024,
+	}
+	result = keysForQuery(query)
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{
+		"$or": types.S{"hello"},
+	}
+	result = keysForQuery(query)
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{
+		"$or": types.S{
+			types.M{"key": "hello"},
+			types.M{"key2": "hello"},
+		},
+	}
+	result = keysForQuery(query)
+	expect = []string{"key", "key2"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	query = types.M{
+		"key":  "hello",
+		"key2": "hello",
+	}
+	result = keysForQuery(query)
+	expect = []string{"key", "key2"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_joinTableName(t *testing.T) {

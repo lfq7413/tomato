@@ -44,7 +44,6 @@ func Test_Update(t *testing.T) {
 	// addWriteACL
 	// validateQuery
 	// transformObjectACL
-	// transformAuthData
 	// sanitizeDatabaseResult
 	// TODO
 }
@@ -54,7 +53,6 @@ func Test_Create(t *testing.T) {
 	// validateClassName
 	// LoadSchema
 	// handleRelationUpdates
-	// transformAuthData
 	// TODO
 }
 
@@ -177,7 +175,141 @@ func Test_untransformObjectACL(t *testing.T) {
 }
 
 func Test_transformAuthData(t *testing.T) {
-	// TODO
+	var className string
+	var object types.M
+	var expect types.M
+	var schema types.M
+	/*************************************************/
+	className = "Other"
+	object = types.M{"key": "value"}
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = types.M{"key": "value"}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = nil
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = nil
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = types.M{}
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = types.M{"authData": 1024}
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = types.M{
+		"authData": types.M{
+			"facebook": nil,
+		},
+	}
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = types.M{
+		"_auth_data_facebook": types.M{
+			"__op": "Delete",
+		},
+	}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = types.M{
+		"authData": types.M{
+			"facebook": 1024,
+		},
+	}
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = types.M{
+		"_auth_data_facebook": types.M{
+			"__op": "Delete",
+		},
+	}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = types.M{
+		"authData": types.M{
+			"facebook": types.M{},
+		},
+	}
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = types.M{
+		"_auth_data_facebook": types.M{
+			"__op": "Delete",
+		},
+	}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = types.M{
+		"authData": types.M{
+			"facebook": types.M{"id": "1024"},
+			"twitter":  types.M{},
+		},
+	}
+	schema = nil
+	transformAuthData(className, object, schema)
+	expect = types.M{
+		"_auth_data_facebook": types.M{"id": "1024"},
+		"_auth_data_twitter":  types.M{"__op": "Delete"},
+	}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	/*************************************************/
+	className = "_User"
+	object = types.M{
+		"authData": types.M{
+			"facebook": types.M{"id": "1024"},
+			"twitter":  types.M{},
+		},
+	}
+	schema = types.M{
+		"fields": types.M{},
+	}
+	transformAuthData(className, object, schema)
+	expect = types.M{
+		"_auth_data_facebook": types.M{"id": "1024"},
+		"_auth_data_twitter":  types.M{"__op": "Delete"},
+	}
+	if reflect.DeepEqual(expect, object) == false {
+		t.Error("expect:", expect, "result:", object)
+	}
+	expect = types.M{
+		"fields": types.M{
+			"_auth_data_facebook": types.M{"type": "Object"},
+		},
+	}
+	if reflect.DeepEqual(expect, schema) == false {
+		t.Error("expect:", expect, "result:", schema)
+	}
 }
 
 func Test_flattenUpdateOperatorsForCreate(t *testing.T) {

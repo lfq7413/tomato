@@ -910,36 +910,6 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(restKey string, res
 	return restKey, restValue, nil
 }
 
-// transformAuthData 转换第三方登录数据
-// 废弃不用 逻辑转移到 controller.go/transformAuthData
-// {
-// 	"authData": {
-// 		"facebook": {...}
-// 	}
-// }
-// ==>
-// {
-// 	"_auth_data_facebook": {...}
-// }
-func (t *Transform) transformAuthData(restObject types.M) types.M {
-	if restObject != nil && restObject["authData"] != nil {
-		authData := utils.M(restObject["authData"])
-		if authData != nil {
-			for provider, v := range authData {
-				if v == nil || utils.M(v) == nil || len(utils.M(v)) == 0 {
-					restObject["_auth_data_"+provider] = types.M{
-						"__op": "Delete",
-					}
-				} else {
-					restObject["_auth_data_"+provider] = v
-				}
-			}
-		}
-		delete(restObject, "authData")
-	}
-	return restObject
-}
-
 // transformACL 转换生成权限信息，并删除源数据中的 ACL 字段
 // 废弃不用，逻辑转移到 orm/controller.go/transformObjectACL
 // {

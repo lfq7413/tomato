@@ -1280,7 +1280,7 @@ func untransformObjectACL(output types.M) types.M {
 // 	"_auth_data_facebook": {...}
 // }
 func transformAuthData(className string, object, schema types.M) {
-	if className == "_User" {
+	if className == "_User" && object != nil && object["authData"] != nil {
 		if authData := utils.M(object["authData"]); authData != nil {
 			for provider, providerData := range authData {
 				fieldName := "_auth_data_" + provider
@@ -1298,8 +1298,8 @@ func transformAuthData(className string, object, schema types.M) {
 					}
 				}
 			}
-			delete(object, "authData")
 		}
+		delete(object, "authData")
 	}
 }
 

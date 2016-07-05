@@ -88,13 +88,56 @@ func Test_canAddField(t *testing.T) {
 }
 
 func Test_reduceRelationKeys(t *testing.T) {
-	// relatedIds
 	// addInObjectIdsIds
 	// TODO
 }
 
 func Test_relatedIds(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var className string
+	var key string
+	var owningID string
+	var result types.S
+	var expect types.S
+	/*************************************************/
+	className = "user"
+	key = "name"
+	owningID = "1001"
+	result = TomatoDBController.relatedIds(className, key, owningID)
+	expect = types.S{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "01",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:name:user", relationSchema, object)
+	object = types.M{
+		"_id":       "2",
+		"relatedId": "02",
+		"owningId":  "1002",
+	}
+	Adapter.CreateObject("_Join:name:user", relationSchema, object)
+	object = types.M{
+		"_id":       "3",
+		"relatedId": "03",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:name:user", relationSchema, object)
+	className = "user"
+	key = "name"
+	owningID = "1001"
+	result = TomatoDBController.relatedIds(className, key, owningID)
+	expect = types.S{"01", "03"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
 }
 
 func Test_addInObjectIdsIds(t *testing.T) {

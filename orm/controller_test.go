@@ -106,14 +106,57 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 }
 
 func Test_reduceInRelation(t *testing.T) {
-	// owningIds
 	// addNotInObjectIdsIds
 	// addInObjectIdsIds
 	// TODO
 }
 
 func Test_owningIds(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var className string
+	var key string
+	var relatedIds types.S
+	var result types.S
+	var expect types.S
+	/*************************************************/
+	className = "user"
+	key = "name"
+	relatedIds = types.S{"01", "02"}
+	result = TomatoDBController.owningIds(className, key, relatedIds)
+	expect = types.S{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "01",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:name:user", relationSchema, object)
+	object = types.M{
+		"_id":       "2",
+		"relatedId": "02",
+		"owningId":  "1002",
+	}
+	Adapter.CreateObject("_Join:name:user", relationSchema, object)
+	object = types.M{
+		"_id":       "3",
+		"relatedId": "03",
+		"owningId":  "1003",
+	}
+	Adapter.CreateObject("_Join:name:user", relationSchema, object)
+	className = "user"
+	key = "name"
+	relatedIds = types.S{"01", "02"}
+	result = TomatoDBController.owningIds(className, key, relatedIds)
+	expect = types.S{"1001", "1002"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
 }
 
 func Test_DeleteSchema(t *testing.T) {
@@ -292,11 +335,10 @@ func Test_keysForQuery(t *testing.T) {
 	}
 	/*************************************************/
 	query = types.M{
-		"key":  "hello",
-		"key2": "hello",
+		"key": "hello",
 	}
 	result = keysForQuery(query)
-	expect = []string{"key", "key2"}
+	expect = []string{"key"}
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
@@ -1115,4 +1157,9 @@ func Test_flattenUpdateOperatorsForCreate(t *testing.T) {
 	if err == nil || reflect.DeepEqual(err, expect) == false {
 		t.Error("expect:", expect, "result:", object, err)
 	}
+}
+
+func initEnv() {
+	Adapter = getAdapter()
+	TomatoDBController = &DBController{}
 }

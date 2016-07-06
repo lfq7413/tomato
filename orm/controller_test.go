@@ -22,20 +22,17 @@ func Test_Find(t *testing.T) {
 	// LoadSchema
 	// reduceRelationKeys
 	// reduceInRelation
-	// addPointerPermissions
 	// TODO
 }
 
 func Test_Destroy(t *testing.T) {
 	// LoadSchema
-	// addPointerPermissions
 	// TODO
 }
 
 func Test_Update(t *testing.T) {
 	// LoadSchema
 	// handleRelationUpdates
-	// addPointerPermissions
 	// TODO
 }
 
@@ -339,6 +336,46 @@ func Test_addPointerPermissions(t *testing.T) {
 			"key": types.M{"type": "String"},
 		},
 		"classLevelPermissions": types.M{
+			"update":          types.M{"role:1024": true},
+			"writeUserFields": types.S{"key2"},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	schema = getSchema()
+	schema.reloadData()
+	className = "user"
+	operation = "update"
+	query = types.M{
+		"key": "hello",
+	}
+	aclGroup = []string{"123456789012345678901234"}
+	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
+	expect = types.M{
+		"$and": types.S{
+			types.M{
+				"key2": types.M{
+					"__type":    "Pointer",
+					"className": "_User",
+					"objectId":  "123456789012345678901234",
+				},
+			},
+			types.M{
+				"key": "hello",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"className": className,
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
 			"get":            types.M{"role:1024": true},
 			"readUserFields": types.S{"key2"},
 		},
@@ -351,15 +388,67 @@ func Test_addPointerPermissions(t *testing.T) {
 	query = types.M{
 		"key": "hello",
 	}
-	aclGroup = []string{"role:1024"}
+	aclGroup = []string{"role:2048"}
 	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
 	expect = nil
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
 	Adapter.DeleteAllClasses()
-
-	// TODO
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"className": className,
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"get":            types.M{"role:1024": true},
+			"readUserFields": types.S{"key2", "key3"},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	schema = getSchema()
+	schema.reloadData()
+	className = "user"
+	operation = "get"
+	query = types.M{
+		"key": "hello",
+	}
+	aclGroup = []string{"123456789012345678901234"}
+	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
+	expect = types.M{
+		"$or": []types.M{
+			types.M{
+				"$and": types.S{
+					types.M{
+						"key2": types.M{
+							"__type":    "Pointer",
+							"className": "_User",
+							"objectId":  "123456789012345678901234",
+						},
+					},
+					types.M{"key": "hello"},
+				},
+			},
+			types.M{
+				"$and": types.S{
+					types.M{
+						"key3": types.M{
+							"__type":    "Pointer",
+							"className": "_User",
+							"objectId":  "123456789012345678901234",
+						},
+					},
+					types.M{"key": "hello"},
+				},
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
 }
 
 //////////////////////////////////////////////////////

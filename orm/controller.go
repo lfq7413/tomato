@@ -1086,10 +1086,12 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 		}
 	}
 
+	// 查找保存 有读或写权限 用户 的字段，然后使用 and 与原查询请求进行拼装
 	if perms != nil {
 		if permsMap := utils.M(perms); permsMap != nil {
 			if permFields := utils.A(permsMap[field]); permFields != nil {
 				if permFields != nil && len(permFields) > 0 {
+					// 用户 ID 不唯一时，表示没有数据可供操作
 					if len(userACL) != 1 {
 						return nil
 					}
@@ -1100,6 +1102,7 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 						"objectId":  userID,
 					}
 
+					// 使用 and 拼装请求
 					ors := []types.M{}
 					for _, key := range permFields {
 						q := types.M{
@@ -1110,6 +1113,7 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 						}
 						ors = append(ors, and)
 					}
+					// 有多个权限字段时，使用 or 再次拼装
 					if len(ors) > 1 {
 						return types.M{"$or": ors}
 					}

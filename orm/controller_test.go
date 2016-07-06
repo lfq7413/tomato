@@ -209,6 +209,156 @@ func Test_DeleteSchema(t *testing.T) {
 }
 
 func Test_addPointerPermissions(t *testing.T) {
+	initEnv()
+	var object types.M
+	var schema *Schema
+	var className string
+	var operation string
+	var query types.M
+	var aclGroup []string
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	schema = nil
+	className = "user"
+	operation = "get"
+	query = nil
+	aclGroup = nil
+	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	schema = getSchema()
+	schema.reloadData()
+	className = "user"
+	operation = "get"
+	query = nil
+	aclGroup = nil
+	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"className": className,
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"get": types.M{"*": true},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	schema = getSchema()
+	schema.reloadData()
+	className = "user"
+	operation = "get"
+	query = nil
+	aclGroup = nil
+	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"className": className,
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"get": types.M{"role:1024": true},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	schema = getSchema()
+	schema.reloadData()
+	className = "user"
+	operation = "get"
+	query = types.M{}
+	aclGroup = []string{"123456789012345678901234"}
+	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"className": className,
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"get":            types.M{"role:1024": true},
+			"readUserFields": types.S{"key2"},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	schema = getSchema()
+	schema.reloadData()
+	className = "user"
+	operation = "get"
+	query = types.M{
+		"key": "hello",
+	}
+	aclGroup = []string{"123456789012345678901234"}
+	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
+	expect = types.M{
+		"$and": types.S{
+			types.M{
+				"key2": types.M{
+					"__type":    "Pointer",
+					"className": "_User",
+					"objectId":  "123456789012345678901234",
+				},
+			},
+			types.M{
+				"key": "hello",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"className": className,
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"get":            types.M{"role:1024": true},
+			"readUserFields": types.S{"key2"},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	schema = getSchema()
+	schema.reloadData()
+	className = "user"
+	operation = "get"
+	query = types.M{
+		"key": "hello",
+	}
+	aclGroup = []string{"role:1024"}
+	result = TomatoDBController.addPointerPermissions(schema, className, operation, query, aclGroup)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+
 	// TODO
 }
 

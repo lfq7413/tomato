@@ -855,25 +855,37 @@ func (d *DBController) addInObjectIdsIds(ids types.S, query types.M) types.M {
 // addNotInObjectIdsIds 添加 ids 到查询条件中，应该取 $ne $nin ids 的并集
 // 替换 objectId 为：
 // "objectId":{"$nin":["id","id2"]}
-func (d *DBController) addNotInObjectIdsIds(ids types.S, query types.M) {
+func (d *DBController) addNotInObjectIdsIds(ids types.S, query types.M) types.M {
+	// 当两个参数均为空时，不进行处理
+	if ids == nil && query == nil {
+		return query
+	}
+	// 参数有一个不为空时，即进行处理
+	if ids == nil {
+		ids = types.S{}
+	}
+	if query == nil {
+		query = types.M{}
+	}
+	// coll 保存两种类型的 ID 列表：idsFromNin、ids
 	coll := map[string]types.S{}
 	idsFromNin := types.S{}
-	if ninid, ok := query["objectId"].(map[string]interface{}); ok {
+	if ninid := utils.M(query["objectId"]); ninid != nil {
 		if id, ok := ninid["$nin"]; ok {
-			idsFromNin = append(idsFromNin, id.([]interface{})...)
+			if v := utils.A(id); v != nil {
+				idsFromNin = append(idsFromNin, v...)
+			}
 		}
 	}
 	coll["idsFromNin"] = idsFromNin
 
-	if ids != nil {
-		coll["ids"] = ids
-	}
+	coll["ids"] = ids
 
 	idsColl := map[string]int{}
 	for _, c := range coll {
 		// 从每个集合中取出 objectId
 		for _, v := range c {
-			id := v.(string)
+			id := utils.S(v)
 			// 并去除重复
 			if _, ok := idsColl[id]; ok == false {
 				idsColl[id] = 0
@@ -886,17 +898,13 @@ func (d *DBController) addNotInObjectIdsIds(ids types.S, query types.M) {
 		queryNin = append(queryNin, k)
 	}
 
-	if v, ok := query["objectId"]; ok {
-		if _, ok := v.(string); ok {
-			query["objectId"] = types.M{}
-		}
+	// 替换 objectId
+	if objectID := utils.M(query["objectId"]); objectID != nil {
+		objectID["$nin"] = queryNin
 	} else {
-		query["objectId"] = types.M{}
+		query["objectId"] = types.M{"$nin": queryNin}
 	}
-	id := query["objectId"].(map[string]interface{})
-	id["$nin"] = queryNin
-
-	query["objectId"] = id
+	return query
 }
 
 // reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in $ne $nin $eq 或者等于某对象
@@ -970,7 +978,7 @@ func (d *DBController) reduceInRelation(className string, query types.M, schema 
 				// 从 Join 表中查找的 ids，替换查询条件
 				ids := d.owningIds(className, key, relatedID)
 				if isNegation[i] {
-					d.addNotInObjectIdsIds(ids, query)
+					query = d.addNotInObjectIdsIds(ids, query)
 				} else {
 					query = d.addInObjectIdsIds(ids, query)
 				}

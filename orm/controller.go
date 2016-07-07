@@ -911,6 +911,9 @@ func (d *DBController) addNotInObjectIdsIds(ids types.S, query types.M) types.M 
 // 例如 classA 中的 字段 key 为 relation<classB> 类型，查找 key 中包含指定 classB 对象的 classA
 // query = {"key":{"$in":[]}}
 func (d *DBController) reduceInRelation(className string, query types.M, schema *Schema) types.M {
+	if query == nil {
+		return query
+	}
 	// 处理 $or 数组中的数据，并替换回去
 	if query["$or"] != nil {
 		ors := utils.A(query["$or"])
@@ -926,10 +929,13 @@ func (d *DBController) reduceInRelation(className string, query types.M, schema 
 	for key, v := range query {
 		op := utils.M(v)
 		if op != nil && (op["$in"] != nil || op["$ne"] != nil || op["$nin"] != nil || op["$eq"] != nil || utils.S(op["__type"]) == "Pointer") {
+			if schema == nil {
+				continue
+			}
 			// 只处理 relation 类型
 			t := schema.getExpectedType(className, key)
-			if t == nil || t["type"].(string) != "Relation" {
-				return query
+			if t == nil || utils.S(t["type"]) != "Relation" {
+				continue
 			}
 
 			// 取出所有限制条件
@@ -937,37 +943,57 @@ func (d *DBController) reduceInRelation(className string, query types.M, schema 
 			isNegation := []bool{}
 			for constraintKey, value := range op {
 				if constraintKey == "objectId" {
-					ids := types.S{value}
-					relatedIds = append(relatedIds, ids)
-					isNegation = append(isNegation, false)
+					if utils.S(value) != "" {
+						ids := types.S{value}
+						relatedIds = append(relatedIds, ids)
+						isNegation = append(isNegation, false)
+					}
 				} else if constraintKey == "$in" {
 					in := utils.A(value)
 					ids := types.S{}
 					for _, v := range in {
-						r := utils.M(v)
-						ids = append(ids, r["objectId"])
+						if r := utils.M(v); r != nil {
+							if utils.S(r["objectId"]) != "" {
+								ids = append(ids, r["objectId"])
+							}
+						}
 					}
-					relatedIds = append(relatedIds, ids)
-					isNegation = append(isNegation, false)
+					// 只计算有效的 objectId
+					if len(ids) > 0 {
+						relatedIds = append(relatedIds, ids)
+						isNegation = append(isNegation, false)
+					}
 				} else if constraintKey == "$nin" {
 					nin := utils.A(value)
 					ids := types.S{}
 					for _, v := range nin {
-						r := utils.M(v)
-						ids = append(ids, r["objectId"])
+						if r := utils.M(v); r != nil {
+							if utils.S(r["objectId"]) != "" {
+								ids = append(ids, r["objectId"])
+							}
+						}
 					}
-					relatedIds = append(relatedIds, ids)
-					isNegation = append(isNegation, true)
+					// 只计算有效的 objectId
+					if len(ids) > 0 {
+						relatedIds = append(relatedIds, ids)
+						isNegation = append(isNegation, true)
+					}
 				} else if constraintKey == "$ne" {
-					ne := utils.M(value)
-					ids := types.S{ne["objectId"]}
-					relatedIds = append(relatedIds, ids)
-					isNegation = append(isNegation, true)
+					if ne := utils.M(value); ne != nil {
+						if utils.S(ne["objectId"]) != "" {
+							ids := types.S{ne["objectId"]}
+							relatedIds = append(relatedIds, ids)
+							isNegation = append(isNegation, true)
+						}
+					}
 				} else if constraintKey == "$eq" {
-					eq := utils.M(value)
-					ids := types.S{eq["objectId"]}
-					relatedIds = append(relatedIds, ids)
-					isNegation = append(isNegation, false)
+					if eq := utils.M(value); eq != nil {
+						if utils.S(eq["objectId"]) != "" {
+							ids := types.S{eq["objectId"]}
+							relatedIds = append(relatedIds, ids)
+							isNegation = append(isNegation, false)
+						}
+					}
 				}
 			}
 
@@ -975,6 +1001,7 @@ func (d *DBController) reduceInRelation(className string, query types.M, schema 
 
 			// 应用所有限制条件
 			for i, relatedID := range relatedIds {
+				// 此处 relatedID 含有至少一个元素
 				// 从 Join 表中查找的 ids，替换查询条件
 				ids := d.owningIds(className, key, relatedID)
 				if isNegation[i] {

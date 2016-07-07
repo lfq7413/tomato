@@ -21,7 +21,6 @@ func Test_PurgeCollection(t *testing.T) {
 func Test_Find(t *testing.T) {
 	// LoadSchema
 	// reduceRelationKeys
-	// reduceInRelation
 	// TODO
 }
 
@@ -391,7 +390,7 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 	}
 	expect1 = types.M{
 		"objectId": types.M{
-			"$nin": types.S{"1024", "2048"},
+			"$nin": types.S{"2048", "1024"},
 		},
 	}
 	if reflect.DeepEqual(expect, result) == false &&
@@ -409,7 +408,7 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 	}
 	expect1 = types.M{
 		"objectId": types.M{
-			"$nin": types.S{"1024", "2048"},
+			"$nin": types.S{"2048", "1024"},
 		},
 	}
 	if reflect.DeepEqual(expect, result) == false &&
@@ -427,7 +426,7 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 	}
 	expect1 = types.M{
 		"objectId": types.M{
-			"$nin": types.S{"1024", "2048"},
+			"$nin": types.S{"2048", "1024"},
 		},
 	}
 	if reflect.DeepEqual(expect, result) == false &&
@@ -445,7 +444,7 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 	}
 	expect1 = types.M{
 		"objectId": types.M{
-			"$nin": types.S{"1024", "2048"},
+			"$nin": types.S{"2048", "1024"},
 		},
 	}
 	if reflect.DeepEqual(expect, result) == false &&
@@ -463,7 +462,7 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 	}
 	expect1 = types.M{
 		"objectId": types.M{
-			"$nin": types.S{"1024", "2048"},
+			"$nin": types.S{"2048", "1024"},
 		},
 	}
 	if reflect.DeepEqual(expect, result) == false &&
@@ -473,7 +472,403 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 }
 
 func Test_reduceInRelation(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var className string
+	var query types.M
+	var schema *Schema
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	className = "user"
+	query = nil
+	schema = nil
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	query = types.M{}
+	schema = nil
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	query = types.M{"key": "hello"}
+	schema = nil
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{"key": "hello"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	query = types.M{"key": types.M{"k": "v"}}
+	schema = nil
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{"key": types.M{"k": "v"}}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	query = types.M{"key": types.M{"$in": "v"}}
+	schema = nil
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{"key": types.M{"$in": "v"}}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	className = "user"
+	query = types.M{"key": types.M{"$in": "v"}}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{"key": types.M{"$in": "v"}}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key:user", relationSchema, object)
+	className = "user"
+	query = types.M{
+		"key": types.M{
+			"__type":   "Pointer",
+			"objectId": "2001",
+		},
+	}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1001"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key:user", relationSchema, object)
+	className = "user"
+	query = types.M{
+		"key": types.M{
+			"$in": types.S{
+				types.M{
+					"__type":   "Pointer",
+					"objectId": "2001",
+				},
+			},
+		},
+	}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1001"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key:user", relationSchema, object)
+	className = "user"
+	query = types.M{
+		"key": types.M{
+			"$nin": types.S{
+				types.M{
+					"__type":   "Pointer",
+					"objectId": "2001",
+				},
+			},
+		},
+	}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{
+		"objectId": types.M{
+			"$nin": types.S{"1001"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key:user", relationSchema, object)
+	className = "user"
+	query = types.M{
+		"key": types.M{
+			"$ne": types.M{
+				"__type":   "Pointer",
+				"objectId": "2001",
+			},
+		},
+	}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{
+		"objectId": types.M{
+			"$nin": types.S{"1001"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key:user", relationSchema, object)
+	className = "user"
+	query = types.M{
+		"key": types.M{
+			"$eq": types.M{
+				"__type":   "Pointer",
+				"objectId": "2001",
+			},
+		},
+	}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1001"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key:user", relationSchema, object)
+	className = "user"
+	query = types.M{
+		"key": types.M{
+			"$eq": types.M{
+				"__type":   "Pointer",
+				"objectId": "2001",
+			},
+		},
+		"key2": "hello",
+	}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1001"},
+		},
+		"key2": "hello",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key:user", relationSchema, object)
+	className = "user"
+	query = types.M{
+		"key": types.M{
+			"$eq": "hello",
+		},
+		"key2": "hello",
+	}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{
+		"key2": "hello",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"className": "user",
+		"fields": types.M{
+			"key": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+			"key1": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass("user", object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key:user", relationSchema, object)
+	object = types.M{
+		"_id":       "1",
+		"relatedId": "2002",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key1:user", relationSchema, object)
+	className = "user"
+	query = types.M{
+		"key": types.M{
+			"$eq": types.M{
+				"__type":   "Pointer",
+				"objectId": "2001",
+			},
+		},
+		"key1": types.M{
+			"$eq": types.M{
+				"__type":   "Pointer",
+				"objectId": "2002",
+			},
+		},
+		"key2": "hello",
+	}
+	schema = getSchema()
+	schema.reloadData()
+	result = TomatoDBController.reduceInRelation(className, query, schema)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1001"},
+		},
+		"key2": "hello",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
 }
 
 func Test_owningIds(t *testing.T) {

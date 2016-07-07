@@ -729,7 +729,7 @@ func (d *DBController) reduceRelationKeys(className string, query types.M) {
 		objID := utils.S(object["objectId"])
 		ids := d.relatedIds(objClassName, key, objID)
 		delete(query, "$relatedTo")
-		d.addInObjectIdsIds(ids, query)
+		query = d.addInObjectIdsIds(ids, query)
 		d.reduceRelationKeys(className, query)
 	}
 
@@ -758,36 +758,52 @@ func joinTableName(className, key string) string {
 // addInObjectIdsIds 添加 ids 到查询条件中, 应该取 objectId $eq $in ids 的交集
 // 替换 objectId 为：
 // "objectId":{"$in":["id","id2"]}
-func (d *DBController) addInObjectIdsIds(ids types.S, query types.M) {
+func (d *DBController) addInObjectIdsIds(ids types.S, query types.M) types.M {
+	// 当两个参数均为空时，不进行处理
+	if ids == nil && query == nil {
+		return query
+	}
+	// 参数有一个不为空时，即进行处理
+	if ids == nil {
+		ids = types.S{}
+	}
+	if query == nil {
+		query = types.M{}
+	}
+	// coll 保存四种类型的 ID 列表：idsFromString、idsFromEq、idsFromIn、ids
 	coll := map[string]types.S{}
 	idsFromString := types.S{}
-	if id, ok := query["objectId"].(string); ok {
+	if id := utils.S(query["objectId"]); id != "" {
 		idsFromString = append(idsFromString, id)
 	}
 	coll["idsFromString"] = idsFromString
 
 	idsFromEq := types.S{}
-	if eqid, ok := query["objectId"].(map[string]interface{}); ok {
+	if eqid := utils.M(query["objectId"]); eqid != nil {
 		if id, ok := eqid["$eq"]; ok {
-			idsFromEq = append(idsFromEq, id.(string))
+			// TODO 结果中包含了 $in ，是否需要删除 $eq ？
+			if v := utils.S(id); v != "" {
+				idsFromEq = append(idsFromEq, v)
+			}
 		}
 	}
 	coll["idsFromEq"] = idsFromEq
 
 	idsFromIn := types.S{}
-	if inid, ok := query["objectId"].(map[string]interface{}); ok {
+	if inid := utils.M(query["objectId"]); inid != nil {
 		if id, ok := inid["$in"]; ok {
-			idsFromIn = append(idsFromIn, id.([]interface{})...)
+			if v := utils.A(id); v != nil {
+				idsFromIn = append(idsFromIn, v...)
+			}
 		}
 	}
 	coll["idsFromIn"] = idsFromIn
 
-	if ids != nil {
-		coll["ids"] = ids
-	}
+	coll["ids"] = ids
 
 	// 统计 idsFromString idsFromEq idsFromIn ids 中的共同元素加入到 $in 中
-	max := 0 // 以上4个集合中不为空的个数，也就是说 某个 objectId 出现的次数应该等于 max 才能加入到 $in 中查询
+	// max 以上4个集合中不为空的个数，也就是说 某个 objectId 出现的次数应该等于 max 才能加入到 $in 中查询
+	max := 0
 	for k, v := range coll {
 		// 删除空集合
 		if len(v) > 0 {
@@ -796,13 +812,16 @@ func (d *DBController) addInObjectIdsIds(ids types.S, query types.M) {
 			delete(coll, k)
 		}
 	}
-	idsColl := map[string]int{} // 统计每个 objectId 出现的次数
+
+	// idsColl 统计每个 objectId 出现的次数
+	idsColl := map[string]int{}
 	for _, c := range coll {
 		// 从每个集合中取出 objectId
+		// idColl 统计当前集合中出现过的 ID ，用于去重
 		idColl := map[string]int{}
 		for _, v := range c {
-			id := v.(string)
-			// 并去除重复
+			id := utils.S(v)
+			// 并去除重复，只处理未出现过的 ID
 			if _, ok := idColl[id]; ok == false {
 				idColl[id] = 0
 
@@ -815,24 +834,22 @@ func (d *DBController) addInObjectIdsIds(ids types.S, query types.M) {
 			}
 		}
 	}
-	queryIn := types.S{} // 统计出现次数为 max 的 objectId
+
+	// queryIn 统计出现次数为 max 的 objectId
+	queryIn := types.S{}
 	for k, v := range idsColl {
 		if v == max {
 			queryIn = append(queryIn, k)
 		}
 	}
 
-	if v, ok := query["objectId"]; ok {
-		if _, ok := v.(string); ok {
-			query["objectId"] = types.M{}
-		}
+	// 替换 objectId
+	if objectID := utils.M(query["objectId"]); objectID != nil {
+		objectID["$in"] = queryIn
 	} else {
-		query["objectId"] = types.M{}
+		query["objectId"] = types.M{"$in": queryIn}
 	}
-	id := query["objectId"].(map[string]interface{})
-	id["$in"] = queryIn
-
-	query["objectId"] = id
+	return query
 }
 
 // addNotInObjectIdsIds 添加 ids 到查询条件中，应该取 $ne $nin ids 的并集
@@ -955,7 +972,7 @@ func (d *DBController) reduceInRelation(className string, query types.M, schema 
 				if isNegation[i] {
 					d.addNotInObjectIdsIds(ids, query)
 				} else {
-					d.addInObjectIdsIds(ids, query)
+					query = d.addInObjectIdsIds(ids, query)
 				}
 			}
 		}

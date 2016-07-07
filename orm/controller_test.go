@@ -85,7 +85,6 @@ func Test_canAddField(t *testing.T) {
 }
 
 func Test_reduceRelationKeys(t *testing.T) {
-	// addInObjectIdsIds
 	// TODO
 }
 
@@ -138,7 +137,170 @@ func Test_relatedIds(t *testing.T) {
 }
 
 func Test_addInObjectIdsIds(t *testing.T) {
-	// TODO
+	initEnv()
+	var ids types.S
+	var query types.M
+	var result types.M
+	var expect types.M
+	/*************************************************/
+	ids = nil
+	query = nil
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{}
+	query = nil
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{"$in": types.S{}},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = nil
+	query = types.M{}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{"$in": types.S{}},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{}
+	query = types.M{}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{"$in": types.S{}},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024"}
+	query = types.M{"objectId": "1024"}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{"$in": types.S{"1024"}},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024"}
+	query = types.M{"objectId": types.M{"$eq": "1024"}}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$eq": "1024",
+			"$in": types.S{"1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024"}
+	query = types.M{"objectId": types.M{"$in": types.S{"1024"}}}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024"}
+	query = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1024"},
+			"$lt": "100",
+		},
+		"key": "value",
+	}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1024"},
+			"$lt": "100",
+		},
+		"key": "value",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024", "2048"}
+	query = types.M{"objectId": types.M{"$in": types.S{"1024"}}}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024"}
+	query = types.M{"objectId": types.M{"$in": types.S{"1024", "2048"}}}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024", "2048"}
+	query = types.M{"objectId": types.M{"$in": types.S{"1024", "2048"}}}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1024", "2048"},
+		},
+	}
+	expect1 := types.M{
+		"objectId": types.M{
+			"$in": types.S{"2048", "1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false &&
+		reflect.DeepEqual(expect1, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024"}
+	query = types.M{"objectId": types.M{"$in": types.S{"1024", "2048", "2048"}}}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*************************************************/
+	ids = types.S{"1024", "2048", "2048"}
+	query = types.M{"objectId": types.M{"$in": types.S{"1024"}}}
+	result = TomatoDBController.addInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$in": types.S{"1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_addNotInObjectIdsIds(t *testing.T) {
@@ -147,7 +309,6 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 
 func Test_reduceInRelation(t *testing.T) {
 	// addNotInObjectIdsIds
-	// addInObjectIdsIds
 	// TODO
 }
 

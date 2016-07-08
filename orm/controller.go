@@ -128,9 +128,9 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 	}
 
 	// 处理 $relatedTo
-	d.reduceRelationKeys(className, query)
+	query = d.reduceRelationKeys(className, query)
 	// 处理 relation 字段上的 $in
-	d.reduceInRelation(className, query, schema)
+	query = d.reduceInRelation(className, query, schema)
 
 	if isMaster == false {
 		query = d.addPointerPermissions(schema, className, op, query, aclGroup)
@@ -711,28 +711,42 @@ func keysForQuery(query types.M) []string {
 //         ]
 //     }
 // }
-func (d *DBController) reduceRelationKeys(className string, query types.M) {
+// 已知父对象，查找子对象
+func (d *DBController) reduceRelationKeys(className string, query types.M) types.M {
+	if query == nil {
+		return query
+	}
+	// 处理 $or 数组中的数据，并替换回去
 	if query["$or"] != nil {
-		subQuerys := utils.A(query["$or"])
-		for _, v := range subQuerys {
+		var subQuerys types.S
+		subQuerys = utils.A(query["$or"])
+		for i, v := range subQuerys {
 			aQuery := utils.M(v)
-			d.reduceRelationKeys(className, aQuery)
+			subQuerys[i] = d.reduceRelationKeys(className, aQuery)
 		}
-		return
+		query["$or"] = subQuerys
+		return query
 	}
 
-	if query["$relatedTo"] != nil {
-		relatedTo := utils.M(query["$relatedTo"])
+	if r, ok := query["$relatedTo"]; ok {
+		delete(query, "$relatedTo")
+		relatedTo := utils.M(r)
+		if relatedTo == nil {
+			return query
+		}
 		key := utils.S(relatedTo["key"])
 		object := utils.M(relatedTo["object"])
+		if key == "" || object == nil {
+			return query
+		}
 		objClassName := utils.S(object["className"])
 		objID := utils.S(object["objectId"])
 		ids := d.relatedIds(objClassName, key, objID)
-		delete(query, "$relatedTo")
 		query = d.addInObjectIdsIds(ids, query)
-		d.reduceRelationKeys(className, query)
+		query = d.reduceRelationKeys(className, query)
 	}
 
+	return query
 }
 
 // relatedIds 从 Join 表中查询 ids ，表名：_Join:key:className
@@ -910,17 +924,18 @@ func (d *DBController) addNotInObjectIdsIds(ids types.S, query types.M) types.M 
 // reduceInRelation 处理查询条件中，作用于 relation 类型字段上的 $in $ne $nin $eq 或者等于某对象
 // 例如 classA 中的 字段 key 为 relation<classB> 类型，查找 key 中包含指定 classB 对象的 classA
 // query = {"key":{"$in":[]}}
+// 已知子对象，查找父对象
 func (d *DBController) reduceInRelation(className string, query types.M, schema *Schema) types.M {
 	if query == nil {
 		return query
 	}
 	// 处理 $or 数组中的数据，并替换回去
 	if query["$or"] != nil {
-		ors := utils.A(query["$or"])
+		var ors types.S
+		ors = utils.A(query["$or"])
 		for i, v := range ors {
 			aQuery := utils.M(v)
-			aQuery = d.reduceInRelation(className, aQuery, schema)
-			ors[i] = aQuery
+			ors[i] = d.reduceInRelation(className, aQuery, schema)
 		}
 		query["$or"] = ors
 		return query

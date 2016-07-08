@@ -623,9 +623,10 @@ func (d *DBController) RedirectClassNameForKey(className, key string) string {
 
 // canAddField 检测是否能添加字段到类上
 func (d *DBController) canAddField(schema *Schema, className string, object types.M, acl []string) error {
-	if schema.data[className] == nil {
+	if schema == nil || schema.data == nil || schema.data[className] == nil {
 		return nil
 	}
+
 	classSchema := utils.M(schema.data[className])
 
 	schemaFields := []string{}

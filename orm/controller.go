@@ -615,8 +615,8 @@ func (d *DBController) DeleteEverything() {
 func (d *DBController) RedirectClassNameForKey(className, key string) string {
 	schema := d.LoadSchema()
 	t := schema.getExpectedType(className, key)
-	if t != nil && t["type"].(string) == "Relation" {
-		return t["targetClass"].(string)
+	if t != nil && utils.S(t["type"]) == "Relation" {
+		return utils.S(t["targetClass"])
 	}
 	return className
 }

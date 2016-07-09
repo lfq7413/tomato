@@ -130,7 +130,56 @@ func Test_DeleteEverything(t *testing.T) {
 }
 
 func Test_RedirectClassNameForKey(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var className string
+	var key string
+	var result string
+	var expect string
+	/*************************************************/
+	className = "user"
+	key = "name"
+	result = TomatoDBController.RedirectClassNameForKey(className, key)
+	expect = "user"
+	if result != expect {
+		t.Error("expect:", expect, "result:", result)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	object = types.M{
+		"fields": types.M{
+			"name": types.M{"type": "String"},
+		},
+	}
+	className = "user"
+	Adapter.CreateClass(className, object)
+	className = "user"
+	key = "name"
+	result = TomatoDBController.RedirectClassNameForKey(className, key)
+	expect = "user"
+	if result != expect {
+		t.Error("expect:", expect, "result:", result)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	object = types.M{
+		"fields": types.M{
+			"name": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	className = "user"
+	Adapter.CreateClass(className, object)
+	className = "user"
+	key = "name"
+	result = TomatoDBController.RedirectClassNameForKey(className, key)
+	expect = "post"
+	if result != expect {
+		t.Error("expect:", expect, "result:", result)
+	}
+	TomatoDBController.DeleteEverything()
 }
 
 func Test_canAddField(t *testing.T) {

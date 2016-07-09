@@ -14,29 +14,24 @@ func Test_CollectionExists(t *testing.T) {
 }
 
 func Test_PurgeCollection(t *testing.T) {
-	// LoadSchema
 	// TODO
 }
 
 func Test_Find(t *testing.T) {
-	// LoadSchema
 	// TODO
 }
 
 func Test_Destroy(t *testing.T) {
-	// LoadSchema
 	// TODO
 }
 
 func Test_Update(t *testing.T) {
-	// LoadSchema
 	// handleRelationUpdates
 	// TODO
 }
 
 func Test_Create(t *testing.T) {
 	// validateClassName
-	// LoadSchema
 	// handleRelationUpdates
 	// TODO
 }
@@ -60,12 +55,49 @@ func Test_removeRelation(t *testing.T) {
 }
 
 func Test_ValidateObject(t *testing.T) {
-	// LoadSchema
 	// TODO
 }
 
 func Test_LoadSchema(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var className string
+	var result *Schema
+	var expect types.M
+	/*************************************************/
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"get": types.M{"*": true},
+		},
+	}
+	className = "user"
+	Adapter.CreateClass(className, object)
+	result = TomatoDBController.LoadSchema()
+	expect = types.M{
+		"key":       types.M{"type": "String"},
+		"objectId":  types.M{"type": "String"},
+		"createdAt": types.M{"type": "Date"},
+		"updatedAt": types.M{"type": "Date"},
+		"ACL":       types.M{"type": "ACL"},
+	}
+	if reflect.DeepEqual(expect, result.data["user"]) == false {
+		t.Error("expect:", expect, "result:", result.data["user"])
+	}
+	expect = types.M{
+		"get":      types.M{"*": true},
+		"find":     types.M{},
+		"create":   types.M{},
+		"update":   types.M{},
+		"delete":   types.M{},
+		"addField": types.M{},
+	}
+	if reflect.DeepEqual(expect, result.perms["user"]) == false {
+		t.Error("expect:", expect, "result:", result.perms["user"])
+	}
+	Adapter.DeleteAllClasses()
 }
 
 func Test_DeleteEverything(t *testing.T) {
@@ -73,7 +105,6 @@ func Test_DeleteEverything(t *testing.T) {
 }
 
 func Test_RedirectClassNameForKey(t *testing.T) {
-	// LoadSchema
 	// TODO
 }
 
@@ -1291,7 +1322,6 @@ func Test_owningIds(t *testing.T) {
 }
 
 func Test_DeleteSchema(t *testing.T) {
-	// LoadSchema
 	// CollectionExists
 	// TODO
 }

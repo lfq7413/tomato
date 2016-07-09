@@ -10,7 +10,32 @@ import (
 )
 
 func Test_CollectionExists(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var className string
+	var result bool
+	var expect bool
+	/*************************************************/
+	className = "user"
+	result = TomatoDBController.CollectionExists(className)
+	expect = false
+	if result != expect {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"key": "hello",
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	result = TomatoDBController.CollectionExists(className)
+	expect = true
+	if result != expect {
+		t.Error("expect:", expect, "result:", result)
+	}
+	Adapter.DeleteAllClasses()
 }
 
 func Test_PurgeCollection(t *testing.T) {
@@ -1322,7 +1347,6 @@ func Test_owningIds(t *testing.T) {
 }
 
 func Test_DeleteSchema(t *testing.T) {
-	// CollectionExists
 	// TODO
 }
 

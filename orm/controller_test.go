@@ -66,7 +66,6 @@ func Test_validateClassName(t *testing.T) {
 }
 
 func Test_handleRelationUpdates(t *testing.T) {
-	// removeRelation
 	// TODO
 }
 
@@ -127,7 +126,48 @@ func Test_addRelation(t *testing.T) {
 }
 
 func Test_removeRelation(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var key, fromClassName, fromID, toID string
+	var err error
+	var expect error
+	var results []types.M
+	/*************************************************/
+	key = "post"
+	fromClassName = "user"
+	fromID = "1001"
+	toID = "2001"
+	err = TomatoDBController.removeRelation(key, fromClassName, fromID, toID)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	results, err = Adapter.Find("_Join:post:user", relationSchema, types.M{}, types.M{})
+	if err != nil || len(results) != 0 {
+		t.Error("expect:", nil, "result:", results, err)
+	}
+	Adapter.DeleteAllClasses()
+	/*************************************************/
+	object = types.M{
+		"objectId":  "01",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:post:user", relationSchema, object)
+	key = "post"
+	fromClassName = "user"
+	fromID = "1001"
+	toID = "2001"
+	err = TomatoDBController.removeRelation(key, fromClassName, fromID, toID)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	results, err = Adapter.Find("_Join:post:user", relationSchema, types.M{}, types.M{})
+	if err != nil || len(results) != 0 {
+		t.Error("expect:", nil, "result:", results, err)
+	}
+	Adapter.DeleteAllClasses()
 }
 
 func Test_ValidateObject(t *testing.T) {

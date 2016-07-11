@@ -56,13 +56,29 @@ func Test_Update(t *testing.T) {
 }
 
 func Test_Create(t *testing.T) {
-	// validateClassName
 	// handleRelationUpdates
 	// TODO
 }
 
 func Test_validateClassName(t *testing.T) {
-	// TODO
+	initEnv()
+	var className string
+	var err error
+	var expect error
+	/*************************************************/
+	className = "user"
+	err = TomatoDBController.validateClassName(className)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	className = "@user"
+	err = TomatoDBController.validateClassName(className)
+	expect = errs.E(errs.InvalidClassName, "invalid className: @user")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
 }
 
 func Test_handleRelationUpdates(t *testing.T) {

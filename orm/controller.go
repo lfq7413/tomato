@@ -1088,27 +1088,29 @@ func (d *DBController) DeleteSchema(className string) error {
 	schemaController := d.LoadSchema()
 	schema, err := schemaController.GetOneSchema(className, false)
 	if err != nil {
-		return nil
+		return err
+	}
+	if schema == nil || len(schema) == 0 {
+		schema = types.M{"fields": types.M{}}
 	}
 
 	exist := d.CollectionExists(className)
-	if exist == false {
-		return nil
-	}
-	count, err := Adapter.Count(className, types.M{"fields": types.M{}}, types.M{})
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
+	if exist {
+		count, err := Adapter.Count(className, types.M{"fields": types.M{}}, types.M{})
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return errs.E(errs.ClassNotEmpty, "Class "+className+" is not empty, contains "+strconv.Itoa(count)+" objects, cannot drop schema.")
+		}
 	}
 
 	result, err := Adapter.DeleteClass(className)
 	if err != nil {
 		return err
 	}
-	if result != nil && schema != nil {
-		if fields := utils.M(schema); fields != nil {
+	if result != nil {
+		if fields := utils.M(schema["fields"]); fields != nil {
 			for fieldName, v := range fields {
 				if fieldType := utils.M(v); fieldType != nil {
 					if utils.S(fieldType["type"]) == "Relation" {

@@ -569,6 +569,9 @@ func (d *DBController) removeRelation(key, fromClassName, fromID, toID string) e
 func (d *DBController) ValidateObject(className string, object, query, options types.M) error {
 	schema := d.LoadSchema()
 
+	if options == nil {
+		options = types.M{}
+	}
 	isMaster := false
 	aclGroup := []string{}
 	if acl, ok := options["acl"]; ok {

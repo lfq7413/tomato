@@ -187,7 +187,91 @@ func Test_removeRelation(t *testing.T) {
 }
 
 func Test_ValidateObject(t *testing.T) {
-	// TODO
+	initEnv()
+	var className string
+	var object types.M
+	var query types.M
+	var options types.M
+	var err error
+	var expect error
+	/*************************************************/
+	className = "user"
+	object = types.M{}
+	query = types.M{}
+	options = types.M{}
+	err = TomatoDBController.ValidateObject(className, object, query, options)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"addField": types.M{"role:1001": true},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	className = "user"
+	object = types.M{"key1": "hello"}
+	query = types.M{}
+	options = types.M{}
+	err = TomatoDBController.ValidateObject(className, object, query, options)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"addField": types.M{"role:1001": true},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	className = "user"
+	object = types.M{"key1": "hello"}
+	query = types.M{}
+	options = types.M{
+		"acl": []string{"2001"},
+	}
+	err = TomatoDBController.ValidateObject(className, object, query, options)
+	expect = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"addField": types.M{"role:1001": true},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	className = "user"
+	object = types.M{"key1": "hello"}
+	query = types.M{}
+	options = types.M{
+		"acl": []string{"role:1001"},
+	}
+	err = TomatoDBController.ValidateObject(className, object, query, options)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
 }
 
 func Test_LoadSchema(t *testing.T) {
@@ -233,7 +317,7 @@ func Test_LoadSchema(t *testing.T) {
 }
 
 func Test_DeleteEverything(t *testing.T) {
-	// TODO
+	// 测试用例与 Adapter.DeleteAllClasses 类似
 }
 
 func Test_RedirectClassNameForKey(t *testing.T) {

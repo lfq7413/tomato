@@ -62,6 +62,9 @@ func (m *MongoSchemaCollection) findAndDeleteSchema(name string) (types.M, error
 	selector := mongoSchemaQueryFromNameQuery(name, nil)
 	info, err := m.collection.collection.Find(selector).Apply(change, &result)
 	if err != nil {
+		if err.Error() == "not found" {
+			return types.M{}, nil
+		}
 		return nil, err
 	}
 	if info.Removed == 0 {

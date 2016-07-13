@@ -1503,7 +1503,108 @@ func Test_owningIds(t *testing.T) {
 }
 
 func Test_DeleteSchema(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var className string
+	var err error
+	var expectErr error
+	/*************************************************/
+	className = "user"
+	err = TomatoDBController.DeleteSchema(className)
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{"key": "hello"}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	err = TomatoDBController.DeleteSchema(className)
+	expectErr = errs.E(errs.ClassNotEmpty, "Class user is not empty, contains 1 objects, cannot drop schema.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{"key": "hello"}
+	Adapter.CreateObject(className, types.M{}, object)
+	Adapter.DeleteObjectsByQuery(className, types.M{}, types.M{"key": "hello"})
+	className = "user"
+	err = TomatoDBController.DeleteSchema(className)
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	if Adapter.ClassExists(className) == true {
+		t.Error("expect:", false, "result:", true)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	object = types.M{"key": "hello"}
+	Adapter.CreateObject(className, types.M{}, object)
+	Adapter.DeleteObjectsByQuery(className, types.M{}, types.M{"key": "hello"})
+	className = "user"
+	err = TomatoDBController.DeleteSchema(className)
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	if Adapter.ClassExists(className) == true {
+		t.Error("expect:", false, "result:", true)
+	}
+	object, err = Adapter.GetClass(className)
+	if err != nil || (object != nil && len(object) != 0) {
+		t.Error("expect:", nil, "result:", object, err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+			"key1": types.M{
+				"type":        "Relation",
+				"targetClass": "post",
+			},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	object = types.M{"key": "hello"}
+	Adapter.CreateObject(className, types.M{}, object)
+	Adapter.DeleteObjectsByQuery(className, types.M{}, types.M{"key": "hello"})
+	object = types.M{
+		"_id":       "01",
+		"relatedId": "2001",
+		"owningId":  "1001",
+	}
+	Adapter.CreateObject("_Join:key1:user", types.M{}, object)
+	className = "user"
+	err = TomatoDBController.DeleteSchema(className)
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	if Adapter.ClassExists(className) == true {
+		t.Error("expect:", false, "result:", true)
+	}
+	object, err = Adapter.GetClass(className)
+	if err != nil || (object != nil && len(object) != 0) {
+		t.Error("expect:", nil, "result:", object, err)
+	}
+	if Adapter.ClassExists("_Join:key1:user") == true {
+		t.Error("expect:", false, "result:", true)
+	}
+	TomatoDBController.DeleteEverything()
 }
 
 func Test_addPointerPermissions(t *testing.T) {

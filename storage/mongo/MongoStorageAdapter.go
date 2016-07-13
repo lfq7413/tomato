@@ -115,6 +115,7 @@ func (m *MongoAdapter) AddFieldIfNotExists(className, fieldName string, fieldTyp
 func (m *MongoAdapter) DeleteClass(className string) (types.M, error) {
 	coll := m.adaptiveCollection(className)
 	err := coll.drop()
+	m.collectionList = m.getCollectionNames()
 	if err != nil {
 		if err.Error() == "ns not found" {
 			return nil, nil

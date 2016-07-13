@@ -458,6 +458,9 @@ func (d *DBController) validateClassName(className string) error {
 
 // handleRelationUpdates 处理 Relation 相关操作
 func (d *DBController) handleRelationUpdates(className, objectID string, update types.M) error {
+	if update == nil {
+		return nil
+	}
 	objID := objectID
 	if utils.S(update["objectId"]) != "" {
 		objID = utils.S(update["objectId"])
@@ -490,32 +493,42 @@ func (d *DBController) handleRelationUpdates(className, objectID string, update 
 		if p == "AddRelation" {
 			delete(update, key)
 			// 添加 Relation 对象
-			objects := utils.A(opMap["objects"])
-			for _, object := range objects {
-				relationID := utils.S(utils.M(object)["objectId"])
-				err := d.addRelation(key, className, objID, relationID)
-				if err != nil {
-					return err
+			if objects := utils.A(opMap["objects"]); objects != nil {
+				for _, object := range objects {
+					if obj := utils.M(object); obj != nil {
+						if relationID := utils.S(obj["objectId"]); relationID != "" {
+							err := d.addRelation(key, className, objID, relationID)
+							if err != nil {
+								return err
+							}
+						}
+					}
 				}
 			}
 		} else if p == "RemoveRelation" {
 			delete(update, key)
 			// 删除 Relation 对象
-			objects := utils.A(opMap["objects"])
-			for _, object := range objects {
-				relationID := utils.S(utils.M(object)["objectId"])
-				err := d.removeRelation(key, className, objID, relationID)
-				if err != nil {
-					return err
+			if objects := utils.A(opMap["objects"]); objects != nil {
+				for _, object := range objects {
+					if obj := utils.M(object); obj != nil {
+						if relationID := utils.S(obj["objectId"]); relationID != "" {
+							err := d.removeRelation(key, className, objID, relationID)
+							if err != nil {
+								return err
+							}
+						}
+					}
 				}
 			}
 		} else if p == "Batch" {
+			delete(update, key)
 			// 批处理 Relation 对象
-			ops := utils.A(opMap["ops"])
-			for _, x := range ops {
-				err := process(x, key)
-				if err != nil {
-					return err
+			if ops := utils.A(opMap["ops"]); ops != nil {
+				for _, x := range ops {
+					err := process(x, key)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}

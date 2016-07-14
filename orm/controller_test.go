@@ -39,7 +39,39 @@ func Test_CollectionExists(t *testing.T) {
 }
 
 func Test_PurgeCollection(t *testing.T) {
-	// TODO
+	initEnv()
+	var object types.M
+	var className string
+	var err error
+	var expect error
+	var resluts []types.M
+	var expects []types.M
+	/*************************************************/
+	className = "user"
+	err = TomatoDBController.PurgeCollection(className)
+	expect = errs.E(errs.ObjectNotFound, "Object not found.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{"key": "001"}
+	Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{"key": "002"}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	err = TomatoDBController.PurgeCollection(className)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	resluts, err = Adapter.Find(className, types.M{}, types.M{}, types.M{})
+	expects = []types.M{}
+	if reflect.DeepEqual(expects, resluts) == false {
+		t.Error("expect:", expects, "result:", resluts)
+	}
+	TomatoDBController.DeleteEverything()
 }
 
 func Test_Find(t *testing.T) {

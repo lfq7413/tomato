@@ -87,6 +87,23 @@ func Test_Update(t *testing.T) {
 }
 
 func Test_Create(t *testing.T) {
+	initEnv()
+	var className string
+	var object types.M
+	var options types.M
+	var err error
+	var expectErr error
+	/*************************************************/
+	className = "user"
+	object = nil
+	options = nil
+	err = TomatoDBController.Create(className, object, options)
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+
 	// TODO
 }
 

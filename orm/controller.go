@@ -389,15 +389,23 @@ func (d *DBController) Create(className string, object, options types.M) error {
 	if options == nil {
 		options = types.M{}
 	}
+	if object == nil {
+		object = types.M{}
+	}
+
 	object = transformObjectACL(object)
 
-	object["createdAt"] = types.M{
-		"__type": "Date",
-		"iso":    object["createdAt"],
+	if v, ok := object["createdAt"]; ok {
+		object["createdAt"] = types.M{
+			"__type": "Date",
+			"iso":    v,
+		}
 	}
-	object["updatedAt"] = types.M{
-		"__type": "Date",
-		"iso":    object["updatedAt"],
+	if v, ok := object["updatedAt"]; ok {
+		object["updatedAt"] = types.M{
+			"__type": "Date",
+			"iso":    v,
+		}
 	}
 
 	isMaster := false

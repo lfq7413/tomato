@@ -250,6 +250,12 @@ var specialKeysForUpdate = []string{"_hashed_password", "_perishable_token", "_e
 // options 中的参数包括：acl、many、upsert
 // skipSanitization 默认为 false
 func (d *DBController) Update(className string, query, update, options types.M, skipSanitization bool) (types.M, error) {
+	if query == nil {
+		return types.M{}, nil
+	}
+	if update == nil {
+		update = types.M{}
+	}
 	if options == nil {
 		options = types.M{}
 	}
@@ -257,8 +263,14 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 	// 复制数据，不要修改原数据
 	update = utils.CopyMap(update)
 
-	many := options["many"].(bool)
-	upsert := options["upsert"].(bool)
+	var many bool
+	if v, ok := options["many"].(bool); ok {
+		many = v
+	}
+	var upsert bool
+	if v, ok := options["upsert"].(bool); ok {
+		upsert = v
+	}
 
 	isMaster := false
 	aclGroup := []string{}
@@ -324,7 +336,7 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 			}
 		}
 
-		if updateOperation, ok := v.(map[string]interface{}); ok {
+		if updateOperation := utils.M(v); updateOperation != nil {
 			for innerKey := range updateOperation {
 				if strings.Index(innerKey, "$") > -1 || strings.Index(innerKey, ".") > -1 {
 					return nil, errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")

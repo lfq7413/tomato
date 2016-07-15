@@ -184,6 +184,12 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 
 // Destroy 从指定表中删除数据
 func (d *DBController) Destroy(className string, query types.M, options types.M) error {
+	if query == nil {
+		query = types.M{}
+	}
+	if options == nil {
+		options = types.M{}
+	}
 	isMaster := false
 	aclGroup := []string{}
 	if acl, ok := options["acl"]; ok {
@@ -197,7 +203,9 @@ func (d *DBController) Destroy(className string, query types.M, options types.M)
 	schema := d.LoadSchema()
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "delete")
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	if isMaster == false {

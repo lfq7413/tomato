@@ -485,6 +485,7 @@ func (d *DBController) validateClassName(className string) error {
 }
 
 // handleRelationUpdates 处理 Relation 相关操作
+// TODO 修改 handleRelationUpdates 调用时机：在 update 或 create 成功之后再调用
 func (d *DBController) handleRelationUpdates(className, objectID string, update types.M) error {
 	if update == nil {
 		return nil

@@ -333,6 +333,71 @@ func Test_Destroy(t *testing.T) {
 }
 
 func Test_Update(t *testing.T) {
+	initEnv()
+	var object types.M
+	var className string
+	var query types.M
+	var update types.M
+	var options types.M
+	var skipSanitization bool
+	var result types.M
+	var err error
+	var expect types.M
+	var results []types.M
+	var expects []types.M
+	/*************************************************/
+	className = "user"
+	query = nil
+	update = nil
+	options = nil
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	query = types.M{}
+	update = nil
+	options = nil
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{}
+	update = types.M{"key": "haha"}
+	options = nil
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = Adapter.Find(className, types.M{}, types.M{}, types.M{})
+	expects = []types.M{
+		types.M{
+			"objectId": "01",
+			"key":      "haha",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expects, results) == false {
+		t.Error("expect:", expects, "result:", results, err)
+	}
+	TomatoDBController.DeleteEverything()
+
 	// TODO
 }
 

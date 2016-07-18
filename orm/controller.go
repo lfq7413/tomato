@@ -368,7 +368,8 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 		}
 	}
 
-	if result == nil {
+	// 不处理 many 、 upsert 时的操作结果，仅处理 FindOneAndUpdate 的结果
+	if many == false && upsert == false && len(result) == 0 {
 		return nil, errs.E(errs.ObjectNotFound, "Object not found.")
 	}
 
@@ -395,7 +396,9 @@ func sanitizeDatabaseResult(originalObject, result types.M) types.M {
 			if op := utils.S(keyUpdate["__op"]); op != "" {
 				if op == "Add" || op == "AddUnique" || op == "Remove" || op == "Increment" {
 					// 只把操作的字段放入返回结果中
-					response[key] = result[key]
+					if v, ok := result[key]; ok {
+						response[key] = v
+					}
 				}
 			}
 		}

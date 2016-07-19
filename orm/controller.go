@@ -90,8 +90,7 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 		parseFormatSchema["fields"] = types.M{}
 	}
 
-	if options["sort"] != nil {
-		keys := options["sort"].([]string)
+	if keys, ok := options["sort"].([]string); ok {
 		for i, key := range keys {
 			// sort 中的 key ，如果是要按倒序排列，则会加前缀 "-" ，所以要对其进行处理
 			var prefix string
@@ -106,12 +105,12 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 				key = "updatedAt"
 			}
 
-			if fieldNameIsValid(key) == false {
-				return nil, errs.E(errs.InvalidKeyName, "Invalid field name: "+key)
-			}
-
 			if match, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key); match {
 				return nil, errs.E(errs.InvalidKeyName, "Cannot sort by "+key)
+			}
+
+			if fieldNameIsValid(key) == false {
+				return nil, errs.E(errs.InvalidKeyName, "Invalid field name: "+key)
 			}
 
 			keys[i] = prefix + key
@@ -138,6 +137,10 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 	if query == nil {
 		if op == "get" {
 			return nil, errs.E(errs.ObjectNotFound, "Object not found.")
+		}
+		// 如果需要计算 count ，则默认返回  0
+		if options["count"] != nil {
+			return types.S{0}, nil
 		}
 		return types.S{}, nil
 	}

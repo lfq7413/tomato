@@ -841,8 +841,341 @@ func Test_Update(t *testing.T) {
 		}
 	}
 	TomatoDBController.DeleteEverything()
-
-	// TODO
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"key2":     10,
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{"objectId": "01"}
+	update = types.M{
+		"key": "haha",
+		"key2": types.M{
+			"__op":   "Increment",
+			"amount": 10,
+		},
+	}
+	options = nil
+	skipSanitization = true
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{
+		"_id":  "01",
+		"key":  "haha",
+		"key2": 20,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = Adapter.Find(className, types.M{}, types.M{}, types.M{})
+	expects = []types.M{
+		types.M{
+			"objectId": "01",
+			"key":      "haha",
+			"key2":     20,
+		},
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expects, "result:", results, err)
+	} else {
+		if reflect.DeepEqual(expects, results) == false {
+			t.Error("expect:", expects, "result:", results, err)
+		}
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{"objectId": "01"}
+	update = types.M{
+		"key": "haha",
+	}
+	options = types.M{
+		"acl": []string{"role:1024"},
+	}
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = Adapter.Find(className, types.M{}, types.M{}, types.M{})
+	expects = []types.M{
+		types.M{
+			"objectId": "01",
+			"key":      "haha",
+		},
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expects, "result:", results, err)
+	} else {
+		if reflect.DeepEqual(expects, results) == false {
+			t.Error("expect:", expects, "result:", results, err)
+		}
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": "String",
+		},
+		"classLevelPermissions": types.M{
+			"update": types.M{"role:1024": true},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{"objectId": "01"}
+	update = types.M{
+		"key": "haha",
+	}
+	options = types.M{
+		"acl": []string{"role:1024"},
+	}
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = Adapter.Find(className, types.M{}, types.M{}, types.M{})
+	expects = []types.M{
+		types.M{
+			"objectId": "01",
+			"key":      "haha",
+		},
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expects, "result:", results, err)
+	} else {
+		if reflect.DeepEqual(expects, results) == false {
+			t.Error("expect:", expects, "result:", results, err)
+		}
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": "String",
+		},
+		"classLevelPermissions": types.M{
+			"update": types.M{"role:2048": true},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{"objectId": "01"}
+	update = types.M{
+		"key": "haha",
+	}
+	options = types.M{
+		"acl": []string{"role:1024"},
+	}
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expectErr = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"update":          types.M{"role:1024": true},
+			"writeUserFields": types.S{"key2"},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"key2": types.M{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  "123456789012345678901234",
+		},
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{"objectId": "01"}
+	update = types.M{
+		"key": "haha",
+	}
+	options = types.M{
+		"acl": []string{"role:2048", "123456789012345678901234"},
+	}
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = Adapter.Find(className, types.M{}, types.M{}, types.M{})
+	expects = []types.M{
+		types.M{
+			"objectId": "01",
+			"key":      "haha",
+		},
+	}
+	if err != nil || len(results) != 1 {
+		t.Error("expect:", expects, "result:", results, err)
+	} else {
+		if reflect.DeepEqual(expects, results) == false {
+			t.Error("expect:", expects, "result:", results, err)
+		}
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"update":          types.M{"role:1024": true},
+			"writeUserFields": types.S{"key2"},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"key2": types.M{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  "123456789012345678901234",
+		},
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{"objectId": "01"}
+	update = types.M{
+		"key": "haha",
+	}
+	options = types.M{
+		"acl": []string{"role:2048"},
+	}
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+		"classLevelPermissions": types.M{
+			"update":          types.M{"role:1024": true},
+			"writeUserFields": types.S{"key2"},
+		},
+	}
+	Adapter.CreateClass(className, object)
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"key2": types.M{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  "123456789012345678901234",
+		},
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{"objectId": "01"}
+	update = types.M{
+		"key": "haha",
+	}
+	options = types.M{
+		"acl": []string{"role:2048", "123456789012345678900000"},
+	}
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expectErr = errs.E(errs.ObjectNotFound, "Object not found.")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	TomatoDBController.DeleteEverything()
+	/*************************************************/
+	className = "user"
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"_wperm":   types.S{"role:2048"},
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+		"_wperm":   types.S{"role:1024"},
+	}
+	Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	query = types.M{"objectId": "01"}
+	update = types.M{
+		"key": "haha",
+	}
+	options = types.M{
+		"acl": []string{"role:2048", "123456789012345678901234"},
+	}
+	skipSanitization = false
+	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	results, err = Adapter.Find(className, types.M{}, types.M{}, types.M{})
+	expects = []types.M{
+		types.M{
+			"objectId": "01",
+			"key":      "haha",
+			"_wperm":   []interface{}{"role:2048"},
+		},
+		types.M{
+			"objectId": "02",
+			"key":      "hello",
+			"_wperm":   []interface{}{"role:1024"},
+		},
+	}
+	if err != nil || len(results) != 2 {
+		t.Error("expect:", expects, "result:", results, err)
+	} else {
+		if reflect.DeepEqual(expects, results) == false {
+			t.Error("expect:", expects, "result:", results, err)
+		}
+	}
+	TomatoDBController.DeleteEverything()
 }
 
 func Test_Create(t *testing.T) {

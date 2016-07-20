@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
@@ -47,7 +48,7 @@ func (d *Destroy) handleSession() error {
 	}
 	sessionToken := d.originalData["sessionToken"]
 	if sessionToken != nil {
-		usersCache.remove(d.originalData["sessionToken"].(string))
+		cache.User.Del(d.originalData["sessionToken"].(string))
 	}
 
 	return nil

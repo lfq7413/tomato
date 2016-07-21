@@ -2,6 +2,7 @@ package client
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -85,24 +86,58 @@ func satisfies(clientVersion, compatiblityVersion string) bool {
 	// 比较版本号
 	switch option {
 	case ">=":
+		return greater(clientVersionList, compatiblityVersionList, length) || equal(clientVersionList, compatiblityVersionList, length)
 	case "<=":
+		return less(clientVersionList, compatiblityVersionList, length) || equal(clientVersionList, compatiblityVersionList, length)
 	case ">":
+		return greater(clientVersionList, compatiblityVersionList, length)
 	case "<":
+		return less(clientVersionList, compatiblityVersionList, length)
 	case "=":
+		return equal(clientVersionList, compatiblityVersionList, length)
 	case "":
-
+		return equal(clientVersionList, compatiblityVersionList, length)
 	}
 	return false
 }
 
-func greater() {
-
+func greater(clientVersionList, compatiblityVersionList []string, length int) bool {
+	for i := 0; i < length; i++ {
+		if toInt(clientVersionList[i]) > toInt(compatiblityVersionList[i]) {
+			return true
+		}
+		if toInt(clientVersionList[i]) < toInt(compatiblityVersionList[i]) {
+			return false
+		}
+	}
+	return false
 }
 
-func less() {
-
+func less(clientVersionList, compatiblityVersionList []string, length int) bool {
+	for i := 0; i < length; i++ {
+		if toInt(clientVersionList[i]) < toInt(compatiblityVersionList[i]) {
+			return true
+		}
+		if toInt(clientVersionList[i]) > toInt(compatiblityVersionList[i]) {
+			return false
+		}
+	}
+	return false
 }
 
-func equal() {
+func equal(clientVersionList, compatiblityVersionList []string, length int) bool {
+	for i := 0; i < length; i++ {
+		if toInt(clientVersionList[i]) != toInt(compatiblityVersionList[i]) {
+			return false
+		}
+	}
+	return true
+}
 
+func toInt(s string) int {
+	i, err := strconv.ParseInt(s, 10, 0)
+	if err != nil {
+		return 0
+	}
+	return int(i)
 }

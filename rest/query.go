@@ -659,14 +659,14 @@ func findPointers(object interface{}, path []string) (types.S, error) {
 	// 如果不能转成 map ，则返回错误
 	obj := utils.M(object)
 	if obj == nil {
-		return nil, errs.E(errs.InvalidJSON, "can only include pointer fields")
+		return types.S{}, nil
 	}
 	// 如果当前是路径最后一个节点，判断是否为 Pointer
 	if len(path) == 0 {
 		if obj["__type"] == "Pointer" {
 			return types.S{obj}, nil
 		}
-		return nil, errs.E(errs.InvalidJSON, "can only include pointer fields")
+		return types.S{}, nil
 	}
 	// 取出下一个路径对应的对象，进行查找
 	subobject := obj[path[0]]

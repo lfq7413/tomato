@@ -471,14 +471,47 @@ func (w *Write) handleAuthData(authData types.M) error {
 	if results != nil || len(results) > 0 {
 		if w.query == nil {
 			// 存在一个用户，并且是 create 请求时，进行登录
-			user := utils.M(results[0])
-			delete(user, "password")
+			userResult := utils.M(results[0])
+			delete(userResult, "password")
+
 			// 在 location() 之前设置 objectId，否则 w.data["objectId"] 可能为空
-			w.data["objectId"] = user["objectId"]
+			w.data["objectId"] = userResult["objectId"]
+
+			// 检测 authData 是否需要更新
+			mutatedAuthData := types.M{}
+			for provider, providerData := range authData {
+				if auth := utils.M(userResult["authData"]); auth != nil {
+					userAuthData := auth[provider]
+					if reflect.DeepEqual(providerData, userAuthData) == false {
+						mutatedAuthData[provider] = providerData
+					}
+				} else {
+					mutatedAuthData[provider] = providerData
+				}
+			}
+
 			w.response = types.M{
-				"response": user,
+				"response": userResult,
 				"location": w.location(),
 			}
+
+			// 当第三方登录信息中的 token 刷新时，就需要更新 authData
+			if len(mutatedAuthData) > 0 {
+				// 添加新的 authData 到返回数据中
+				userAuthData := utils.M(userResult["authData"])
+				if userAuthData == nil {
+					userAuthData = types.M{}
+				}
+				for provider, providerData := range mutatedAuthData {
+					userAuthData[provider] = providerData
+				}
+				userResult["authData"] = userAuthData
+				w.response["response"] = userResult
+
+				// 更新数据库中的 authData 字段
+				orm.TomatoDBController.Update(w.className, types.M{"objectId": w.data["objectId"]}, types.M{"authData": mutatedAuthData}, types.M{}, false)
+			}
+
 		} else if w.query != nil && w.query["objectId"] != nil {
 			// 存在一个用户，并且当前为 update 请求，校验 objectId 是否一致
 			user := utils.M(results[0])

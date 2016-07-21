@@ -47,6 +47,19 @@ func (l *LoginController) HandleLogIn() {
 	}
 	user := utils.M(results[0])
 
+	var emailVerified bool
+	if _, ok := user["emailVerified"]; ok {
+		if v, ok := user["emailVerified"].(bool); ok {
+			emailVerified = v
+		}
+	}
+	if config.TConfig.VerifyUserEmails && config.TConfig.PreventLoginWithUnverifiedEmail && emailVerified == false {
+		// 拒绝未验证邮箱的用户登录
+		l.Data["json"] = errs.ErrorMessageToMap(errs.EmailNotFound, "User email is not verified.")
+		l.ServeJSON()
+		return
+	}
+
 	// TODO 换用高强度的加密方式
 	correct := utils.Compare(password, utils.S(user["password"]))
 	if correct == false {

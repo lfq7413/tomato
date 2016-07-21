@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/base64"
 	"encoding/json"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -39,6 +40,8 @@ type RequestInfo struct {
 	ClientKey      string
 	SessionToken   string
 	InstallationID string
+	ClientVersion  string
+	ClientSDK      map[string]string
 }
 
 // Prepare 对请求权限进行处理
@@ -54,6 +57,7 @@ func (o *ObjectsController) Prepare() {
 	info.ClientKey = o.Ctx.Input.Header("X-Parse-Client-Key")
 	info.SessionToken = o.Ctx.Input.Header("X-Parse-Session-Token")
 	info.InstallationID = o.Ctx.Input.Header("X-Parse-Installation-Id")
+	info.ClientVersion = o.Ctx.Input.Header("X-Parse-Client-Version")
 
 	basicAuth := httpAuth(o.Ctx.Input.Header("authorization"))
 	if basicAuth != nil {
@@ -134,6 +138,10 @@ func (o *ObjectsController) Prepare() {
 			o.ServeJSON()
 			return
 		}
+	}
+
+	if info.ClientVersion != "" {
+		info.ClientSDK = clientSDKFromVersion(info.ClientVersion)
 	}
 
 	if o.JSONBody != nil && o.JSONBody["base64"] != nil {
@@ -225,6 +233,22 @@ func decodeBase64(str string) string {
 		return ""
 	}
 	return string(data)
+}
+
+func clientSDKFromVersion(version string) map[string]string {
+	versionRE := `([-a-zA-Z]+)([0-9\.]+)`
+	re := regexp.MustCompile(versionRE)
+	match := re.FindStringSubmatch(strings.ToLower(version))
+	if match != nil && len(match) == 3 {
+		return map[string]string{
+			"sdk":     match[1],
+			"version": match[2],
+		}
+	}
+	return map[string]string{
+		"sdk":     "",
+		"version": "",
+	}
 }
 
 // HandleCreate 处理对象创建请求，返回对象 id 与对象位置

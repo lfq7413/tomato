@@ -253,9 +253,10 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 		return "$and", querys, nil
 
 	default:
-		authDataMatch, _ := regexp.MatchString(`^authData\.([a-zA-Z0-9_]+)\.id$`, key)
-		if authDataMatch {
-			provider := key[len("authData."):(len(key) - len(".id"))]
+		re := regexp.MustCompile(`^authData\.([a-zA-Z0-9_]+)\.id$`)
+		authDataMatch := re.FindStringSubmatch(key)
+		if authDataMatch != nil && len(authDataMatch) == 2 {
+			provider := authDataMatch[1]
 			return "_auth_data_" + provider + ".id", value, nil
 		}
 

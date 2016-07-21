@@ -419,7 +419,7 @@ func Test_DeleteAllClasses(t *testing.T) {
 	}
 	names = adapter.getCollectionNames()
 	if names != nil && len(names) != 0 {
-		t.Error("expect:", 0, "result:", len(names))
+		t.Error("expect:", 0, "result:", names)
 	}
 	/*****************************************************/
 	adapter.adaptiveCollection("user").insertOne(types.M{"_id": "01"})
@@ -430,7 +430,7 @@ func Test_DeleteAllClasses(t *testing.T) {
 	}
 	names = adapter.getCollectionNames()
 	if names != nil && len(names) != 0 {
-		t.Error("expect:", 0, "result:", len(names))
+		t.Error("expect:", 0, "result:", names)
 	}
 }
 

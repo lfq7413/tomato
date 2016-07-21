@@ -172,8 +172,8 @@ func Test_findAndDeleteSchema(t *testing.T) {
 	msc.addSchema(name, fields, classLevelPermissions)
 	name = "user2"
 	result, err = msc.findAndDeleteSchema(name)
-	expect = nil
-	if err == nil || reflect.DeepEqual(expect, result) == false {
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	}
 	results, err = msc.collection.find(types.M{"_id": "user2"}, types.M{})

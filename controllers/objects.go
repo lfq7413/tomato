@@ -3,11 +3,11 @@ package controllers
 import (
 	"encoding/base64"
 	"encoding/json"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/astaxie/beego"
+	"github.com/lfq7413/tomato/client"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
@@ -141,7 +141,7 @@ func (o *ObjectsController) Prepare() {
 	}
 
 	if info.ClientVersion != "" {
-		info.ClientSDK = clientSDKFromVersion(info.ClientVersion)
+		info.ClientSDK = client.FromString(info.ClientVersion)
 	}
 
 	if o.JSONBody != nil && o.JSONBody["base64"] != nil {
@@ -233,22 +233,6 @@ func decodeBase64(str string) string {
 		return ""
 	}
 	return string(data)
-}
-
-func clientSDKFromVersion(version string) map[string]string {
-	versionRE := `([-a-zA-Z]+)([0-9\.]+)`
-	re := regexp.MustCompile(versionRE)
-	match := re.FindStringSubmatch(strings.ToLower(version))
-	if match != nil && len(match) == 3 {
-		return map[string]string{
-			"sdk":     match[1],
-			"version": match[2],
-		}
-	}
-	return map[string]string{
-		"sdk":     "",
-		"version": "",
-	}
 }
 
 // HandleCreate 处理对象创建请求，返回对象 id 与对象位置

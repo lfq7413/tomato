@@ -8,6 +8,7 @@ import (
 
 	"github.com/lfq7413/tomato/authdatamanager"
 	"github.com/lfq7413/tomato/cache"
+	"github.com/lfq7413/tomato/client"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
@@ -793,11 +794,7 @@ func (w *Write) runDatabaseOperation() error {
 
 		// 如果回调函数修改过数据，把 w.data 中存在但 response 中不存在的字段复制到返回结果中
 		if w.storage["changedByTrigger"] != nil {
-			for k, v := range w.data {
-				if response[k] == nil {
-					response[k] = v
-				}
-			}
+			w.updateResponseWithData(response, w.data)
 		}
 
 		w.response = types.M{
@@ -870,11 +867,7 @@ func (w *Write) runDatabaseOperation() error {
 		}
 		// 如果回调函数修改过数据，则将其复制到返回结果中
 		if w.storage["changedByTrigger"] != nil {
-			for k, v := range w.data {
-				if response[k] == nil {
-					response[k] = v
-				}
-			}
+			w.updateResponseWithData(response, w.data)
 		}
 		w.response = types.M{
 			"status":   201,
@@ -1054,4 +1047,31 @@ func (w *Write) cleanUserAuthData() {
 			}
 		}
 	}
+}
+
+func (w *Write) updateResponseWithData(response, data types.M) types.M {
+	clientSupportsDelete := client.SupportsForwardDelete(w.clientSDK)
+	for fieldName := range data {
+		dataValue := data[fieldName]
+		responseValue := response[fieldName]
+
+		if responseValue != nil {
+			response[fieldName] = responseValue
+		} else {
+			response[fieldName] = dataValue
+		}
+
+		// 删除 __op 操作符
+		if utils.M(response[fieldName]) != nil && utils.M(response[fieldName])["__op"] != nil {
+			delete(response, fieldName)
+			if v := utils.M(dataValue); v != nil {
+				if clientSupportsDelete && utils.S(v["__op"]) == "Delete" {
+					response[fieldName] = dataValue
+				}
+			}
+		}
+
+	}
+
+	return response
 }

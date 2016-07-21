@@ -668,8 +668,9 @@ func (w *Write) transformUser() error {
 
 	} else {
 		if w.query != nil && w.auth.IsMaster == false {
-			// 如果是 update 请求时，标识出需要清理 Sessions
+			// 如果是 update 请求时，标识出需要清理 Sessions ，并生成新的 Session
 			w.storage["clearSessions"] = true
+			w.storage["generateNewSession"] = true
 		}
 		w.data["_hashed_password"] = utils.Hash(utils.S(w.data["password"]))
 		delete(w.data, "password")
@@ -893,6 +894,11 @@ func (w *Write) createSessionTokenIfNeeded() error {
 	if w.query != nil {
 		return nil
 	}
+	return w.createSessionToken()
+}
+
+// createSessionToken 创建 Token
+func (w *Write) createSessionToken() error {
 	token := "r:" + utils.CreateToken()
 	expiresAt := config.GenerateSessionExpiresAt()
 	user := types.M{
@@ -946,6 +952,14 @@ func (w *Write) handleFollowup() error {
 		}
 		delete(w.storage, "clearSessions")
 		err := orm.TomatoDBController.Destroy("_Session", sessionQuery, types.M{})
+		if err != nil {
+			return err
+		}
+	}
+
+	if w.storage != nil && w.storage["generateNewSession"] != nil {
+		delete(w.storage, "generateNewSession")
+		err := w.createSessionToken()
 		if err != nil {
 			return err
 		}

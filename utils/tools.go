@@ -32,7 +32,13 @@ func DeepCopy(i interface{}) interface{} {
 	if s, ok := i.([]interface{}); ok {
 		return CopySlice(s)
 	}
+	if s, ok := i.(types.S); ok {
+		return CopySlice(s)
+	}
 	if m, ok := i.(map[string]interface{}); ok {
+		return CopyMap(m)
+	}
+	if m, ok := i.(types.M); ok {
 		return CopyMap(m)
 	}
 	return i

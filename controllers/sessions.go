@@ -66,7 +66,7 @@ func (s *SessionsController) HandleGetMe() {
 	where := types.M{
 		"sessionToken": s.Info.SessionToken,
 	}
-	response, err := rest.Find(rest.Master(), "_Session", where, types.M{})
+	response, err := rest.Find(rest.Master(), "_Session", where, types.M{}, s.Info.ClientSDK)
 	if err != nil {
 		s.Data["json"] = errs.ErrorToMap(err)
 		s.ServeJSON()

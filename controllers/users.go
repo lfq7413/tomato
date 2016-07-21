@@ -77,7 +77,7 @@ func (u *UsersController) HandleMe() {
 	option := types.M{
 		"include": "user",
 	}
-	response, err := rest.Find(rest.Master(), "_Session", where, option)
+	response, err := rest.Find(rest.Master(), "_Session", where, option, u.Info.ClientSDK)
 
 	if err != nil {
 		u.Data["json"] = errs.ErrorToMap(err)

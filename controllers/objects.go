@@ -265,7 +265,7 @@ func (o *ObjectsController) HandleCreate() {
 		return
 	}
 
-	result, err := rest.Create(o.Auth, o.ClassName, o.JSONBody)
+	result, err := rest.Create(o.Auth, o.ClassName, o.JSONBody, o.Info.ClientSDK)
 	if err != nil {
 		o.Data["json"] = errs.ErrorToMap(err)
 		o.ServeJSON()
@@ -295,7 +295,7 @@ func (o *ObjectsController) HandleGet() {
 	if o.GetString("include") != "" {
 		options["include"] = o.GetString("include")
 	}
-	response, err := rest.Get(o.Auth, o.ClassName, o.ObjectID, options)
+	response, err := rest.Get(o.Auth, o.ClassName, o.ObjectID, options, o.Info.ClientSDK)
 
 	if err != nil {
 		o.Data["json"] = errs.ErrorToMap(err)
@@ -342,7 +342,7 @@ func (o *ObjectsController) HandleUpdate() {
 		return
 	}
 
-	result, err := rest.Update(o.Auth, o.ClassName, o.ObjectID, o.JSONBody)
+	result, err := rest.Update(o.Auth, o.ClassName, o.ObjectID, o.JSONBody, o.Info.ClientSDK)
 	if err != nil {
 		o.Data["json"] = errs.ErrorToMap(err)
 		o.ServeJSON()
@@ -409,7 +409,7 @@ func (o *ObjectsController) HandleFind() {
 		}
 	}
 
-	response, err := rest.Find(o.Auth, o.ClassName, where, options)
+	response, err := rest.Find(o.Auth, o.ClassName, where, options, o.Info.ClientSDK)
 	if err != nil {
 		o.Data["json"] = errs.ErrorToMap(err)
 		o.ServeJSON()
@@ -440,7 +440,7 @@ func (o *ObjectsController) HandleDelete() {
 		o.ObjectID = o.Ctx.Input.Param(":objectId")
 	}
 
-	err := rest.Delete(o.Auth, o.ClassName, o.ObjectID)
+	err := rest.Delete(o.Auth, o.ClassName, o.ObjectID, o.Info.ClientSDK)
 	if err != nil {
 		o.Data["json"] = errs.ErrorToMap(err)
 		o.ServeJSON()

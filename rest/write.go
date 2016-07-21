@@ -28,6 +28,7 @@ type Write struct {
 	response                   types.M
 	updatedAt                  string
 	responseShouldHaveUsername bool
+	clientSDK                  map[string]string
 }
 
 // NewWrite 可用于 create 和 update ， create 时 	query 为 nil
@@ -40,6 +41,7 @@ func NewWrite(
 	query types.M,
 	data types.M,
 	originalData types.M,
+	clientSDK map[string]string,
 ) (*Write, error) {
 	// 当为 create 请求时，写入数据中不应该包含 objectId
 	if query == nil && data["objectId"] != nil {
@@ -58,6 +60,7 @@ func NewWrite(
 		response:                   nil,
 		updatedAt:                  utils.TimetoString(time.Now().UTC()),
 		responseShouldHaveUsername: false,
+		clientSDK:                  clientSDK,
 	}
 	return write, nil
 }
@@ -384,7 +387,7 @@ func (w *Write) handleSession() error {
 			sessionData[k] = v
 		}
 		// 以 Master 权限去创建 session
-		write, err := NewWrite(Master(), "_Session", nil, sessionData, types.M{})
+		write, err := NewWrite(Master(), "_Session", nil, sessionData, types.M{}, w.clientSDK)
 		if err != nil {
 			return err
 		}
@@ -640,7 +643,7 @@ func (w *Write) transformUser() error {
 			"className": "_User",
 			"objectId":  w.objectID(),
 		}
-		query, err := NewQuery(Master(), "_Session", where, types.M{})
+		query, err := NewQuery(Master(), "_Session", where, types.M{}, w.clientSDK)
 		if err != nil {
 			return err
 		}
@@ -920,7 +923,7 @@ func (w *Write) createSessionTokenIfNeeded() error {
 		r["sessionToken"] = token
 	}
 
-	create, err := NewWrite(Master(), "_Session", nil, sessionData, types.M{})
+	create, err := NewWrite(Master(), "_Session", nil, sessionData, types.M{}, w.clientSDK)
 	if err != nil {
 		return err
 	}

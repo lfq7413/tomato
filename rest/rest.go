@@ -15,13 +15,13 @@ import (
 // 	],
 // 	"count":10
 // }
-func Find(auth *Auth, className string, where, options types.M) (types.M, error) {
+func Find(auth *Auth, className string, where, options types.M, clientSDK map[string]string) (types.M, error) {
 
 	err := enforceRoleSecurity("find", className, auth)
 	if err != nil {
 		return nil, err
 	}
-	query, err := NewQuery(auth, className, where, options)
+	query, err := NewQuery(auth, className, where, options, clientSDK)
 	if err != nil {
 		return nil, err
 	}
@@ -30,13 +30,13 @@ func Find(auth *Auth, className string, where, options types.M) (types.M, error)
 }
 
 // Get ...
-func Get(auth *Auth, className, objectID string, options types.M) (types.M, error) {
+func Get(auth *Auth, className, objectID string, options types.M, clientSDK map[string]string) (types.M, error) {
 
 	err := enforceRoleSecurity("get", className, auth)
 	if err != nil {
 		return nil, err
 	}
-	query, err := NewQuery(auth, className, types.M{"objectId": objectID}, options)
+	query, err := NewQuery(auth, className, types.M{"objectId": objectID}, options, clientSDK)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func Get(auth *Auth, className, objectID string, options types.M) (types.M, erro
 }
 
 // Delete 删除指定对象
-func Delete(auth *Auth, className, objectID string) error {
+func Delete(auth *Auth, className, objectID string, clientSDK map[string]string) error {
 
 	if className == "_User" && auth.CouldUpdateUserID(objectID) == false {
 		return errs.E(errs.SessionMissing, "insufficient auth to delete user")
@@ -62,7 +62,7 @@ func Delete(auth *Auth, className, objectID string) error {
 		TriggerExists(TypeAfterDelete, className) ||
 		(config.TConfig.LiveQuery != nil && config.TConfig.LiveQuery.HasLiveQuery(className)) ||
 		className == "_Session" {
-		response, err := Find(auth, className, types.M{"objectId": objectID}, types.M{})
+		response, err := Find(auth, className, types.M{"objectId": objectID}, types.M{}, clientSDK)
 		if err != nil || utils.HasResults(response) == false {
 			return errs.E(errs.ObjectNotFound, "Object not found for delete.")
 		}
@@ -75,7 +75,7 @@ func Delete(auth *Auth, className, objectID string) error {
 		inflatedObject["className"] = className
 	}
 
-	destroy := NewDestroy(auth, className, types.M{"objectId": objectID}, inflatedObject)
+	destroy := NewDestroy(auth, className, types.M{"objectId": objectID}, inflatedObject, clientSDK)
 
 	return destroy.Execute()
 }
@@ -87,13 +87,13 @@ func Delete(auth *Auth, className, objectID string) error {
 // 	"response":{...},
 // 	"location":"http://..."
 // }
-func Create(auth *Auth, className string, object types.M) (types.M, error) {
+func Create(auth *Auth, className string, object types.M, clientSDK map[string]string) (types.M, error) {
 
 	err := enforceRoleSecurity("create", className, auth)
 	if err != nil {
 		return nil, err
 	}
-	write, err := NewWrite(auth, className, nil, object, nil)
+	write, err := NewWrite(auth, className, nil, object, nil, clientSDK)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func Create(auth *Auth, className string, object types.M) (types.M, error) {
 
 // Update 更新对象
 // 返回更新后的字段，一般只有 updatedAt
-func Update(auth *Auth, className, objectID string, object types.M) (types.M, error) {
+func Update(auth *Auth, className, objectID string, object types.M, clientSDK map[string]string) (types.M, error) {
 
 	err := enforceRoleSecurity("update", className, auth)
 	if err != nil {
@@ -118,7 +118,7 @@ func Update(auth *Auth, className, objectID string, object types.M) (types.M, er
 		TriggerExists(TypeAfterSave, className) ||
 		(config.TConfig.LiveQuery != nil && config.TConfig.LiveQuery.HasLiveQuery(className)) {
 
-		response, err = Find(auth, className, types.M{"objectId": objectID}, types.M{})
+		response, err = Find(auth, className, types.M{"objectId": objectID}, types.M{}, clientSDK)
 		if err != nil || utils.HasResults(response) == false {
 			return nil, errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}
@@ -130,7 +130,7 @@ func Update(auth *Auth, className, objectID string, object types.M) (types.M, er
 		}
 	}
 
-	write, err := NewWrite(auth, className, types.M{"objectId": objectID}, object, originalRestObject)
+	write, err := NewWrite(auth, className, types.M{"objectId": objectID}, object, originalRestObject, clientSDK)
 	if err != nil {
 		return nil, err
 	}

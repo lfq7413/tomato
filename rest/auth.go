@@ -50,7 +50,7 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 	}
 
 	sessionErr := errs.E(errs.InvalidSessionToken, "invalid session token")
-	query, err := NewQuery(Master(), "_Session", restWhere, restOptions)
+	query, err := NewQuery(Master(), "_Session", restWhere, restOptions, nil)
 	if err != nil {
 		return nil, sessionErr
 	}
@@ -143,7 +143,7 @@ func (a *Auth) loadRoles() []string {
 	}
 	// 取出当前用户直接对应的所有角色
 	// TODO 处理错误，处理结果大于100的情况
-	query, err := NewQuery(Master(), "_Role", restWhere, types.M{})
+	query, err := NewQuery(Master(), "_Role", restWhere, types.M{}, nil)
 	if err != nil {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
@@ -213,7 +213,7 @@ func (a *Auth) getAllRoleNamesForID(roleIDs, names []string, queriedRoles map[st
 		restWhere["roles"] = types.M{"$in": ins}
 	}
 
-	query, err := NewQuery(Master(), "_Role", restWhere, types.M{})
+	query, err := NewQuery(Master(), "_Role", restWhere, types.M{}, nil)
 	if err != nil {
 		return names
 	}

@@ -70,7 +70,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 
 	if restUpdate != nil && updateWhere != nil {
 		updateWhere["deviceType"] = "ios"
-		restQuery, err := rest.NewQuery(rest.Master(), "_Installation", updateWhere, types.M{})
+		restQuery, err := rest.NewQuery(rest.Master(), "_Installation", updateWhere, types.M{}, nil)
 		if err != nil {
 			status.fail(err)
 			return err
@@ -80,7 +80,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 			status.fail(err)
 			return err
 		}
-		write, err := rest.NewWrite(rest.Master(), "_Installation", restQuery.Where, restUpdate, types.M{})
+		write, err := rest.NewWrite(rest.Master(), "_Installation", restQuery.Where, restUpdate, types.M{}, nil)
 		if err != nil {
 			status.fail(err)
 			return err
@@ -98,7 +98,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 	onPushStatusSaved(status.objectID)
 
 	// TODO 处理结果大于100的情况
-	response, err := rest.Find(auth, "_Installation", where, types.M{})
+	response, err := rest.Find(auth, "_Installation", where, types.M{}, nil)
 	if err != nil {
 		status.fail(err)
 		return err

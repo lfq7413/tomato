@@ -70,7 +70,7 @@ func getUserIfNeeded(user types.M) types.M {
 		where["email"] = user["email"]
 	}
 
-	query, err := NewQuery(Master(), "_User", where, types.M{})
+	query, err := NewQuery(Master(), "_User", where, types.M{}, nil)
 	if err != nil {
 		return nil
 	}
@@ -216,7 +216,7 @@ func UpdatePassword(username, token, newPassword string) error {
 }
 
 func updateUserPassword(userID, password string) error {
-	_, err := Update(Master(), "_User", userID, types.M{"password": password})
+	_, err := Update(Master(), "_User", userID, types.M{"password": password}, nil)
 	if err != nil {
 		return err
 	}

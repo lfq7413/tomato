@@ -25,6 +25,7 @@ type Query struct {
 	keys              []string
 	redirectKey       string
 	redirectClassName string
+	clientSDK         map[string]string
 }
 
 // NewQuery 组装查询对象
@@ -33,6 +34,7 @@ func NewQuery(
 	className string,
 	where types.M,
 	options types.M,
+	clientSDK map[string]string,
 ) (*Query, error) {
 	query := &Query{
 		auth:              auth,
@@ -45,6 +47,7 @@ func NewQuery(
 		keys:              []string{},
 		redirectKey:       "",
 		redirectClassName: "",
+		clientSDK:         clientSDK,
 	}
 
 	if auth.IsMaster == false {
@@ -286,7 +289,7 @@ func (q *Query) replaceSelect() error {
 		q.auth,
 		utils.S(queryValue["className"]),
 		where,
-		additionalOptions)
+		additionalOptions, q.clientSDK)
 	if err != nil {
 		return err
 	}
@@ -343,7 +346,7 @@ func (q *Query) replaceDontSelect() error {
 		q.auth,
 		utils.S(queryValue["className"]),
 		where,
-		additionalOptions)
+		additionalOptions, q.clientSDK)
 	if err != nil {
 		return err
 	}
@@ -414,7 +417,7 @@ func (q *Query) replaceInQuery() error {
 		q.auth,
 		utils.S(inQueryValue["className"]),
 		utils.M(inQueryValue["where"]),
-		additionalOptions)
+		additionalOptions, q.clientSDK)
 	if err != nil {
 		return err
 	}
@@ -460,7 +463,7 @@ func (q *Query) replaceNotInQuery() error {
 		q.auth,
 		utils.S(notInQueryValue["className"]),
 		utils.M(notInQueryValue["where"]),
-		additionalOptions)
+		additionalOptions, q.clientSDK)
 	if err != nil {
 		return err
 	}
@@ -607,7 +610,7 @@ func includePath(auth *Auth, response types.M, path []string) error {
 		where := types.M{
 			"objectId": objectID,
 		}
-		query, err := NewQuery(auth, clsName, where, types.M{})
+		query, err := NewQuery(auth, clsName, where, types.M{}, nil)
 		if err != nil {
 			return err
 		}

@@ -19,7 +19,7 @@ func (l *LogoutController) HandleLogOut() {
 		where := types.M{
 			"sessionToken": l.Info.SessionToken,
 		}
-		records, err := rest.Find(rest.Master(), "_Session", where, types.M{})
+		records, err := rest.Find(rest.Master(), "_Session", where, types.M{}, l.Info.ClientSDK)
 
 		if err != nil {
 			l.Data["json"] = errs.ErrorToMap(err)
@@ -29,7 +29,7 @@ func (l *LogoutController) HandleLogOut() {
 		if utils.HasResults(records) {
 			results := utils.A(records["results"])
 			obj := utils.M(results[0])
-			err := rest.Delete(rest.Master(), "_Session", utils.S(obj["objectId"]))
+			err := rest.Delete(rest.Master(), "_Session", utils.S(obj["objectId"]), l.Info.ClientSDK)
 			if err != nil {
 				l.Data["json"] = errs.ErrorToMap(err)
 				l.ServeJSON()

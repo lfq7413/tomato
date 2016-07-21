@@ -605,7 +605,7 @@ func Test_validatePermission(t *testing.T) {
 	aclGroup = []string{"role:abc"}
 	operation = "create"
 	err = schama.validatePermission(className, aclGroup, operation)
-	expect = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expect = errs.E(errs.OperationForbidden, "Permission denied for action create on class post.")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
@@ -619,7 +619,7 @@ func Test_validatePermission(t *testing.T) {
 	aclGroup = []string{"role:abc"}
 	operation = "get"
 	err = schama.validatePermission(className, aclGroup, operation)
-	expect = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expect = errs.E(errs.OperationForbidden, "Permission denied for action get on class post.")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}

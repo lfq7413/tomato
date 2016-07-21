@@ -1125,7 +1125,7 @@ func Test_Find(t *testing.T) {
 	query = types.M{}
 	options = types.M{"acl": []string{"role:1024", "123456789012345678901234"}}
 	results, err = TomatoDBController.Find(className, query, options)
-	expectErr = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expectErr = errs.E(errs.OperationForbidden, "Permission denied for action find on class user.")
 	if err == nil || reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", results, err)
 	}
@@ -1437,7 +1437,7 @@ func Test_Destroy(t *testing.T) {
 		"acl": []string{"123456789012345678901234", "role:1001"},
 	}
 	err = TomatoDBController.Destroy(className, query, options)
-	expectErr = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expectErr = errs.E(errs.OperationForbidden, "Permission denied for action delete on class user.")
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
 	}
@@ -2279,7 +2279,7 @@ func Test_Update(t *testing.T) {
 	}
 	skipSanitization = false
 	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
-	expectErr = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expectErr = errs.E(errs.OperationForbidden, "Permission denied for action update on class user.")
 	if err == nil || reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
 	}
@@ -2589,7 +2589,7 @@ func Test_Create(t *testing.T) {
 		"acl": []string{"role:2001"},
 	}
 	err = TomatoDBController.Create(className, object, options)
-	expectErr = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expectErr = errs.E(errs.OperationForbidden, "Permission denied for action create on class user.")
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
 	}
@@ -3126,7 +3126,7 @@ func Test_ValidateObject(t *testing.T) {
 		"acl": []string{"2001"},
 	}
 	err = TomatoDBController.ValidateObject(className, object, query, options)
-	expect = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expect = errs.E(errs.OperationForbidden, "Permission denied for action addField on class user.")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
@@ -3344,7 +3344,7 @@ func Test_canAddField(t *testing.T) {
 	}
 	acl = nil
 	err = TomatoDBController.canAddField(schema, className, object, acl)
-	expect = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expect = errs.E(errs.OperationForbidden, "Permission denied for action addField on class user.")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
@@ -3392,7 +3392,7 @@ func Test_canAddField(t *testing.T) {
 	}
 	acl = []string{"role:1024"}
 	err = TomatoDBController.canAddField(schema, className, object, acl)
-	expect = errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	expect = errs.E(errs.OperationForbidden, "Permission denied for action addField on class user.")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}

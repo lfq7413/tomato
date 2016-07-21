@@ -364,14 +364,14 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	}
 
 	if permissionField == "writeUserFields" && operation == "create" {
-		return errs.E(errs.OperationForbidden, "Permission denied for this action.")
+		return errs.E(errs.OperationForbidden, "Permission denied for action "+operation+" on class "+className+".")
 	}
 
 	if v := utils.A(classPerms[permissionField]); v != nil && len(v) > 0 {
 		return nil
 	}
 
-	return errs.E(errs.OperationForbidden, "Permission denied for this action.")
+	return errs.E(errs.OperationForbidden, "Permission denied for action "+operation+" on class "+className+".")
 }
 
 // EnforceClassExists 校验类名

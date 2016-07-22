@@ -502,9 +502,18 @@ func (q *Query) runFind() error {
 	// 从 _User 表中删除密码字段
 	if q.className == "_User" {
 		for _, v := range response {
-			user := utils.M(v)
-			if user != nil {
+			if user := utils.M(v); user != nil {
 				delete(user, "password")
+				if authData := utils.M(user["authData"]); authData != nil {
+					for provider, v := range authData {
+						if v == nil {
+							delete(authData, provider)
+						}
+					}
+					if len(authData) == 0 {
+						delete(user, "authData")
+					}
+				}
 			}
 		}
 	}

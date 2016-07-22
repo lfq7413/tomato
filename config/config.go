@@ -10,23 +10,24 @@ import (
 
 // Config ...
 type Config struct {
-	AppName                         string
-	ServerURL                       string
-	DatabaseURI                     string
-	AppID                           string
-	MasterKey                       string
-	ClientKey                       string
-	AllowClientClassCreation        bool
-	EnableAnonymousUsers            bool
-	VerifyUserEmails                bool
-	FileAdapter                     string
-	FileDir                         string
-	PushAdapter                     string
-	MailAdapter                     string
-	LiveQuery                       *livequery.LiveQuery
-	SessionLength                   int
-	RevokeSessionOnPasswordReset    bool
-	PreventLoginWithUnverifiedEmail bool
+	AppName                          string
+	ServerURL                        string
+	DatabaseURI                      string
+	AppID                            string
+	MasterKey                        string
+	ClientKey                        string
+	AllowClientClassCreation         bool
+	EnableAnonymousUsers             bool
+	VerifyUserEmails                 bool
+	FileAdapter                      string
+	FileDir                          string
+	PushAdapter                      string
+	MailAdapter                      string
+	LiveQuery                        *livequery.LiveQuery
+	SessionLength                    int
+	RevokeSessionOnPasswordReset     bool
+	PreventLoginWithUnverifiedEmail  bool
+	EmailVerifyTokenValidityDuration int
 }
 
 var (
@@ -36,22 +37,23 @@ var (
 
 func init() {
 	TConfig = &Config{
-		AppName:                         "",
-		ServerURL:                       "http://127.0.0.1:8080/v1",
-		DatabaseURI:                     "192.168.99.100:27017/test",
-		AppID:                           "",
-		MasterKey:                       "",
-		ClientKey:                       "",
-		AllowClientClassCreation:        false,
-		EnableAnonymousUsers:            true,
-		VerifyUserEmails:                false,
-		FileAdapter:                     "disk",
-		FileDir:                         "/Users",
-		PushAdapter:                     "tomato",
-		MailAdapter:                     "smtp",
-		SessionLength:                   31536000,
-		RevokeSessionOnPasswordReset:    true,
-		PreventLoginWithUnverifiedEmail: false,
+		AppName:                          "",
+		ServerURL:                        "http://127.0.0.1:8080/v1",
+		DatabaseURI:                      "192.168.99.100:27017/test",
+		AppID:                            "",
+		MasterKey:                        "",
+		ClientKey:                        "",
+		AllowClientClassCreation:         false,
+		EnableAnonymousUsers:             true,
+		VerifyUserEmails:                 false,
+		FileAdapter:                      "disk",
+		FileDir:                          "/Users",
+		PushAdapter:                      "tomato",
+		MailAdapter:                      "smtp",
+		SessionLength:                    31536000,
+		RevokeSessionOnPasswordReset:     true,
+		PreventLoginWithUnverifiedEmail:  false,
+		EmailVerifyTokenValidityDuration: -1,
 	}
 
 	parseConfig()
@@ -82,11 +84,22 @@ func parseConfig() {
 	TConfig.SessionLength = beego.AppConfig.DefaultInt("SessionLength", 31536000)
 	TConfig.RevokeSessionOnPasswordReset = beego.AppConfig.DefaultBool("RevokeSessionOnPasswordReset", true)
 	TConfig.PreventLoginWithUnverifiedEmail = beego.AppConfig.DefaultBool("PreventLoginWithUnverifiedEmail", false)
+	TConfig.EmailVerifyTokenValidityDuration = beego.AppConfig.DefaultInt("EmailVerifyTokenValidityDuration", -1)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间
 func GenerateSessionExpiresAt() time.Time {
 	expiresAt := time.Now().UTC()
-	expiresAt = expiresAt.AddDate(0, 0, TConfig.SessionLength/86400)
+	expiresAt = expiresAt.Add(time.Duration(TConfig.SessionLength * 1e9))
+	return expiresAt
+}
+
+// GenerateEmailVerifyTokenExpiresAt 获取 Email 验证 Token 过期时间
+func GenerateEmailVerifyTokenExpiresAt() time.Time {
+	if TConfig.VerifyUserEmails == false || TConfig.EmailVerifyTokenValidityDuration == -1 {
+		return time.Time{}
+	}
+	expiresAt := time.Now().UTC()
+	expiresAt = expiresAt.Add(time.Duration(TConfig.EmailVerifyTokenValidityDuration * 1e9))
 	return expiresAt
 }

@@ -3,6 +3,7 @@ package rest
 import (
 	"errors"
 	"net/url"
+	"time"
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
@@ -33,6 +34,10 @@ func SetEmailVerifyToken(user types.M) {
 	if shouldVerifyEmails() {
 		user["_email_verify_token"] = utils.CreateToken()
 		user["emailVerified"] = false
+
+		if config.TConfig.EmailVerifyTokenValidityDuration != -1 {
+			user["_email_verify_token_expires_at"] = utils.TimetoString(config.GenerateEmailVerifyTokenExpiresAt())
+		}
 	}
 }
 
@@ -155,14 +160,28 @@ func VerifyEmail(username, token string) bool {
 	}
 
 	db := orm.TomatoDBController
-	where := types.M{
+	query := types.M{
 		"username":            username,
 		"_email_verify_token": token,
 	}
-	update := types.M{
+	updateFields := types.M{
 		"emailVerified": true,
+		"_email_verify_token": types.M{
+			"__op": "Delete",
+		},
 	}
-	document, err := db.Update("_User", where, update, types.M{}, false)
+
+	if config.TConfig.EmailVerifyTokenValidityDuration != -1 {
+		query["emailVerified"] = false
+		query["_email_verify_token_expires_at"] = types.M{
+			"$gt": utils.TimetoString(time.Now().UTC()),
+		}
+		updateFields["_email_verify_token_expires_at"] = types.M{
+			"__op": "Delete",
+		}
+	}
+
+	document, err := db.Update("_User", query, updateFields, types.M{}, false)
 	if err != nil {
 		return false
 	}

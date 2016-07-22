@@ -247,7 +247,7 @@ func (d *DBController) Destroy(className string, query types.M, options types.M)
 	return nil
 }
 
-var specialKeysForUpdate = []string{"_hashed_password", "_perishable_token", "_email_verify_token"}
+var specialKeysForUpdate = []string{"_hashed_password", "_perishable_token", "_email_verify_token", "_email_verify_token_expires_at"}
 
 // Update 更新对象
 // options 中的参数包括：acl、many、upsert
@@ -1279,7 +1279,7 @@ func addReadACL(query types.M, acl []string) types.M {
 	return newQuery
 }
 
-var specialQuerykeys = []string{"$and", "$or", "_rperm", "_wperm", "_perishable_token", "_email_verify_token"}
+var specialQuerykeys = []string{"$and", "$or", "_rperm", "_wperm", "_perishable_token", "_email_verify_token", "_email_verify_token_expires_at"}
 
 func validateQuery(query types.M) error {
 	if query == nil {

@@ -5271,10 +5271,11 @@ func Test_validateQuery(t *testing.T) {
 	}
 	/*************************************************/
 	query = types.M{
-		"_rperm":              "hello",
-		"_wperm":              "hello",
-		"_perishable_token":   "hello",
-		"_email_verify_token": "hello",
+		"_rperm":                         "hello",
+		"_wperm":                         "hello",
+		"_perishable_token":              "hello",
+		"_email_verify_token":            "hello",
+		"_email_verify_token_expires_at": "hello",
 	}
 	err = validateQuery(query)
 	expect = nil

@@ -75,6 +75,9 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	case "expiresAt", "_expiresAt":
 		key = "_expiresAt"
 		timeField = true
+	case "_email_verify_token_expires_at":
+		key = "_email_verify_token_expires_at"
+		timeField = true
 	case "_rperm", "_wperm":
 		return key, restValue, nil
 
@@ -198,6 +201,12 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 			return "_expiresAt", t, nil
 		}
 		key = "_expiresAt"
+
+	case "_email_verify_token_expires_at":
+		if t, ok := valueAsDate(value); ok {
+			return "_email_verify_token_expires_at", t, nil
+		}
+		key = "_email_verify_token_expires_at"
 
 	case "objectId":
 		return "_id", value, nil
@@ -824,6 +833,21 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(restKey string, res
 		}
 		return "_expiresAt", coercedToDate, nil
 
+	case "_email_verify_token_expires_at":
+		transformedValue, err = t.transformTopLevelAtom(restValue)
+		if err != nil {
+			return "", nil, err
+		}
+		if v, ok := transformedValue.(string); ok {
+			coercedToDate, err = utils.StringtoTime(v)
+			if err != nil {
+				return "", nil, err
+			}
+		} else {
+			coercedToDate = transformedValue
+		}
+		return "_email_verify_token_expires_at", coercedToDate, nil
+
 	case "_rperm", "_wperm", "_email_verify_token", "_hashed_password", "_perishable_token":
 		return restKey, restValue, nil
 
@@ -1131,7 +1155,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 			case "_hashed_password":
 				restObject["_hashed_password"] = value
 
-			case "_acl", "_email_verify_token", "_perishable_token", "_tombstone":
+			case "_acl", "_email_verify_token", "_perishable_token", "_tombstone", "_email_verify_token_expires_at":
 				// 以上字段不添加到结果中
 
 			case "_session_token":

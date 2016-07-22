@@ -33,13 +33,13 @@ func DeepCopy(i interface{}) interface{} {
 		return CopySlice(s)
 	}
 	if s, ok := i.(types.S); ok {
-		return CopySlice(s)
+		return CopySliceS(s)
 	}
 	if m, ok := i.(map[string]interface{}); ok {
 		return CopyMap(m)
 	}
 	if m, ok := i.(types.M); ok {
-		return CopyMap(m)
+		return CopyMapM(m)
 	}
 	return i
 }
@@ -56,6 +56,24 @@ func CopyMap(m map[string]interface{}) map[string]interface{} {
 // CopySlice 复制 slice
 func CopySlice(s []interface{}) []interface{} {
 	d := []interface{}{}
+	for _, v := range s {
+		d = append(d, DeepCopy(v))
+	}
+	return d
+}
+
+// CopyMapM 复制 map
+func CopyMapM(m types.M) types.M {
+	d := types.M{}
+	for k, v := range m {
+		d[k] = DeepCopy(v)
+	}
+	return d
+}
+
+// CopySliceS 复制 slice
+func CopySliceS(s types.S) types.S {
+	d := types.S{}
 	for _, v := range s {
 		d = append(d, DeepCopy(v))
 	}

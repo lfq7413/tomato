@@ -157,6 +157,16 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 		t.Error("expect:", expectValue, "get result:", resultValue)
 	}
 	/*************************************************/
+	restKey = "_email_verify_token_expires_at"
+	restValue = tmpTimeStr
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_email_verify_token_expires_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
 	restKey = "_rperm"
 	restValue = "r"
 	parseFormatSchema = types.M{}
@@ -306,6 +316,16 @@ func Test_transformQueryKeyValue(t *testing.T) {
 	schema = types.M{}
 	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
 	expectKey = "_expiresAt"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "_email_verify_token_expires_at"
+	value = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_email_verify_token_expires_at"
 	expectValue = tmpTime
 	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
@@ -1507,6 +1527,26 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	schema = types.M{}
 	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "_expiresAt"
+	expectValue = tmpTime
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
+	restKey = "_email_verify_token_expires_at"
+	restValue = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "_email_verify_token_expires_at"
+	expectValue = tmpTime
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
+	restKey = "_email_verify_token_expires_at"
+	restValue = tmpTime
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "_email_verify_token_expires_at"
 	expectValue = tmpTime
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)

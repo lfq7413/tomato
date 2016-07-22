@@ -198,58 +198,73 @@ func (w *Write) handleInstallation() error {
 	}
 
 	var idMatch types.M
-	var deviceTokenMatches types.S
+	var objectIDMatch types.M
+	var installationIDMatch types.M
+	deviceTokenMatches := types.S{}
 
 	// 如果是 update 操作，并且 objectId 存在，
 	// 校验是否能对 installationId、deviceToken、deviceType 进行修改
+	orQueries := types.S{}
 	if w.query != nil && w.query["objectId"] != nil {
-		results, err := orm.TomatoDBController.Find("_Installation", types.M{"objectId": w.query["objectId"]}, types.M{})
-		if err != nil {
-			return err
+		orQueries = append(orQueries, types.M{"objectId": w.query["objectId"]})
+	}
+	if w.data["installationId"] != nil {
+		orQueries = append(orQueries, types.M{"installationId": w.data["installationId"]})
+	}
+	if w.data["deviceToken"] != nil {
+		orQueries = append(orQueries, types.M{"deviceToken": w.data["deviceToken"]})
+	}
+	if len(orQueries) == 0 {
+		return nil
+	}
+
+	results, err := orm.TomatoDBController.Find("_Installation", types.M{"$or": orQueries}, types.M{})
+	if err != nil {
+		return err
+	}
+
+	for _, v := range results {
+		if result := utils.M(v); result != nil {
+			if w.query != nil && w.query["objectId"] != nil && utils.S(result["objectId"]) == utils.S(w.query["objectId"]) {
+				objectIDMatch = result
+			}
+			if utils.S(result["installationId"]) == utils.S(w.data["installationId"]) {
+				installationIDMatch = result
+			}
+			if utils.S(result["deviceToken"]) == utils.S(w.data["deviceToken"]) {
+				deviceTokenMatches = append(deviceTokenMatches, result)
+			}
 		}
-		if results == nil || len(results) == 0 {
+	}
+
+	if w.query != nil && w.query["objectId"] != nil {
+		if objectIDMatch == nil {
 			return errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}
-
-		idMatch = utils.M(results[0])
-		if w.data["installationId"] != nil && idMatch["installationId"] != nil &&
-			w.data["installationId"] != idMatch["installationId"] {
+		if w.data["installationId"] != nil && objectIDMatch["installationId"] != nil &&
+			utils.S(w.data["installationId"]) != utils.S(objectIDMatch["installationId"]) {
 			// installationId 不能修改
 			return errs.E(errs.ChangedImmutableFieldError, "installationId may not be changed in this operation")
 		}
-		if w.data["deviceToken"] != nil && idMatch["deviceToken"] != nil &&
-			w.data["deviceToken"] != idMatch["deviceToken"] &&
-			w.data["installationId"] == nil && idMatch["installationId"] == nil {
+		if w.data["deviceToken"] != nil && objectIDMatch["deviceToken"] != nil &&
+			utils.S(w.data["deviceToken"]) != utils.S(objectIDMatch["deviceToken"]) &&
+			w.data["installationId"] == nil && objectIDMatch["installationId"] == nil {
 			// deviceToken 不能修改
 			return errs.E(errs.ChangedImmutableFieldError, "deviceToken may not be changed in this operation")
 		}
-		if w.data["deviceType"] != nil && idMatch["deviceType"] != nil &&
-			w.data["deviceType"] != idMatch["deviceType"] {
+		if w.data["deviceType"] != nil && objectIDMatch["deviceType"] != nil &&
+			utils.S(w.data["deviceType"]) != utils.S(objectIDMatch["deviceType"]) {
 			// deviceType 不能修改
 			return errs.E(errs.ChangedImmutableFieldError, "deviceType may not be changed in this operation")
 		}
 	}
 
-	// 检查是否已经存在 installationId、deviceToken
-	idMatch = nil
-	if w.data["installationId"] != nil {
-		results, err := orm.TomatoDBController.Find("_Installation", types.M{"installationId": w.data["installationId"]}, types.M{})
-		if err != nil {
-			return err
-		}
-		if results != nil && len(results) > 0 {
-			// 只取第一个结果
-			idMatch = utils.M(results[0])
-		}
+	if w.query != nil && w.query["objectId"] != nil && objectIDMatch != nil {
+		idMatch = objectIDMatch
 	}
-	if w.data["deviceToken"] != nil {
-		results, err := orm.TomatoDBController.Find("_Installation", types.M{"deviceToken": w.data["deviceToken"]}, types.M{})
-		if err != nil {
-			return err
-		}
-		if results != nil {
-			deviceTokenMatches = results
-		}
+
+	if w.data["installationId"] != nil && installationIDMatch != nil {
+		idMatch = installationIDMatch
 	}
 
 	var objID string

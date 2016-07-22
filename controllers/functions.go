@@ -22,7 +22,7 @@ func (f *FunctionsController) HandleCloudFunction() {
 	functionName := f.Ctx.Input.Param(":functionName")
 	theFunction := rest.GetFunction(functionName)
 	if theFunction == nil {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Invalid function.")
+		f.Data["json"] = errs.ErrorMessageToMap(errs.ValidationError, "Invalid function.")
 		f.ServeJSON()
 		return
 	}

@@ -35,6 +35,12 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 
 	data := body["data"]
 	payloadString, _ := json.Marshal(data)
+	var alert string
+	if d := utils.M(data); d != nil {
+		if utils.S(d["alert"]) != "" {
+			alert = utils.S(d["alert"])
+		}
+	}
 
 	object := types.M{
 		"objectId":  p.objectID,
@@ -47,7 +53,7 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 		"expiry":    body["expiration_time"],
 		"status":    "pending",
 		"numSent":   0,
-		"pushHash":  utils.MD5Hash(string(payloadString)),
+		"pushHash":  utils.MD5Hash(alert),
 		// lockdown!
 		"ACL": types.M{},
 	}

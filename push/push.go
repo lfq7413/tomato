@@ -151,13 +151,13 @@ func sendToAdapter(body types.M, installations []interface{}, status *pushStatus
 			} else {
 				paydata["badge"], _ = strconv.Atoi(k)
 			}
-			result := adapter.send(payload, utils.A(v), status)
+			result := adapter.send(payload, utils.A(v), status.objectID)
 			results = append(results, result...)
 		}
 		return results
 	}
 
-	return adapter.send(body, installations, status)
+	return adapter.send(body, installations, status.objectID)
 }
 
 // validatePushType 校验查询条件中的推送类型
@@ -228,6 +228,6 @@ func getExpirationTime(body types.M) (interface{}, error) {
 // pushAdapter 推送模块要实现的接口
 // send() 中的 status 参数暂时没有使用
 type pushAdapter interface {
-	send(data types.M, installations types.S, status *pushStatus) []types.M
+	send(data types.M, installations types.S, objectID string) []types.M
 	getValidPushTypes() []string
 }

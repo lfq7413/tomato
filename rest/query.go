@@ -637,7 +637,7 @@ func includePath(auth *Auth, response types.M, path []string) error {
 			obj := utils.M(v)
 			obj["__type"] = "Object"
 			obj["className"] = clsName
-			if clsName == "_User" {
+			if clsName == "_User" && auth.IsMaster == false {
 				delete(obj, "sessionToken")
 				delete(obj, "authData")
 			}

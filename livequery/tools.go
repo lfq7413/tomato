@@ -28,6 +28,9 @@ func matchesQuery(object, query M) bool {
 }
 
 func matchesKeyConstraints(object M, key string, constraints interface{}) bool {
+	if constraints == nil {
+		return false
+	}
 	if key == "$or" {
 		if querys, ok := constraints.([]interface{}); ok {
 			for _, query := range querys {

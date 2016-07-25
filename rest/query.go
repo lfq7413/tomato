@@ -222,7 +222,7 @@ func (q *Query) validateClientClassCreation() error {
 		}
 	}
 	// 允许操作已存在的表
-	schema := orm.TomatoDBController.LoadSchema()
+	schema := orm.TomatoDBController.LoadSchema(nil)
 	hasClass := schema.HasClass(q.className)
 	if hasClass {
 		return nil

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -520,6 +521,7 @@ func Test_Find(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"fields": types.M{
@@ -956,6 +958,7 @@ func Test_Find(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"fields": types.M{
@@ -1100,6 +1103,7 @@ func Test_Find(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"fields": types.M{
@@ -1131,6 +1135,7 @@ func Test_Find(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"fields": types.M{
@@ -1173,6 +1178,7 @@ func Test_Find(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"fields": types.M{
@@ -1443,6 +1449,7 @@ func Test_Destroy(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"objectId": "1001",
@@ -1525,6 +1532,7 @@ func Test_Destroy(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"objectId": "1001",
@@ -2253,6 +2261,7 @@ func Test_Update(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"fields": types.M{
@@ -2375,6 +2384,7 @@ func Test_Update(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"fields": types.M{
@@ -2413,6 +2423,7 @@ func Test_Update(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"objectId": "01",
@@ -2547,6 +2558,7 @@ func Test_Create(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	className = "user"
 	object = types.M{
 		"fields": types.M{
@@ -3173,7 +3185,7 @@ func Test_LoadSchema(t *testing.T) {
 	}
 	className = "user"
 	Adapter.CreateClass(className, object)
-	result = TomatoDBController.LoadSchema()
+	result = TomatoDBController.LoadSchema(nil)
 	expect = types.M{
 		"key":       types.M{"type": "String"},
 		"objectId":  types.M{"type": "String"},
@@ -3235,6 +3247,7 @@ func Test_RedirectClassNameForKey(t *testing.T) {
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
+	initEnv()
 	object = types.M{
 		"fields": types.M{
 			"name": types.M{
@@ -3276,7 +3289,7 @@ func Test_canAddField(t *testing.T) {
 	Adapter.DeleteAllClasses()
 	/*************************************************/
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	object = nil
 	acl = nil
@@ -3294,7 +3307,7 @@ func Test_canAddField(t *testing.T) {
 	}
 	Adapter.CreateClass("user", object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	object = nil
 	acl = nil
@@ -3312,7 +3325,7 @@ func Test_canAddField(t *testing.T) {
 	}
 	Adapter.CreateClass("user", object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	object = types.M{
 		"key":  "hello",
@@ -3336,7 +3349,7 @@ func Test_canAddField(t *testing.T) {
 	}
 	Adapter.CreateClass("user", object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	object = types.M{
 		"key":  "hello",
@@ -3360,7 +3373,7 @@ func Test_canAddField(t *testing.T) {
 	}
 	Adapter.CreateClass("user", object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	object = types.M{
 		"key":  "hello",
@@ -3384,7 +3397,7 @@ func Test_canAddField(t *testing.T) {
 	}
 	Adapter.CreateClass("user", object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	object = types.M{
 		"key":  "hello",
@@ -3408,7 +3421,7 @@ func Test_canAddField(t *testing.T) {
 	}
 	Adapter.CreateClass("user", object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	object = types.M{
 		"key":  "hello",
@@ -4020,7 +4033,7 @@ func Test_reduceInRelation(t *testing.T) {
 	className = "user"
 	query = types.M{"key": types.M{"$in": "v"}}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{"key": types.M{"$in": "v"}}
 	if reflect.DeepEqual(expect, result) == false {
@@ -4052,7 +4065,7 @@ func Test_reduceInRelation(t *testing.T) {
 		},
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"objectId": types.M{
@@ -4092,7 +4105,7 @@ func Test_reduceInRelation(t *testing.T) {
 		},
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"objectId": types.M{
@@ -4132,7 +4145,7 @@ func Test_reduceInRelation(t *testing.T) {
 		},
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"objectId": types.M{
@@ -4170,7 +4183,7 @@ func Test_reduceInRelation(t *testing.T) {
 		},
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"objectId": types.M{
@@ -4208,7 +4221,7 @@ func Test_reduceInRelation(t *testing.T) {
 		},
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"objectId": types.M{
@@ -4247,7 +4260,7 @@ func Test_reduceInRelation(t *testing.T) {
 		"key2": "hello",
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"objectId": types.M{
@@ -4284,7 +4297,7 @@ func Test_reduceInRelation(t *testing.T) {
 		"key2": "hello",
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"key2": "hello",
@@ -4337,7 +4350,7 @@ func Test_reduceInRelation(t *testing.T) {
 		"key2": "hello",
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"objectId": types.M{
@@ -4398,7 +4411,7 @@ func Test_reduceInRelation(t *testing.T) {
 		},
 	}
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	result = TomatoDBController.reduceInRelation(className, query, schema)
 	expect = types.M{
 		"$or": types.S{
@@ -4597,7 +4610,7 @@ func Test_addPointerPermissions(t *testing.T) {
 	Adapter.DeleteAllClasses()
 	/*************************************************/
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	operation = "get"
 	query = nil
@@ -4621,7 +4634,7 @@ func Test_addPointerPermissions(t *testing.T) {
 	}
 	Adapter.CreateClass(className, object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	operation = "get"
 	query = nil
@@ -4645,7 +4658,7 @@ func Test_addPointerPermissions(t *testing.T) {
 	}
 	Adapter.CreateClass(className, object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	operation = "get"
 	query = types.M{}
@@ -4670,7 +4683,7 @@ func Test_addPointerPermissions(t *testing.T) {
 	}
 	Adapter.CreateClass(className, object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	operation = "get"
 	query = types.M{
@@ -4710,7 +4723,7 @@ func Test_addPointerPermissions(t *testing.T) {
 	}
 	Adapter.CreateClass(className, object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	operation = "update"
 	query = types.M{
@@ -4750,7 +4763,7 @@ func Test_addPointerPermissions(t *testing.T) {
 	}
 	Adapter.CreateClass(className, object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	operation = "get"
 	query = types.M{
@@ -4777,7 +4790,7 @@ func Test_addPointerPermissions(t *testing.T) {
 	}
 	Adapter.CreateClass(className, object)
 	schema = getSchema()
-	schema.reloadData()
+	schema.reloadData(nil)
 	className = "user"
 	operation = "get"
 	query = types.M{
@@ -5828,5 +5841,6 @@ func Test_flattenUpdateOperatorsForCreate(t *testing.T) {
 
 func initEnv() {
 	Adapter = getAdapter()
+	schemaCache = cache.NewSchemaCache(5)
 	TomatoDBController = &DBController{}
 }

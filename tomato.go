@@ -46,7 +46,7 @@ func createIndexes() {
 		defaultUserColumns[k] = v
 	}
 	requiredUserFields["fields"] = defaultUserColumns
-	orm.TomatoDBController.LoadSchema().EnforceClassExists("_User")
+	orm.TomatoDBController.LoadSchema(nil).EnforceClassExists("_User")
 	orm.Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"username"})
 	orm.Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"email"})
 }

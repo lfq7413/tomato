@@ -17,6 +17,9 @@ type SchemaCache struct {
 
 // NewSchemaCache ...
 func NewSchemaCache(ttl int) *SchemaCache {
+	if adapter == nil {
+		adapter = newInMemoryCacheAdapter(5)
+	}
 	return &SchemaCache{
 		ttl:    ttl,
 		prefix: schemaCachePrefix + utils.CreateToken(),
@@ -42,16 +45,19 @@ func (s *SchemaCache) Put(key string, value interface{}) {
 }
 
 // GetAllClasses ...
-func (s *SchemaCache) GetAllClasses() types.M {
+func (s *SchemaCache) GetAllClasses() []types.M {
 	if s.ttl < 0 {
 		return nil
 	}
 	v := get(s.prefix + mainSchema)
-	return utils.M(v)
+	if r, ok := v.([]types.M); ok {
+		return r
+	}
+	return []types.M{}
 }
 
 // SetAllClasses ...
-func (s *SchemaCache) SetAllClasses(schema types.M) {
+func (s *SchemaCache) SetAllClasses(schema []types.M) {
 	if s.ttl < 0 {
 		return
 	}

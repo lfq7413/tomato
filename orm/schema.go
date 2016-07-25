@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
@@ -94,9 +95,11 @@ var requiredColumns = map[string][]string{
 
 // Schema schema 操作对象
 type Schema struct {
-	dbAdapter storage.Adapter
-	data      types.M // data 保存类的字段信息，类型为 API 类型
-	perms     types.M // perms 保存类的操作权限
+	dbAdapter         storage.Adapter
+	cache             *cache.SchemaCache
+	data              types.M // data 保存类的字段信息，类型为 API 类型
+	perms             types.M // perms 保存类的操作权限
+	reloadDataPromise []types.M
 }
 
 // AddClassIfNotExists 添加类定义，包含默认的字段
@@ -119,13 +122,14 @@ func (s *Schema) AddClassIfNotExists(className string, fields types.M, classLeve
 		return nil, err
 	}
 	result = convertAdapterSchemaToParseSchema(result)
+	s.cache.Clear()
 
 	return result, nil
 }
 
 // UpdateClass 更新类
 func (s *Schema) UpdateClass(className string, submittedFields types.M, classLevelPermissions types.M) (types.M, error) {
-	schema, err := s.GetOneSchema(className, false)
+	schema, err := s.GetOneSchema(className, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +198,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	}
 
 	// 重新加载修改过的数据
-	s.reloadData()
+	s.reloadData(types.M{"clearCache": true})
 
 	// 校验并插入字段
 	for _, fieldName := range insertedFields {
@@ -230,7 +234,7 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 		return errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be changed")
 	}
 
-	schema, err := s.GetOneSchema(className, false)
+	schema, err := s.GetOneSchema(className, false, types.M{"clearCache": true})
 	if err != nil {
 		return err
 	}
@@ -261,7 +265,11 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	}
 
 	// 删除其他类型字段 对应的对象数据
-	return s.dbAdapter.DeleteFields(className, schema, []string{fieldName})
+	err = s.dbAdapter.DeleteFields(className, schema, []string{fieldName})
+	if err == nil {
+		s.cache.Clear()
+	}
+	return err
 }
 
 // validateObject 校验对象是否合法
@@ -385,7 +393,7 @@ func (s *Schema) EnforceClassExists(className string) error {
 	if err != nil {
 
 	}
-	s.reloadData()
+	s.reloadData(types.M{"clearCache": true})
 
 	if s.data[className] != nil {
 		return nil
@@ -509,27 +517,29 @@ func (s *Schema) enforceFieldExists(className, fieldName string, fieldtype types
 		return nil
 	}
 
-	s.reloadData()
+	s.reloadData(nil)
 
 	expectedType := s.getExpectedType(className, fieldName)
 	if expectedType != nil {
 		if dbTypeMatchesObjectType(expectedType, fieldtype) == false {
 			return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+fieldName+"; expected "+utils.S(expectedType["type"])+" but got "+utils.S(fieldtype["type"]))
 		}
+		return nil
 	}
 
 	err := s.dbAdapter.AddFieldIfNotExists(className, fieldName, fieldtype)
 	if err != nil {
 		// 失败时也需要重新加载数据，因为这时候可能有其他客户端更新了字段
-		// s.reloadData()
+		// s.reloadData(nil)
 		// return err
 	}
 
-	s.reloadData()
+	s.reloadData(types.M{"clearCache": true})
 	// 再次尝试校验字段
 	if dbTypeMatchesObjectType(s.getExpectedType(className, fieldName), fieldtype) == false {
 		return errs.E(errs.InvalidJSON, "Could not add field "+fieldName)
 	}
+	s.cache.Clear()
 	return nil
 }
 
@@ -546,13 +556,13 @@ func (s *Schema) setPermissions(className string, perms types.M, newSchema types
 	if err != nil {
 		return err
 	}
-	s.reloadData()
+	s.reloadData(types.M{"clearCache": true})
 	return nil
 }
 
 // HasClass Schema 中是否存在类定义
 func (s *Schema) HasClass(className string) bool {
-	s.reloadData()
+	s.reloadData(nil)
 	return s.data[className] != nil
 }
 
@@ -570,11 +580,29 @@ func (s *Schema) getExpectedType(className, fieldName string) types.M {
 }
 
 // reloadData 从数据库加载表信息
-func (s *Schema) reloadData() {
+func (s *Schema) reloadData(options types.M) {
+	if options == nil {
+		options = types.M{"clearCache": false}
+	}
+	var clearCache bool
+	if v, ok := options["clearCache"].(bool); ok {
+		clearCache = v
+	} else {
+		clearCache = false
+	}
+
+	if clearCache {
+		s.cache.Clear()
+	}
+	if s.reloadDataPromise != nil && clearCache == false {
+		return
+	}
+
 	s.data = types.M{}
 	s.perms = types.M{}
-	allSchemas, err := s.GetAllClasses()
+	allSchemas, err := s.GetAllClasses(options)
 	if err != nil {
+		s.reloadDataPromise = nil
 		return
 	}
 	for _, schema := range allSchemas {
@@ -594,23 +622,56 @@ func (s *Schema) reloadData() {
 		}
 		s.data[className] = injectDefaultSchema(sch)
 	}
+
+	s.reloadDataPromise = allSchemas
 }
 
 // GetAllClasses ...
-func (s *Schema) GetAllClasses() ([]types.M, error) {
+func (s *Schema) GetAllClasses(options types.M) ([]types.M, error) {
+	if options == nil {
+		options = types.M{"clearCache": false}
+	}
+	var clearCache bool
+	if v, ok := options["clearCache"].(bool); ok {
+		clearCache = v
+	} else {
+		clearCache = false
+	}
+	if clearCache {
+		s.cache.Clear()
+	}
+	allClasses := s.cache.GetAllClasses()
+	if allClasses != nil && len(allClasses) > 0 && clearCache == false {
+		return allClasses, nil
+	}
+
 	allSchemas, err := s.dbAdapter.GetAllClasses()
 	if err != nil {
 		return nil, err
 	}
-	schems := []types.M{}
+	schemas := []types.M{}
 	for _, v := range allSchemas {
-		schems = append(schems, injectDefaultSchema(v))
+		schemas = append(schemas, injectDefaultSchema(v))
 	}
-	return schems, nil
+	s.cache.SetAllClasses(schemas)
+	return schemas, nil
 }
 
 // GetOneSchema allowVolatileClasses 默认为 false
-func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (types.M, error) {
+func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool, options types.M) (types.M, error) {
+	if options == nil {
+		options = types.M{"clearCache": false}
+	}
+	var clearCache bool
+	if v, ok := options["clearCache"].(bool); ok {
+		clearCache = v
+	} else {
+		clearCache = false
+	}
+	if clearCache {
+		s.cache.Clear()
+	}
+
 	if allowVolatileClasses {
 		for _, name := range volatileClasses {
 			if name == className {
@@ -622,6 +683,11 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (type
 		}
 	}
 
+	cached := s.cache.GetOneSchema(className)
+	if cached != nil && clearCache == false {
+		return cached, nil
+	}
+
 	schema, err := s.dbAdapter.GetClass(className)
 	if err != nil {
 		return nil, err
@@ -629,7 +695,9 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool) (type
 	if schema == nil || len(schema) == 0 {
 		return types.M{}, nil
 	}
-	return injectDefaultSchema(schema), nil
+	result := injectDefaultSchema(schema)
+	s.cache.SetOneSchema(className, result)
+	return result, nil
 }
 
 // thenValidateRequiredColumns 校验必须的字段
@@ -1118,10 +1186,11 @@ func dbTypeMatchesObjectType(dbType, objectType types.M) bool {
 }
 
 // Load 返回一个新的 Schema 结构体
-func Load(adapter storage.Adapter) *Schema {
+func Load(adapter storage.Adapter, schemaCache *cache.SchemaCache, options types.M) *Schema {
 	schema := &Schema{
 		dbAdapter: adapter,
+		cache:     schemaCache,
 	}
-	schema.reloadData()
+	schema.reloadData(options)
 	return schema
 }

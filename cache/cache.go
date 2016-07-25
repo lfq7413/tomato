@@ -12,7 +12,7 @@ var User *SubCache
 var adapter Adapter
 
 func init() {
-	adapter = newInMemoryCacheAdapter(5 * 1000)
+	adapter = newInMemoryCacheAdapter(5)
 	Role = &SubCache{
 		prefix: "role",
 	}

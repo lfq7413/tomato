@@ -158,7 +158,7 @@ func (w *Write) validateClientClassCreation() error {
 		}
 	}
 	// 允许操作已存在的表
-	schema := orm.TomatoDBController.LoadSchema()
+	schema := orm.TomatoDBController.LoadSchema(nil)
 	hasClass := schema.HasClass(w.className)
 	if hasClass {
 		return nil

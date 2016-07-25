@@ -8,6 +8,7 @@ import (
 
 	"gopkg.in/mgo.v2"
 
+	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/storage/mongo"
@@ -673,7 +674,7 @@ func Test_EnforceClassExists(t *testing.T) {
 	}
 	className = "skill"
 	adapter.CreateClass(className, class)
-	schama.reloadData()
+	schama.reloadData(nil)
 	className = "skill"
 	err = schama.EnforceClassExists(className)
 	if err != nil {
@@ -698,7 +699,7 @@ func Test_validateNewClass(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("post", class)
-	schama.reloadData()
+	schama.reloadData(nil)
 	className = "post"
 	fields = nil
 	classLevelPermissions = nil
@@ -715,7 +716,7 @@ func Test_validateNewClass(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("post", class)
-	schama.reloadData()
+	schama.reloadData(nil)
 	className = "@post"
 	fields = nil
 	classLevelPermissions = nil
@@ -732,7 +733,7 @@ func Test_validateNewClass(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("post", class)
-	schama.reloadData()
+	schama.reloadData(nil)
 	className = "user"
 	fields = types.M{
 		"key": types.M{"type": "String"},
@@ -964,6 +965,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -982,6 +984,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -1000,6 +1003,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -1016,6 +1020,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -1032,6 +1037,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -1050,6 +1056,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -1068,6 +1075,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 }
 
@@ -1200,7 +1208,7 @@ func Test_getExpectedType(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("user", class)
-	schama.reloadData()
+	schama.reloadData(nil)
 	className = "class"
 	fieldName = "field"
 	result = schama.getExpectedType(className, fieldName)
@@ -1222,7 +1230,7 @@ func Test_getExpectedType(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("user", class)
-	schama.reloadData()
+	schama.reloadData(nil)
 	className = "post"
 	fieldName = "field"
 	result = schama.getExpectedType(className, fieldName)
@@ -1244,7 +1252,7 @@ func Test_getExpectedType(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("user", class)
-	schama.reloadData()
+	schama.reloadData(nil)
 	className = "post"
 	fieldName = "key1"
 	result = schama.getExpectedType(className, fieldName)
@@ -1273,7 +1281,7 @@ func Test_reloadData(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("_User", class)
-	schama.reloadData()
+	schama.reloadData(nil)
 	expect = types.M{
 		"post": types.M{
 			"key1":      types.M{"type": "String"},
@@ -1372,11 +1380,12 @@ func Test_GetAllClasses(t *testing.T) {
 	var err error
 	var expect []types.M
 	/************************************************************/
-	result, err = schama.GetAllClasses()
+	result, err = schama.GetAllClasses(types.M{"clearCache": true})
 	expect = []types.M{}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -1385,7 +1394,7 @@ func Test_GetAllClasses(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("post", class)
-	result, err = schama.GetAllClasses()
+	result, err = schama.GetAllClasses(types.M{"clearCache": true})
 	expect = []types.M{
 		types.M{
 			"className": "post",
@@ -1409,6 +1418,7 @@ func Test_GetAllClasses(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -1417,7 +1427,7 @@ func Test_GetAllClasses(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("_User", class)
-	result, err = schama.GetAllClasses()
+	result, err = schama.GetAllClasses(types.M{"clearCache": true})
 	expect = []types.M{
 		types.M{
 			"className": "_User",
@@ -1445,6 +1455,7 @@ func Test_GetAllClasses(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 	/************************************************************/
 	class = types.M{
@@ -1459,7 +1470,7 @@ func Test_GetAllClasses(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("user", class)
-	result, err = schama.GetAllClasses()
+	result, err = schama.GetAllClasses(types.M{"clearCache": true})
 	expect = []types.M{
 		types.M{
 			"className": "post",
@@ -1501,6 +1512,7 @@ func Test_GetAllClasses(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	}
+	schama.reloadDataPromise = nil
 	adapter.DeleteAllClasses()
 }
 
@@ -1528,7 +1540,7 @@ func Test_GetOneSchema(t *testing.T) {
 	adapter.CreateClass("user", class)
 	className = "class"
 	allowVolatileClasses = false
-	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	result, err = schama.GetOneSchema(className, allowVolatileClasses, nil)
 	expect = types.M{}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
@@ -1549,7 +1561,7 @@ func Test_GetOneSchema(t *testing.T) {
 	adapter.CreateClass("user", class)
 	className = "post"
 	allowVolatileClasses = false
-	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	result, err = schama.GetOneSchema(className, allowVolatileClasses, nil)
 	expect = types.M{
 		"className": "post",
 		"fields": types.M{
@@ -1587,7 +1599,7 @@ func Test_GetOneSchema(t *testing.T) {
 	adapter.CreateClass("user", class)
 	className = "post"
 	allowVolatileClasses = true
-	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	result, err = schama.GetOneSchema(className, allowVolatileClasses, nil)
 	expect = types.M{
 		"className": "post",
 		"fields": types.M{
@@ -1619,7 +1631,7 @@ func Test_GetOneSchema(t *testing.T) {
 	adapter.CreateClass("post", class)
 	className = "_PushStatus"
 	allowVolatileClasses = true
-	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	result, err = schama.GetOneSchema(className, allowVolatileClasses, nil)
 	expect = types.M{}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
@@ -1641,7 +1653,7 @@ func Test_GetOneSchema(t *testing.T) {
 	}
 	className = "_PushStatus"
 	allowVolatileClasses = true
-	result, err = schama.GetOneSchema(className, allowVolatileClasses)
+	result, err = schama.GetOneSchema(className, allowVolatileClasses, nil)
 	expect = types.M{
 		"fields": types.M{
 			"key1": types.M{"type": "String"},
@@ -2993,12 +3005,13 @@ func Test_dbTypeMatchesObjectType(t *testing.T) {
 
 func Test_Load(t *testing.T) {
 	adapter := getAdapter()
+	schemaCache := getSchemaCache()
 	var schama *Schema
 	var class types.M
 	var expectData types.M
 	var expectPerms types.M
 	/************************************************************/
-	schama = Load(adapter)
+	schama = Load(adapter, schemaCache, nil)
 	expectData = types.M{
 		"_PushStatus": types.M{
 			"className": "_PushStatus",
@@ -3059,7 +3072,7 @@ func Test_Load(t *testing.T) {
 		},
 	}
 	adapter.CreateClass("user", class)
-	schama = Load(adapter)
+	schama = Load(adapter, schemaCache, nil)
 	expectData = types.M{
 		"user": types.M{
 			"key":       types.M{"type": "String"},
@@ -3134,12 +3147,17 @@ func Test_Load(t *testing.T) {
 func getSchema() *Schema {
 	return &Schema{
 		dbAdapter: getAdapter(),
+		cache:     getSchemaCache(),
 	}
 }
 
 func getAdapter() *mongo.MongoAdapter {
 	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
 	return mongo.NewMongoAdapter("tomato")
+}
+
+func getSchemaCache() *cache.SchemaCache {
+	return cache.NewSchemaCache(5)
 }
 
 func newMongoDB(url string) *storage.Database {

@@ -28,6 +28,7 @@ type Config struct {
 	RevokeSessionOnPasswordReset     bool
 	PreventLoginWithUnverifiedEmail  bool
 	EmailVerifyTokenValidityDuration int
+	SchemaCacheTTL                   int
 }
 
 var (
@@ -54,6 +55,7 @@ func init() {
 		RevokeSessionOnPasswordReset:     true,
 		PreventLoginWithUnverifiedEmail:  false,
 		EmailVerifyTokenValidityDuration: -1,
+		SchemaCacheTTL:                   5,
 	}
 
 	parseConfig()
@@ -85,6 +87,7 @@ func parseConfig() {
 	TConfig.RevokeSessionOnPasswordReset = beego.AppConfig.DefaultBool("RevokeSessionOnPasswordReset", true)
 	TConfig.PreventLoginWithUnverifiedEmail = beego.AppConfig.DefaultBool("PreventLoginWithUnverifiedEmail", false)
 	TConfig.EmailVerifyTokenValidityDuration = beego.AppConfig.DefaultInt("EmailVerifyTokenValidityDuration", -1)
+	TConfig.SchemaCacheTTL = beego.AppConfig.DefaultInt("SchemaCacheTTL", 5)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

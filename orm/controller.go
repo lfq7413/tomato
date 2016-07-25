@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lfq7413/tomato/cache"
+	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/storage/mongo"
@@ -19,11 +21,13 @@ var TomatoDBController *DBController
 // Adapter ...
 var Adapter storage.Adapter
 
+var schemaCache *cache.SchemaCache
 var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
 	Adapter = mongo.NewMongoAdapter("tomato")
+	schemaCache = cache.NewSchemaCache(config.TConfig.SchemaCacheTTL)
 	TomatoDBController = &DBController{}
 }
 
@@ -38,8 +42,8 @@ func (d *DBController) CollectionExists(className string) bool {
 
 // PurgeCollection 清除类
 func (d *DBController) PurgeCollection(className string) error {
-	schema := d.LoadSchema()
-	sch, err := schema.GetOneSchema(className, false)
+	schema := d.LoadSchema(nil)
+	sch, err := schema.GetOneSchema(className, false, nil)
 	if err != nil {
 		return err
 	}
@@ -80,8 +84,8 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 
 	classExists := true
 
-	schema := d.LoadSchema()
-	parseFormatSchema, err := schema.GetOneSchema(className, isMaster)
+	schema := d.LoadSchema(nil)
+	parseFormatSchema, err := schema.GetOneSchema(className, isMaster, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +207,7 @@ func (d *DBController) Destroy(className string, query types.M, options types.M)
 		isMaster = true
 	}
 
-	schema := d.LoadSchema()
+	schema := d.LoadSchema(nil)
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "delete")
 		if err != nil {
@@ -227,7 +231,7 @@ func (d *DBController) Destroy(className string, query types.M, options types.M)
 		return err
 	}
 
-	parseFormatSchema, err := schema.GetOneSchema(className, false)
+	parseFormatSchema, err := schema.GetOneSchema(className, false, nil)
 	if err != nil {
 		return err
 	}
@@ -285,7 +289,7 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 		isMaster = true
 	}
 
-	schema := d.LoadSchema()
+	schema := d.LoadSchema(nil)
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "update")
 		if err != nil {
@@ -313,7 +317,7 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 		return nil, err
 	}
 
-	sch, err := schema.GetOneSchema(className, false)
+	sch, err := schema.GetOneSchema(className, false, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +453,7 @@ func (d *DBController) Create(className string, object, options types.M) error {
 		return err
 	}
 
-	schema := d.LoadSchema()
+	schema := d.LoadSchema(nil)
 	if isMaster == false {
 		err := schema.validatePermission(className, aclGroup, "create")
 		if err != nil {
@@ -468,9 +472,9 @@ func (d *DBController) Create(className string, object, options types.M) error {
 		return err
 	}
 
-	schema.reloadData()
+	schema.reloadData(nil)
 
-	sch, err := schema.GetOneSchema(className, true)
+	sch, err := schema.GetOneSchema(className, true, nil)
 	if err != nil {
 		return err
 	}
@@ -615,7 +619,7 @@ func (d *DBController) removeRelation(key, fromClassName, fromID, toID string) e
 
 // ValidateObject 校验对象是否合法
 func (d *DBController) ValidateObject(className string, object, query, options types.M) error {
-	schema := d.LoadSchema()
+	schema := d.LoadSchema(nil)
 
 	if options == nil {
 		options = types.M{}
@@ -648,9 +652,12 @@ func (d *DBController) ValidateObject(className string, object, query, options t
 }
 
 // LoadSchema 加载 Schema，仅加载一次
-func (d *DBController) LoadSchema() *Schema {
+func (d *DBController) LoadSchema(options types.M) *Schema {
+	if options == nil {
+		options = types.M{"clearCache": false}
+	}
 	if schemaPromise == nil {
-		schemaPromise = Load(Adapter)
+		schemaPromise = Load(Adapter, schemaCache, options)
 	}
 	return schemaPromise
 }
@@ -664,7 +671,7 @@ func (d *DBController) DeleteEverything() {
 // RedirectClassNameForKey 返回指定类的字段所对应的类型
 // 如果 key 字段的属性为 relation<classA> ，则返回 classA
 func (d *DBController) RedirectClassNameForKey(className, key string) string {
-	schema := d.LoadSchema()
+	schema := d.LoadSchema(nil)
 	t := schema.getExpectedType(className, key)
 	if t != nil && utils.S(t["type"]) == "Relation" {
 		return utils.S(t["targetClass"])
@@ -1136,8 +1143,8 @@ func filterSensitiveData(isMaster bool, aclGroup []string, className string, obj
 
 // DeleteSchema 删除类
 func (d *DBController) DeleteSchema(className string) error {
-	schemaController := d.LoadSchema()
-	schema, err := schemaController.GetOneSchema(className, false)
+	schemaController := d.LoadSchema(types.M{"clearCache": true})
+	schema, err := schemaController.GetOneSchema(className, false, types.M{"clearCache": true})
 	if err != nil {
 		return err
 	}

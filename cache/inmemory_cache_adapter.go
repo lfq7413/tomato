@@ -9,7 +9,7 @@ type inMemoryCacheAdapter struct {
 	cache map[string]*recordCache
 }
 
-const defaultCacheTTL = 5 * 1000
+const defaultCacheTTL = 5
 
 func newInMemoryCacheAdapter(ttl int64) *inMemoryCacheAdapter {
 	if ttl == 0 {
@@ -33,15 +33,15 @@ func (m *inMemoryCacheAdapter) get(key string) interface{} {
 	return nil
 }
 
-// put ttl 的单位为毫秒，为 0 时表示使用默认的时长，为 -1 时表示永不过期
+// put ttl 的单位为秒，为 0 时表示使用默认的时长，为 -1 时表示永不过期
 func (m *inMemoryCacheAdapter) put(key string, value interface{}, ttl int64) {
 	var expire int64
 	if ttl == 0 {
-		expire = m.ttl*10e6 + time.Now().UnixNano()
+		expire = m.ttl*10e9 + time.Now().UnixNano()
 	} else if ttl == -1 {
 		expire = -1
 	} else {
-		expire = ttl*10e6 + time.Now().UnixNano()
+		expire = ttl*10e9 + time.Now().UnixNano()
 	}
 
 	record := &recordCache{

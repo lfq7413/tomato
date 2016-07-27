@@ -794,8 +794,14 @@ func transformInQuery(inQueryObject types.M, className string, results []types.M
 
 // transformNotInQuery 转换对象中的 $notInQuery
 func transformNotInQuery(notInQueryObject types.M, className string, results []types.M) {
-	values := []interface{}{}
+	if notInQueryObject == nil || notInQueryObject["$notInQuery"] == nil {
+		return
+	}
+	values := types.S{}
 	for _, result := range results {
+		if result == nil || utils.S(result["objectId"]) == "" {
+			continue
+		}
 		o := types.M{
 			"__type":    "Pointer",
 			"className": className,
@@ -805,8 +811,8 @@ func transformNotInQuery(notInQueryObject types.M, className string, results []t
 	}
 
 	delete(notInQueryObject, "$notInQuery")
-	var nin []interface{}
-	if v, ok := notInQueryObject["$nin"].([]interface{}); ok {
+	var nin types.S
+	if v := utils.A(notInQueryObject["$nin"]); v != nil {
 		nin = v
 		nin = append(nin, values...)
 	} else {

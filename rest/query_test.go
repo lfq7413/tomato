@@ -1,6 +1,11 @@
 package rest
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+
+	"github.com/lfq7413/tomato/types"
+)
 
 func Test_Execute(t *testing.T) {
 	// BuildRestWhere
@@ -117,5 +122,27 @@ func Test_transformInQuery(t *testing.T) {
 }
 
 func Test_transformNotInQuery(t *testing.T) {
+	var notInQueryObject types.M
+	var className string
+	var results []types.M
+	var expect types.M
+	/**********************************************************/
+	notInQueryObject = nil
+	className = "user"
+	results = nil
+	transformNotInQuery(notInQueryObject, className, results)
+	expect = nil
+	if reflect.DeepEqual(expect, notInQueryObject) == false {
+		t.Error("expect:", expect, "result:", notInQueryObject)
+	}
+	/**********************************************************/
+	notInQueryObject = types.M{}
+	className = "user"
+	results = nil
+	transformNotInQuery(notInQueryObject, className, results)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, notInQueryObject) == false {
+		t.Error("expect:", expect, "result:", notInQueryObject)
+	}
 	// TODO
 }

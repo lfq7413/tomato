@@ -42,7 +42,6 @@ func Test_replaceSelect(t *testing.T) {
 	// findObjectWithKey
 	// NewQuery
 	// Execute
-	// transformSelect
 	// TODO
 }
 
@@ -107,7 +106,126 @@ func Test_findObjectWithKey(t *testing.T) {
 }
 
 func Test_transformSelect(t *testing.T) {
-	// TODO
+	var selectObject types.M
+	var key string
+	var objects []types.M
+	var expect types.M
+	/**********************************************************/
+	selectObject = nil
+	key = "user"
+	objects = nil
+	transformSelect(selectObject, key, objects)
+	expect = nil
+	if reflect.DeepEqual(expect, selectObject) == false {
+		t.Error("expect:", expect, "result:", selectObject)
+	}
+	/**********************************************************/
+	selectObject = types.M{}
+	key = "user"
+	objects = nil
+	transformSelect(selectObject, key, objects)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, selectObject) == false {
+		t.Error("expect:", expect, "result:", selectObject)
+	}
+	/**********************************************************/
+	selectObject = types.M{
+		"$select": "string",
+	}
+	key = "user"
+	objects = nil
+	transformSelect(selectObject, key, objects)
+	expect = types.M{
+		"$in": types.S{},
+	}
+	if reflect.DeepEqual(expect, selectObject) == false {
+		t.Error("expect:", expect, "result:", selectObject)
+	}
+	/**********************************************************/
+	selectObject = types.M{
+		"$select": "string",
+	}
+	key = "user"
+	objects = []types.M{}
+	transformSelect(selectObject, key, objects)
+	expect = types.M{
+		"$in": types.S{},
+	}
+	if reflect.DeepEqual(expect, selectObject) == false {
+		t.Error("expect:", expect, "result:", selectObject)
+	}
+	/**********************************************************/
+	selectObject = types.M{
+		"$select": "string",
+	}
+	key = "user"
+	objects = []types.M{
+		types.M{
+			"user": "1001",
+		},
+		types.M{
+			"key": "1002",
+		},
+	}
+	transformSelect(selectObject, key, objects)
+	expect = types.M{
+		"$in": types.S{
+			"1001",
+		},
+	}
+	if reflect.DeepEqual(expect, selectObject) == false {
+		t.Error("expect:", expect, "result:", selectObject)
+	}
+	/**********************************************************/
+	selectObject = types.M{
+		"$select": "string",
+	}
+	key = "user"
+	objects = []types.M{
+		types.M{
+			"user": "1001",
+		},
+		types.M{
+			"user": "1002",
+		},
+	}
+	transformSelect(selectObject, key, objects)
+	expect = types.M{
+		"$in": types.S{
+			"1001",
+			"1002",
+		},
+	}
+	if reflect.DeepEqual(expect, selectObject) == false {
+		t.Error("expect:", expect, "result:", selectObject)
+	}
+	/**********************************************************/
+	selectObject = types.M{
+		"$select": "string",
+		"$in": types.S{
+			"1003",
+		},
+	}
+	key = "user"
+	objects = []types.M{
+		types.M{
+			"user": "1001",
+		},
+		types.M{
+			"user": "1002",
+		},
+	}
+	transformSelect(selectObject, key, objects)
+	expect = types.M{
+		"$in": types.S{
+			"1003",
+			"1001",
+			"1002",
+		},
+	}
+	if reflect.DeepEqual(expect, selectObject) == false {
+		t.Error("expect:", expect, "result:", selectObject)
+	}
 }
 
 func Test_transformDontSelect(t *testing.T) {

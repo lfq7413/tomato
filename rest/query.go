@@ -735,14 +735,20 @@ func findObjectWithKey(root interface{}, key string) types.M {
 
 // transformSelect 转换对象中的 $select
 func transformSelect(selectObject types.M, key string, objects []types.M) {
-	values := []interface{}{}
+	if selectObject == nil || selectObject["$select"] == nil {
+		return
+	}
+	values := types.S{}
 	for _, result := range objects {
+		if result == nil || result[key] == nil {
+			continue
+		}
 		values = append(values, result[key])
 	}
 
 	delete(selectObject, "$select")
-	var in []interface{}
-	if v, ok := selectObject["$in"].([]interface{}); ok {
+	var in types.S
+	if v := utils.A(selectObject["$in"]); v != nil {
 		in = v
 		in = append(in, values...)
 	} else {

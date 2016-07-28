@@ -753,14 +753,20 @@ func transformSelect(selectObject types.M, key string, objects []types.M) {
 
 // transformDontSelect 转换对象中的 $dontSelect
 func transformDontSelect(dontSelectObject types.M, key string, objects []types.M) {
-	values := []interface{}{}
+	if dontSelectObject == nil || dontSelectObject["$dontSelect"] == nil {
+		return
+	}
+	values := types.S{}
 	for _, result := range objects {
+		if result == nil || result[key] == nil {
+			continue
+		}
 		values = append(values, result[key])
 	}
 
 	delete(dontSelectObject, "$dontSelect")
-	var nin []interface{}
-	if v, ok := dontSelectObject["$nin"].([]interface{}); ok {
+	var nin types.S
+	if v := utils.A(dontSelectObject["$nin"]); v != nil {
 		nin = v
 		nin = append(nin, values...)
 	} else {

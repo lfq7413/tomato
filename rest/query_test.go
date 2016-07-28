@@ -58,7 +58,6 @@ func Test_replaceInQuery(t *testing.T) {
 	// findObjectWithKey
 	// NewQuery
 	// Execute
-	// transformInQuery
 	// TODO
 }
 
@@ -66,7 +65,6 @@ func Test_replaceNotInQuery(t *testing.T) {
 	// findObjectWithKey
 	// NewQuery
 	// Execute
-	// transformNotInQuery
 	// TODO
 }
 
@@ -118,7 +116,154 @@ func Test_transformDontSelect(t *testing.T) {
 }
 
 func Test_transformInQuery(t *testing.T) {
-	// TODO
+	var inQueryObject types.M
+	var className string
+	var results []types.M
+	var expect types.M
+	/**********************************************************/
+	inQueryObject = nil
+	className = "user"
+	results = nil
+	transformInQuery(inQueryObject, className, results)
+	expect = nil
+	if reflect.DeepEqual(expect, inQueryObject) == false {
+		t.Error("expect:", expect, "result:", inQueryObject)
+	}
+	/**********************************************************/
+	inQueryObject = types.M{}
+	className = "user"
+	results = nil
+	transformInQuery(inQueryObject, className, results)
+	expect = types.M{}
+	if reflect.DeepEqual(expect, inQueryObject) == false {
+		t.Error("expect:", expect, "result:", inQueryObject)
+	}
+	/**********************************************************/
+	inQueryObject = types.M{
+		"$inQuery": "string",
+	}
+	className = "user"
+	results = nil
+	transformInQuery(inQueryObject, className, results)
+	expect = types.M{
+		"$in": types.S{},
+	}
+	if reflect.DeepEqual(expect, inQueryObject) == false {
+		t.Error("expect:", expect, "result:", inQueryObject)
+	}
+	/**********************************************************/
+	inQueryObject = types.M{
+		"$inQuery": "string",
+	}
+	className = "user"
+	results = []types.M{}
+	transformInQuery(inQueryObject, className, results)
+	expect = types.M{
+		"$in": types.S{},
+	}
+	if reflect.DeepEqual(expect, inQueryObject) == false {
+		t.Error("expect:", expect, "result:", inQueryObject)
+	}
+	/**********************************************************/
+	inQueryObject = types.M{
+		"$inQuery": "string",
+	}
+	className = "user"
+	results = []types.M{
+		types.M{
+			"objectId": "1001",
+		},
+		types.M{
+			"key": "1002",
+		},
+	}
+	transformInQuery(inQueryObject, className, results)
+	expect = types.M{
+		"$in": types.S{
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1001",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, inQueryObject) == false {
+		t.Error("expect:", expect, "result:", inQueryObject)
+	}
+	/**********************************************************/
+	inQueryObject = types.M{
+		"$inQuery": "string",
+	}
+	className = "user"
+	results = []types.M{
+		types.M{
+			"objectId": "1001",
+		},
+		types.M{
+			"objectId": "1002",
+		},
+	}
+	transformInQuery(inQueryObject, className, results)
+	expect = types.M{
+		"$in": types.S{
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1001",
+			},
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1002",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, inQueryObject) == false {
+		t.Error("expect:", expect, "result:", inQueryObject)
+	}
+	/**********************************************************/
+	inQueryObject = types.M{
+		"$inQuery": "string",
+		"$in": types.S{
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1003",
+			},
+		},
+	}
+	className = "user"
+	results = []types.M{
+		types.M{
+			"objectId": "1001",
+		},
+		types.M{
+			"objectId": "1002",
+		},
+	}
+	transformInQuery(inQueryObject, className, results)
+	expect = types.M{
+		"$in": types.S{
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1003",
+			},
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1001",
+			},
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1002",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, inQueryObject) == false {
+		t.Error("expect:", expect, "result:", inQueryObject)
+	}
 }
 
 func Test_transformNotInQuery(t *testing.T) {

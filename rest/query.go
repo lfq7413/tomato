@@ -771,8 +771,14 @@ func transformDontSelect(dontSelectObject types.M, key string, objects []types.M
 
 // transformInQuery 转换对象中的 $inQuery
 func transformInQuery(inQueryObject types.M, className string, results []types.M) {
-	values := []interface{}{}
+	if inQueryObject == nil || inQueryObject["$inQuery"] == nil {
+		return
+	}
+	values := types.S{}
 	for _, result := range results {
+		if result == nil || utils.S(result["objectId"]) == "" {
+			continue
+		}
 		o := types.M{
 			"__type":    "Pointer",
 			"className": className,
@@ -782,8 +788,8 @@ func transformInQuery(inQueryObject types.M, className string, results []types.M
 	}
 
 	delete(inQueryObject, "$inQuery")
-	var in []interface{}
-	if v, ok := inQueryObject["$in"].([]interface{}); ok {
+	var in types.S
+	if v := utils.A(inQueryObject["$in"]); v != nil {
 		in = v
 		in = append(in, values...)
 	} else {

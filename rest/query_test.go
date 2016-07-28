@@ -144,5 +144,130 @@ func Test_transformNotInQuery(t *testing.T) {
 	if reflect.DeepEqual(expect, notInQueryObject) == false {
 		t.Error("expect:", expect, "result:", notInQueryObject)
 	}
-	// TODO
+	/**********************************************************/
+	notInQueryObject = types.M{
+		"$notInQuery": "string",
+	}
+	className = "user"
+	results = nil
+	transformNotInQuery(notInQueryObject, className, results)
+	expect = types.M{
+		"$nin": types.S{},
+	}
+	if reflect.DeepEqual(expect, notInQueryObject) == false {
+		t.Error("expect:", expect, "result:", notInQueryObject)
+	}
+	/**********************************************************/
+	notInQueryObject = types.M{
+		"$notInQuery": "string",
+	}
+	className = "user"
+	results = []types.M{}
+	transformNotInQuery(notInQueryObject, className, results)
+	expect = types.M{
+		"$nin": types.S{},
+	}
+	if reflect.DeepEqual(expect, notInQueryObject) == false {
+		t.Error("expect:", expect, "result:", notInQueryObject)
+	}
+	/**********************************************************/
+	notInQueryObject = types.M{
+		"$notInQuery": "string",
+	}
+	className = "user"
+	results = []types.M{
+		types.M{
+			"objectId": "1001",
+		},
+		types.M{
+			"key": "1002",
+		},
+	}
+	transformNotInQuery(notInQueryObject, className, results)
+	expect = types.M{
+		"$nin": types.S{
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1001",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, notInQueryObject) == false {
+		t.Error("expect:", expect, "result:", notInQueryObject)
+	}
+	/**********************************************************/
+	notInQueryObject = types.M{
+		"$notInQuery": "string",
+	}
+	className = "user"
+	results = []types.M{
+		types.M{
+			"objectId": "1001",
+		},
+		types.M{
+			"objectId": "1002",
+		},
+	}
+	transformNotInQuery(notInQueryObject, className, results)
+	expect = types.M{
+		"$nin": types.S{
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1001",
+			},
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1002",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, notInQueryObject) == false {
+		t.Error("expect:", expect, "result:", notInQueryObject)
+	}
+	/**********************************************************/
+	notInQueryObject = types.M{
+		"$notInQuery": "string",
+		"$nin": types.S{
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1003",
+			},
+		},
+	}
+	className = "user"
+	results = []types.M{
+		types.M{
+			"objectId": "1001",
+		},
+		types.M{
+			"objectId": "1002",
+		},
+	}
+	transformNotInQuery(notInQueryObject, className, results)
+	expect = types.M{
+		"$nin": types.S{
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1003",
+			},
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1001",
+			},
+			types.M{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1002",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, notInQueryObject) == false {
+		t.Error("expect:", expect, "result:", notInQueryObject)
+	}
 }

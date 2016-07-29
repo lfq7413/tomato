@@ -39,28 +39,24 @@ func Test_validateClientClassCreation(t *testing.T) {
 }
 
 func Test_replaceSelect(t *testing.T) {
-	// findObjectWithKey
 	// NewQuery
 	// Execute
 	// TODO
 }
 
 func Test_replaceDontSelect(t *testing.T) {
-	// findObjectWithKey
 	// NewQuery
 	// Execute
 	// TODO
 }
 
 func Test_replaceInQuery(t *testing.T) {
-	// findObjectWithKey
 	// NewQuery
 	// Execute
 	// TODO
 }
 
 func Test_replaceNotInQuery(t *testing.T) {
-	// findObjectWithKey
 	// NewQuery
 	// Execute
 	// TODO
@@ -102,7 +98,108 @@ func Test_replacePointers(t *testing.T) {
 }
 
 func Test_findObjectWithKey(t *testing.T) {
-	// TODO
+	var root interface{}
+	var key string
+	var result types.M
+	var expect types.M
+	/**********************************************************/
+	root = nil
+	key = "post"
+	result = findObjectWithKey(root, key)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	root = types.M{
+		"post": "hello",
+	}
+	key = "post"
+	result = findObjectWithKey(root, key)
+	expect = types.M{
+		"post": "hello",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	root = types.M{
+		"key": "hello",
+	}
+	key = "post"
+	result = findObjectWithKey(root, key)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	root = types.M{
+		"key": types.M{
+			"post": "hello",
+		},
+	}
+	key = "post"
+	result = findObjectWithKey(root, key)
+	expect = types.M{
+		"post": "hello",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	root = types.M{
+		"key": types.M{
+			"key": "hello",
+		},
+	}
+	key = "post"
+	result = findObjectWithKey(root, key)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	root = types.S{
+		types.M{
+			"post": "hello",
+		},
+	}
+	key = "post"
+	result = findObjectWithKey(root, key)
+	expect = types.M{
+		"post": "hello",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	root = types.S{
+		types.M{
+			"key": "hello",
+		},
+	}
+	key = "post"
+	result = findObjectWithKey(root, key)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	root = types.S{
+		types.M{
+			"key": types.M{
+				"post": "hello",
+			},
+		},
+	}
+	key = "post"
+	result = findObjectWithKey(root, key)
+	expect = types.M{
+		"post": "hello",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_transformSelect(t *testing.T) {

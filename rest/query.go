@@ -707,6 +707,9 @@ func replacePointers(pointers types.S, replace types.M) error {
 // findObjectWithKey 查找带有指定 key 的对象，root 可以是 Slice 或者 map
 // 查找到一个符合条件的对象之后立即返回
 func findObjectWithKey(root interface{}, key string) types.M {
+	if root == nil {
+		return nil
+	}
 	// 如果是 Slice 则遍历查找
 	if s := utils.A(root); s != nil {
 		for _, v := range s {

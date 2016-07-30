@@ -595,8 +595,7 @@ func includePath(auth *Auth, response types.M, path []string) error {
 		return nil
 	}
 	pointersHash := map[string][]string{}
-	for _, v := range pointers {
-		pointer := utils.M(v)
+	for _, pointer := range pointers {
 		// 不再区分不同 className ，添加不为空的 className
 		className := utils.S(pointer["className"])
 		if className != "" {
@@ -651,10 +650,10 @@ func includePath(auth *Auth, response types.M, path []string) error {
 }
 
 // findPointers 查询路径对应的对象列表，对象必须为 Pointer 类型
-func findPointers(object interface{}, path []string) (types.S, error) {
+func findPointers(object interface{}, path []string) ([]types.M, error) {
 	// 如果是对象数组，则遍历每一个对象
 	if utils.A(object) != nil {
-		answer := types.S{}
+		answer := []types.M{}
 		for _, v := range utils.A(object) {
 			p, err := findPointers(v, path)
 			if err != nil {
@@ -668,29 +667,28 @@ func findPointers(object interface{}, path []string) (types.S, error) {
 	// 如果不能转成 map ，则返回错误
 	obj := utils.M(object)
 	if obj == nil {
-		return types.S{}, nil
+		return []types.M{}, nil
 	}
 	// 如果当前是路径最后一个节点，判断是否为 Pointer
 	if len(path) == 0 {
 		if obj["__type"] == "Pointer" {
-			return types.S{obj}, nil
+			return []types.M{obj}, nil
 		}
-		return types.S{}, nil
+		return []types.M{}, nil
 	}
 	// 取出下一个路径对应的对象，进行查找
 	subobject := obj[path[0]]
 	if subobject == nil {
 		// 对象不存在，则不进行处理
-		return types.S{}, nil
+		return []types.M{}, nil
 	}
 	return findPointers(subobject, path[1:])
 }
 
 // replacePointers 把 replace 保存的对象，添加到 pointers 对应的节点中
 // pointers 中保存的是指向 response 的引用，修改 pointers 中的内容，即可同时修改 response 的内容
-func replacePointers(pointers types.S, replace types.M) error {
-	for _, v := range pointers {
-		pointer := utils.M(v)
+func replacePointers(pointers []types.M, replace types.M) {
+	for _, pointer := range pointers {
 		objectID := utils.S(pointer["objectId"])
 		if replace[objectID] == nil {
 			continue
@@ -701,7 +699,6 @@ func replacePointers(pointers types.S, replace types.M) error {
 			pointer[k] = v
 		}
 	}
-	return nil
 }
 
 // findObjectWithKey 查找带有指定 key 的对象，root 可以是 Slice 或者 map

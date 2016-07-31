@@ -688,15 +688,22 @@ func findPointers(object interface{}, path []string) ([]types.M, error) {
 // replacePointers 把 replace 保存的对象，添加到 pointers 对应的节点中
 // pointers 中保存的是指向 response 的引用，修改 pointers 中的内容，即可同时修改 response 的内容
 func replacePointers(pointers []types.M, replace types.M) {
+	if replace == nil {
+		return
+	}
 	for _, pointer := range pointers {
-		objectID := utils.S(pointer["objectId"])
-		if replace[objectID] == nil {
+		if pointer == nil {
 			continue
 		}
-		rpl := utils.M(replace[objectID])
-		// 把对象中的所有字段写入节点
-		for k, v := range rpl {
-			pointer[k] = v
+		objectID := utils.S(pointer["objectId"])
+		if objectID == "" {
+			continue
+		}
+		if rpl := utils.M(replace[objectID]); rpl != nil {
+			// 把对象中的所有字段写入节点
+			for k, v := range rpl {
+				pointer[k] = v
+			}
 		}
 	}
 }

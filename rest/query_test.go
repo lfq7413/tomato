@@ -85,7 +85,6 @@ func Test_includePath(t *testing.T) {
 	// findPointers
 	// NewQuery
 	// Execute
-	// replacePointers
 	// TODO
 }
 
@@ -94,7 +93,129 @@ func Test_findPointers(t *testing.T) {
 }
 
 func Test_replacePointers(t *testing.T) {
-	// TODO
+	var pointers []types.M
+	var replace types.M
+	var expect []types.M
+	/**********************************************************/
+	pointers = nil
+	replace = nil
+	replacePointers(pointers, replace)
+	expect = nil
+	if reflect.DeepEqual(expect, pointers) == false {
+		t.Error("expect:", expect, "result:", pointers)
+	}
+	/**********************************************************/
+	pointers = []types.M{nil}
+	replace = types.M{
+		"1001": types.M{
+			"key": "hello",
+		},
+	}
+	replacePointers(pointers, replace)
+	expect = []types.M{nil}
+	if reflect.DeepEqual(expect, pointers) == false {
+		t.Error("expect:", expect, "result:", pointers)
+	}
+	/**********************************************************/
+	pointers = []types.M{
+		types.M{
+			"post": "post",
+		},
+	}
+	replace = types.M{
+		"1001": types.M{
+			"key": "hello",
+		},
+	}
+	replacePointers(pointers, replace)
+	expect = []types.M{
+		types.M{
+			"post": "post",
+		},
+	}
+	if reflect.DeepEqual(expect, pointers) == false {
+		t.Error("expect:", expect, "result:", pointers)
+	}
+	/**********************************************************/
+	pointers = []types.M{
+		types.M{
+			"objectId": "1002",
+			"post":     "post",
+		},
+	}
+	replace = types.M{
+		"1001": types.M{
+			"key": "hello",
+		},
+	}
+	replacePointers(pointers, replace)
+	expect = []types.M{
+		types.M{
+			"objectId": "1002",
+			"post":     "post",
+		},
+	}
+	if reflect.DeepEqual(expect, pointers) == false {
+		t.Error("expect:", expect, "result:", pointers)
+	}
+	/**********************************************************/
+	pointers = []types.M{
+		types.M{
+			"objectId": "1001",
+			"post":     "post",
+		},
+	}
+	replace = types.M{
+		"1001": types.M{
+			"key": "hello",
+		},
+	}
+	replacePointers(pointers, replace)
+	expect = []types.M{
+		types.M{
+			"objectId": "1001",
+			"post":     "post",
+			"key":      "hello",
+		},
+	}
+	if reflect.DeepEqual(expect, pointers) == false {
+		t.Error("expect:", expect, "result:", pointers)
+	}
+	/**********************************************************/
+	pointers = []types.M{
+		types.M{
+			"objectId": "1001",
+			"post":     "post",
+		},
+		types.M{
+			"objectId": "1002",
+			"post":     "post",
+		},
+	}
+	replace = types.M{
+		"1001": types.M{
+			"key": "hello",
+		},
+		"1002": types.M{
+			"key": "hello",
+		},
+	}
+	replacePointers(pointers, replace)
+	expect = []types.M{
+		types.M{
+			"objectId": "1001",
+			"post":     "post",
+			"key":      "hello",
+		},
+		types.M{
+			"objectId": "1002",
+			"post":     "post",
+			"key":      "hello",
+		},
+	}
+	if reflect.DeepEqual(expect, pointers) == false {
+		t.Error("expect:", expect, "result:", pointers)
+	}
 }
 
 func Test_findObjectWithKey(t *testing.T) {

@@ -82,14 +82,160 @@ func Test_NewQuery(t *testing.T) {
 }
 
 func Test_includePath(t *testing.T) {
-	// findPointers
 	// NewQuery
 	// Execute
 	// TODO
 }
 
 func Test_findPointers(t *testing.T) {
-	// TODO
+	var object interface{}
+	var path []string
+	var result []types.M
+	var expect []types.M
+	/**********************************************************/
+	object = nil
+	path = nil
+	result = findPointers(object, path)
+	expect = []types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	object = "hello"
+	path = nil
+	result = findPointers(object, path)
+	expect = []types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": "hello",
+	}
+	path = nil
+	result = findPointers(object, path)
+	expect = []types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	object = types.M{
+		"__type":   "Pointer",
+		"objectId": "1001",
+	}
+	path = nil
+	result = findPointers(object, path)
+	expect = []types.M{
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1001",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	object = types.M{
+		"key": "hello",
+	}
+	path = []string{"post"}
+	result = findPointers(object, path)
+	expect = []types.M{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	object = types.M{
+		"post": types.M{
+			"__type":   "Pointer",
+			"objectId": "1001",
+		},
+	}
+	path = []string{"post"}
+	result = findPointers(object, path)
+	expect = []types.M{
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1001",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	object = types.S{
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1001",
+		},
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1002",
+		},
+	}
+	path = []string{}
+	result = findPointers(object, path)
+	expect = []types.M{
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1001",
+		},
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1002",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	object = types.M{
+		"post": types.S{
+			types.M{
+				"__type":   "Pointer",
+				"objectId": "1001",
+			},
+			types.M{
+				"__type":   "Pointer",
+				"objectId": "1002",
+			},
+		},
+	}
+	path = []string{"post"}
+	result = findPointers(object, path)
+	expect = []types.M{
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1001",
+		},
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1002",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	object = types.M{
+		"post": types.M{
+			"user": types.M{
+				"__type":   "Pointer",
+				"objectId": "1001",
+			},
+		},
+	}
+	path = []string{"post", "user"}
+	result = findPointers(object, path)
+	expect = []types.M{
+		types.M{
+			"__type":   "Pointer",
+			"objectId": "1001",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_replacePointers(t *testing.T) {

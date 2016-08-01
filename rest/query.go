@@ -587,10 +587,7 @@ func (q *Query) handleInclude() error {
 // 查询出该节点对应的对象，然后用对象替换该节点
 func includePath(auth *Auth, response types.M, path []string) error {
 	// 查找路径对应的所有节点
-	pointers, err := findPointers(response["results"], path)
-	if err != nil {
-		return err
-	}
+	pointers := findPointers(response["results"], path)
 	if len(pointers) == 0 {
 		return nil
 	}
@@ -650,37 +647,37 @@ func includePath(auth *Auth, response types.M, path []string) error {
 }
 
 // findPointers 查询路径对应的对象列表，对象必须为 Pointer 类型
-func findPointers(object interface{}, path []string) ([]types.M, error) {
+func findPointers(object interface{}, path []string) []types.M {
+	if object == nil {
+		return []types.M{}
+	}
 	// 如果是对象数组，则遍历每一个对象
-	if utils.A(object) != nil {
+	if s := utils.A(object); s != nil {
 		answer := []types.M{}
-		for _, v := range utils.A(object) {
-			p, err := findPointers(v, path)
-			if err != nil {
-				return nil, err
-			}
+		for _, v := range s {
+			p := findPointers(v, path)
 			answer = append(answer, p...)
 		}
-		return answer, nil
+		return answer
 	}
 
 	// 如果不能转成 map ，则返回错误
 	obj := utils.M(object)
 	if obj == nil {
-		return []types.M{}, nil
+		return []types.M{}
 	}
 	// 如果当前是路径最后一个节点，判断是否为 Pointer
 	if len(path) == 0 {
-		if obj["__type"] == "Pointer" {
-			return []types.M{obj}, nil
+		if utils.S(obj["__type"]) == "Pointer" {
+			return []types.M{obj}
 		}
-		return []types.M{}, nil
+		return []types.M{}
 	}
 	// 取出下一个路径对应的对象，进行查找
 	subobject := obj[path[0]]
 	if subobject == nil {
 		// 对象不存在，则不进行处理
-		return []types.M{}, nil
+		return []types.M{}
 	}
 	return findPointers(subobject, path[1:])
 }

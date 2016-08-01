@@ -36,6 +36,12 @@ func NewQuery(
 	options types.M,
 	clientSDK map[string]string,
 ) (*Query, error) {
+	if auth == nil {
+		auth = Nobody()
+	}
+	if where == nil {
+		where = types.M{}
+	}
 	query := &Query{
 		auth:              auth,
 		className:         className,
@@ -53,7 +59,7 @@ func NewQuery(
 	if auth.IsMaster == false {
 		// 当前权限为 Master 时，findOptions 中不存在 acl 这个 key
 		if auth.User != nil {
-			query.findOptions["acl"] = []string{auth.User["objectId"].(string)}
+			query.findOptions["acl"] = []string{utils.S(auth.User["objectId"])}
 		} else {
 			query.findOptions["acl"] = nil
 		}
@@ -61,9 +67,16 @@ func NewQuery(
 			if query.findOptions["acl"] == nil {
 				return nil, errs.E(errs.InvalidSessionToken, "This session token is invalid.")
 			}
-			user := types.M{"__type": "Pointer", "className": "_User", "objectId": auth.User["objectId"]}
-			and := types.S{where, user}
-			query.Where = types.M{"$and": and}
+			user := types.M{
+				"user": types.M{
+					"__type":    "Pointer",
+					"className": "_User",
+					"objectId":  auth.User["objectId"],
+				},
+			}
+			query.Where = types.M{
+				"$and": types.S{where, user},
+			}
 		}
 	}
 

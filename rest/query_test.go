@@ -28,6 +28,22 @@ func Test_BuildRestWhere(t *testing.T) {
 }
 
 func Test_getUserAndRoleACL(t *testing.T) {
+	var auth *Auth
+	var q *Query
+	/**********************************************************/
+	auth = Master()
+	q, _ = NewQuery(auth, "user", nil, nil, nil)
+	q.getUserAndRoleACL()
+	if _, ok := q.findOptions["acl"]; ok {
+		t.Error("findOptions[acl] exist")
+	}
+	/**********************************************************/
+	auth = Nobody()
+	q, _ = NewQuery(auth, "user", nil, nil, nil)
+	q.getUserAndRoleACL()
+	if q.findOptions["acl"] != nil {
+		t.Error("findOptions[acl] is not nil")
+	}
 	// TODO
 }
 

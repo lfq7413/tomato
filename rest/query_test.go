@@ -6,6 +6,7 @@ import (
 
 	"gopkg.in/mgo.v2"
 
+	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/storage"
@@ -22,7 +23,6 @@ func Test_Execute(t *testing.T) {
 }
 
 func Test_BuildRestWhere(t *testing.T) {
-	// validateClientClassCreation
 	// replaceSelect
 	// replaceDontSelect
 	// replaceInQuery
@@ -106,7 +106,65 @@ func Test_redirectClassNameForKey(t *testing.T) {
 }
 
 func Test_validateClientClassCreation(t *testing.T) {
-	// TODO
+	var className string
+	var q *Query
+	var result error
+	var expect error
+	/**********************************************************/
+	config.TConfig.AllowClientClassCreation = true
+	className = "user"
+	q, _ = NewQuery(nil, className, nil, nil, nil)
+	result = q.validateClientClassCreation()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	config.TConfig.AllowClientClassCreation = false
+	className = "user"
+	q, _ = NewQuery(Master(), className, nil, nil, nil)
+	result = q.validateClientClassCreation()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	config.TConfig.AllowClientClassCreation = false
+	className = "_User"
+	q, _ = NewQuery(nil, className, nil, nil, nil)
+	result = q.validateClientClassCreation()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/**********************************************************/
+	initEnv()
+	object := types.M{
+		"fields": types.M{
+			"post": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("user", object)
+	config.TConfig.AllowClientClassCreation = false
+	className = "user"
+	q, _ = NewQuery(nil, className, nil, nil, nil)
+	result = q.validateClientClassCreation()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	config.TConfig.AllowClientClassCreation = false
+	className = "user"
+	q, _ = NewQuery(nil, className, nil, nil, nil)
+	result = q.validateClientClassCreation()
+	expect = errs.E(errs.OperationForbidden, "This user is not allowed to access non-existent class: user")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_replaceSelect(t *testing.T) {

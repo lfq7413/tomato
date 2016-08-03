@@ -4,7 +4,12 @@ import (
 	"reflect"
 	"testing"
 
+	"gopkg.in/mgo.v2"
+
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/orm"
+	"github.com/lfq7413/tomato/storage"
+	"github.com/lfq7413/tomato/storage/mongo"
 	"github.com/lfq7413/tomato/types"
 )
 
@@ -17,8 +22,6 @@ func Test_Execute(t *testing.T) {
 }
 
 func Test_BuildRestWhere(t *testing.T) {
-	// getUserAndRoleACL
-	// redirectClassNameForKey
 	// validateClientClassCreation
 	// replaceSelect
 	// replaceDontSelect
@@ -44,11 +47,62 @@ func Test_getUserAndRoleACL(t *testing.T) {
 	if q.findOptions["acl"] != nil {
 		t.Error("findOptions[acl] is not nil")
 	}
-	// TODO
+	// TODO 添加普通用户权限的测试用例
 }
 
 func Test_redirectClassNameForKey(t *testing.T) {
-	// TODO
+	var options types.M
+	var q *Query
+	var object types.M
+	/**********************************************************/
+	options = types.M{}
+	q, _ = NewQuery(nil, "user", nil, options, nil)
+	q.redirectClassNameForKey()
+	if q.redirectKey != "" || q.redirectClassName != "" || q.className != "user" {
+		t.Error("expect: empty result:", q.redirectKey, q.redirectClassName, q.className)
+	}
+	/**********************************************************/
+	initEnv()
+	options = types.M{"redirectClassNameForKey": "post"}
+	q, _ = NewQuery(nil, "user", nil, options, nil)
+	q.redirectClassNameForKey()
+	if q.redirectKey != "post" || q.redirectClassName != "user" || q.className != "user" {
+		t.Error("expect: empty result:", q.redirectKey, q.redirectClassName, q.className)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	object = types.M{
+		"fields": types.M{
+			"post": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("user", object)
+	options = types.M{"redirectClassNameForKey": "post"}
+	q, _ = NewQuery(nil, "user", nil, options, nil)
+	q.redirectClassNameForKey()
+	if q.redirectKey != "post" || q.redirectClassName != "user" || q.className != "user" {
+		t.Error("expect: empty result:", q.redirectKey, q.redirectClassName, q.className)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	object = types.M{
+		"fields": types.M{
+			"post": types.M{
+				"type":        "Relation",
+				"targetClass": "postT",
+			},
+		},
+	}
+	orm.Adapter.CreateClass("user", object)
+	options = types.M{"redirectClassNameForKey": "post"}
+	q, _ = NewQuery(nil, "user", nil, options, nil)
+	q.redirectClassNameForKey()
+	if q.redirectKey != "post" || q.redirectClassName != "postT" || q.className != "postT" {
+		t.Error("expect: empty result:", q.redirectKey, q.redirectClassName, q.className)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_validateClientClassCreation(t *testing.T) {
@@ -1422,4 +1476,27 @@ func Test_transformNotInQuery(t *testing.T) {
 	if reflect.DeepEqual(expect, notInQueryObject) == false {
 		t.Error("expect:", expect, "result:", notInQueryObject)
 	}
+}
+
+func initEnv() {
+	orm.InitOrm(getAdapter())
+}
+
+func getAdapter() *mongo.MongoAdapter {
+	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
+	return mongo.NewMongoAdapter("tomato")
+}
+
+func newMongoDB(url string) *storage.Database {
+	session, err := mgo.Dial(url)
+	if err != nil {
+		panic(err)
+	}
+	session.SetMode(mgo.Monotonic, true)
+	database := session.DB("")
+	db := &storage.Database{
+		MongoSession:  session,
+		MongoDatabase: database,
+	}
+	return db
 }

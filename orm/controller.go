@@ -1575,3 +1575,10 @@ func flattenUpdateOperatorsForCreate(object types.M) error {
 	}
 	return nil
 }
+
+// InitOrm 初始化 orm ，仅用于测试
+func InitOrm(a storage.Adapter) {
+	Adapter = a
+	schemaCache = cache.NewSchemaCache(5)
+	TomatoDBController = &DBController{}
+}

@@ -506,6 +506,11 @@ func (q *Query) runFind() error {
 				q.response["results"] = types.S{}
 				return nil
 			}
+		} else if l, ok := q.findOptions["limit"].(int); ok {
+			if l == 0 {
+				q.response["results"] = types.S{}
+				return nil
+			}
 		}
 	}
 	response, err := orm.TomatoDBController.Find(q.className, q.Where, q.findOptions)
@@ -547,12 +552,15 @@ func (q *Query) runFind() error {
 			}
 			results = append(results, newObj)
 		}
+	} else {
+		results = append(results, response...)
 	}
 
 	if q.redirectClassName != "" {
 		for _, v := range results {
-			r := utils.M(v)
-			r["className"] = q.redirectClassName
+			if r := utils.M(v); r != nil {
+				r["className"] = q.redirectClassName
+			}
 		}
 	}
 

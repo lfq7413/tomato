@@ -664,6 +664,7 @@ func (d *DBController) LoadSchema(options types.M) *Schema {
 
 // DeleteEverything 删除所有表数据，仅用于测试
 func (d *DBController) DeleteEverything() {
+	schemaCache.Clear()
 	schemaPromise = nil
 	Adapter.DeleteAllClasses()
 }

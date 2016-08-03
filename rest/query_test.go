@@ -16,7 +16,6 @@ import (
 
 func Test_Execute(t *testing.T) {
 	// BuildRestWhere
-	// runFind
 	// runCount
 	// handleInclude
 	// TODO
@@ -236,7 +235,368 @@ func Test_replaceNotInQuery(t *testing.T) {
 }
 
 func Test_runFind(t *testing.T) {
-	// TODO
+	var object types.M
+	var where types.M
+	var options types.M
+	var className string
+	var q *Query
+	var err error
+	var expect types.S
+	/**********************************************************/
+	initEnv()
+	where = types.M{}
+	options = types.M{}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"objectId": "01",
+			"key":      "hello",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{"limit": 0}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{"limit": 1}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"objectId": "01",
+			"key":      "hello",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{"skip": 1}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"objectId": "02",
+			"key":      "hello",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+			"age": types.M{"type": "Number"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"age":      2,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+		"age":      3,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "03",
+		"key":      "hello",
+		"age":      1,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{"order": "age"}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"objectId": "03",
+			"key":      "hello",
+			"age":      1,
+		},
+		types.M{
+			"objectId": "01",
+			"key":      "hello",
+			"age":      2,
+		},
+		types.M{
+			"objectId": "02",
+			"key":      "hello",
+			"age":      3,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+			"age": types.M{"type": "Number"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"age":      2,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+		"age":      3,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "03",
+		"key":      "hello",
+		"age":      1,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{"keys": "age"}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"objectId": "01",
+			"age":      2,
+		},
+		types.M{
+			"objectId": "02",
+			"age":      3,
+		},
+		types.M{
+			"objectId": "03",
+			"age":      1,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+			"age": types.M{"type": "Number"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"age":      2,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+		"age":      3,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	q.redirectClassName = "post"
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"className": "post",
+			"objectId":  "01",
+			"key":       "hello",
+			"age":       2,
+		},
+		types.M{
+			"className": "post",
+			"objectId":  "02",
+			"key":       "hello",
+			"age":       3,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "_User"
+	object = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"username": "joe",
+		"password": "123456",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"username": "jack",
+		"password": "123456",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1002",
+			},
+		},
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{}
+	className = "_User"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"objectId": "01",
+			"username": "joe",
+			"authData": types.M{
+				"facebook": types.M{
+					"id": "1001",
+				},
+			},
+		},
+		types.M{
+			"objectId": "02",
+			"username": "jack",
+			"authData": types.M{
+				"facebook": types.M{
+					"id": "1002",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+
+	// TODO 测试展开文件类型
 }
 
 func Test_runCount(t *testing.T) {

@@ -23,10 +23,6 @@ func Test_Execute(t *testing.T) {
 }
 
 func Test_BuildRestWhere(t *testing.T) {
-	// replaceSelect
-	// replaceDontSelect
-	// replaceInQuery
-	// replaceNotInQuery
 	// TODO
 }
 
@@ -168,21 +164,73 @@ func Test_validateClientClassCreation(t *testing.T) {
 }
 
 func Test_replaceSelect(t *testing.T) {
+	var q *Query
+	var where types.M
+	var err error
+	var expect types.M
+	/**********************************************************/
+	where = types.M{"key": "hello"}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceSelect()
+	expect = types.M{"key": "hello"}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where)
+	}
+
 	// Execute
 	// TODO
 }
 
 func Test_replaceDontSelect(t *testing.T) {
+	var q *Query
+	var where types.M
+	var err error
+	var expect types.M
+	/**********************************************************/
+	where = types.M{"key": "hello"}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expect = types.M{"key": "hello"}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where)
+	}
+
 	// Execute
 	// TODO
 }
 
 func Test_replaceInQuery(t *testing.T) {
+	var q *Query
+	var where types.M
+	var err error
+	var expect types.M
+	/**********************************************************/
+	where = types.M{"key": "hello"}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expect = types.M{"key": "hello"}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where)
+	}
+
 	// Execute
 	// TODO
 }
 
 func Test_replaceNotInQuery(t *testing.T) {
+	var q *Query
+	var where types.M
+	var err error
+	var expect types.M
+	/**********************************************************/
+	where = types.M{"key": "hello"}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceNotInQuery()
+	expect = types.M{"key": "hello"}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where)
+	}
+
 	// Execute
 	// TODO
 }

@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -137,11 +136,6 @@ func NewQuery(
 
 // Execute 执行查询请求，返回的数据包含 results count 两个字段
 func (q *Query) Execute() (types.M, error) {
-
-	fmt.Println("keys       ", q.keys)
-	fmt.Println("doCount    ", q.doCount)
-	fmt.Println("findOptions", q.findOptions)
-	fmt.Println("include    ", q.include)
 
 	err := q.BuildRestWhere()
 	if err != nil {
@@ -616,16 +610,17 @@ func includePath(auth *Auth, response types.M, path []string) error {
 	if len(pointers) == 0 {
 		return nil
 	}
-	pointersHash := map[string][]string{}
+	pointersHash := map[string]types.S{}
 	for _, pointer := range pointers {
 		// 不再区分不同 className ，添加不为空的 className
 		className := utils.S(pointer["className"])
-		if className != "" {
+		objectID := utils.S(pointer["objectId"])
+		if className != "" && objectID != "" {
 			if v, ok := pointersHash[className]; ok {
-				v = append(v, pointer["objectId"].(string))
+				v = append(v, objectID)
 				pointersHash[className] = v
 			} else {
-				pointersHash[className] = []string{pointer["objectId"].(string)}
+				pointersHash[className] = types.S{objectID}
 			}
 		}
 
@@ -656,6 +651,9 @@ func includePath(auth *Auth, response types.M, path []string) error {
 		results := utils.A(includeResponse["results"])
 		for _, v := range results {
 			obj := utils.M(v)
+			if obj == nil {
+				continue
+			}
 			obj["__type"] = "Object"
 			obj["className"] = clsName
 			if clsName == "_User" && auth.IsMaster == false {

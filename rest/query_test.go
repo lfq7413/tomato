@@ -15,6 +15,55 @@ import (
 )
 
 func Test_Execute(t *testing.T) {
+	var object types.M
+	var where types.M
+	var options types.M
+	var className string
+	var q *Query
+	var err error
+	var result types.M
+	var expect types.M
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	className = "user"
+	where = types.M{}
+	options = types.M{}
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	result, err = q.Execute()
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "01",
+				"key":      "hello",
+			},
+			types.M{
+				"objectId": "02",
+				"key":      "hello",
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+
 	// BuildRestWhere
 	// handleInclude
 	// TODO
@@ -694,7 +743,6 @@ func Test_runCount(t *testing.T) {
 }
 
 func Test_handleInclude(t *testing.T) {
-	// includePath
 	// TODO
 }
 
@@ -1100,8 +1148,410 @@ func Test_NewQuery(t *testing.T) {
 }
 
 func Test_includePath(t *testing.T) {
-	// Execute
-	// TODO
+	var className string
+	var object types.M
+	var auth *Auth
+	var response types.M
+	var path []string
+	var err error
+	var expect types.M
+	/**********************************************************/
+	initEnv()
+	className = "post"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "2001",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "2002",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	auth = Master()
+	response = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"__type":    "Pointer",
+					"className": "post",
+					"objectId":  "2001",
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"__type":    "Pointer",
+					"className": "post",
+					"objectId":  "2002",
+				},
+			},
+		},
+	}
+	path = []string{"post"}
+	err = includePath(auth, response, path)
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"__type":    "Object",
+					"className": "post",
+					"objectId":  "2001",
+					"key":       "hello",
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"__type":    "Object",
+					"className": "post",
+					"objectId":  "2002",
+					"key":       "hello",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, response) == false {
+		t.Error("expect:", expect, "result:", response)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "post"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "2001",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	className = "postEx"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "3001",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	auth = Master()
+	response = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"__type":    "Pointer",
+					"className": "post",
+					"objectId":  "2001",
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"__type":    "Pointer",
+					"className": "postEx",
+					"objectId":  "3001",
+				},
+			},
+		},
+	}
+	path = []string{"post"}
+	err = includePath(auth, response, path)
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"__type":    "Object",
+					"className": "post",
+					"objectId":  "2001",
+					"key":       "hello",
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"__type":    "Object",
+					"className": "postEx",
+					"objectId":  "3001",
+					"key":       "hello",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, response) == false {
+		t.Error("expect:", expect, "result:", response)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "4001",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "4002",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	auth = Master()
+	response = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"id": "1",
+					"user": types.M{
+						"__type":    "Pointer",
+						"className": "user",
+						"objectId":  "4001",
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"id": "2",
+					"user": types.M{
+						"__type":    "Pointer",
+						"className": "user",
+						"objectId":  "4002",
+					},
+				},
+			},
+		},
+	}
+	path = []string{"post", "user"}
+	err = includePath(auth, response, path)
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"id": "1",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "4001",
+						"key":       "hello",
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"id": "2",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "4002",
+						"key":       "hello",
+					},
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, response) == false {
+		t.Error("expect:", expect, "result:", response)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "_User"
+	object = types.M{
+		"fields": types.M{
+			"username":     types.M{"type": "String"},
+			"sessionToken": types.M{"type": "String"},
+			"authData":     types.M{"type": "Object"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId":     "2001",
+		"username":     "joe",
+		"sessionToken": "abc",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId":     "2002",
+		"username":     "jack",
+		"sessionToken": "abc",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	auth = Master()
+	response = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"user": types.M{
+					"__type":    "Pointer",
+					"className": "_User",
+					"objectId":  "2001",
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"user": types.M{
+					"__type":    "Pointer",
+					"className": "_User",
+					"objectId":  "2002",
+				},
+			},
+		},
+	}
+	path = []string{"user"}
+	err = includePath(auth, response, path)
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"user": types.M{
+					"__type":    "Object",
+					"className": "_User",
+					"objectId":  "2001",
+					"username":  "joe",
+					"authData": types.M{
+						"facebook": types.M{
+							"id": "1024",
+						},
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"user": types.M{
+					"__type":    "Object",
+					"className": "_User",
+					"objectId":  "2002",
+					"username":  "jack",
+					"authData": types.M{
+						"facebook": types.M{
+							"id": "1024",
+						},
+					},
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, response) == false {
+		t.Error("expect:", expect, "result:", response)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "_User"
+	object = types.M{
+		"fields": types.M{
+			"username":     types.M{"type": "String"},
+			"sessionToken": types.M{"type": "String"},
+			"authData":     types.M{"type": "Object"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId":     "2001",
+		"username":     "joe",
+		"sessionToken": "abc",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId":     "2002",
+		"username":     "jack",
+		"sessionToken": "abc",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1024",
+			},
+		},
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	auth = Nobody()
+	response = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"user": types.M{
+					"__type":    "Pointer",
+					"className": "_User",
+					"objectId":  "2001",
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"user": types.M{
+					"__type":    "Pointer",
+					"className": "_User",
+					"objectId":  "2002",
+				},
+			},
+		},
+	}
+	path = []string{"user"}
+	err = includePath(auth, response, path)
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"user": types.M{
+					"__type":    "Object",
+					"className": "_User",
+					"objectId":  "2001",
+					"username":  "joe",
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"user": types.M{
+					"__type":    "Object",
+					"className": "_User",
+					"objectId":  "2002",
+					"username":  "jack",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, response) == false {
+		t.Error("expect:", expect, "result:", response)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_findPointers(t *testing.T) {

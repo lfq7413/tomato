@@ -16,7 +16,6 @@ import (
 
 func Test_Execute(t *testing.T) {
 	// BuildRestWhere
-	// runCount
 	// handleInclude
 	// TODO
 }
@@ -600,7 +599,98 @@ func Test_runFind(t *testing.T) {
 }
 
 func Test_runCount(t *testing.T) {
-	// TODO
+	var object types.M
+	var options types.M
+	var className string
+	var q *Query
+	var err error
+	var expect int
+	/**********************************************************/
+	options = types.M{}
+	className = "user"
+	q, _ = NewQuery(Master(), className, types.M{}, options, nil)
+	err = q.runCount()
+	if err != nil || q.response["count"] != nil {
+		t.Error("expect:", nil, "result:", q.response["count"], err)
+	}
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	options = types.M{"count": true}
+	className = "user"
+	q, _ = NewQuery(Master(), className, types.M{}, options, nil)
+	err = q.runCount()
+	expect = 0
+	if err != nil || reflect.DeepEqual(q.response["count"], expect) == false {
+		t.Error("expect:", nil, "result:", q.response["count"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	options = types.M{"count": true}
+	className = "user"
+	q, _ = NewQuery(Master(), className, types.M{}, options, nil)
+	err = q.runCount()
+	expect = 2
+	if err != nil || reflect.DeepEqual(q.response["count"], expect) == false {
+		t.Error("expect:", nil, "result:", q.response["count"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	options = types.M{
+		"count": true,
+		"skip":  1,
+		"limit": 1,
+	}
+	className = "user"
+	q, _ = NewQuery(Master(), className, types.M{}, options, nil)
+	err = q.runCount()
+	expect = 2
+	if err != nil || reflect.DeepEqual(q.response["count"], expect) == false {
+		t.Error("expect:", nil, "result:", q.response["count"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_handleInclude(t *testing.T) {

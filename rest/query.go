@@ -581,7 +581,11 @@ func (q *Query) runCount() error {
 	if err != nil {
 		return err
 	}
-	q.response["count"] = result[0]
+	if result == nil || len(result) == 0 {
+		q.response["count"] = 0
+	} else {
+		q.response["count"] = result[0]
+	}
 	return nil
 }
 

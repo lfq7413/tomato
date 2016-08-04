@@ -65,7 +65,6 @@ func Test_Execute(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 
 	// BuildRestWhere
-	// handleInclude
 	// TODO
 }
 
@@ -743,7 +742,124 @@ func Test_runCount(t *testing.T) {
 }
 
 func Test_handleInclude(t *testing.T) {
-	// TODO
+	var schema types.M
+	var object types.M
+	var className string
+	var options types.M
+	var q *Query
+	var err error
+	var expect types.M
+	/**********************************************************/
+	initEnv()
+	className = "post"
+	schema = types.M{
+		"fields": types.M{
+			"id": types.M{"type": "String"},
+			"user": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"id":       "01",
+		"user": types.M{
+			"__type":    "Pointer",
+			"className": "user",
+			"objectId":  "3001",
+		},
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"id":       "02",
+		"user": types.M{
+			"__type":    "Pointer",
+			"className": "user",
+			"objectId":  "3002",
+		},
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "user"
+	schema = types.M{
+		"fields": types.M{
+			"name": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "3001",
+		"name":     "joe",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "3002",
+		"name":     "jack",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	options = types.M{"include": "post.user"}
+	q, _ = NewQuery(Master(), "list", types.M{}, options, nil)
+	q.response = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"__type":    "Pointer",
+					"className": "post",
+					"objectId":  "2001",
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"__type":    "Pointer",
+					"className": "post",
+					"objectId":  "2002",
+				},
+			},
+		},
+	}
+	err = q.handleInclude()
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"__type":    "Object",
+					"className": "post",
+					"objectId":  "2001",
+					"id":        "01",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "3001",
+						"name":      "joe",
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"__type":    "Object",
+					"className": "post",
+					"objectId":  "2002",
+					"id":        "02",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "3002",
+						"name":      "jack",
+					},
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response) == false {
+		t.Error("expect:", expect, "result:", q.response)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 /////////////////////////////////////////////////////////////////

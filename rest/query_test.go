@@ -15,6 +15,7 @@ import (
 )
 
 func Test_Execute(t *testing.T) {
+	var schema types.M
 	var object types.M
 	var where types.M
 	var options types.M
@@ -56,6 +57,132 @@ func Test_Execute(t *testing.T) {
 			types.M{
 				"objectId": "02",
 				"key":      "hello",
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "list"
+	schema = types.M{
+		"fields": types.M{
+			"title": types.M{"type": "String"},
+			"post": types.M{
+				"type":        "Pointer",
+				"targetClass": "post",
+			},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "1001",
+		"title":    "one",
+		"post": types.M{
+			"__type":    "Pointer",
+			"className": "post",
+			"objectId":  "2001",
+		},
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "1002",
+		"title":    "two",
+		"post": types.M{
+			"__type":    "Pointer",
+			"className": "post",
+			"objectId":  "2002",
+		},
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "post"
+	schema = types.M{
+		"fields": types.M{
+			"id": types.M{"type": "String"},
+			"user": types.M{
+				"type":        "Pointer",
+				"targetClass": "user",
+			},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"id":       "01",
+		"user": types.M{
+			"__type":    "Pointer",
+			"className": "user",
+			"objectId":  "3001",
+		},
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"id":       "02",
+		"user": types.M{
+			"__type":    "Pointer",
+			"className": "user",
+			"objectId":  "3002",
+		},
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "user"
+	schema = types.M{
+		"fields": types.M{
+			"name": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "3001",
+		"name":     "joe",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "3002",
+		"name":     "jack",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "list"
+	where = types.M{}
+	options = types.M{"include": "post.user"}
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	result, err = q.Execute()
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"title":    "one",
+				"post": types.M{
+					"__type":    "Object",
+					"className": "post",
+					"objectId":  "2001",
+					"id":        "01",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "3001",
+						"name":      "joe",
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"title":    "two",
+				"post": types.M{
+					"__type":    "Object",
+					"className": "post",
+					"objectId":  "2002",
+					"id":        "02",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "3002",
+						"name":      "jack",
+					},
+				},
 			},
 		},
 	}

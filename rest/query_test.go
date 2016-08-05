@@ -190,13 +190,115 @@ func Test_Execute(t *testing.T) {
 		t.Error("expect:", expect, "result:", result)
 	}
 	orm.TomatoDBController.DeleteEverything()
-
-	// BuildRestWhere
-	// TODO
 }
 
 func Test_BuildRestWhere(t *testing.T) {
-	// TODO
+	var className string
+	var schema types.M
+	var object types.M
+	var q *Query
+	var where types.M
+	var err error
+	var expect types.M
+	/**********************************************************/
+	initEnv()
+	className = "Team"
+	schema = types.M{
+		"fields": types.M{
+			"city":   types.M{"type": "String"},
+			"winPct": types.M{"type": "Number"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"city":     "beijing",
+		"winPct":   0.8,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"city":     "shanghai",
+		"winPct":   0.7,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2003",
+		"city":     "guangzhou",
+		"winPct":   0.4,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "Post"
+	schema = types.M{
+		"fields": types.M{
+			"title": types.M{"type": "String"},
+			"image": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "3001",
+		"title":    "one",
+		"image":    "1.jpg",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "3002",
+		"title":    "two",
+		"image":    "2.jpg",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "3003",
+		"title":    "three",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	where = types.M{
+		"hometown": types.M{
+			"$select": types.M{
+				"query": types.M{
+					"className": "Team",
+					"where": types.M{
+						"winPct": types.M{"$gt": 0.5},
+					},
+				},
+				"key": "city",
+			},
+		},
+		"post": types.M{
+			"$inQuery": types.M{
+				"where": types.M{
+					"image": types.M{"$exists": true},
+				},
+				"className": "Post",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.BuildRestWhere()
+	expect = types.M{
+		"hometown": types.M{
+			"$in": types.S{"beijing", "shanghai"},
+		},
+		"post": types.M{
+			"$in": types.S{
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "3001",
+				},
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "3002",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_getUserAndRoleACL(t *testing.T) {

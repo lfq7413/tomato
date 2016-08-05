@@ -271,14 +271,14 @@ func (q *Query) replaceSelect() error {
 	selectValue := utils.M(selectObject["$select"])
 	if selectValue == nil ||
 		selectValue["query"] == nil ||
-		selectValue["key"] == nil ||
+		utils.S(selectValue["key"]) == "" ||
 		len(selectValue) != 2 {
 		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
 	queryValue := utils.M(selectValue["query"])
 	// iOS SDK 中不设置 where 时，没有 where 字段，所以此处不检测 where
 	if queryValue == nil ||
-		queryValue["className"] == nil {
+		utils.S(queryValue["className"]) == "" {
 		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
 
@@ -287,10 +287,10 @@ func (q *Query) replaceSelect() error {
 	}
 
 	var where types.M
-	if queryValue["where"] == nil {
+	if w := utils.M(queryValue["where"]); w == nil {
 		where = types.M{}
 	} else {
-		utils.M(queryValue["where"])
+		where = w
 	}
 	query, err := NewQuery(
 		q.auth,
@@ -309,11 +309,14 @@ func (q *Query) replaceSelect() error {
 	if utils.HasResults(response) == true {
 		for _, v := range utils.A(response["results"]) {
 			result := utils.M(v)
+			if result == nil {
+				continue
+			}
 			values = append(values, result)
 		}
 	}
 	// 替换 $select 为 $in
-	transformSelect(selectObject, selectValue["key"].(string), values)
+	transformSelect(selectObject, utils.S(selectValue["key"]), values)
 	// 继续搜索替换
 	return q.replaceSelect()
 }
@@ -329,13 +332,13 @@ func (q *Query) replaceDontSelect() error {
 	dontSelectValue := utils.M(dontSelectObject["$dontSelect"])
 	if dontSelectValue == nil ||
 		dontSelectValue["query"] == nil ||
-		dontSelectValue["key"] == nil ||
+		utils.S(dontSelectValue["key"]) == "" ||
 		len(dontSelectValue) != 2 {
 		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
 	queryValue := utils.M(dontSelectValue["query"])
 	if queryValue == nil ||
-		queryValue["className"] == nil {
+		utils.S(queryValue["className"]) == "" {
 		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
 
@@ -344,10 +347,10 @@ func (q *Query) replaceDontSelect() error {
 	}
 
 	var where types.M
-	if queryValue["where"] == nil {
+	if w := utils.M(queryValue["where"]); w == nil {
 		where = types.M{}
 	} else {
-		utils.M(queryValue["where"])
+		where = w
 	}
 	query, err := NewQuery(
 		q.auth,
@@ -366,11 +369,14 @@ func (q *Query) replaceDontSelect() error {
 	if utils.HasResults(response) == true {
 		for _, v := range utils.A(response["results"]) {
 			result := utils.M(v)
+			if result == nil {
+				continue
+			}
 			values = append(values, result)
 		}
 	}
 	// 替换 $dontSelect 为 $nin
-	transformDontSelect(dontSelectObject, dontSelectValue["key"].(string), values)
+	transformDontSelect(dontSelectObject, utils.S(dontSelectValue["key"]), values)
 	// 继续搜索替换
 	return q.replaceDontSelect()
 }
@@ -410,8 +416,8 @@ func (q *Query) replaceInQuery() error {
 	// 必须包含两个 key ： where className
 	inQueryValue := utils.M(inQueryObject["$inQuery"])
 	if inQueryValue == nil ||
-		inQueryValue["where"] == nil ||
-		inQueryValue["className"] == nil ||
+		utils.M(inQueryValue["where"]) == nil ||
+		utils.S(inQueryValue["className"]) == "" ||
 		len(inQueryValue) != 2 {
 		return errs.E(errs.InvalidQuery, "improper usage of $inQuery")
 	}
@@ -437,6 +443,9 @@ func (q *Query) replaceInQuery() error {
 	if utils.HasResults(response) == true {
 		for _, v := range utils.A(response["results"]) {
 			result := utils.M(v)
+			if result == nil {
+				continue
+			}
 			values = append(values, result)
 		}
 	}
@@ -456,8 +465,8 @@ func (q *Query) replaceNotInQuery() error {
 	// 必须包含两个 key ： where className
 	notInQueryValue := utils.M(notInQueryObject["$notInQuery"])
 	if notInQueryValue == nil ||
-		notInQueryValue["where"] == nil ||
-		notInQueryValue["className"] == nil ||
+		utils.M(notInQueryValue["where"]) == nil ||
+		utils.S(notInQueryValue["className"]) == "" ||
 		len(notInQueryValue) != 2 {
 		return errs.E(errs.InvalidQuery, "improper usage of $notInQuery")
 	}
@@ -483,6 +492,9 @@ func (q *Query) replaceNotInQuery() error {
 	if utils.HasResults(response) == true {
 		for _, v := range utils.A(response["results"]) {
 			result := utils.M(v)
+			if result == nil {
+				continue
+			}
 			values = append(values, result)
 		}
 	}

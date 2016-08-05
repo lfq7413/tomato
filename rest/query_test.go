@@ -623,15 +623,16 @@ func Test_replaceSelect(t *testing.T) {
 		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
-
-	// Execute
-	// TODO
 }
 
 func Test_replaceDontSelect(t *testing.T) {
+	var className string
+	var schema types.M
+	var object types.M
 	var q *Query
 	var where types.M
 	var err error
+	var expectErr error
 	var expect types.M
 	/**********************************************************/
 	where = types.M{"key": "hello"}
@@ -641,9 +642,276 @@ func Test_replaceDontSelect(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
 		t.Error("expect:", expect, "result:", q.Where)
 	}
-
-	// Execute
-	// TODO
+	/**********************************************************/
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": "hello",
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{
+				"query": "hello",
+			},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{
+				"query": "hello",
+				"key":   "hello",
+				"other": "world",
+			},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{
+				"query": "hello",
+				"key":   "hello",
+			},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{
+				"query": types.M{},
+				"key":   "hello",
+			},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	initEnv()
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{
+				"query": types.M{
+					"className": "Team",
+				},
+				"key": "city",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expect = types.M{
+		"hometown": types.M{
+			"$nin": types.S{},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "Team"
+	schema = types.M{
+		"fields": types.M{
+			"city": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"city":     "beijing",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"city":     "shanghai",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2003",
+		"city":     "guangzhou",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{
+				"query": types.M{
+					"className": "Team",
+				},
+				"key": "city",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expect = types.M{
+		"hometown": types.M{
+			"$nin": types.S{"beijing", "shanghai", "guangzhou"},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "Team"
+	schema = types.M{
+		"fields": types.M{
+			"city":   types.M{"type": "String"},
+			"winPct": types.M{"type": "Number"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"city":     "beijing",
+		"winPct":   0.8,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"city":     "shanghai",
+		"winPct":   0.7,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2003",
+		"city":     "guangzhou",
+		"winPct":   0.4,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{
+				"query": types.M{
+					"className": "Team",
+					"where": types.M{
+						"winPct": types.M{"$gt": 0.5},
+					},
+				},
+				"key": "city",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expect = types.M{
+		"hometown": types.M{
+			"$nin": types.S{"beijing", "shanghai"},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "Team"
+	schema = types.M{
+		"fields": types.M{
+			"city":   types.M{"type": "String"},
+			"winPct": types.M{"type": "Number"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"city":     "beijing",
+		"winPct":   0.8,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"city":     "shanghai",
+		"winPct":   0.7,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2003",
+		"city":     "guangzhou",
+		"winPct":   0.4,
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	where = types.M{
+		"hometown": types.M{
+			"$dontSelect": types.M{
+				"query": types.M{
+					"className": "Team",
+					"where": types.M{
+						"winPct": types.M{"$gt": 0.5},
+					},
+				},
+				"key": "city",
+			},
+		},
+		"hometown2": types.M{
+			"$dontSelect": types.M{
+				"query": types.M{
+					"className": "Team",
+					"where": types.M{
+						"winPct": types.M{"$gt": 0.7},
+					},
+				},
+				"key": "city",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.replaceDontSelect()
+	expect = types.M{
+		"hometown": types.M{
+			"$nin": types.S{"beijing", "shanghai"},
+		},
+		"hometown2": types.M{
+			"$nin": types.S{"beijing"},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_replaceInQuery(t *testing.T) {

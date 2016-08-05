@@ -915,9 +915,13 @@ func Test_replaceDontSelect(t *testing.T) {
 }
 
 func Test_replaceInQuery(t *testing.T) {
+	var className string
+	var schema types.M
+	var object types.M
 	var q *Query
 	var where types.M
 	var err error
+	var expectErr error
 	var expect types.M
 	/**********************************************************/
 	where = types.M{"key": "hello"}
@@ -927,9 +931,292 @@ func Test_replaceInQuery(t *testing.T) {
 	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
 		t.Error("expect:", expect, "result:", q.Where)
 	}
-
-	// Execute
-	// TODO
+	/**********************************************************/
+	where = types.M{
+		"post": types.M{
+			"$inQuery": "hello",
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $inQuery")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"post": types.M{
+			"$inQuery": types.M{},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $inQuery")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"post": types.M{
+			"$inQuery": types.M{
+				"where": "hello",
+			},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $inQuery")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"post": types.M{
+			"$inQuery": types.M{
+				"where":     types.M{},
+				"className": 1024,
+			},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $inQuery")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	where = types.M{
+		"post": types.M{
+			"$inQuery": types.M{
+				"where":     types.M{},
+				"className": "hello",
+				"other":     "world",
+			},
+		},
+	}
+	q, _ = NewQuery(nil, "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expectErr = errs.E(errs.InvalidQuery, "improper usage of $inQuery")
+	if err == nil || reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/**********************************************************/
+	initEnv()
+	where = types.M{
+		"post": types.M{
+			"$inQuery": types.M{
+				"where":     types.M{},
+				"className": "Post",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expect = types.M{
+		"post": types.M{
+			"$in": types.S{},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, expect) == false {
+		t.Error("expect:", expect, "result:", expect, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "Post"
+	schema = types.M{
+		"fields": types.M{
+			"title": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"title":    "one",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"title":    "two",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2003",
+		"title":    "three",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	where = types.M{
+		"post": types.M{
+			"$inQuery": types.M{
+				"where":     types.M{},
+				"className": "Post",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expect = types.M{
+		"post": types.M{
+			"$in": types.S{
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "2001",
+				},
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "2002",
+				},
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "2003",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, expect) == false {
+		t.Error("expect:", expect, "result:", expect, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "Post"
+	schema = types.M{
+		"fields": types.M{
+			"title": types.M{"type": "String"},
+			"image": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"title":    "one",
+		"image":    "1.jpg",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"title":    "two",
+		"image":    "2.jpg",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2003",
+		"title":    "three",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	where = types.M{
+		"post": types.M{
+			"$inQuery": types.M{
+				"where": types.M{
+					"image": types.M{"$exists": true},
+				},
+				"className": "Post",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expect = types.M{
+		"post": types.M{
+			"$in": types.S{
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "2001",
+				},
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "2002",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, expect) == false {
+		t.Error("expect:", expect, "result:", expect, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "Post"
+	schema = types.M{
+		"fields": types.M{
+			"title":  types.M{"type": "String"},
+			"image":  types.M{"type": "String"},
+			"author": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"title":    "one",
+		"image":    "1.jpg",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"title":    "two",
+		"image":    "2.jpg",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2003",
+		"title":    "three",
+		"author":   "joe",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	where = types.M{
+		"post": types.M{
+			"$inQuery": types.M{
+				"where": types.M{
+					"image": types.M{"$exists": true},
+				},
+				"className": "Post",
+			},
+		},
+		"post2": types.M{
+			"$inQuery": types.M{
+				"where": types.M{
+					"author": types.M{"$exists": true},
+				},
+				"className": "Post",
+			},
+		},
+	}
+	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	err = q.replaceInQuery()
+	expect = types.M{
+		"post": types.M{
+			"$in": types.S{
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "2001",
+				},
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "2002",
+				},
+			},
+		},
+		"post2": types.M{
+			"$in": types.S{
+				types.M{
+					"__type":    "Pointer",
+					"className": "Post",
+					"objectId":  "2003",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, expect) == false {
+		t.Error("expect:", expect, "result:", expect, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_replaceNotInQuery(t *testing.T) {

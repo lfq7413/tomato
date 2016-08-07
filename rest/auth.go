@@ -33,11 +33,11 @@ func Nobody() *Auth {
 func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, error) {
 	// 从缓存获取用户信息
 	cachedUser := cache.User.Get(sessionToken)
-	if cachedUser != nil {
+	if u := utils.M(cachedUser); u != nil {
 		return &Auth{
 			IsMaster:       false,
 			InstallationID: installationID,
-			User:           cachedUser.(map[string]interface{}),
+			User:           u,
 		}, nil
 	}
 	// 缓存中不存在时，从数据库中查询
@@ -75,7 +75,7 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 	if result["expiresAt"] == nil {
 		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
 	}
-	expiresAtString := utils.M(result["expiresAt"])["iso"].(string)
+	expiresAtString := utils.S(result["expiresAt"])
 	expiresAt, err := utils.StringtoTime(expiresAtString)
 	if err != nil {
 		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")

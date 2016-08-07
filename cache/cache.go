@@ -81,3 +81,14 @@ type Adapter interface {
 	del(key string)
 	clear()
 }
+
+// InitCache 仅用于测试
+func InitCache() {
+	adapter = newInMemoryCacheAdapter(5)
+	Role = &SubCache{
+		prefix: "role",
+	}
+	User = &SubCache{
+		prefix: "user",
+	}
+}

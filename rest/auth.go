@@ -103,7 +103,7 @@ func (a *Auth) CouldUpdateUserID(objectID string) bool {
 	if a.IsMaster {
 		return true
 	}
-	if a.User != nil && a.User["objectId"].(string) == objectID {
+	if a.User != nil && utils.S(a.User["objectId"]) == objectID {
 		return true
 	}
 	return false

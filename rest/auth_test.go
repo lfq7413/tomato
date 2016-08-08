@@ -263,7 +263,118 @@ func Test_CouldUpdateUserID(t *testing.T) {
 }
 
 func Test_GetUserRoles(t *testing.T) {
-	// TODO
+	var schema types.M
+	var object types.M
+	var className string
+	var auth *Auth
+	var result []string
+	var expect []string
+	/********************************************************/
+	auth = Master()
+	result = auth.GetUserRoles()
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/********************************************************/
+	auth = Nobody()
+	result = auth.GetUserRoles()
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/********************************************************/
+	auth = &Auth{
+		IsMaster: false,
+		User: types.M{
+			"objectId": "9001",
+		},
+		FetchedRoles: true,
+		UserRoles:    []string{"role:role1001"},
+	}
+	result = auth.GetUserRoles()
+	expect = []string{"role:role1001"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/********************************************************/
+	auth = &Auth{
+		IsMaster: false,
+		User: types.M{
+			"objectId": "9001",
+		},
+		FetchedRoles: false,
+		RolePromise:  []string{"role:role1001"},
+	}
+	result = auth.GetUserRoles()
+	expect = []string{"role:role1001"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/********************************************************/
+	cache.InitCache()
+	initEnv()
+	className = "_Role"
+	schema = types.M{
+		"fields": types.M{
+			"name":  types.M{"type": "String"},
+			"users": types.M{"type": "Relation", "targetClass": "_User"},
+			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "1001",
+		"name":     "role1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "1002",
+		"name":     "role1002",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:roles:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId":  "5001",
+		"owningId":  "1002",
+		"relatedId": "1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:users:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId":  "5002",
+		"owningId":  "1001",
+		"relatedId": "9001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	auth = &Auth{
+		IsMaster: false,
+		User: types.M{
+			"objectId": "9001",
+		},
+		FetchedRoles: false,
+		RolePromise:  nil,
+	}
+	result = auth.GetUserRoles()
+	expect = []string{"role:role1001", "role:role1002"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_loadRoles(t *testing.T) {

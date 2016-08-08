@@ -171,7 +171,7 @@ func (a *Auth) loadRoles() []string {
 	}
 
 	queriedRoles := map[string]bool{} // 记录查询过的 role ，避免多次查询
-	roleNames := a.getAllRoleNamesForID(ids, names, queriedRoles)
+	roleNames := a.getAllRolesNamesForRoleIds(ids, names, queriedRoles)
 
 	a.UserRoles = []string{}
 	for _, v := range roleNames {
@@ -184,8 +184,14 @@ func (a *Auth) loadRoles() []string {
 	return a.UserRoles
 }
 
-// getAllRoleNamesForID 取出角色 id 对应的父角色
-func (a *Auth) getAllRoleNamesForID(roleIDs, names []string, queriedRoles map[string]bool) []string {
+// getAllRolesNamesForRoleIds 取出角色 id 对应的父角色
+func (a *Auth) getAllRolesNamesForRoleIds(roleIDs, names []string, queriedRoles map[string]bool) []string {
+	if names == nil {
+		names = []string{}
+	}
+	if queriedRoles == nil {
+		queriedRoles = map[string]bool{}
+	}
 	ins := types.S{}
 	for _, roleID := range roleIDs {
 		if _, ok := queriedRoles[roleID]; ok {
@@ -207,7 +213,7 @@ func (a *Auth) getAllRoleNamesForID(roleIDs, names []string, queriedRoles map[st
 	}
 
 	restWhere := types.M{}
-	if len(ins) == 0 {
+	if len(ins) == 1 {
 		restWhere["roles"] = ins[0]
 	} else {
 		restWhere["roles"] = types.M{"$in": ins}
@@ -229,6 +235,9 @@ func (a *Auth) getAllRoleNamesForID(roleIDs, names []string, queriedRoles map[st
 	pnames := []string{}
 	for _, v := range results {
 		roleObj := utils.M(v)
+		if roleObj == nil {
+			continue
+		}
 		ids = append(ids, utils.S(roleObj["objectId"]))
 		pnames = append(pnames, utils.S(roleObj["name"]))
 	}
@@ -237,5 +246,5 @@ func (a *Auth) getAllRoleNamesForID(roleIDs, names []string, queriedRoles map[st
 	names = append(names, pnames...)
 
 	// 继续查找最新角色的父角色
-	return a.getAllRoleNamesForID(ids, names, queriedRoles)
+	return a.getAllRolesNamesForRoleIds(ids, names, queriedRoles)
 }

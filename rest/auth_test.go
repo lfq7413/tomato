@@ -268,10 +268,203 @@ func Test_GetUserRoles(t *testing.T) {
 }
 
 func Test_loadRoles(t *testing.T) {
-	// getAllRoleNamesForID
 	// TODO
 }
 
-func Test_getAllRoleNamesForID(t *testing.T) {
-	// TODO
+func Test_getAllRolesNamesForRoleIds(t *testing.T) {
+	var schema types.M
+	var object types.M
+	var className string
+	var roleIDs []string
+	var names []string
+	var queriedRoles map[string]bool
+	var result []string
+	var expect []string
+	/********************************************************/
+	initEnv()
+	className = "_Role"
+	schema = types.M{
+		"fields": types.M{
+			"name":  types.M{"type": "String"},
+			"users": types.M{"type": "Relation", "targetClass": "_User"},
+			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	className = "_Join:roles:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	roleIDs = []string{"1001"}
+	names = []string{}
+	queriedRoles = map[string]bool{}
+	result = Master().getAllRolesNamesForRoleIds(roleIDs, names, queriedRoles)
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/********************************************************/
+	initEnv()
+	className = "_Role"
+	schema = types.M{
+		"fields": types.M{
+			"name":  types.M{"type": "String"},
+			"users": types.M{"type": "Relation", "targetClass": "_User"},
+			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "1001",
+		"name":     "role1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:roles:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	roleIDs = []string{"1001"}
+	names = []string{}
+	queriedRoles = map[string]bool{}
+	result = Master().getAllRolesNamesForRoleIds(roleIDs, names, queriedRoles)
+	expect = []string{}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/********************************************************/
+	initEnv()
+	className = "_Role"
+	schema = types.M{
+		"fields": types.M{
+			"name":  types.M{"type": "String"},
+			"users": types.M{"type": "Relation", "targetClass": "_User"},
+			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "1001",
+		"name":     "role1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "1002",
+		"name":     "role1002",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:roles:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId":  "5001",
+		"owningId":  "1002",
+		"relatedId": "1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	roleIDs = []string{"1001"}
+	names = []string{}
+	queriedRoles = map[string]bool{}
+	result = Master().getAllRolesNamesForRoleIds(roleIDs, names, queriedRoles)
+	expect = []string{"role1002"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/********************************************************/
+	initEnv()
+	className = "_Role"
+	schema = types.M{
+		"fields": types.M{
+			"name":  types.M{"type": "String"},
+			"users": types.M{"type": "Relation", "targetClass": "_User"},
+			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "1001",
+		"name":     "role1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "1002",
+		"name":     "role1002",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "1003",
+		"name":     "role1003",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2001",
+		"name":     "role2001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"name":     "role2002",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2003",
+		"name":     "role2003",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:roles:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId":  "5001",
+		"owningId":  "1002",
+		"relatedId": "1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "5002",
+		"owningId":  "1003",
+		"relatedId": "1002",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "5003",
+		"owningId":  "2002",
+		"relatedId": "2001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId":  "5004",
+		"owningId":  "2003",
+		"relatedId": "2002",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	roleIDs = []string{"1001", "2001"}
+	names = []string{}
+	queriedRoles = map[string]bool{}
+	result = Master().getAllRolesNamesForRoleIds(roleIDs, names, queriedRoles)
+	expect = []string{"role1002", "role2002", "role1003", "role2003"}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }

@@ -6,6 +6,7 @@ import (
 
 	"gopkg.in/mgo.v2"
 
+	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
@@ -302,8 +303,12 @@ func Test_BuildRestWhere(t *testing.T) {
 }
 
 func Test_getUserAndRoleACL(t *testing.T) {
+	var schema types.M
+	var object types.M
+	var className string
 	var auth *Auth
 	var q *Query
+	var expect []string
 	/**********************************************************/
 	auth = Master()
 	q, _ = NewQuery(auth, "user", nil, nil, nil)
@@ -318,7 +323,70 @@ func Test_getUserAndRoleACL(t *testing.T) {
 	if q.findOptions["acl"] != nil {
 		t.Error("findOptions[acl] is not nil")
 	}
-	// TODO 添加普通用户权限的测试用例
+	/**********************************************************/
+	cache.InitCache()
+	initEnv()
+	className = "_Role"
+	schema = types.M{
+		"fields": types.M{
+			"name":  types.M{"type": "String"},
+			"users": types.M{"type": "Relation", "targetClass": "_User"},
+			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "1001",
+		"name":     "role1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "1002",
+		"name":     "role1002",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:roles:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId":  "5001",
+		"owningId":  "1002",
+		"relatedId": "1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:users:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId":  "5002",
+		"owningId":  "1001",
+		"relatedId": "9001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	auth = &Auth{
+		IsMaster: false,
+		User: types.M{
+			"objectId": "9001",
+		},
+		FetchedRoles: false,
+		RolePromise:  nil,
+	}
+	q, _ = NewQuery(auth, "user", nil, nil, nil)
+	q.getUserAndRoleACL()
+	expect = []string{"role:role1001", "role:role1002", "9001"}
+	if reflect.DeepEqual(expect, q.findOptions["acl"]) == false {
+		t.Error("expect:", expect, "result:", q.findOptions["acl"])
+	}
 }
 
 func Test_redirectClassNameForKey(t *testing.T) {

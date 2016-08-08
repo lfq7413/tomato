@@ -195,7 +195,7 @@ func (q *Query) getUserAndRoleACL() error {
 		return nil
 	}
 	roles := q.auth.GetUserRoles()
-	roles = append(roles, q.auth.User["objectId"].(string))
+	roles = append(roles, utils.S(q.auth.User["objectId"]))
 	q.findOptions["acl"] = roles
 	return nil
 }

@@ -126,7 +126,7 @@ func (a *Auth) GetUserRoles() []string {
 
 // loadRoles 从数据库加载用户角色列表
 func (a *Auth) loadRoles() []string {
-	cachedRoles := cache.Role.Get(a.User["objectId"].(string))
+	cachedRoles := cache.Role.Get(utils.S(a.User["objectId"]))
 	if cachedRoles != nil {
 		a.FetchedRoles = true
 		a.UserRoles = cachedRoles.([]string)
@@ -148,7 +148,7 @@ func (a *Auth) loadRoles() []string {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
 		a.RolePromise = nil
-		cache.Role.Put(a.User["objectId"].(string), a.UserRoles, 0)
+		cache.Role.Put(utils.S(a.User["objectId"]), a.UserRoles, 0)
 		return a.UserRoles
 	}
 
@@ -157,7 +157,7 @@ func (a *Auth) loadRoles() []string {
 		a.UserRoles = []string{}
 		a.FetchedRoles = true
 		a.RolePromise = nil
-		cache.Role.Put(a.User["objectId"].(string), a.UserRoles, 0)
+		cache.Role.Put(utils.S(a.User["objectId"]), a.UserRoles, 0)
 		return a.UserRoles
 	}
 
@@ -166,6 +166,9 @@ func (a *Auth) loadRoles() []string {
 	names := []string{}
 	for _, v := range results {
 		roleObj := utils.M(v)
+		if roleObj == nil {
+			continue
+		}
 		ids = append(ids, utils.S(roleObj["objectId"]))
 		names = append(names, utils.S(roleObj["name"]))
 	}
@@ -180,7 +183,7 @@ func (a *Auth) loadRoles() []string {
 	a.FetchedRoles = true
 	a.RolePromise = nil
 
-	cache.Role.Put(a.User["objectId"].(string), a.UserRoles, 0)
+	cache.Role.Put(utils.S(a.User["objectId"]), a.UserRoles, 0)
 	return a.UserRoles
 }
 

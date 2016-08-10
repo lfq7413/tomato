@@ -72,7 +72,44 @@ func Test_setPasswordResetToken(t *testing.T) {
 }
 
 func Test_defaultResetPasswordEmail(t *testing.T) {
-	// TODO
+	var options types.M
+	var result types.M
+	var expect types.M
+	var text string
+	/*********************************************************/
+	options = nil
+	result = defaultResetPasswordEmail(options)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*********************************************************/
+	options = types.M{}
+	result = defaultResetPasswordEmail(options)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*********************************************************/
+	options = types.M{
+		"user": types.M{
+			"email": "123@g.com",
+		},
+		"appName": "tomato",
+		"link":    "http://www.g.com",
+	}
+	result = defaultResetPasswordEmail(options)
+	text = "Hi,\n\n"
+	text += "You requested to reset your password for tomato\n\n"
+	text += "Click here to reset it:\nhttp://www.g.com"
+	expect = types.M{
+		"text":    text,
+		"to":      "123@g.com",
+		"subject": "Password Reset for tomato",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_VerifyEmail(t *testing.T) {

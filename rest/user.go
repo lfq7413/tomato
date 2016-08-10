@@ -146,12 +146,18 @@ func setPasswordResetToken(email string) types.M {
 }
 
 func defaultResetPasswordEmail(options types.M) types.M {
+	if options == nil {
+		return nil
+	}
 	user := utils.M(options["user"])
+	if user == nil {
+		return nil
+	}
 	text := "Hi,\n\n"
-	text += "You requested to reset your password for " + options["appName"].(string) + "\n\n"
-	text += "Click here to reset it:\n" + options["link"].(string)
-	to := user["email"].(string)
-	subject := "Password Reset for " + options["appName"].(string)
+	text += "You requested to reset your password for " + utils.S(options["appName"]) + "\n\n"
+	text += "Click here to reset it:\n" + utils.S(options["link"])
+	to := utils.S(user["email"])
+	subject := "Password Reset for " + utils.S(options["appName"])
 	return types.M{
 		"text":    text,
 		"to":      to,

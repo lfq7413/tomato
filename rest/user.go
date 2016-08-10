@@ -91,13 +91,19 @@ func getUserIfNeeded(user types.M) types.M {
 }
 
 func defaultVerificationEmail(options types.M) types.M {
+	if options == nil {
+		return nil
+	}
 	user := utils.M(options["user"])
+	if user == nil {
+		return nil
+	}
 	text := "Hi,\n\n"
-	text += "You are being asked to confirm the e-mail address " + user["email"].(string)
-	text += " with " + options["appName"].(string) + "\n\n"
-	text += "Click here to confirm it:\n" + options["link"].(string)
-	to := user["email"].(string)
-	subject := "Please verify your e-mail for " + options["appName"].(string)
+	text += "You are being asked to confirm the e-mail address " + utils.S(user["email"])
+	text += " with " + utils.S(options["appName"]) + "\n\n"
+	text += "Click here to confirm it:\n" + utils.S(options["link"])
+	to := utils.S(user["email"])
+	subject := "Please verify your e-mail for " + utils.S(options["appName"])
 	return types.M{
 		"text":    text,
 		"to":      to,

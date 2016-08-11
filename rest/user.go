@@ -31,6 +31,9 @@ func shouldVerifyEmails() bool {
 
 // SetEmailVerifyToken 设置需要验证的 token
 func SetEmailVerifyToken(user types.M) {
+	if user == nil {
+		return
+	}
 	if shouldVerifyEmails() {
 		user["_email_verify_token"] = utils.CreateToken()
 		user["emailVerified"] = false

@@ -93,7 +93,7 @@ func parseConfig() {
 // GenerateSessionExpiresAt 获取 Session 过期时间
 func GenerateSessionExpiresAt() time.Time {
 	expiresAt := time.Now().UTC()
-	expiresAt = expiresAt.Add(time.Duration(TConfig.SessionLength * 1e9))
+	expiresAt = expiresAt.Add(time.Duration(TConfig.SessionLength) * time.Second)
 	return expiresAt
 }
 
@@ -103,6 +103,6 @@ func GenerateEmailVerifyTokenExpiresAt() time.Time {
 		return time.Time{}
 	}
 	expiresAt := time.Now().UTC()
-	expiresAt = expiresAt.Add(time.Duration(TConfig.EmailVerifyTokenValidityDuration * 1e9))
+	expiresAt = expiresAt.Add(time.Duration(TConfig.EmailVerifyTokenValidityDuration) * time.Second)
 	return expiresAt
 }

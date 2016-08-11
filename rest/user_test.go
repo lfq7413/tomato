@@ -4,10 +4,81 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 func Test_SetEmailVerifyToken(t *testing.T) {
+	var user types.M
+	var expect types.M
+	/*********************************************************/
+	user = nil
+	SetEmailVerifyToken(user)
+	expect = nil
+	if reflect.DeepEqual(expect, user) == false {
+		t.Error("expect:", expect, "result:", user)
+	}
+	/*********************************************************/
+	user = types.M{
+		"username": "joe",
+	}
+	config.TConfig = &config.Config{
+		VerifyUserEmails:                 false,
+		EmailVerifyTokenValidityDuration: -1,
+	}
+	SetEmailVerifyToken(user)
+	expect = types.M{
+		"username": "joe",
+	}
+	if reflect.DeepEqual(expect, user) == false {
+		t.Error("expect:", expect, "result:", user)
+	}
+	/*********************************************************/
+	user = types.M{
+		"username": "joe",
+	}
+	config.TConfig = &config.Config{
+		VerifyUserEmails:                 true,
+		EmailVerifyTokenValidityDuration: -1,
+	}
+	SetEmailVerifyToken(user)
+	expect = types.M{
+		"username":      "joe",
+		"emailVerified": false,
+	}
+	if len(utils.S(user["_email_verify_token"])) != 32 {
+		t.Error("expect:", 32, "result:", len(utils.S(user["_email_verify_token"])))
+	}
+	delete(user, "_email_verify_token")
+	if reflect.DeepEqual(expect, user) == false {
+		t.Error("expect:", expect, "result:", user)
+	}
+	/*********************************************************/
+	user = types.M{
+		"username": "joe",
+	}
+	config.TConfig = &config.Config{
+		VerifyUserEmails:                 true,
+		EmailVerifyTokenValidityDuration: 60,
+	}
+	SetEmailVerifyToken(user)
+	expect = types.M{
+		"username":      "joe",
+		"emailVerified": false,
+	}
+	if len(utils.S(user["_email_verify_token"])) != 32 {
+		t.Error("expect:", 32, "result:", len(utils.S(user["_email_verify_token"])))
+	}
+	delete(user, "_email_verify_token")
+	if utils.S(user["_email_verify_token_expires_at"]) == "" {
+		t.Error("expect:", "time", "result:", user["_email_verify_token_expires_at"])
+	}
+	delete(user, "_email_verify_token_expires_at")
+	if reflect.DeepEqual(expect, user) == false {
+		t.Error("expect:", expect, "result:", user)
+	}
+
 	// TODO
 }
 

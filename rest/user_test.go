@@ -78,8 +78,6 @@ func Test_SetEmailVerifyToken(t *testing.T) {
 	if reflect.DeepEqual(expect, user) == false {
 		t.Error("expect:", expect, "result:", user)
 	}
-
-	// TODO
 }
 
 func Test_SendVerificationEmail(t *testing.T) {

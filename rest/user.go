@@ -223,7 +223,7 @@ func CheckResetTokenValidity(username, token string) types.M {
 		return nil
 	}
 
-	return results[0].(map[string]interface{})
+	return utils.M(results[0])
 }
 
 // UpdatePassword 更新指定用户的密码

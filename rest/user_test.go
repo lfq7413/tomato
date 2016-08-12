@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -186,11 +187,81 @@ func Test_VerifyEmail(t *testing.T) {
 }
 
 func Test_CheckResetTokenValidity(t *testing.T) {
-	// TODO
+	var schema, object types.M
+	var username, token string
+	var result types.M
+	var expect types.M
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId":          "1001",
+		"username":          "joe",
+		"_perishable_token": "abc1001",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	username = "jack"
+	token = "abc"
+	result = CheckResetTokenValidity(username, token)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	username = "joe"
+	token = "abc"
+	result = CheckResetTokenValidity(username, token)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId":          "1001",
+		"username":          "joe",
+		"_perishable_token": "abc1001",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	username = "joe"
+	token = "abc1001"
+	result = CheckResetTokenValidity(username, token)
+	expect = types.M{
+		"objectId": "1001",
+		"username": "joe",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_UpdatePassword(t *testing.T) {
-	// CheckResetTokenValidity
 	// updateUserPassword
 	// TODO
 }

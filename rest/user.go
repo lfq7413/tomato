@@ -200,7 +200,7 @@ func VerifyEmail(username, token string) bool {
 	if err != nil {
 		return false
 	}
-	if document == nil || len(document) == 0 {
+	if document == nil {
 		return false
 	}
 

@@ -535,7 +535,14 @@ func (t *Transform) transformTopLevelAtom(atom interface{}) (interface{}, error)
 		return atom, nil
 	}
 	// 字符串、数字、布尔类型直接返回
-	if _, ok := atom.(string); ok {
+	if s, ok := atom.(string); ok {
+		// 时间格式为 2016-08-12T08:07:19.310Z ，当长度为 24 时，判断是否为时间
+		if len(s) == 24 && strings.HasSuffix(s, "Z") {
+			t, err := utils.StringtoTime(s)
+			if err == nil {
+				return t, nil
+			}
+		}
 		return atom, nil
 	}
 	if _, ok := atom.(float64); ok {

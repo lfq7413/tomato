@@ -1451,7 +1451,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	schema = types.M{}
 	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "createdAt"
-	expectValue = tmpTimeStr
+	expectValue = tmpTime
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
 	}
@@ -1484,7 +1484,7 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 	schema = types.M{}
 	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
 	expectKey = "updatedAt"
-	expectValue = tmpTimeStr
+	expectValue = tmpTime
 	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
 	}

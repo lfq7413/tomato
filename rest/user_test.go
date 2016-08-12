@@ -3,6 +3,7 @@ package rest
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
@@ -183,7 +184,107 @@ func Test_defaultResetPasswordEmail(t *testing.T) {
 }
 
 func Test_VerifyEmail(t *testing.T) {
-	// TODO
+	var schema, object types.M
+	var username, token string
+	var result bool
+	var expect bool
+	/*********************************************************/
+	config.TConfig = &config.Config{
+		VerifyUserEmails:                 false,
+		EmailVerifyTokenValidityDuration: -1,
+	}
+	username = "joe"
+	token = "abc"
+	result = VerifyEmail(username, token)
+	expect = false
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username":      types.M{"type": "String"},
+			"emailVerified": types.M{"type": "bool"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId":            "1001",
+		"username":            "joe",
+		"_email_verify_token": "abc1001",
+		"emailVerified":       false,
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	config.TConfig = &config.Config{
+		VerifyUserEmails:                 true,
+		EmailVerifyTokenValidityDuration: -1,
+	}
+	username = "jack"
+	token = "abc"
+	result = VerifyEmail(username, token)
+	expect = false
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username":      types.M{"type": "String"},
+			"emailVerified": types.M{"type": "bool"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId":            "1001",
+		"username":            "joe",
+		"_email_verify_token": "abc1001",
+		"emailVerified":       false,
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	config.TConfig = &config.Config{
+		VerifyUserEmails:                 true,
+		EmailVerifyTokenValidityDuration: -1,
+	}
+	username = "joe"
+	token = "abc1001"
+	result = VerifyEmail(username, token)
+	expect = true
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username":      types.M{"type": "String"},
+			"emailVerified": types.M{"type": "bool"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId":                       "1001",
+		"username":                       "joe",
+		"_email_verify_token":            "abc1001",
+		"emailVerified":                  false,
+		"_email_verify_token_expires_at": utils.TimetoString(time.Now().UTC().Add(time.Second * 5)),
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	config.TConfig = &config.Config{
+		VerifyUserEmails:                 true,
+		EmailVerifyTokenValidityDuration: 5,
+	}
+	username = "joe"
+	token = "abc1001"
+	result = VerifyEmail(username, token)
+	expect = true
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_CheckResetTokenValidity(t *testing.T) {

@@ -139,6 +139,63 @@ func Test_SendPasswordResetEmail(t *testing.T) {
 }
 
 func Test_setPasswordResetToken(t *testing.T) {
+	var schema types.M
+	var object types.M
+	var email string
+	var result types.M
+	var expect types.M
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	email = "aa@g.cn"
+	result = setPasswordResetToken(email)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	email = "abc@g.cn"
+	result = setPasswordResetToken(email)
+	expect = types.M{
+		"_id":      "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	if _, ok := result["_perishable_token"]; ok == false {
+		t.Error("expect:", "_perishable_token", "result:", "nil")
+	}
+	delete(result, "_perishable_token")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 	// TODO
 }
 

@@ -121,8 +121,8 @@ func SendPasswordResetEmail(email string) error {
 		return errs.E(errs.EmailMissing, "you must provide an email")
 	}
 	user["className"] = "_User"
-	token := url.QueryEscape(user["_perishable_token"].(string))
-	username := url.QueryEscape(user["username"].(string))
+	token := url.QueryEscape(utils.S(user["_perishable_token"]))
+	username := url.QueryEscape(utils.S(user["username"]))
 	link := config.TConfig.ServerURL + "app/request_password_reset" + "?token=" + token + "&username=" + username
 	options := types.M{
 		"appName": config.TConfig.AppName,

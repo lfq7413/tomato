@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/mail"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -134,8 +136,56 @@ func Test_defaultVerificationEmail(t *testing.T) {
 }
 
 func Test_SendPasswordResetEmail(t *testing.T) {
-	// setPasswordResetToken
-	// TODO
+	adapter = mail.NewSMTPAdapter()
+	var schema types.M
+	var object types.M
+	var email string
+	var result error
+	var expect error
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	email = "aa@g.cn"
+	result = SendPasswordResetEmail(email)
+	expect = errs.E(errs.EmailMissing, "you must provide an email")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	email = "abc@g.cn"
+	result = SendPasswordResetEmail(email)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_setPasswordResetToken(t *testing.T) {
@@ -196,7 +246,6 @@ func Test_setPasswordResetToken(t *testing.T) {
 		t.Error("expect:", expect, "result:", result)
 	}
 	orm.TomatoDBController.DeleteEverything()
-	// TODO
 }
 
 func Test_defaultResetPasswordEmail(t *testing.T) {

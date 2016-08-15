@@ -85,6 +85,18 @@ func Test_SetEmailVerifyToken(t *testing.T) {
 }
 
 func Test_SendVerificationEmail(t *testing.T) {
+	var user types.M
+	config.TConfig = &config.Config{
+		VerifyUserEmails: true,
+		ServerURL:        "http://www.g.cn/",
+	}
+	adapter = mail.NewSMTPAdapter()
+	user = types.M{
+		"_email_verify_token": "abc",
+		"username":            "joe",
+		"mail":                "abc@g.cn",
+	}
+	SendVerificationEmail(user)
 	// TODO
 }
 

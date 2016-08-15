@@ -49,14 +49,14 @@ func SendVerificationEmail(user types.M) {
 	if shouldVerifyEmails() == false {
 		return
 	}
-	token := url.QueryEscape(user["_email_verify_token"].(string))
+	token := url.QueryEscape(utils.S(user["_email_verify_token"]))
 	user = getUserIfNeeded(user)
 	if user == nil {
 		return
 	}
 	user["className"] = "_User"
-	username := url.QueryEscape(user["username"].(string))
-	link := config.TConfig.ServerURL + "app/verify_email" + "?token=" + token + "&username=" + username
+	username := url.QueryEscape(utils.S(user["username"]))
+	link := config.TConfig.ServerURL + "apps/verify_email" + "?token=" + token + "&username=" + username
 	options := types.M{
 		"appName": config.TConfig.AppName,
 		"link":    link,
@@ -130,7 +130,7 @@ func SendPasswordResetEmail(email string) error {
 	user["className"] = "_User"
 	token := url.QueryEscape(utils.S(user["_perishable_token"]))
 	username := url.QueryEscape(utils.S(user["username"]))
-	link := config.TConfig.ServerURL + "app/request_password_reset" + "?token=" + token + "&username=" + username
+	link := config.TConfig.ServerURL + "apps/request_password_reset" + "?token=" + token + "&username=" + username
 	options := types.M{
 		"appName": config.TConfig.AppName,
 		"link":    link,

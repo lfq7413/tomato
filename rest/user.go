@@ -67,6 +67,9 @@ func SendVerificationEmail(user types.M) {
 
 // getUserIfNeeded 把 user 填充完整，如果无法完成则返回 nil
 func getUserIfNeeded(user types.M) types.M {
+	if user == nil {
+		return nil
+	}
 	if user["username"] != nil && user["email"] != nil {
 		return user
 	}
@@ -89,8 +92,12 @@ func getUserIfNeeded(user types.M) types.M {
 	if utils.HasResults(response) == false {
 		return nil
 	}
+	results := utils.A(response["results"])
+	if len(results) != 1 {
+		return nil
+	}
 
-	return response["results"].([]interface{})[0].(map[string]interface{})
+	return utils.M(results[0])
 }
 
 func defaultVerificationEmail(options types.M) types.M {

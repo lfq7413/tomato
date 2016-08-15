@@ -85,12 +85,141 @@ func Test_SetEmailVerifyToken(t *testing.T) {
 }
 
 func Test_SendVerificationEmail(t *testing.T) {
-	// getUserIfNeeded
 	// TODO
 }
 
 func Test_getUserIfNeeded(t *testing.T) {
-	// TODO
+	var schema types.M
+	var object types.M
+	var user types.M
+	var result types.M
+	var expect types.M
+	/*********************************************************/
+	user = nil
+	result = getUserIfNeeded(user)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*********************************************************/
+	user = types.M{
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	result = getUserIfNeeded(user)
+	expect = types.M{
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	user = types.M{
+		"username": "jack",
+	}
+	result = getUserIfNeeded(user)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	user = types.M{
+		"email": "aaa@g.cn",
+	}
+	result = getUserIfNeeded(user)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	object = types.M{
+		"objectId": "1002",
+		"username": "jack",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	user = types.M{
+		"email": "abc@g.cn",
+	}
+	result = getUserIfNeeded(user)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/*********************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	user = types.M{
+		"email": "abc@g.cn",
+	}
+	result = getUserIfNeeded(user)
+	expect = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"email":    "abc@g.cn",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_defaultVerificationEmail(t *testing.T) {

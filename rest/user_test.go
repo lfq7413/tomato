@@ -97,7 +97,6 @@ func Test_SendVerificationEmail(t *testing.T) {
 		"mail":                "abc@g.cn",
 	}
 	SendVerificationEmail(user)
-	// TODO
 }
 
 func Test_getUserIfNeeded(t *testing.T) {

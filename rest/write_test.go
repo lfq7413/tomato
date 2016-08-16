@@ -1,9 +1,96 @@
 package rest
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
+)
 
 func Test_NewWrite(t *testing.T) {
-	// TODO
+	var auth *Auth
+	var className string
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var clientSDK map[string]string
+	var result *Write
+	var err error
+	var expect *Write
+	var expectErr error
+	/***************************************************************/
+	auth = nil
+	className = "user"
+	query = nil
+	data = types.M{
+		"objectId": "1001",
+	}
+	originalData = nil
+	clientSDK = nil
+	_, err = NewWrite(auth, className, query, data, originalData, clientSDK)
+	expectErr = errs.E(errs.InvalidKeyName, "objectId is an invalid field name.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	auth = nil
+	className = "user"
+	query = nil
+	data = types.M{
+		"key": "hello",
+	}
+	originalData = nil
+	clientSDK = nil
+	result, err = NewWrite(auth, className, query, data, originalData, clientSDK)
+	expect = &Write{
+		auth:                       Nobody(),
+		className:                  "user",
+		query:                      nil,
+		data:                       types.M{"key": "hello"},
+		originalData:               nil,
+		storage:                    types.M{},
+		RunOptions:                 types.M{},
+		response:                   nil,
+		updatedAt:                  utils.TimetoString(time.Now().UTC()),
+		responseShouldHaveUsername: false,
+		clientSDK:                  nil,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/***************************************************************/
+	auth = nil
+	className = "user"
+	query = types.M{
+		"objectId": "1001",
+	}
+	data = types.M{
+		"key": "hello",
+	}
+	originalData = types.M{
+		"key": "hi",
+	}
+	clientSDK = nil
+	result, err = NewWrite(auth, className, query, data, originalData, clientSDK)
+	expect = &Write{
+		auth:                       Nobody(),
+		className:                  "user",
+		query:                      types.M{"objectId": "1001"},
+		data:                       types.M{"key": "hello"},
+		originalData:               types.M{"key": "hi"},
+		storage:                    types.M{},
+		RunOptions:                 types.M{},
+		response:                   nil,
+		updatedAt:                  utils.TimetoString(time.Now().UTC()),
+		responseShouldHaveUsername: false,
+		clientSDK:                  nil,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_Execute_Write(t *testing.T) {

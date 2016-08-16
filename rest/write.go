@@ -44,16 +44,28 @@ func NewWrite(
 	originalData types.M,
 	clientSDK map[string]string,
 ) (*Write, error) {
+	if auth == nil {
+		auth = Nobody()
+	}
+	if data == nil {
+		data = types.M{}
+	}
 	// 当为 create 请求时，写入数据中不应该包含 objectId
 	if query == nil && data["objectId"] != nil {
 		return nil, errs.E(errs.InvalidKeyName, "objectId is an invalid field name.")
+	}
+	var queryCopy types.M
+	if query == nil {
+		queryCopy = nil
+	} else {
+		queryCopy = utils.CopyMap(query)
 	}
 	// query,data 可能会被修改，所以先复制出来
 	// response 为最终返回的结果，其中包含三个字段：response、status、location
 	write := &Write{
 		auth:                       auth,
 		className:                  className,
-		query:                      utils.CopyMap(query),
+		query:                      queryCopy,
 		data:                       utils.CopyMap(data),
 		originalData:               originalData,
 		storage:                    types.M{},

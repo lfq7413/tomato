@@ -139,7 +139,6 @@ func Test_expandFilesForExistingObjects(t *testing.T) {
 }
 
 func Test_runDatabaseOperation(t *testing.T) {
-	// updateResponseWithData
 	// location
 	// TODO
 }
@@ -243,5 +242,41 @@ func Test_sanitizedData(t *testing.T) {
 }
 
 func Test_updateResponseWithData(t *testing.T) {
-	// TODO
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var response, updateData types.M
+	var result types.M
+	var expect types.M
+	/***************************************************************/
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	response = types.M{
+		"key":  "hello",
+		"key1": 10,
+	}
+	updateData = types.M{
+		"key1": types.M{
+			"__op": "Increment",
+		},
+		"key2": "world",
+		"key3": types.M{
+			"__op": "Delete",
+		},
+	}
+	result = w.updateResponseWithData(response, updateData)
+	expect = types.M{
+		"key":  "hello",
+		"key1": 10,
+		"key2": "world",
+		"key3": types.M{
+			"__op": "Delete",
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }

@@ -1078,18 +1078,14 @@ func (w *Write) cleanUserAuthData() {
 
 func (w *Write) updateResponseWithData(response, data types.M) types.M {
 	clientSupportsDelete := client.SupportsForwardDelete(w.clientSDK)
-	for fieldName := range data {
-		dataValue := data[fieldName]
-		responseValue := response[fieldName]
-
-		if responseValue != nil {
-			response[fieldName] = responseValue
-		} else {
+	for fieldName, dataValue := range data {
+		if response[fieldName] == nil {
 			response[fieldName] = dataValue
 		}
 
 		// 删除 __op 操作符
-		if utils.M(response[fieldName]) != nil && utils.M(response[fieldName])["__op"] != nil {
+		value := utils.M(response[fieldName])
+		if value != nil && value["__op"] != nil {
 			delete(response, fieldName)
 			if v := utils.M(dataValue); v != nil {
 				if clientSupportsDelete && utils.S(v["__op"]) == "Delete" {

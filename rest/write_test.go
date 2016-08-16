@@ -123,7 +123,6 @@ func Test_validateAuthData(t *testing.T) {
 }
 
 func Test_runBeforeTrigger(t *testing.T) {
-	// sanitizedData
 	// TODO
 }
 
@@ -156,7 +155,6 @@ func Test_handleFollowup(t *testing.T) {
 }
 
 func Test_runAfterTrigger(t *testing.T) {
-	// sanitizedData
 	// TODO
 }
 
@@ -220,7 +218,28 @@ func Test_objectID(t *testing.T) {
 }
 
 func Test_sanitizedData(t *testing.T) {
-	// TODO
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var result types.M
+	var expect types.M
+	/***************************************************************/
+	query = nil
+	data = types.M{
+		"key":              "hello",
+		"_auth_data":       "fackbook",
+		"_hashed_password": "123456",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	result = w.sanitizedData()
+	expect = types.M{
+		"key": "hello",
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_updateResponseWithData(t *testing.T) {

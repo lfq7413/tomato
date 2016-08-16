@@ -132,7 +132,6 @@ func Test_setRequiredFieldsIfNeeded(t *testing.T) {
 }
 
 func Test_transformUser(t *testing.T) {
-	// objectID
 	// TODO
 }
 
@@ -143,7 +142,6 @@ func Test_expandFilesForExistingObjects(t *testing.T) {
 func Test_runDatabaseOperation(t *testing.T) {
 	// updateResponseWithData
 	// location
-	// objectID
 	// TODO
 }
 
@@ -154,7 +152,6 @@ func Test_createSessionTokenIfNeeded(t *testing.T) {
 
 func Test_handleFollowup(t *testing.T) {
 	// createSessionToken
-	// objectID
 	// TODO
 }
 
@@ -185,7 +182,6 @@ func Test_findUsersWithAuthData(t *testing.T) {
 }
 
 func Test_createSessionToken(t *testing.T) {
-	// objectID
 	// TODO
 }
 
@@ -194,7 +190,33 @@ func Test_location(t *testing.T) {
 }
 
 func Test_objectID(t *testing.T) {
-	// TODO
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var result interface{}
+	var expect interface{}
+	/***************************************************************/
+	query = nil
+	data = types.M{"key": "hello"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	result = w.objectID()
+	expect = "1001"
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/***************************************************************/
+	query = types.M{"objectId": "1001"}
+	data = types.M{"key": "hello"}
+	originalData = types.M{"key": "hi"}
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	result = w.objectID()
+	expect = "1001"
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_sanitizedData(t *testing.T) {

@@ -499,7 +499,7 @@ func (w *Write) handleAuthData(authData types.M) error {
 	}
 	w.storage["authProvider"] = strings.Join(keys, ",")
 
-	if results != nil || len(results) > 0 {
+	if results != nil && len(results) > 0 {
 		if w.query == nil {
 			// 存在一个用户，并且是 create 请求时，进行登录
 			userResult := utils.M(results[0])

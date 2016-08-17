@@ -121,7 +121,6 @@ func Test_handleSession(t *testing.T) {
 }
 
 func Test_validateAuthData(t *testing.T) {
-	// handleAuthData
 	// TODO
 }
 
@@ -166,7 +165,306 @@ func Test_cleanUserAuthData(t *testing.T) {
 /////////////////////////////////////////////////////////////
 
 func Test_handleAuthData(t *testing.T) {
-	// TODO
+	var className string
+	var schema types.M
+	var object types.M
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var result error
+	var expect error
+	var response types.M
+	var location string
+	/***************************************************************/
+	className = "_User"
+	query = nil
+	data = types.M{
+		"authData": types.M{
+			"other": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.handleAuthData(utils.M(w.data["authData"]))
+	expect = errs.E(errs.UnsupportedService, "This authentication method is unsupported.")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	object = types.M{
+		"objectId": "102",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	className = "_User"
+	query = nil
+	data = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.handleAuthData(utils.M(w.data["authData"]))
+	expect = errs.E(errs.AccountAlreadyLinked, "this auth is already used")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	className = "_User"
+	query = nil
+	data = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1002",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.handleAuthData(utils.M(w.data["authData"]))
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	if reflect.DeepEqual("facebook", w.storage["authProvider"]) == false {
+		t.Error("expect:", "facebook", "result:", w.storage["authProvider"])
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	config.TConfig = &config.Config{
+		ServerURL: "http://www.g.cn",
+	}
+	initEnv()
+	className = "_User"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	className = "_User"
+	query = nil
+	data = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.handleAuthData(utils.M(w.data["authData"]))
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	response = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	if reflect.DeepEqual(utils.M(response), w.response["response"]) == false {
+		t.Error("expect:", response, "result:", w.response["response"])
+	}
+	location = "http://www.g.cn/users/101"
+	if reflect.DeepEqual(location, w.response["location"]) == false {
+		t.Error("expect:", location, "result:", w.response["location"])
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	config.TConfig = &config.Config{
+		ServerURL: "http://www.g.cn",
+	}
+	initEnv()
+	className = "_User"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id":    "1001",
+				"token": "aaa",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	className = "_User"
+	query = nil
+	data = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id":    "1001",
+				"token": "abc",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.handleAuthData(utils.M(w.data["authData"]))
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	response = types.M{
+		"objectId": "101",
+		"authData": map[string]interface{}{
+			"facebook": types.M{
+				"id":    "1001",
+				"token": "abc",
+			},
+		},
+	}
+	if reflect.DeepEqual(utils.M(response), w.response["response"]) == false {
+		t.Error("expect:", response, "result:", w.response["response"])
+	}
+	location = "http://www.g.cn/users/101"
+	if reflect.DeepEqual(location, w.response["location"]) == false {
+		t.Error("expect:", location, "result:", w.response["location"])
+	}
+	r, _ := orm.TomatoDBController.Find(className, types.M{"objectId": "101"}, types.M{})
+	response = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id":    "1001",
+				"token": "abc",
+			},
+		},
+	}
+	if reflect.DeepEqual(response, r[0]) == false {
+		t.Error("expect:", response, "result:", r[0])
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	config.TConfig = &config.Config{
+		ServerURL: "http://www.g.cn",
+	}
+	initEnv()
+	className = "_User"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id":    "1001",
+				"token": "aaa",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	className = "_User"
+	query = types.M{"objectId": "101"}
+	data = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id":    "1001",
+				"token": "aaa",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.handleAuthData(utils.M(w.data["authData"]))
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	config.TConfig = &config.Config{
+		ServerURL: "http://www.g.cn",
+	}
+	initEnv()
+	className = "_User"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id":    "1001",
+				"token": "aaa",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	className = "_User"
+	query = types.M{"objectId": "102"}
+	data = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id":    "1001",
+				"token": "aaa",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.handleAuthData(utils.M(w.data["authData"]))
+	expect = errs.E(errs.AccountAlreadyLinked, "this auth is already used")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_handleAuthDataValidation(t *testing.T) {

@@ -12,6 +12,7 @@ var providers map[string]Provider
 func init() {
 	providers = map[string]Provider{
 		"anonymous": anonymous{},
+		"facebook":  facebook{},
 	}
 }
 
@@ -33,6 +34,12 @@ func ValidateAuthData(provider string, authData types.M) error {
 type anonymous struct{}
 
 func (a anonymous) ValidateAuthData(authData types.M) error {
+	return nil
+}
+
+type facebook struct{}
+
+func (a facebook) ValidateAuthData(authData types.M) error {
 	return nil
 }
 

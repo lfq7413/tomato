@@ -581,6 +581,9 @@ func (w *Write) findUsersWithAuthData(authData types.M) (types.S, error) {
 		}
 		key := "authData." + k + ".id"
 		provider := utils.M(v)
+		if provider == nil {
+			continue
+		}
 		q := types.M{
 			key: provider["id"],
 		}

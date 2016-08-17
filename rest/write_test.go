@@ -166,12 +166,47 @@ func Test_cleanUserAuthData(t *testing.T) {
 /////////////////////////////////////////////////////////////
 
 func Test_handleAuthData(t *testing.T) {
-	// handleAuthDataValidation
 	// TODO
 }
 
 func Test_handleAuthDataValidation(t *testing.T) {
-	// TODO
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var authData types.M
+	var result error
+	var expect error
+	/***************************************************************/
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	authData = types.M{
+		"facebook": types.M{
+			"id": "1001",
+		},
+	}
+	result = w.handleAuthDataValidation(authData)
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/***************************************************************/
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	authData = types.M{
+		"other": types.M{
+			"id": "1001",
+		},
+	}
+	result = w.handleAuthDataValidation(authData)
+	expect = errs.E(errs.UnsupportedService, "This authentication method is unsupported.")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_findUsersWithAuthData(t *testing.T) {

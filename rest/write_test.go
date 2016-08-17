@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -139,7 +140,6 @@ func Test_expandFilesForExistingObjects(t *testing.T) {
 }
 
 func Test_runDatabaseOperation(t *testing.T) {
-	// location
 	// TODO
 }
 
@@ -166,7 +166,6 @@ func Test_cleanUserAuthData(t *testing.T) {
 func Test_handleAuthData(t *testing.T) {
 	// handleAuthDataValidation
 	// findUsersWithAuthData
-	// location
 	// TODO
 }
 
@@ -183,7 +182,43 @@ func Test_createSessionToken(t *testing.T) {
 }
 
 func Test_location(t *testing.T) {
-	// TODO
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var className string
+	var result string
+	var expect string
+	/***************************************************************/
+	config.TConfig = &config.Config{
+		ServerURL: "http://www.g.cn",
+	}
+	query = nil
+	data = types.M{}
+	originalData = nil
+	className = "post"
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	result = w.location()
+	expect = "http://www.g.cn/classes/post/1001"
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/***************************************************************/
+	config.TConfig = &config.Config{
+		ServerURL: "http://www.g.cn",
+	}
+	query = nil
+	data = types.M{}
+	originalData = nil
+	className = "_User"
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	result = w.location()
+	expect = "http://www.g.cn/users/1001"
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_objectID(t *testing.T) {

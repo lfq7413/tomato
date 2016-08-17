@@ -7,6 +7,7 @@ import (
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -115,6 +116,7 @@ func Test_handleInstallation(t *testing.T) {
 }
 
 func Test_handleSession(t *testing.T) {
+	// Execute
 	// TODO
 }
 
@@ -165,7 +167,6 @@ func Test_cleanUserAuthData(t *testing.T) {
 
 func Test_handleAuthData(t *testing.T) {
 	// handleAuthDataValidation
-	// findUsersWithAuthData
 	// TODO
 }
 
@@ -174,10 +175,155 @@ func Test_handleAuthDataValidation(t *testing.T) {
 }
 
 func Test_findUsersWithAuthData(t *testing.T) {
-	// TODO
+	var schema types.M
+	var object types.M
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var className string
+	var authData types.M
+	var result types.S
+	var err error
+	var expect types.S
+	/***************************************************************/
+	initEnv()
+	className = "user"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	query = nil
+	data = types.M{}
+	originalData = nil
+	className = "user"
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	authData = types.M{
+		"facebook": types.M{
+			"id": "1002",
+		},
+	}
+	result, err = w.findUsersWithAuthData(authData)
+	expect = types.S{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	query = nil
+	data = types.M{}
+	originalData = nil
+	className = "_User"
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	authData = types.M{
+		"facebook": types.M{
+			"id": "1001",
+		},
+	}
+	result, err = w.findUsersWithAuthData(authData)
+	expect = types.S{
+		types.M{
+			"objectId": "101",
+			"authData": types.M{
+				"facebook": types.M{
+					"id": "1001",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	schema = types.M{
+		"fields": types.M{},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "101",
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	object = types.M{
+		"objectId": "102",
+		"authData": types.M{
+			"twitter": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	orm.TomatoDBController.Create(className, object, nil)
+	query = nil
+	data = types.M{}
+	originalData = nil
+	className = "_User"
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	authData = types.M{
+		"facebook": types.M{
+			"id": "1001",
+		},
+		"twitter": types.M{
+			"id": "1001",
+		},
+	}
+	result, err = w.findUsersWithAuthData(authData)
+	expect = types.S{
+		types.M{
+			"objectId": "101",
+			"authData": types.M{
+				"facebook": types.M{
+					"id": "1001",
+				},
+			},
+		},
+		types.M{
+			"objectId": "102",
+			"authData": types.M{
+				"twitter": types.M{
+					"id": "1001",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_createSessionToken(t *testing.T) {
+	// Execute
 	// TODO
 }
 
@@ -262,7 +408,7 @@ func Test_sanitizedData(t *testing.T) {
 	query = nil
 	data = types.M{
 		"key":              "hello",
-		"_auth_data":       "fackbook",
+		"_auth_data":       "facebook",
 		"_hashed_password": "123456",
 	}
 	originalData = nil

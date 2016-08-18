@@ -199,11 +199,11 @@ func Test_getUserAndRoleACL_Write(t *testing.T) {
 }
 
 func Test_validateClientClassCreation_Write(t *testing.T) {
-	// TODO
+	// 测试用例与 query.validateClientClassCreation 相同
 }
 
 func Test_validateSchema(t *testing.T) {
-	// TODO
+	// 测试用例与 DBController.ValidateObject 相同
 }
 
 func Test_handleInstallation(t *testing.T) {
@@ -216,7 +216,110 @@ func Test_handleSession(t *testing.T) {
 }
 
 func Test_validateAuthData(t *testing.T) {
-	// TODO
+	var className string
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var result error
+	var expect error
+	/***************************************************************/
+	initEnv()
+	className = "user"
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.validateAuthData()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	query = nil
+	data = types.M{
+		"key": "hello",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.validateAuthData()
+	expect = errs.E(errs.UsernameMissing, "bad or missing username")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	query = nil
+	data = types.M{
+		"username": "joe",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.validateAuthData()
+	expect = errs.E(errs.PasswordMissing, "password is required")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"password": "123",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.validateAuthData()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	query = nil
+	data = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"id": "1001",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.validateAuthData()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	query = nil
+	data = types.M{
+		"authData": types.M{
+			"facebook": types.M{
+				"key": "1001",
+			},
+		},
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	result = w.validateAuthData()
+	expect = errs.E(errs.UnsupportedService, "This authentication method is unsupported.")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_runBeforeTrigger(t *testing.T) {

@@ -387,6 +387,7 @@ func Test_getUserAndRoleACL(t *testing.T) {
 	if reflect.DeepEqual(expect, q.findOptions["acl"]) == false {
 		t.Error("expect:", expect, "result:", q.findOptions["acl"])
 	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_redirectClassNameForKey(t *testing.T) {

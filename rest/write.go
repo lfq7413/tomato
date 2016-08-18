@@ -149,7 +149,7 @@ func (w *Write) getUserAndRoleACL() error {
 	}
 	acl := []string{"*"}
 	if w.auth.User != nil {
-		acl = append(acl, w.auth.User["objectId"].(string))
+		acl = append(acl, utils.S(w.auth.User["objectId"]))
 		acl = append(acl, w.auth.GetUserRoles()...)
 	}
 	w.RunOptions["acl"] = acl

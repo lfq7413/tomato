@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
@@ -100,7 +101,101 @@ func Test_Execute_Write(t *testing.T) {
 }
 
 func Test_getUserAndRoleACL_Write(t *testing.T) {
-	// TODO
+	var schema types.M
+	var object types.M
+	var className string
+	var w *Write
+	var auth *Auth
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var expect []string
+	/***************************************************************/
+	auth = Master()
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(auth, "user", query, data, originalData, nil)
+	w.getUserAndRoleACL()
+	if _, ok := w.RunOptions["acl"]; ok {
+		t.Error("findOptions[acl] exist")
+	}
+	/***************************************************************/
+	auth = Nobody()
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(auth, "user", query, data, originalData, nil)
+	w.getUserAndRoleACL()
+	expect = []string{"*"}
+	if reflect.DeepEqual(expect, w.RunOptions["acl"]) == false {
+		t.Error("expect:", expect, "result:", w.RunOptions["acl"])
+	}
+	/***************************************************************/
+	cache.InitCache()
+	initEnv()
+	className = "_Role"
+	schema = types.M{
+		"fields": types.M{
+			"name":  types.M{"type": "String"},
+			"users": types.M{"type": "Relation", "targetClass": "_User"},
+			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "1001",
+		"name":     "role1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "1002",
+		"name":     "role1002",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:roles:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId":  "5001",
+		"owningId":  "1002",
+		"relatedId": "1001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	className = "_Join:users:_Role"
+	schema = types.M{
+		"fields": types.M{
+			"relatedId": types.M{"type": "String"},
+			"owningId":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId":  "5002",
+		"owningId":  "1001",
+		"relatedId": "9001",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	auth = &Auth{
+		IsMaster: false,
+		User: types.M{
+			"objectId": "9001",
+		},
+		FetchedRoles: false,
+		RolePromise:  nil,
+	}
+	w, _ = NewWrite(auth, "user", query, data, originalData, nil)
+	w.getUserAndRoleACL()
+	expect = []string{"*", "9001", "role:role1001", "role:role1002"}
+	if reflect.DeepEqual(expect, w.RunOptions["acl"]) == false {
+		t.Error("expect:", expect, "result:", w.RunOptions["acl"])
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_validateClientClassCreation_Write(t *testing.T) {

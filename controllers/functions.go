@@ -4,7 +4,6 @@ import (
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
-	"github.com/lfq7413/tomato/utils"
 )
 
 // FunctionsController 处理 /functions 接口的请求
@@ -21,8 +20,9 @@ type FunctionsController struct {
 func (f *FunctionsController) HandleCloudFunction() {
 	functionName := f.Ctx.Input.Param(":functionName")
 	theFunction := rest.GetFunction(functionName)
+	theValidator := rest.GetValidator(functionName)
 	if theFunction == nil {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.ValidationError, "Invalid function.")
+		f.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Invalid function.")
 		f.ServeJSON()
 		return
 	}
@@ -31,29 +31,36 @@ func (f *FunctionsController) HandleCloudFunction() {
 		f.JSONBody = types.M{}
 	}
 
-	for k, v := range f.JSONBody {
-		if value, ok := v.(map[string]interface{}); ok {
-			if value["__type"].(string) == "Date" {
-				f.JSONBody[k], _ = utils.StringtoTime(value["iso"].(string))
-			}
+	// TODO 补全 Headers
+	request := rest.FunctionRequest{
+		Params:         f.JSONBody,
+		Master:         false,
+		InstallationID: f.Info.InstallationID,
+	}
+	if f.Auth != nil {
+		request.Master = f.Auth.IsMaster
+		request.User = f.Auth.User
+	}
+
+	if theValidator != nil {
+		result := theValidator(request)
+		if result == false {
+			f.Data["json"] = errs.ErrorMessageToMap(errs.ValidationError, "Validation failed.")
+			f.ServeJSON()
+			return
 		}
 	}
 
-	f.Auth.IsMaster = true
-	request := rest.RequestInfo{
-		Auth:      f.Auth,
-		NewObject: f.JSONBody,
-	}
-	resp := theFunction(request)
-	if resp == nil {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Call function fail.")
+	response := &functionResponse{}
+	theFunction(request, response)
+	if response.err != nil {
+		f.Data["json"] = errs.ErrorToMap(response.err)
 		f.ServeJSON()
 		return
 	}
 
-	f.Data["json"] = resp
+	f.Data["json"] = response.response
 	f.ServeJSON()
-
 }
 
 // Get ...
@@ -78,4 +85,22 @@ func (f *FunctionsController) Delete() {
 // @router / [put]
 func (f *FunctionsController) Put() {
 	f.ObjectsController.Put()
+}
+
+type functionResponse struct {
+	response types.M
+	err      error
+}
+
+func (f *functionResponse) Success(response interface{}) {
+	f.response = types.M{
+		"result": response,
+	}
+}
+
+func (f *functionResponse) Error(code int, message string) {
+	if code == 0 {
+		code = errs.ScriptFailed
+	}
+	f.err = errs.E(code, message)
 }

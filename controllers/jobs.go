@@ -31,13 +31,18 @@ func (j *JobsController) HandleCloudJob() {
 		j.JSONBody = types.M{}
 	}
 
-	request := rest.RequestInfo{
-		Auth:      j.Auth,
-		NewObject: j.JSONBody,
+	request := rest.JobRequest{
+		Params: j.JSONBody,
+		Master: false,
 	}
+	if j.Auth != nil {
+		request.Master = j.Auth.IsMaster
+		request.User = j.Auth.User
+	}
+
 	go theJob(request)
 
-	j.Data["json"] = "{}"
+	j.Data["json"] = types.M{}
 	j.ServeJSON()
 
 }

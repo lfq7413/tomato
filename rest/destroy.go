@@ -62,7 +62,8 @@ func (d *Destroy) runBeforeTrigger() error {
 
 	config.TConfig.LiveQuery.OnAfterDelete(d.className, d.originalData, nil)
 
-	RunTrigger(TypeBeforeDelete, d.className, d.auth, nil, d.originalData)
+	d.originalData["className"] = d.className
+	maybeRunTrigger(TypeBeforeDelete, d.auth, d.originalData, nil)
 
 	return nil
 }
@@ -92,7 +93,6 @@ func (d *Destroy) runDestroy() error {
 
 // runAfterTrigger 执行删后回调
 func (d *Destroy) runAfterTrigger() error {
-	RunTrigger(TypeAfterDelete, d.className, d.auth, nil, d.originalData)
-
+	maybeRunTrigger(TypeAfterDelete, d.auth, d.originalData, nil)
 	return nil
 }

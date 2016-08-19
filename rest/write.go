@@ -614,20 +614,26 @@ func (w *Write) runBeforeTrigger() error {
 		return nil
 	}
 
-	updatedObject := types.M{}
+	extraData := types.M{"className": w.className}
 	if w.query != nil && w.query["objectId"] != nil {
-		// 如果是更新，则把原始数据添加进来
-		for k, v := range w.originalData {
-			updatedObject[k] = v
-		}
-		updatedObject["objectId"] = w.query["objectId"]
+		extraData["objectId"] = w.query["objectId"]
+	}
+
+	var originalObject types.M
+	updatedObject := inflate(extraData, w.originalData)
+	if w.query != nil && w.query["objectId"] != nil {
+		// update
+		originalObject = inflate(extraData, w.originalData)
 	}
 	// 把需要更新的数据添加进来
 	for k, v := range w.sanitizedData() {
 		updatedObject[k] = v
 	}
 
-	response := RunTrigger(TypeBeforeSave, w.className, w.auth, updatedObject, w.originalData)
+	response, err := maybeRunTrigger(TypeBeforeSave, w.auth, updatedObject, originalObject)
+	if err != nil {
+		return err
+	}
 	if response != nil && response["object"] != nil {
 		// 运行完回调函数之后，把结果设置回 data ，并标识已被修改
 		if reflect.DeepEqual(w.data, response["object"]) == false {
@@ -1009,23 +1015,27 @@ func (w *Write) runAfterTrigger() error {
 		return nil
 	}
 
-	updatedObject := types.M{"className": w.className}
+	extraData := types.M{"className": w.className}
 	if w.query != nil && w.query["objectId"] != nil {
-		// 如果是更新，则把原始数据添加进来
-		for k, v := range w.originalData {
-			updatedObject[k] = v
-		}
-		updatedObject["objectId"] = w.query["objectId"]
+		extraData["objectId"] = w.query["objectId"]
 	}
+
+	var originalObject types.M
+	if w.query != nil && w.query["objectId"] != nil {
+		originalObject = inflate(extraData, w.originalData)
+	}
+
+	updatedObject := inflate(extraData, w.originalData)
 	// 把需要更新的数据添加进来
 	for k, v := range w.sanitizedData() {
 		updatedObject[k] = v
 	}
 
 	// 尝试通知 LiveQueryServer
-	config.TConfig.LiveQuery.OnAfterSave(w.className, updatedObject, w.originalData)
+	config.TConfig.LiveQuery.OnAfterSave(w.className, updatedObject, originalObject)
 
-	RunTrigger(TypeAfterSave, w.className, w.auth, updatedObject, w.originalData)
+	// TODO 不等待回调返回
+	maybeRunTrigger(TypeAfterSave, w.auth, updatedObject, originalObject)
 
 	return nil
 }

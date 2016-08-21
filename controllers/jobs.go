@@ -1,8 +1,8 @@
 package controllers
 
 import (
+	"github.com/lfq7413/tomato/cloud"
 	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 )
 
@@ -20,7 +20,7 @@ func (j *JobsController) HandleCloudJob() {
 		return
 	}
 	jobName := j.Ctx.Input.Param(":jobName")
-	theJob := rest.GetJob(jobName)
+	theJob := cloud.GetJob(jobName)
 	if theJob == nil {
 		j.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Invalid job function.")
 		j.ServeJSON()
@@ -31,7 +31,7 @@ func (j *JobsController) HandleCloudJob() {
 		j.JSONBody = types.M{}
 	}
 
-	request := rest.JobRequest{
+	request := cloud.JobRequest{
 		Params: j.JSONBody,
 		Master: false,
 	}

@@ -1,8 +1,8 @@
 package controllers
 
 import (
+	"github.com/lfq7413/tomato/cloud"
 	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 )
 
@@ -19,8 +19,8 @@ type FunctionsController struct {
 // @router /:functionName [post]
 func (f *FunctionsController) HandleCloudFunction() {
 	functionName := f.Ctx.Input.Param(":functionName")
-	theFunction := rest.GetFunction(functionName)
-	theValidator := rest.GetValidator(functionName)
+	theFunction := cloud.GetFunction(functionName)
+	theValidator := cloud.GetValidator(functionName)
 	if theFunction == nil {
 		f.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Invalid function.")
 		f.ServeJSON()
@@ -32,7 +32,7 @@ func (f *FunctionsController) HandleCloudFunction() {
 	}
 
 	// TODO 补全 Headers
-	request := rest.FunctionRequest{
+	request := cloud.FunctionRequest{
 		Params:         f.JSONBody,
 		Master:         false,
 		InstallationID: f.Info.InstallationID,
@@ -51,15 +51,15 @@ func (f *FunctionsController) HandleCloudFunction() {
 		}
 	}
 
-	response := &functionResponse{}
+	response := &cloud.FunctionResponse{}
 	theFunction(request, response)
-	if response.err != nil {
-		f.Data["json"] = errs.ErrorToMap(response.err)
+	if response.Err != nil {
+		f.Data["json"] = errs.ErrorToMap(response.Err)
 		f.ServeJSON()
 		return
 	}
 
-	f.Data["json"] = response.response
+	f.Data["json"] = response.Response
 	f.ServeJSON()
 }
 
@@ -85,22 +85,4 @@ func (f *FunctionsController) Delete() {
 // @router / [put]
 func (f *FunctionsController) Put() {
 	f.ObjectsController.Put()
-}
-
-type functionResponse struct {
-	response types.M
-	err      error
-}
-
-func (f *functionResponse) Success(response interface{}) {
-	f.response = types.M{
-		"result": response,
-	}
-}
-
-func (f *functionResponse) Error(code int, message string) {
-	if code == 0 {
-		code = errs.ScriptFailed
-	}
-	f.err = errs.E(code, message)
 }

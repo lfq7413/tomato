@@ -1,38 +1,36 @@
 package cloud
 
-import "github.com/lfq7413/tomato/rest"
-
 // Define ...
-func Define(functionName string, handler rest.FunctionHandler, validationHandler rest.ValidatorHandler) {
-	rest.AddFunction(functionName, handler, validationHandler)
+func Define(functionName string, handler FunctionHandler, validationHandler ValidatorHandler) {
+	AddFunction(functionName, handler, validationHandler)
 }
 
 // BeforeSave ...
-func BeforeSave(className string, handler rest.TriggerHandler) {
-	rest.AddTrigger(rest.TypeBeforeSave, className, handler)
+func BeforeSave(className string, handler TriggerHandler) {
+	AddTrigger(TypeBeforeSave, className, handler)
 }
 
 // BeforeDelete ...
-func BeforeDelete(className string, handler rest.TriggerHandler) {
-	rest.AddTrigger(rest.TypeBeforeDelete, className, handler)
+func BeforeDelete(className string, handler TriggerHandler) {
+	AddTrigger(TypeBeforeDelete, className, handler)
 }
 
 // AfterSave ...
-func AfterSave(className string, handler rest.TriggerHandler) {
-	rest.AddTrigger(rest.TypeAfterSave, className, handler)
+func AfterSave(className string, handler TriggerHandler) {
+	AddTrigger(TypeAfterSave, className, handler)
 }
 
 // AfterDelete ...
-func AfterDelete(className string, handler rest.TriggerHandler) {
-	rest.AddTrigger(rest.TypeAfterDelete, className, handler)
+func AfterDelete(className string, handler TriggerHandler) {
+	AddTrigger(TypeAfterDelete, className, handler)
 }
 
 // RemoveHook ...
 func RemoveHook(category, name, triggerType string) {
-	rest.Unregister(category, name, triggerType)
+	Unregister(category, name, triggerType)
 }
 
 // RemoveAllHooks ...
 func RemoveAllHooks() {
-	rest.UnregisterAll()
+	UnregisterAll()
 }

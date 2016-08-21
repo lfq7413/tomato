@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/lfq7413/tomato/cache"
+	"github.com/lfq7413/tomato/cloud"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
@@ -63,7 +64,7 @@ func (d *Destroy) runBeforeTrigger() error {
 	config.TConfig.LiveQuery.OnAfterDelete(d.className, d.originalData, nil)
 
 	d.originalData["className"] = d.className
-	maybeRunTrigger(TypeBeforeDelete, d.auth, d.originalData, nil)
+	maybeRunTrigger(cloud.TypeBeforeDelete, d.auth, d.originalData, nil)
 
 	return nil
 }
@@ -93,6 +94,6 @@ func (d *Destroy) runDestroy() error {
 
 // runAfterTrigger 执行删后回调
 func (d *Destroy) runAfterTrigger() error {
-	maybeRunTrigger(TypeAfterDelete, d.auth, d.originalData, nil)
+	maybeRunTrigger(cloud.TypeAfterDelete, d.auth, d.originalData, nil)
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/lfq7413/tomato/authdatamanager"
 	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/client"
+	"github.com/lfq7413/tomato/cloud"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
@@ -610,7 +611,7 @@ func (w *Write) runBeforeTrigger() error {
 	if w.response != nil {
 		return nil
 	}
-	if TriggerExists(TypeBeforeSave, w.className) == false {
+	if cloud.TriggerExists(cloud.TypeBeforeSave, w.className) == false {
 		return nil
 	}
 
@@ -630,7 +631,7 @@ func (w *Write) runBeforeTrigger() error {
 		updatedObject[k] = v
 	}
 
-	response, err := maybeRunTrigger(TypeBeforeSave, w.auth, updatedObject, originalObject)
+	response, err := maybeRunTrigger(cloud.TypeBeforeSave, w.auth, updatedObject, originalObject)
 	if err != nil {
 		return err
 	}
@@ -1009,7 +1010,7 @@ func (w *Write) runAfterTrigger() error {
 		return nil
 	}
 
-	hasAfterSaveHook := TriggerExists(TypeAfterSave, w.className)
+	hasAfterSaveHook := cloud.TriggerExists(cloud.TypeAfterSave, w.className)
 	hasLiveQuery := config.TConfig.LiveQuery.HasLiveQuery(w.className)
 	if hasAfterSaveHook == false && hasLiveQuery == false {
 		return nil
@@ -1035,7 +1036,7 @@ func (w *Write) runAfterTrigger() error {
 	config.TConfig.LiveQuery.OnAfterSave(w.className, updatedObject, originalObject)
 
 	// TODO 不等待回调返回
-	maybeRunTrigger(TypeAfterSave, w.auth, updatedObject, originalObject)
+	maybeRunTrigger(cloud.TypeAfterSave, w.auth, updatedObject, originalObject)
 
 	return nil
 }

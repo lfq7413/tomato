@@ -8,17 +8,16 @@ import (
 	"github.com/lfq7413/tomato/utils"
 )
 
-// TypeBeforeSave 保存前回调
-const TypeBeforeSave = "beforeSave"
-
-// TypeAfterSave 保存后回调
-const TypeAfterSave = "afterSave"
-
-// TypeBeforeDelete 删除前回调
-const TypeBeforeDelete = "beforeDelete"
-
-// TypeAfterDelete 删除后回调
-const TypeAfterDelete = "afterDelete"
+const (
+	// TypeBeforeSave 保存前回调
+	TypeBeforeSave = "beforeSave"
+	// TypeAfterSave 保存后回调
+	TypeAfterSave = "afterSave"
+	// TypeBeforeDelete 删除前回调
+	TypeBeforeDelete = "beforeDelete"
+	// TypeAfterDelete 删除后回调
+	TypeAfterDelete = "afterDelete"
+)
 
 // TriggerRequest ...
 type TriggerRequest struct {

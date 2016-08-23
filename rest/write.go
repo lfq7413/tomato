@@ -695,11 +695,10 @@ func (w *Write) transformUser() error {
 		}
 
 		if utils.HasResults(response) {
-			if results, ok := response["results"].([]interface{}); ok {
-				for _, result := range results {
-					session := result.(map[string]interface{})
-					cache.User.Del(session["sessionToken"].(string))
-				}
+			results := utils.A(response["results"])
+			for _, result := range results {
+				session := utils.M(result)
+				cache.User.Del(utils.S(session["sessionToken"]))
 			}
 		}
 	}
@@ -750,8 +749,8 @@ func (w *Write) transformUser() error {
 		return nil
 	}
 
-	if p, ok := w.data["email"].(map[string]interface{}); ok {
-		if p["__op"].(string) == "Delete" {
+	if p := utils.M(w.data["email"]); p != nil {
+		if utils.S(p["__op"]) == "Delete" {
 			return nil
 		}
 	}

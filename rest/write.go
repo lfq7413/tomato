@@ -621,9 +621,10 @@ func (w *Write) runBeforeTrigger() error {
 	}
 
 	var originalObject types.M
-	updatedObject := inflate(extraData, w.originalData)
+	// 不添加原始对象
+	updatedObject := inflate(extraData, nil)
 	if w.query != nil && w.query["objectId"] != nil {
-		// update
+		// update 时初始化原始对象
 		originalObject = inflate(extraData, w.originalData)
 	}
 	// 把需要更新的数据添加进来
@@ -635,16 +636,19 @@ func (w *Write) runBeforeTrigger() error {
 	if err != nil {
 		return err
 	}
-	if response != nil && response["object"] != nil {
-		// 运行完回调函数之后，把结果设置回 data ，并标识已被修改
+	if response != nil && utils.M(response["object"]) != nil {
+		object := utils.M(response["object"])
+		// 删除额外添加的字段
+		delete(object, "className")
+		if w.query != nil && w.query["objectId"] != nil {
+			delete(object, "objectId")
+		}
+		// 比较对象 ，如果数据被修改，则设置回 w.data
 		if reflect.DeepEqual(w.data, response["object"]) == false {
 			w.storage["changedByTrigger"] = true
+			w.data = object
+			return w.validateSchema()
 		}
-		w.data = utils.M(response["object"])
-		if w.query != nil && w.query["objectId"] != nil {
-			delete(w.data, "objectId")
-		}
-		return w.validateSchema()
 	}
 
 	return nil

@@ -40,4 +40,5 @@ func Test_maybeRunTrigger(t *testing.T) {
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
+	cloud.UnregisterAll()
 }

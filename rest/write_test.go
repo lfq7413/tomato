@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lfq7413/tomato/cache"
+	"github.com/lfq7413/tomato/cloud"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
@@ -323,7 +324,202 @@ func Test_validateAuthData(t *testing.T) {
 }
 
 func Test_runBeforeTrigger(t *testing.T) {
-	// TODO
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var result error
+	var expect error
+	var expectData types.M
+	/***************************************************************/
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	result = w.runBeforeTrigger()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/***************************************************************/
+	cloud.BeforeSave("user", func(request cloud.TriggerRequest, response cloud.Response) {
+		object := request.Object
+		if username := utils.S(object["username"]); username != "" {
+			object["username"] = username + "_tomato"
+			response.Success(nil)
+		} else {
+			response.Error(1, "need a username")
+		}
+	})
+	query = nil
+	data = types.M{
+		"key": "hello",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	result = w.runBeforeTrigger()
+	expect = errs.E(1, "need a username")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	cloud.UnregisterAll()
+	/***************************************************************/
+	cloud.BeforeSave("user", func(request cloud.TriggerRequest, response cloud.Response) {
+		object := request.Object
+		if username := utils.S(object["username"]); username != "" {
+			object["username"] = username + "_tomato"
+			response.Success(nil)
+		} else {
+			response.Error(1, "need a username")
+		}
+	})
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"key":      "hello",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	result = w.runBeforeTrigger()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	expectData = types.M{
+		"objectId": "1001",
+		"username": "joe_tomato",
+		"key":      "hello",
+	}
+	if reflect.DeepEqual(expectData, w.data) == false {
+		t.Error("expect:", expectData, "result:", w.data)
+	}
+	if reflect.DeepEqual(true, w.storage["changedByTrigger"]) == false {
+		t.Error("expect:", true, "result:", w.storage["changedByTrigger"])
+	}
+	cloud.UnregisterAll()
+	/***************************************************************/
+	cloud.BeforeSave("user", func(request cloud.TriggerRequest, response cloud.Response) {
+		object := request.Object
+		if username := utils.S(object["username"]); username != "" {
+			response.Success(nil)
+		} else {
+			response.Error(1, "need a username")
+		}
+	})
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"key":      "hello",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	result = w.runBeforeTrigger()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	expectData = types.M{
+		"objectId": "1001",
+		"username": "joe",
+		"key":      "hello",
+	}
+	if reflect.DeepEqual(expectData, w.data) == false {
+		t.Error("expect:", expectData, "result:", w.data)
+	}
+	if reflect.DeepEqual(nil, w.storage["changedByTrigger"]) == false {
+		t.Error("expect:", nil, "result:", w.storage["changedByTrigger"])
+	}
+	cloud.UnregisterAll()
+	/***************************************************************/
+	cloud.BeforeSave("user", func(request cloud.TriggerRequest, response cloud.Response) {
+		object := request.Object
+		if username := utils.S(object["username"]); username != "" {
+			object["username"] = username + "_tomato"
+			response.Success(nil)
+		} else {
+			response.Error(1, "need a username")
+		}
+	})
+	query = nil
+	data = types.M{
+		"key": "hello",
+	}
+	originalData = types.M{"objectId": "1001"}
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	result = w.runBeforeTrigger()
+	expect = errs.E(1, "need a username")
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	cloud.UnregisterAll()
+	/***************************************************************/
+	cloud.BeforeSave("user", func(request cloud.TriggerRequest, response cloud.Response) {
+		object := request.Object
+		if username := utils.S(object["username"]); username != "" {
+			object["username"] = username + "_tomato"
+			response.Success(nil)
+		} else {
+			response.Error(1, "need a username")
+		}
+	})
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"key":      "hello",
+	}
+	originalData = types.M{"objectId": "1001"}
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	result = w.runBeforeTrigger()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	expectData = types.M{
+		"username": "joe_tomato",
+		"key":      "hello",
+	}
+	if reflect.DeepEqual(expectData, w.data) == false {
+		t.Error("expect:", expectData, "result:", w.data)
+	}
+	if reflect.DeepEqual(true, w.storage["changedByTrigger"]) == false {
+		t.Error("expect:", true, "result:", w.storage["changedByTrigger"])
+	}
+	cloud.UnregisterAll()
+	/***************************************************************/
+	cloud.BeforeSave("user", func(request cloud.TriggerRequest, response cloud.Response) {
+		object := request.Object
+		if username := utils.S(object["username"]); username != "" {
+			response.Success(nil)
+		} else {
+			response.Error(1, "need a username")
+		}
+	})
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"key":      "hello",
+	}
+	originalData = types.M{"objectId": "1001"}
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	result = w.runBeforeTrigger()
+	expect = nil
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	expectData = types.M{
+		"username": "joe",
+		"key":      "hello",
+	}
+	if reflect.DeepEqual(expectData, w.data) == false {
+		t.Error("expect:", expectData, "result:", w.data)
+	}
+	if reflect.DeepEqual(nil, w.storage["changedByTrigger"]) == false {
+		t.Error("expect:", nil, "result:", w.storage["changedByTrigger"])
+	}
+	cloud.UnregisterAll()
 }
 
 func Test_setRequiredFieldsIfNeeded(t *testing.T) {

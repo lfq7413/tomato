@@ -357,7 +357,6 @@ func Test_runBeforeTrigger(t *testing.T) {
 	}
 	originalData = nil
 	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
-	w.data["objectId"] = "1001"
 	result = w.runBeforeTrigger()
 	expect = errs.E(1, "need a username")
 	if reflect.DeepEqual(expect, result) == false {
@@ -381,14 +380,12 @@ func Test_runBeforeTrigger(t *testing.T) {
 	}
 	originalData = nil
 	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
-	w.data["objectId"] = "1001"
 	result = w.runBeforeTrigger()
 	expect = nil
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
 	expectData = types.M{
-		"objectId": "1001",
 		"username": "joe_tomato",
 		"key":      "hello",
 	}
@@ -415,14 +412,12 @@ func Test_runBeforeTrigger(t *testing.T) {
 	}
 	originalData = nil
 	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
-	w.data["objectId"] = "1001"
 	result = w.runBeforeTrigger()
 	expect = nil
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
 	expectData = types.M{
-		"objectId": "1001",
 		"username": "joe",
 		"key":      "hello",
 	}
@@ -443,11 +438,11 @@ func Test_runBeforeTrigger(t *testing.T) {
 			response.Error(1, "need a username")
 		}
 	})
-	query = nil
+	query = types.M{"objectId": "1001"}
 	data = types.M{
 		"key": "hello",
 	}
-	originalData = types.M{"objectId": "1001"}
+	originalData = nil
 	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
 	result = w.runBeforeTrigger()
 	expect = errs.E(1, "need a username")
@@ -465,12 +460,12 @@ func Test_runBeforeTrigger(t *testing.T) {
 			response.Error(1, "need a username")
 		}
 	})
-	query = nil
+	query = types.M{"objectId": "1001"}
 	data = types.M{
 		"username": "joe",
 		"key":      "hello",
 	}
-	originalData = types.M{"objectId": "1001"}
+	originalData = nil
 	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
 	result = w.runBeforeTrigger()
 	expect = nil
@@ -497,12 +492,12 @@ func Test_runBeforeTrigger(t *testing.T) {
 			response.Error(1, "need a username")
 		}
 	})
-	query = nil
+	query = types.M{"objectId": "1001"}
 	data = types.M{
 		"username": "joe",
 		"key":      "hello",
 	}
-	originalData = types.M{"objectId": "1001"}
+	originalData = nil
 	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
 	result = w.runBeforeTrigger()
 	expect = nil
@@ -523,7 +518,47 @@ func Test_runBeforeTrigger(t *testing.T) {
 }
 
 func Test_setRequiredFieldsIfNeeded(t *testing.T) {
-	// TODO
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var expect types.M
+	timeStr := utils.TimetoString(time.Now().UTC())
+	/***************************************************************/
+	query = types.M{"objectId": "1001"}
+	data = types.M{"key": "hello"}
+	originalData = types.M{}
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	w.updatedAt = timeStr
+	w.setRequiredFieldsIfNeeded()
+	expect = types.M{
+		"key":       "hello",
+		"updatedAt": timeStr,
+	}
+	if reflect.DeepEqual(expect, w.data) == false {
+		t.Error("expect:", expect, "result:", w.data)
+	}
+	/***************************************************************/
+	query = nil
+	data = types.M{
+		"key": "hello",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	w.updatedAt = timeStr
+	w.setRequiredFieldsIfNeeded()
+	expect = types.M{
+		"key":       "hello",
+		"updatedAt": timeStr,
+		"createdAt": timeStr,
+	}
+	if w.data["objectId"] == nil {
+		t.Error("expect:", "objectId", "result:", nil)
+	}
+	delete(w.data, "objectId")
+	if reflect.DeepEqual(expect, w.data) == false {
+		t.Error("expect:", expect, "result:", w.data)
+	}
 }
 
 func Test_transformUser(t *testing.T) {

@@ -562,7 +562,238 @@ func Test_setRequiredFieldsIfNeeded(t *testing.T) {
 }
 
 func Test_transformUser(t *testing.T) {
-	// TODO
+	var schema, object types.M
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var expect types.M
+	var err, expectErr error
+	/***************************************************************/
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.transformUser()
+	if v, ok := w.data["username"]; ok == false {
+		t.Error("expect:", "username", "result:", v)
+	}
+	/***************************************************************/
+	query = nil
+	data = types.M{
+		"password": "123456",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.transformUser()
+	expect = types.M{
+		"_hashed_password": utils.Hash("123456"),
+	}
+	if v, ok := w.data["username"]; ok == false {
+		t.Error("expect:", "username", "result:", v)
+	}
+	delete(w.data, "username")
+	if reflect.DeepEqual(expect, w.data) == false {
+		t.Error("expect:", expect, "result:", w.data)
+	}
+	/***************************************************************/
+	initEnv()
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"password": "123456",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	w.transformUser()
+	expect = types.M{
+		"objectId":         "1001",
+		"username":         "joe",
+		"_hashed_password": utils.Hash("123456"),
+	}
+	if reflect.DeepEqual(expect, w.data) == false {
+		t.Error("expect:", expect, "result:", w.data)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1002",
+		"username": "joe",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"password": "123456",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	err = w.transformUser()
+	expectErr = errs.E(errs.UsernameTaken, "Account already exists for this username")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"password": "123456",
+		"email":    "hello",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	err = w.transformUser()
+	expectErr = errs.E(errs.InvalidEmailAddress, "Email address format is invalid.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+			"email":    types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1002",
+		"username": "jack",
+		"email":    "a@g.cn",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"password": "123456",
+		"email":    "a@g.cn",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	err = w.transformUser()
+	expectErr = errs.E(errs.EmailTaken, "Account already exists for this email address")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	config.TConfig.VerifyUserEmails = false
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"password": "123456",
+		"email":    "a@g.cn",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	w.transformUser()
+	expect = types.M{
+		"objectId":         "1001",
+		"username":         "joe",
+		"_hashed_password": utils.Hash("123456"),
+		"email":            "a@g.cn",
+	}
+	if reflect.DeepEqual(true, w.storage["sendVerificationEmail"]) == false {
+		t.Error("expect:", true, "result:", w.storage["sendVerificationEmail"])
+	}
+	if reflect.DeepEqual(expect, w.data) == false {
+		t.Error("expect:", expect, "result:", w.data)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	config.TConfig.VerifyUserEmails = true
+	config.TConfig.EmailVerifyTokenValidityDuration = 180
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"password": "123456",
+		"email":    "a@g.cn",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	w.transformUser()
+	expect = types.M{
+		"objectId":                       "1001",
+		"username":                       "joe",
+		"_hashed_password":               utils.Hash("123456"),
+		"email":                          "a@g.cn",
+		"emailVerified":                  false,
+		"_email_verify_token_expires_at": utils.TimetoString(time.Now().UTC().Add(180 * time.Second)),
+	}
+	if reflect.DeepEqual(true, w.storage["sendVerificationEmail"]) == false {
+		t.Error("expect:", true, "result:", w.storage["sendVerificationEmail"])
+	}
+	if v, ok := w.data["_email_verify_token"]; ok == false {
+		t.Error("expect:", "need _email_verify_token", "result:", v)
+	}
+	delete(w.data, "_email_verify_token")
+	if reflect.DeepEqual(expect, w.data) == false {
+		t.Error("expect:", expect, "result:", w.data)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"user":         types.M{"type": "Pointer", "targetClass": "_User"},
+			"sessionToken": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Session", schema)
+	object = types.M{
+		"objectId": "2001",
+		"user": types.M{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  "1001",
+		},
+		"sessionToken": "aaaaa",
+	}
+	orm.Adapter.CreateObject("_Session", schema, object)
+	cache.User.Put("aaaaa", "user1", 0)
+	query = types.M{"objectId": "1001"}
+	data = types.M{
+		"password": "123456",
+	}
+	originalData = types.M{}
+	w, _ = NewWrite(&Auth{IsMaster: false, User: types.M{"objectId": "1001"}}, "_User", query, data, originalData, nil)
+	err = w.transformUser()
+	expect = types.M{
+		"_hashed_password": utils.Hash("123456"),
+	}
+	if cache.User.Get("aaaaa") != nil {
+		t.Error("expect:", nil, "result:", cache.User.Get("aaaaa"))
+	}
+	if reflect.DeepEqual(true, w.storage["clearSessions"]) == false {
+		t.Error("expect:", true, "result:", w.storage["clearSessions"])
+	}
+	if reflect.DeepEqual(true, w.storage["generateNewSession"]) == false {
+		t.Error("expect:", true, "result:", w.storage["generateNewSession"])
+	}
+	if reflect.DeepEqual(expect, w.data) == false {
+		t.Error("expect:", expect, "result:", w.data, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_expandFilesForExistingObjects(t *testing.T) {

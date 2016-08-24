@@ -801,6 +801,10 @@ func (w *Write) runDatabaseOperation() error {
 		return nil
 	}
 
+	if w.className == "_Role" {
+		cache.Role.Clear()
+	}
+
 	if w.className == "_User" && w.query != nil &&
 		w.auth.CouldUpdateUserID(utils.S(w.query["objectId"])) == false {
 		// 不能更新该用户，Master 可以更新任意用户，普通用户仅可更新自身
@@ -808,24 +812,26 @@ func (w *Write) runDatabaseOperation() error {
 	}
 
 	if w.className == "_Product" && w.data["download"] != nil {
-		download := utils.M(w.data["download"])
-		w.data["downloadName"] = download["name"]
+		if download := utils.M(w.data["download"]); download != nil {
+			w.data["downloadName"] = download["name"]
+		}
 	}
 
 	// TODO 确保不要出现用户无法访问自身数据的情况
-	if w.data["ACL"] != nil && utils.M(w.data["ACL"])["*unresolved"] != nil {
+	if acl := utils.M(w.data["ACL"]); acl != nil && acl["*unresolved"] != nil {
 		return errs.E(errs.InvalidAcl, "Invalid ACL.")
 	}
 
 	if w.query != nil {
 		// 避免用户自身无法访问 _User 表
-		if w.className == "_User" && w.data["ACL"] != nil {
-			acl := w.data["ACL"].(map[string]interface{})
-			acl[w.query["objectId"].(string)] = types.M{
-				"read":  true,
-				"write": true,
+		if w.className == "_User" {
+			if acl := utils.M(w.data["ACL"]); acl != nil {
+				acl[utils.S(w.query["objectId"])] = types.M{
+					"read":  true,
+					"write": true,
+				}
+				w.data["ACL"] = acl
 			}
-			w.data["ACL"] = acl
 		}
 		// 执行更新
 		response, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions, false)
@@ -854,7 +860,7 @@ func (w *Write) runDatabaseOperation() error {
 				"read":  true,
 				"write": false,
 			}
-			acl := w.data["ACL"].(map[string]interface{})
+			acl := utils.M(w.data["ACL"])
 			if acl == nil {
 				acl := types.M{}
 				acl["*"] = onlyread

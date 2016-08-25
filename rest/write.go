@@ -1093,16 +1093,16 @@ func (w *Write) sanitizedData() types.M {
 
 func (w *Write) cleanUserAuthData() {
 	if w.response != nil && w.response["response"] != nil && w.className == "_User" {
-		user := utils.M(w.response["response"])
-		if user != nil && user["authData"] != nil {
-			authData := utils.M(user["authData"])
-			for provider, v := range authData {
-				if v == nil {
-					delete(authData, provider)
+		if user := utils.M(w.response["response"]); user != nil {
+			if authData := utils.M(user["authData"]); authData != nil {
+				for provider, v := range authData {
+					if v == nil {
+						delete(authData, provider)
+					}
 				}
-			}
-			if len(authData) == 0 {
-				delete(user, "authData")
+				if len(authData) == 0 {
+					delete(user, "authData")
+				}
 			}
 		}
 	}

@@ -1145,7 +1145,51 @@ func Test_runAfterTrigger(t *testing.T) {
 }
 
 func Test_cleanUserAuthData(t *testing.T) {
-	// TODO
+	var w *Write
+	var expect types.M
+	/***************************************************************/
+	w, _ = NewWrite(Master(), "_User", nil, types.M{}, nil, nil)
+	w.response = types.M{
+		"response": types.M{
+			"username": "joe",
+			"authData": types.M{
+				"facebook": types.M{"id": "1001"},
+				"weibo":    nil,
+			},
+		},
+	}
+	w.cleanUserAuthData()
+	expect = types.M{
+		"response": types.M{
+			"username": "joe",
+			"authData": types.M{
+				"facebook": types.M{"id": "1001"},
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, w.response) == false {
+		t.Error("expect:", expect, "result:", w.response)
+	}
+	/***************************************************************/
+	w, _ = NewWrite(Master(), "_User", nil, types.M{}, nil, nil)
+	w.response = types.M{
+		"response": types.M{
+			"username": "joe",
+			"authData": types.M{
+				"facebook": nil,
+				"weibo":    nil,
+			},
+		},
+	}
+	w.cleanUserAuthData()
+	expect = types.M{
+		"response": types.M{
+			"username": "joe",
+		},
+	}
+	if reflect.DeepEqual(expect, w.response) == false {
+		t.Error("expect:", expect, "result:", w.response)
+	}
 }
 
 /////////////////////////////////////////////////////////////

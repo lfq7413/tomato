@@ -9,6 +9,7 @@ import (
 	"github.com/lfq7413/tomato/cloud"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/livequery"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -1102,7 +1103,6 @@ func Test_runDatabaseOperation(t *testing.T) {
 		t.Error("expect:", expectErr, "result:", err)
 	}
 	orm.TomatoDBController.DeleteEverything()
-	// TODO
 }
 
 func Test_createSessionTokenIfNeeded(t *testing.T) {
@@ -1116,7 +1116,32 @@ func Test_handleFollowup(t *testing.T) {
 }
 
 func Test_runAfterTrigger(t *testing.T) {
-	// TODO
+	var className string
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	/***************************************************************/
+	config.TConfig.LiveQuery = livequery.NewLiveQuery([]string{}, "", "")
+	className = "user"
+	query = nil
+	data = types.M{"key": "hello"}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	w.response = types.M{"response": "hello"}
+	w.runAfterTrigger()
+	/***************************************************************/
+	config.TConfig.LiveQuery = livequery.NewLiveQuery([]string{}, "", "")
+	cloud.AfterSave("user", func(res cloud.TriggerRequest, resp cloud.Response) {
+	})
+	className = "user"
+	query = nil
+	data = types.M{"key": "hello"}
+	originalData = nil
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	w.response = types.M{"response": "hello"}
+	w.runAfterTrigger()
+	cloud.UnregisterAll()
 }
 
 func Test_cleanUserAuthData(t *testing.T) {

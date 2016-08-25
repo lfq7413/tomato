@@ -1046,11 +1046,15 @@ func (w *Write) runAfterTrigger() error {
 		updatedObject[k] = v
 	}
 
-	// 尝试通知 LiveQueryServer
-	config.TConfig.LiveQuery.OnAfterSave(w.className, updatedObject, originalObject)
+	if hasLiveQuery {
+		// 尝试通知 LiveQueryServer
+		config.TConfig.LiveQuery.OnAfterSave(w.className, updatedObject, originalObject)
+	}
 
-	// TODO 不等待回调返回
-	maybeRunTrigger(cloud.TypeAfterSave, w.auth, updatedObject, originalObject)
+	if hasAfterSaveHook {
+		// TODO 不等待回调返回
+		maybeRunTrigger(cloud.TypeAfterSave, w.auth, updatedObject, originalObject)
+	}
 
 	return nil
 }

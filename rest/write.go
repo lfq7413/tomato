@@ -424,10 +424,11 @@ func (w *Write) handleSession() error {
 		if err != nil {
 			return err
 		}
-		if results["response"] == nil {
+		sess := utils.M(results["response"])
+		if sess == nil {
 			return errs.E(errs.InternalServerError, "Error creating session.")
 		}
-		sessionData["objectId"] = utils.M(results["response"])["objectId"]
+		sessionData["objectId"] = sess["objectId"]
 		w.response = types.M{
 			"status":   201,
 			"location": results["location"],
@@ -1065,6 +1066,10 @@ func (w *Write) location() string {
 	var middle string
 	if w.className == "_User" {
 		middle = "/users/"
+	} else if w.className == "_Session" {
+		middle = "/sessions/"
+	} else if w.className == "_Role" {
+		middle = "/roles/"
 	} else {
 		middle = "/classes/" + w.className + "/"
 	}

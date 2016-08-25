@@ -99,7 +99,7 @@ func Test_NewWrite(t *testing.T) {
 }
 
 func Test_Execute_Write(t *testing.T) {
-	// TODO
+	//
 }
 
 func Test_getUserAndRoleACL_Write(t *testing.T) {
@@ -213,8 +213,71 @@ func Test_handleInstallation(t *testing.T) {
 }
 
 func Test_handleSession(t *testing.T) {
-	// Execute
-	// TODO
+	var w *Write
+	var auth *Auth
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var err, expectErr error
+	var results types.S
+	/***************************************************************/
+	auth = Nobody()
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(auth, "_Session", query, data, originalData, nil)
+	err = w.handleSession()
+	expectErr = errs.E(errs.InvalidSessionToken, "Session token required.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	auth = &Auth{
+		IsMaster: false,
+		User:     types.M{"objectId": "1001"},
+	}
+	query = nil
+	data = types.M{"ACL": "hello"}
+	originalData = nil
+	w, _ = NewWrite(auth, "_Session", query, data, originalData, nil)
+	err = w.handleSession()
+	expectErr = errs.E(errs.InvalidKeyName, "Cannot set ACL on a Session.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	auth = Master()
+	query = nil
+	data = types.M{"ACL": "hello"}
+	originalData = nil
+	w, _ = NewWrite(auth, "_Session", query, data, originalData, nil)
+	err = w.handleSession()
+	expectErr = errs.E(errs.InvalidKeyName, "Cannot set ACL on a Session.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	initEnv()
+	auth = &Auth{
+		IsMaster: false,
+		User:     types.M{"objectId": "1001"},
+	}
+	query = nil
+	data = types.M{}
+	originalData = nil
+	config.TConfig.SessionLength = 31536000
+	config.TConfig.LiveQuery = livequery.NewLiveQuery([]string{}, "", "")
+	w, _ = NewWrite(auth, "_Session", query, data, originalData, nil)
+	err = w.handleSession()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	results, _ = orm.TomatoDBController.Find("_Session", types.M{}, types.M{})
+	if len(results) != 1 {
+		t.Error("expect:", "len 1", "result:", results)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_validateAuthData(t *testing.T) {

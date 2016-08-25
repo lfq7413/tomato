@@ -310,6 +310,9 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 	if aValue != cannotTransform() {
 		return key, aValue, nil
 	}
+	if value == nil {
+		return key, value, nil
+	}
 	return "", nil, errs.E(errs.InvalidJSON, "You cannot use this value as a query parameter.")
 }
 

@@ -801,6 +801,307 @@ func Test_expandFilesForExistingObjects(t *testing.T) {
 }
 
 func Test_runDatabaseOperation(t *testing.T) {
+	var schema, object types.M
+	var w *Write
+	var className string
+	var auth *Auth
+	var query, data, originalData types.M
+	var expect types.M
+	var err, expectErr error
+	var timeStr = utils.TimetoString(time.Now().UTC())
+	var results types.S
+	/***************************************************************/
+	className = "_User"
+	auth = Nobody()
+	query = types.M{"objectId": "1001"}
+	data = types.M{"key": "hello"}
+	originalData = types.M{}
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	err = w.runDatabaseOperation()
+	expectErr = errs.E(errs.SessionMissing, "cannot modify user 1001")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	className = "_User"
+	auth = &Auth{
+		IsMaster: false,
+		User:     types.M{"objectId": "1002"},
+	}
+	query = types.M{"objectId": "1001"}
+	data = types.M{"key": "hello"}
+	originalData = types.M{}
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	err = w.runDatabaseOperation()
+	expectErr = errs.E(errs.SessionMissing, "cannot modify user 1001")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	className = "_User"
+	auth = &Auth{
+		IsMaster: false,
+		User:     types.M{"objectId": "1001"},
+	}
+	query = types.M{"objectId": "1001"}
+	data = types.M{
+		"key": "hello",
+		"ACL": types.M{"*unresolved": "hello"},
+	}
+	originalData = types.M{}
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	err = w.runDatabaseOperation()
+	expectErr = errs.E(errs.InvalidAcl, "Invalid ACL.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	className = "_User"
+	auth = Master()
+	query = types.M{"objectId": "1001"}
+	data = types.M{
+		"key": "hello",
+		"ACL": types.M{"*unresolved": "hello"},
+	}
+	originalData = types.M{}
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	err = w.runDatabaseOperation()
+	expectErr = errs.E(errs.InvalidAcl, "Invalid ACL.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	auth = Master()
+	query = types.M{"objectId": "1001"}
+	data = types.M{
+		"key": "hello",
+		"ACL": types.M{},
+	}
+	originalData = types.M{}
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	err = w.runDatabaseOperation()
+	expectErr = errs.E(errs.ObjectNotFound, "Object not found.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	className = "_User"
+	auth = Master()
+	query = types.M{"objectId": "1001"}
+	data = types.M{
+		"key": "hello",
+		"ACL": types.M{},
+	}
+	originalData = types.M{}
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	w.updatedAt = timeStr
+	err = w.runDatabaseOperation()
+	expect = types.M{"updatedAt": timeStr}
+	if err != nil || reflect.DeepEqual(expect, w.response["response"]) == false {
+		t.Error("expect:", expect, "result:", w.response["response"], err)
+	}
+	results, _ = orm.TomatoDBController.Find(className, types.M{}, types.M{})
+	if len(results) != 1 {
+		t.Error("expect:", "1", "result:", results)
+	} else {
+		expect = types.M{
+			"objectId": "1001",
+			"username": "joe",
+			"key":      "hello",
+			"ACL": types.M{
+				"1001": types.M{
+					"read":  true,
+					"write": true,
+				},
+			},
+		}
+		if reflect.DeepEqual(expect, results[0]) == false {
+			t.Error("expect:", expect, "result:", results[0])
+		}
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("user", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+	}
+	orm.Adapter.CreateObject("user", schema, object)
+	className = "user"
+	auth = Master()
+	query = types.M{"objectId": "1001"}
+	data = types.M{
+		"key": "hello",
+	}
+	originalData = types.M{}
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	w.updatedAt = timeStr
+	w.storage["changedByTrigger"] = true
+	err = w.runDatabaseOperation()
+	expect = types.M{
+		"key":       "hello",
+		"updatedAt": timeStr,
+	}
+	if err != nil || reflect.DeepEqual(expect, w.response["response"]) == false {
+		t.Error("expect:", expect, "result:", w.response["response"], err)
+	}
+	results, _ = orm.TomatoDBController.Find(className, types.M{}, types.M{})
+	if len(results) != 1 {
+		t.Error("expect:", "1", "result:", results)
+	} else {
+		expect = types.M{
+			"objectId": "1001",
+			"username": "joe",
+			"key":      "hello",
+		}
+		if reflect.DeepEqual(expect, results[0]) == false {
+			t.Error("expect:", expect, "result:", results[0])
+		}
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "_User"
+	auth = Master()
+	query = nil
+	data = types.M{
+		"username": "joe",
+	}
+	originalData = nil
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	w.data["createdAt"] = timeStr
+	config.TConfig.ServerURL = "http://127.0.0.1/v1"
+	err = w.runDatabaseOperation()
+	expect = types.M{
+		"status": 201,
+		"response": types.M{
+			"objectId":  "1001",
+			"createdAt": timeStr,
+		},
+		"location": "http://127.0.0.1/v1/users/1001",
+	}
+	if reflect.DeepEqual(expect, w.response) == false {
+		t.Error("expect:", expect, "result:", w.response)
+	}
+	results, _ = orm.TomatoDBController.Find(className, types.M{}, types.M{})
+	if len(results) != 1 {
+		t.Error("expect:", "1", "result:", results)
+	} else {
+		expect = types.M{
+			"objectId":  "1001",
+			"username":  "joe",
+			"createdAt": timeStr,
+			"ACL": types.M{
+				"1001": types.M{
+					"read":  true,
+					"write": true,
+				},
+				"*": types.M{
+					"read": true,
+				},
+			},
+		}
+		if reflect.DeepEqual(expect, results[0]) == false {
+			t.Error("expect:", expect, "result:", results[0])
+		}
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	className = "user"
+	auth = Master()
+	query = nil
+	data = types.M{
+		"username": "joe",
+	}
+	originalData = nil
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	w.data["createdAt"] = timeStr
+	config.TConfig.ServerURL = "http://127.0.0.1/v1"
+	w.storage["changedByTrigger"] = true
+	err = w.runDatabaseOperation()
+	expect = types.M{
+		"status": 201,
+		"response": types.M{
+			"objectId":  "1001",
+			"username":  "joe",
+			"createdAt": timeStr,
+		},
+		"location": "http://127.0.0.1/v1/classes/user/1001",
+	}
+	if reflect.DeepEqual(expect, w.response) == false {
+		t.Error("expect:", expect, "result:", w.response)
+	}
+	results, _ = orm.TomatoDBController.Find(className, types.M{}, types.M{})
+	if len(results) != 1 {
+		t.Error("expect:", "1", "result:", results)
+	} else {
+		expect = types.M{
+			"objectId":  "1001",
+			"username":  "joe",
+			"createdAt": timeStr,
+		}
+		if reflect.DeepEqual(expect, results[0]) == false {
+			t.Error("expect:", expect, "result:", results[0])
+		}
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1001",
+		"username": "joe",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	className = "_User"
+	auth = Master()
+	query = nil
+	data = types.M{
+		"username": "joe",
+	}
+	originalData = nil
+	w, _ = NewWrite(auth, className, query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	w.data["createdAt"] = timeStr
+	config.TConfig.ServerURL = "http://127.0.0.1/v1"
+	err = w.runDatabaseOperation()
+	expectErr = errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 	// TODO
 }
 

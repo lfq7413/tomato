@@ -857,12 +857,11 @@ func (w *Write) runDatabaseOperation() error {
 				"write": true,
 			}
 			onlyread := types.M{
-				"read":  true,
-				"write": false,
+				"read": true,
 			}
 			acl := utils.M(w.data["ACL"])
 			if acl == nil {
-				acl := types.M{}
+				acl = types.M{}
 				acl["*"] = onlyread
 			}
 			objectID := utils.S(w.data["objectId"])
@@ -880,28 +879,32 @@ func (w *Write) runDatabaseOperation() error {
 				return err
 			}
 
-			where := types.M{
-				"username": w.data["username"],
-				"objectId": types.M{"$ne": w.objectID()},
-			}
-			results, err := orm.TomatoDBController.Find(w.className, where, types.M{"limit": 1})
-			if err != nil {
-				return err
-			}
-			if len(results) > 0 {
-				return errs.E(errs.UsernameTaken, "Account already exists for this username.")
+			if w.data["username"] != nil {
+				where := types.M{
+					"username": w.data["username"],
+					"objectId": types.M{"$ne": w.objectID()},
+				}
+				results, err := orm.TomatoDBController.Find(w.className, where, types.M{"limit": 1})
+				if err != nil {
+					return err
+				}
+				if len(results) > 0 {
+					return errs.E(errs.UsernameTaken, "Account already exists for this username.")
+				}
 			}
 
-			where = types.M{
-				"email":    w.data["email"],
-				"objectId": types.M{"$ne": w.objectID()},
-			}
-			results, err = orm.TomatoDBController.Find(w.className, where, types.M{"limit": 1})
-			if err != nil {
-				return err
-			}
-			if len(results) > 0 {
-				return errs.E(errs.EmailTaken, "Account already exists for this email address.")
+			if w.data["email"] != nil {
+				where := types.M{
+					"email":    w.data["email"],
+					"objectId": types.M{"$ne": w.objectID()},
+				}
+				results, err := orm.TomatoDBController.Find(w.className, where, types.M{"limit": 1})
+				if err != nil {
+					return err
+				}
+				if len(results) > 0 {
+					return errs.E(errs.EmailTaken, "Account already exists for this email address.")
+				}
 			}
 
 			return errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")

@@ -553,6 +553,16 @@ func Test_transformQueryKeyValue(t *testing.T) {
 	if reflect.DeepEqual(err, expectValue) == false {
 		t.Error("expect:", expectValue, "get result:", err)
 	}
+	/*************************************************/
+	key = "key"
+	value = nil
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "key"
+	expectValue = nil
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
 }
 
 func Test_transformConstraint(t *testing.T) {

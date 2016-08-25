@@ -422,6 +422,8 @@ func (d *DBController) Create(className string, object, options types.M) error {
 	if object == nil {
 		object = types.M{}
 	}
+	// 复制数据，不要修改原数据
+	object = utils.CopyMapM(object)
 
 	object = transformObjectACL(object)
 

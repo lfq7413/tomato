@@ -968,9 +968,10 @@ func (w *Write) createSessionToken() error {
 		"installationId": w.auth.InstallationID,
 		"expiresAt":      utils.TimetoString(expiresAt),
 	}
-	if w.response != nil && w.response["response"] != nil {
-		r := w.response["response"].(map[string]interface{})
-		r["sessionToken"] = token
+	if w.response != nil {
+		if r := utils.M(w.response["response"]); r != nil {
+			r["sessionToken"] = token
+		}
 	}
 
 	create, err := NewWrite(Master(), "_Session", nil, sessionData, types.M{}, w.clientSDK)

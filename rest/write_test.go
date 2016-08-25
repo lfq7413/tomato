@@ -1106,12 +1106,10 @@ func Test_runDatabaseOperation(t *testing.T) {
 }
 
 func Test_createSessionTokenIfNeeded(t *testing.T) {
-	// createSessionToken
 	// TODO
 }
 
 func Test_handleFollowup(t *testing.T) {
-	// createSessionToken
 	// TODO
 }
 
@@ -1686,8 +1684,39 @@ func Test_findUsersWithAuthData(t *testing.T) {
 }
 
 func Test_createSessionToken(t *testing.T) {
-	// Execute
-	// TODO
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var results types.S
+	/***************************************************************/
+	initEnv()
+	config.TConfig.LiveQuery = livequery.NewLiveQuery([]string{}, "", "")
+	config.TConfig.SessionLength = 31536000
+	query = nil
+	data = types.M{
+		"username": "joe",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	w.response = types.M{
+		"response": types.M{
+			"objectId": "1001",
+			"username": "joe",
+		},
+	}
+	w.createSessionToken()
+	results, _ = orm.TomatoDBController.Find("_Session", types.M{}, types.M{})
+	if len(results) != 1 {
+		t.Error("expect:", "len 1", "result:", results)
+	}
+	if r := utils.M(w.response["response"]); r != nil {
+		if r["sessionToken"] == nil {
+			t.Error("expect:", "need sessionToken", "result:", r["sessionToken"])
+		}
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_location(t *testing.T) {

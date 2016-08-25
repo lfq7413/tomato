@@ -1106,11 +1106,70 @@ func Test_runDatabaseOperation(t *testing.T) {
 }
 
 func Test_createSessionTokenIfNeeded(t *testing.T) {
-	// TODO
+	// 测试用例与 createSessionToken 相同
 }
 
 func Test_handleFollowup(t *testing.T) {
-	// TODO
+	var schema, object types.M
+	var className string
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var err error
+	var results types.S
+	/***************************************************************/
+	initEnv()
+	className = "_Session"
+	schema = types.M{
+		"fields": types.M{
+			"restricted":     types.M{"type": "Boolean"},
+			"user":           types.M{"type": "Pointer", "targetClass": "_User"},
+			"installationId": types.M{"type": "String"},
+			"sessionToken":   types.M{"type": "String"},
+			"expiresAt":      types.M{"type": "Date"},
+			"createdWith":    types.M{"type": "Object"},
+		},
+	}
+	orm.Adapter.CreateClass(className, schema)
+	object = types.M{
+		"objectId": "2001",
+		"user": types.M{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  "1001",
+		},
+		"sessionToken": "r:aaa",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	object = types.M{
+		"objectId": "2002",
+		"user": types.M{
+			"__type":    "Pointer",
+			"className": "_User",
+			"objectId":  "1002",
+		},
+		"sessionToken": "r:bbb",
+	}
+	orm.Adapter.CreateObject(className, schema, object)
+	config.TConfig.RevokeSessionOnPasswordReset = true
+	className = "_User"
+	query = types.M{"objectId": "1001"}
+	data = types.M{}
+	originalData = types.M{}
+	w, _ = NewWrite(Master(), className, query, data, originalData, nil)
+	w.storage = types.M{
+		"clearSessions": true,
+	}
+	err = w.handleFollowup()
+	if err != nil {
+		t.Error("expect:", nil, "result:", err)
+	}
+	results, _ = orm.TomatoDBController.Find("_Session", types.M{}, types.M{})
+	if len(results) != 1 {
+		t.Error("expect:", "len 1", "result:", results)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_runAfterTrigger(t *testing.T) {

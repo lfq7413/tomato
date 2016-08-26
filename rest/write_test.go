@@ -209,7 +209,586 @@ func Test_validateSchema(t *testing.T) {
 }
 
 func Test_handleInstallation(t *testing.T) {
-	// TODO
+	var schema, object types.M
+	var w *Write
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var err, expectErr error
+	var expectQuery types.M
+	var results, expect types.S
+	/***************************************************************/
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = errs.E(errs.MissingRequiredFieldError, "at least one ID field (deviceToken, installationId) must be specified in this operation")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	query = nil
+	data = types.M{"deviceToken": "abc"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = errs.E(errs.MissingRequiredFieldError, "deviceType must be specified in this operation")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	query = nil
+	data = types.M{"installationId": "abc"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = errs.E(errs.MissingRequiredFieldError, "deviceType must be specified in this operation")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "123",
+		"deviceToken":    "abc",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = types.M{"objectId": "1002"}
+	data = types.M{"installationId": "abc"}
+	originalData = types.M{}
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = errs.E(errs.ObjectNotFound, "Object not found for update.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "123",
+		"deviceToken":    "abc",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = types.M{"objectId": "1001"}
+	data = types.M{"installationId": "abc"}
+	originalData = types.M{}
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = errs.E(errs.ChangedImmutableFieldError, "installationId may not be changed in this operation")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":    "1001",
+		"deviceToken": "abc",
+		"deviceType":  "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = types.M{"objectId": "1001"}
+	data = types.M{"deviceToken": "123"}
+	originalData = types.M{}
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = errs.E(errs.ChangedImmutableFieldError, "deviceToken may not be changed in this operation")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":    "1001",
+		"deviceToken": "abc",
+		"deviceType":  "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = types.M{"objectId": "1001"}
+	data = types.M{"deviceType": "android"}
+	originalData = types.M{}
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = errs.E(errs.ChangedImmutableFieldError, "deviceType may not be changed in this operation")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "aaa",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"installationId": "222", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	expectQuery = nil
+	if reflect.DeepEqual(expectQuery, w.query) == false {
+		t.Error("expect:", expectQuery, "result:", w.query)
+	}
+	results, err = orm.TomatoDBController.Find("_Installation", types.M{}, types.M{})
+	expect = types.S{
+		types.M{
+			"objectId":       "1001",
+			"installationId": "111",
+			"deviceToken":    "aaa",
+			"deviceType":     "ios",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "aaa",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"deviceToken": "aaa", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	expectQuery = types.M{"objectId": "1001"}
+	if reflect.DeepEqual(expectQuery, w.query) == false {
+		t.Error("expect:", expectQuery, "result:", w.query)
+	}
+	results, err = orm.TomatoDBController.Find("_Installation", types.M{}, types.M{})
+	expect = types.S{
+		types.M{
+			"objectId":       "1001",
+			"installationId": "111",
+			"deviceToken":    "aaa",
+			"deviceType":     "ios",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "aaa",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	object = types.M{
+		"objectId":       "1002",
+		"installationId": "222",
+		"deviceToken":    "aaa",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"deviceToken": "aaa", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = errs.E(errs.InvalidInstallationIDError, "Must specify installationId when deviceToken matches multiple Installation objects")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "aaa",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	object = types.M{
+		"objectId":       "1002",
+		"installationId": "222",
+		"deviceToken":    "aaa",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"deviceToken": "aaa", "installationId": "333", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	expectQuery = nil
+	if reflect.DeepEqual(expectQuery, w.query) == false {
+		t.Error("expect:", expectQuery, "result:", w.query)
+	}
+	results, err = orm.TomatoDBController.Find("_Installation", types.M{}, types.M{})
+	expect = types.S{}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "bbb",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	object = types.M{
+		"objectId":    "1002",
+		"deviceToken": "aaa",
+		"deviceType":  "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"deviceToken": "aaa", "installationId": "111", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	expectQuery = types.M{"objectId": "1002"}
+	if reflect.DeepEqual(expectQuery, w.query) == false {
+		t.Error("expect:", expectQuery, "result:", w.query)
+	}
+	results, err = orm.TomatoDBController.Find("_Installation", types.M{}, types.M{})
+	expect = types.S{
+		types.M{
+			"objectId":    "1002",
+			"deviceToken": "aaa",
+			"deviceType":  "ios",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "bbb",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	object = types.M{
+		"objectId":    "1002",
+		"deviceToken": "aaa",
+		"deviceType":  "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"installationId": "111", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	expectQuery = types.M{"objectId": "1001"}
+	if reflect.DeepEqual(expectQuery, w.query) == false {
+		t.Error("expect:", expectQuery, "result:", w.query)
+	}
+	results, err = orm.TomatoDBController.Find("_Installation", types.M{}, types.M{})
+	expect = types.S{
+		types.M{
+			"objectId":       "1001",
+			"installationId": "111",
+			"deviceToken":    "bbb",
+			"deviceType":     "ios",
+		},
+		types.M{
+			"objectId":    "1002",
+			"deviceToken": "aaa",
+			"deviceType":  "ios",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "aaa",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	object = types.M{
+		"objectId":    "1002",
+		"deviceToken": "aaa",
+		"deviceType":  "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"deviceToken": "aaa", "installationId": "111", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	expectQuery = types.M{"objectId": "1001"}
+	if reflect.DeepEqual(expectQuery, w.query) == false {
+		t.Error("expect:", expectQuery, "result:", w.query)
+	}
+	results, err = orm.TomatoDBController.Find("_Installation", types.M{}, types.M{})
+	expect = types.S{
+		types.M{
+			"objectId":       "1001",
+			"installationId": "111",
+			"deviceToken":    "aaa",
+			"deviceType":     "ios",
+		},
+		types.M{
+			"objectId":    "1002",
+			"deviceToken": "aaa",
+			"deviceType":  "ios",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "bbb",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	object = types.M{
+		"objectId":    "1002",
+		"deviceToken": "aaa",
+		"deviceType":  "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"deviceToken": "ccc", "installationId": "111", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	expectQuery = types.M{"objectId": "1001"}
+	if reflect.DeepEqual(expectQuery, w.query) == false {
+		t.Error("expect:", expectQuery, "result:", w.query)
+	}
+	results, err = orm.TomatoDBController.Find("_Installation", types.M{}, types.M{})
+	expect = types.S{
+		types.M{
+			"objectId":       "1001",
+			"installationId": "111",
+			"deviceToken":    "bbb",
+			"deviceType":     "ios",
+		},
+		types.M{
+			"objectId":    "1002",
+			"deviceToken": "aaa",
+			"deviceType":  "ios",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	schema = types.M{
+		"fields": types.M{
+			"installationId": types.M{"type": "String"},
+			"deviceToken":    types.M{"type": "String"},
+			"deviceType":     types.M{"type": "String"},
+			"appIdentifier":  types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_Installation", schema)
+	object = types.M{
+		"objectId":       "1001",
+		"installationId": "111",
+		"deviceToken":    "bbb",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	object = types.M{
+		"objectId":       "1002",
+		"installationId": "222",
+		"deviceToken":    "aaa",
+		"deviceType":     "ios",
+	}
+	orm.Adapter.CreateObject("_Installation", schema, object)
+	query = nil
+	data = types.M{"deviceToken": "aaa", "installationId": "111", "deviceType": "android"}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	expectQuery = types.M{"objectId": "1001"}
+	if reflect.DeepEqual(expectQuery, w.query) == false {
+		t.Error("expect:", expectQuery, "result:", w.query)
+	}
+	results, err = orm.TomatoDBController.Find("_Installation", types.M{}, types.M{})
+	expect = types.S{
+		types.M{
+			"objectId":       "1001",
+			"installationId": "111",
+			"deviceToken":    "bbb",
+			"deviceType":     "ios",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_handleSession(t *testing.T) {

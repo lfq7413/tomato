@@ -1038,7 +1038,10 @@ func (w *Write) runAfterTrigger() error {
 	}
 
 	hasAfterSaveHook := cloud.TriggerExists(cloud.TypeAfterSave, w.className)
-	hasLiveQuery := config.TConfig.LiveQuery.HasLiveQuery(w.className)
+	hasLiveQuery := false
+	if config.TConfig.LiveQuery != nil {
+		hasLiveQuery = config.TConfig.LiveQuery.HasLiveQuery(w.className)
+	}
 	if hasAfterSaveHook == false && hasLiveQuery == false {
 		return nil
 	}

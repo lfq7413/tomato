@@ -6,6 +6,7 @@ import (
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 // Destroy 删除对象
@@ -50,9 +51,8 @@ func (d *Destroy) handleSession() error {
 	if d.className != "_Session" {
 		return nil
 	}
-	sessionToken := d.originalData["sessionToken"]
-	if sessionToken != nil {
-		cache.User.Del(d.originalData["sessionToken"].(string))
+	if sessionToken := utils.S(d.originalData["sessionToken"]); sessionToken != "" {
+		cache.User.Del(sessionToken)
 	}
 
 	return nil
@@ -60,8 +60,9 @@ func (d *Destroy) handleSession() error {
 
 // runBeforeTrigger 执行删前回调
 func (d *Destroy) runBeforeTrigger() error {
-
-	config.TConfig.LiveQuery.OnAfterDelete(d.className, d.originalData, nil)
+	if config.TConfig.LiveQuery != nil {
+		config.TConfig.LiveQuery.OnAfterDelete(d.className, d.originalData, nil)
+	}
 
 	d.originalData["className"] = d.className
 	maybeRunTrigger(cloud.TypeBeforeDelete, d.auth, d.originalData, nil)
@@ -84,7 +85,7 @@ func (d *Destroy) runDestroy() error {
 	if d.auth.IsMaster == false {
 		acl := []string{"*"}
 		if d.auth.User != nil {
-			acl = append(acl, d.auth.User["objectId"].(string))
+			acl = append(acl, utils.S(d.auth.User["objectId"]))
 			acl = append(acl, d.auth.UserRoles...)
 		}
 		options["acl"] = acl

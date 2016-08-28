@@ -38,11 +38,26 @@ func NewDestroy(
 
 // Execute 执行删除请求
 func (d *Destroy) Execute() error {
-	d.handleSession()
-	d.runBeforeTrigger()
-	d.handleUserRoles()
-	d.runDestroy()
-	d.runAfterTrigger()
+	err := d.handleSession()
+	if err != nil {
+		return err
+	}
+	err = d.runBeforeTrigger()
+	if err != nil {
+		return err
+	}
+	err = d.handleUserRoles()
+	if err != nil {
+		return err
+	}
+	err = d.runDestroy()
+	if err != nil {
+		return err
+	}
+	err = d.runAfterTrigger()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

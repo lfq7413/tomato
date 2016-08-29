@@ -8,12 +8,14 @@ import (
 var adapter filesAdapter
 
 // init 初始化文件处理模块
-// 当前只有本地文件存储模块
-// 后续可增加数据库文件存储、第三方网络文件存储模块
+// 当前支持本地文件存储模块、数据库文件存储
+// 后续可增加第三方网络文件存储模块
 func init() {
 	a := config.TConfig.FileAdapter
-	if a == "disk" {
+	if a == "Disk" {
 		adapter = newFileSystemAdapter(config.TConfig.AppID)
+	} else if a == "GridFS" {
+		adapter = newGridStoreAdapter()
 	} else {
 		adapter = newFileSystemAdapter(config.TConfig.AppID)
 	}
@@ -60,18 +62,19 @@ func DeleteFile(filename string) error {
 // 	"name": "pic.jpg",
 // }
 func ExpandFilesInObject(object interface{}) {
-	if utils.A(object) != nil {
-		objs := utils.A(object)
+	if object == nil {
+		return
+	}
+	if objs := utils.A(object); objs != nil {
 		for _, obj := range objs {
 			ExpandFilesInObject(obj)
 		}
 	}
 
-	if utils.M(object) == nil {
+	obj := utils.M(object)
+	if obj == nil {
 		return
 	}
-
-	obj := utils.M(object)
 
 	for _, v := range obj {
 		fileObject := utils.M(v)

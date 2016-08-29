@@ -2056,8 +2056,69 @@ func Test_runFind(t *testing.T) {
 		t.Error("expect:", expect, "result:", q.response["results"], err)
 	}
 	orm.TomatoDBController.DeleteEverything()
-
-	// TODO 测试展开文件类型
+	/**********************************************************/
+	initEnv()
+	config.TConfig.ServerURL = "http://127.0.0.1"
+	config.TConfig.AppID = "1001"
+	className = "_User"
+	object = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+			"icon":     types.M{"type": "File"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"username": "joe",
+		"password": "123456",
+		"icon": types.M{
+			"__type": "File",
+			"name":   "icon1.jpg",
+		},
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"username": "jack",
+		"password": "123456",
+		"icon": types.M{
+			"__type": "File",
+			"name":   "icon2.jpg",
+		},
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{}
+	className = "_User"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"objectId": "01",
+			"username": "joe",
+			"icon": types.M{
+				"__type": "File",
+				"name":   "icon1.jpg",
+				"url":    "http://127.0.0.1/files/1001/icon1.jpg",
+			},
+		},
+		types.M{
+			"objectId": "02",
+			"username": "jack",
+			"icon": types.M{
+				"__type": "File",
+				"name":   "icon2.jpg",
+				"url":    "http://127.0.0.1/files/1001/icon2.jpg",
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_runCount(t *testing.T) {

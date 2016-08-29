@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -132,12 +131,10 @@ func Test_Execute_Write(t *testing.T) {
 	originalData = types.M{"username": "joe"}
 	w, err = NewWrite(auth, className, query, data, originalData, nil)
 	result, err = w.Execute()
-	fmt.Println(result)
 	if err != nil || result == nil {
 		t.Error("expect:", nil, "result:", result, err)
 	}
 	results, _ = orm.TomatoDBController.Find(className, types.M{}, types.M{})
-	fmt.Println(results)
 	if len(results) != 1 {
 		t.Error("expect:", "len 1", "result:", results)
 	}
@@ -1482,7 +1479,30 @@ func Test_transformUser(t *testing.T) {
 }
 
 func Test_expandFilesForExistingObjects(t *testing.T) {
-	// TODO 展开文件类型
+	config.TConfig.ServerURL = "http://127.0.0.1"
+	config.TConfig.AppID = "1001"
+	w, _ := NewWrite(Master(), "user", nil, types.M{}, nil, nil)
+	w.response = types.M{
+		"response": types.M{
+			"file": types.M{
+				"__type": "File",
+				"name":   "hello.jpg",
+			},
+		},
+	}
+	w.expandFilesForExistingObjects()
+	expect := types.M{
+		"response": types.M{
+			"file": types.M{
+				"__type": "File",
+				"name":   "hello.jpg",
+				"url":    "http://127.0.0.1/files/1001/hello.jpg",
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, w.response) == false {
+		t.Error("expect:", expect, "result:", w.response)
+	}
 }
 
 func Test_runDatabaseOperation(t *testing.T) {

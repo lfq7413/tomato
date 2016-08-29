@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -99,7 +100,48 @@ func Test_NewWrite(t *testing.T) {
 }
 
 func Test_Execute_Write(t *testing.T) {
-	//
+	var className string
+	var w *Write
+	var auth *Auth
+	var query types.M
+	var data types.M
+	var originalData types.M
+	var err error
+	var result types.M
+	var results types.S
+	/***************************************************************/
+	initEnv()
+	className = "user"
+	auth = Master()
+	query = nil
+	data = types.M{"username": "joe"}
+	originalData = nil
+	w, err = NewWrite(auth, className, query, data, originalData, nil)
+	result, err = w.Execute()
+	if err != nil || result == nil {
+		t.Error("expect:", nil, "result:", result, err)
+	}
+	results, _ = orm.TomatoDBController.Find(className, types.M{}, types.M{})
+	if len(results) != 1 {
+		t.Error("expect:", "len 1", "result:", results)
+	}
+	id := utils.M(result["response"])["objectId"]
+	auth = Master()
+	query = types.M{"objectId": id}
+	data = types.M{"username": "jack"}
+	originalData = types.M{"username": "joe"}
+	w, err = NewWrite(auth, className, query, data, originalData, nil)
+	result, err = w.Execute()
+	fmt.Println(result)
+	if err != nil || result == nil {
+		t.Error("expect:", nil, "result:", result, err)
+	}
+	results, _ = orm.TomatoDBController.Find(className, types.M{}, types.M{})
+	fmt.Println(results)
+	if len(results) != 1 {
+		t.Error("expect:", "len 1", "result:", results)
+	}
+	orm.TomatoDBController.DeleteEverything()
 }
 
 func Test_getUserAndRoleACL_Write(t *testing.T) {

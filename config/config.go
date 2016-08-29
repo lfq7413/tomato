@@ -29,6 +29,9 @@ type Config struct {
 	PreventLoginWithUnverifiedEmail  bool
 	EmailVerifyTokenValidityDuration int
 	SchemaCacheTTL                   int
+	SMTPServer                       string
+	MailUsername                     string
+	MailPassword                     string
 }
 
 var (
@@ -88,6 +91,10 @@ func parseConfig() {
 	TConfig.PreventLoginWithUnverifiedEmail = beego.AppConfig.DefaultBool("PreventLoginWithUnverifiedEmail", false)
 	TConfig.EmailVerifyTokenValidityDuration = beego.AppConfig.DefaultInt("EmailVerifyTokenValidityDuration", -1)
 	TConfig.SchemaCacheTTL = beego.AppConfig.DefaultInt("SchemaCacheTTL", 5)
+
+	TConfig.SMTPServer = beego.AppConfig.DefaultString("SMTPServer", "")
+	TConfig.MailUsername = beego.AppConfig.DefaultString("MailUsername", "")
+	TConfig.MailPassword = beego.AppConfig.DefaultString("MailPassword", "")
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

@@ -655,9 +655,14 @@ func (w *Write) runBeforeTrigger() error {
 		if w.query != nil && w.query["objectId"] != nil {
 			delete(object, "objectId")
 		}
-		// 比较对象 ，如果数据被修改，则设置回 w.data
-		if reflect.DeepEqual(w.data, response["object"]) == false {
-			w.storage["changedByTrigger"] = true
+		fields := []string{}
+		for k, v := range object {
+			if reflect.DeepEqual(w.data[k], v) == false {
+				fields = append(fields, k)
+			}
+		}
+		if len(fields) > 0 {
+			w.storage["fieldsChangedByTrigger"] = fields
 			w.data = object
 			return w.validateSchema()
 		}
@@ -853,9 +858,7 @@ func (w *Write) runDatabaseOperation() error {
 		response["updatedAt"] = w.updatedAt
 
 		// 如果回调函数修改过数据，把 w.data 中存在但 response 中不存在的字段复制到返回结果中
-		if w.storage["changedByTrigger"] != nil {
-			w.updateResponseWithData(response, w.data)
-		}
+		w.updateResponseWithData(response, w.data)
 
 		w.response = types.M{
 			"response": response,
@@ -929,9 +932,7 @@ func (w *Write) runDatabaseOperation() error {
 			response["username"] = w.data["username"]
 		}
 		// 如果回调函数修改过数据，则将其复制到返回结果中
-		if w.storage["changedByTrigger"] != nil {
-			w.updateResponseWithData(response, w.data)
-		}
+		w.updateResponseWithData(response, w.data)
 		w.response = types.M{
 			"status":   201,
 			"response": response,
@@ -1131,8 +1132,16 @@ func (w *Write) cleanUserAuthData() {
 }
 
 func (w *Write) updateResponseWithData(response, data types.M) types.M {
+	if w.storage["fieldsChangedByTrigger"] == nil {
+		return response
+	}
+	fields := []string{}
+	if v, ok := w.storage["fieldsChangedByTrigger"].([]string); ok {
+		fields = v
+	}
 	clientSupportsDelete := client.SupportsForwardDelete(w.clientSDK)
-	for fieldName, dataValue := range data {
+	for _, fieldName := range fields {
+		dataValue := data[fieldName]
 		if response[fieldName] == nil {
 			response[fieldName] = dataValue
 		}

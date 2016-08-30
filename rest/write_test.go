@@ -1074,8 +1074,8 @@ func Test_runBeforeTrigger(t *testing.T) {
 	if reflect.DeepEqual(expectData, w.data) == false {
 		t.Error("expect:", expectData, "result:", w.data)
 	}
-	if reflect.DeepEqual(true, w.storage["changedByTrigger"]) == false {
-		t.Error("expect:", true, "result:", w.storage["changedByTrigger"])
+	if reflect.DeepEqual([]string{"username"}, w.storage["fieldsChangedByTrigger"]) == false {
+		t.Error("expect:", []string{"username"}, "result:", w.storage["fieldsChangedByTrigger"])
 	}
 	cloud.UnregisterAll()
 	/***************************************************************/
@@ -1106,8 +1106,8 @@ func Test_runBeforeTrigger(t *testing.T) {
 	if reflect.DeepEqual(expectData, w.data) == false {
 		t.Error("expect:", expectData, "result:", w.data)
 	}
-	if reflect.DeepEqual(nil, w.storage["changedByTrigger"]) == false {
-		t.Error("expect:", nil, "result:", w.storage["changedByTrigger"])
+	if reflect.DeepEqual(nil, w.storage["fieldsChangedByTrigger"]) == false {
+		t.Error("expect:", nil, "result:", w.storage["fieldsChangedByTrigger"])
 	}
 	cloud.UnregisterAll()
 	/***************************************************************/
@@ -1161,8 +1161,8 @@ func Test_runBeforeTrigger(t *testing.T) {
 	if reflect.DeepEqual(expectData, w.data) == false {
 		t.Error("expect:", expectData, "result:", w.data)
 	}
-	if reflect.DeepEqual(true, w.storage["changedByTrigger"]) == false {
-		t.Error("expect:", true, "result:", w.storage["changedByTrigger"])
+	if reflect.DeepEqual([]string{"username"}, w.storage["fieldsChangedByTrigger"]) == false {
+		t.Error("expect:", []string{"username"}, "result:", w.storage["fieldsChangedByTrigger"])
 	}
 	cloud.UnregisterAll()
 	/***************************************************************/
@@ -1193,8 +1193,8 @@ func Test_runBeforeTrigger(t *testing.T) {
 	if reflect.DeepEqual(expectData, w.data) == false {
 		t.Error("expect:", expectData, "result:", w.data)
 	}
-	if reflect.DeepEqual(nil, w.storage["changedByTrigger"]) == false {
-		t.Error("expect:", nil, "result:", w.storage["changedByTrigger"])
+	if reflect.DeepEqual(nil, w.storage["fieldsChangedByTrigger"]) == false {
+		t.Error("expect:", nil, "result:", w.storage["fieldsChangedByTrigger"])
 	}
 	cloud.UnregisterAll()
 }
@@ -1664,7 +1664,7 @@ func Test_runDatabaseOperation(t *testing.T) {
 	originalData = types.M{}
 	w, _ = NewWrite(auth, className, query, data, originalData, nil)
 	w.updatedAt = timeStr
-	w.storage["changedByTrigger"] = true
+	w.storage["fieldsChangedByTrigger"] = []string{"key"}
 	err = w.runDatabaseOperation()
 	expect = types.M{
 		"key":       "hello",
@@ -1748,7 +1748,7 @@ func Test_runDatabaseOperation(t *testing.T) {
 	w.data["objectId"] = "1001"
 	w.data["createdAt"] = timeStr
 	config.TConfig.ServerURL = "http://127.0.0.1/v1"
-	w.storage["changedByTrigger"] = true
+	w.storage["fieldsChangedByTrigger"] = []string{"username"}
 	err = w.runDatabaseOperation()
 	expect = types.M{
 		"status": 201,
@@ -2607,7 +2607,33 @@ func Test_updateResponseWithData(t *testing.T) {
 	expect = types.M{
 		"key":  "hello",
 		"key1": 10,
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+	/***************************************************************/
+	query = nil
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
+	response = types.M{
+		"key":  "hello",
+		"key1": 10,
+	}
+	updateData = types.M{
+		"key1": types.M{
+			"__op": "Increment",
+		},
 		"key2": "world",
+		"key3": types.M{
+			"__op": "Delete",
+		},
+	}
+	w.storage["fieldsChangedByTrigger"] = []string{"key3"}
+	result = w.updateResponseWithData(response, updateData)
+	expect = types.M{
+		"key":  "hello",
+		"key1": 10,
 		"key3": types.M{
 			"__op": "Delete",
 		},

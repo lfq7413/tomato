@@ -12,7 +12,7 @@ import (
 
 // LoginController 处理 /login 接口的请求
 type LoginController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleLogIn 处理登录请求
@@ -129,17 +129,17 @@ func (l *LoginController) HandleLogIn() {
 // Post ...
 // @router / [post]
 func (l *LoginController) Post() {
-	l.ObjectsController.Post()
+	l.ClassesController.Post()
 }
 
 // Delete ...
 // @router / [delete]
 func (l *LoginController) Delete() {
-	l.ObjectsController.Delete()
+	l.ClassesController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (l *LoginController) Put() {
-	l.ObjectsController.Put()
+	l.ClassesController.Put()
 }

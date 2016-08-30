@@ -8,7 +8,7 @@ import (
 
 // JobsController 处理 /jobs 接口的请求
 type JobsController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleCloudJob 执行后台任务
@@ -50,23 +50,23 @@ func (j *JobsController) HandleCloudJob() {
 // Get ...
 // @router / [get]
 func (j *JobsController) Get() {
-	j.ObjectsController.Get()
+	j.ClassesController.Get()
 }
 
 // Post ...
 // @router / [post]
 func (j *JobsController) Post() {
-	j.ObjectsController.Post()
+	j.ClassesController.Post()
 }
 
 // Delete ...
 // @router / [delete]
 func (j *JobsController) Delete() {
-	j.ObjectsController.Delete()
+	j.ClassesController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (j *JobsController) Put() {
-	j.ObjectsController.Put()
+	j.ClassesController.Put()
 }

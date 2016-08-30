@@ -9,14 +9,14 @@ import (
 
 // SessionsController 处理 /sessions 接口的请求
 type SessionsController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleFind 处理查找 session 请求
 // @router / [get]
 func (s *SessionsController) HandleFind() {
 	s.ClassName = "_Session"
-	s.ObjectsController.HandleFind()
+	s.ClassesController.HandleFind()
 }
 
 // HandleGet 处理获取指定 session 请求
@@ -24,14 +24,14 @@ func (s *SessionsController) HandleFind() {
 func (s *SessionsController) HandleGet() {
 	s.ClassName = "_Session"
 	s.ObjectID = s.Ctx.Input.Param(":objectId")
-	s.ObjectsController.HandleGet()
+	s.ClassesController.HandleGet()
 }
 
 // HandleCreate 处理 session 创建请求
 // @router / [post]
 func (s *SessionsController) HandleCreate() {
 	s.ClassName = "_Session"
-	s.ObjectsController.HandleCreate()
+	s.ClassesController.HandleCreate()
 }
 
 // HandleUpdate 处理更新指定 session 请求
@@ -39,7 +39,7 @@ func (s *SessionsController) HandleCreate() {
 func (s *SessionsController) HandleUpdate() {
 	s.ClassName = "_Session"
 	s.ObjectID = s.Ctx.Input.Param(":objectId")
-	s.ObjectsController.HandleUpdate()
+	s.ClassesController.HandleUpdate()
 }
 
 // HandleDelete 处理删除指定 session 请求
@@ -47,12 +47,12 @@ func (s *SessionsController) HandleUpdate() {
 func (s *SessionsController) HandleDelete() {
 	objectID := s.Ctx.Input.Param(":objectId")
 	if objectID == "me" {
-		s.ObjectsController.Delete()
+		s.ClassesController.Delete()
 		return
 	}
 	s.ClassName = "_Session"
 	s.ObjectID = objectID
-	s.ObjectsController.HandleDelete()
+	s.ClassesController.HandleDelete()
 }
 
 // HandleGetMe 处理当前请求 session
@@ -91,11 +91,11 @@ func (s *SessionsController) HandleUpdateMe() {
 // Put ...
 // @router / [put]
 func (s *SessionsController) Put() {
-	s.ObjectsController.Put()
+	s.ClassesController.Put()
 }
 
 // Delete ...
 // @router / [delete]
 func (s *SessionsController) Delete() {
-	s.ObjectsController.Delete()
+	s.ClassesController.Delete()
 }

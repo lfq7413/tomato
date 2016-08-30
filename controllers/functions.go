@@ -8,7 +8,7 @@ import (
 
 // FunctionsController 处理 /functions 接口的请求
 type FunctionsController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleCloudFunction 执行指定的云函数
@@ -66,23 +66,23 @@ func (f *FunctionsController) HandleCloudFunction() {
 // Get ...
 // @router / [get]
 func (f *FunctionsController) Get() {
-	f.ObjectsController.Get()
+	f.ClassesController.Get()
 }
 
 // Post ...
 // @router / [post]
 func (f *FunctionsController) Post() {
-	f.ObjectsController.Post()
+	f.ClassesController.Post()
 }
 
 // Delete ...
 // @router / [delete]
 func (f *FunctionsController) Delete() {
-	f.ObjectsController.Delete()
+	f.ClassesController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (f *FunctionsController) Put() {
-	f.ObjectsController.Put()
+	f.ClassesController.Put()
 }

@@ -9,14 +9,14 @@ import (
 
 // UsersController 处理 /users 接口的请求
 type UsersController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleFind 处理查找用户请求
 // @router / [get]
 func (u *UsersController) HandleFind() {
 	u.ClassName = "_User"
-	u.ObjectsController.HandleFind()
+	u.ClassesController.HandleFind()
 }
 
 // HandleGet 处理查找指定用户请求
@@ -24,14 +24,14 @@ func (u *UsersController) HandleFind() {
 func (u *UsersController) HandleGet() {
 	u.ClassName = "_User"
 	u.ObjectID = u.Ctx.Input.Param(":objectId")
-	u.ObjectsController.HandleGet()
+	u.ClassesController.HandleGet()
 }
 
 // HandleCreate 处理创建用户请求
 // @router / [post]
 func (u *UsersController) HandleCreate() {
 	u.ClassName = "_User"
-	u.ObjectsController.HandleCreate()
+	u.ClassesController.HandleCreate()
 }
 
 // HandleUpdate 处理更新用户信息请求
@@ -40,12 +40,12 @@ func (u *UsersController) HandleCreate() {
 func (u *UsersController) HandleUpdate() {
 	objectID := u.Ctx.Input.Param(":objectId")
 	if objectID == "me" {
-		u.ObjectsController.Put()
+		u.ClassesController.Put()
 		return
 	}
 	u.ClassName = "_User"
 	u.ObjectID = objectID
-	u.ObjectsController.HandleUpdate()
+	u.ClassesController.HandleUpdate()
 }
 
 // HandleDelete 处理删除用户请求
@@ -54,12 +54,12 @@ func (u *UsersController) HandleUpdate() {
 func (u *UsersController) HandleDelete() {
 	objectID := u.Ctx.Input.Param(":objectId")
 	if objectID == "me" {
-		u.ObjectsController.Delete()
+		u.ClassesController.Delete()
 		return
 	}
 	u.ClassName = "_User"
 	u.ObjectID = objectID
-	u.ObjectsController.HandleDelete()
+	u.ClassesController.HandleDelete()
 }
 
 // HandleMe 处理获取当前用户信息的请求
@@ -106,11 +106,11 @@ func (u *UsersController) HandleMe() {
 // Put ...
 // @router / [put]
 func (u *UsersController) Put() {
-	u.ObjectsController.Put()
+	u.ClassesController.Put()
 }
 
 // Delete ...
 // @router / [delete]
 func (u *UsersController) Delete() {
-	u.ObjectsController.Delete()
+	u.ClassesController.Delete()
 }

@@ -9,7 +9,7 @@ import (
 
 // PushController 处理 /push 接口的请求
 type PushController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandlePost 处理发送推送消息请求
@@ -67,17 +67,17 @@ func getQueryCondition(body types.M) (types.M, error) {
 // Get ...
 // @router / [get]
 func (p *PushController) Get() {
-	p.ObjectsController.Get()
+	p.ClassesController.Get()
 }
 
 // Delete ...
 // @router / [delete]
 func (p *PushController) Delete() {
-	p.ObjectsController.Delete()
+	p.ClassesController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (p *PushController) Put() {
-	p.ObjectsController.Put()
+	p.ClassesController.Put()
 }

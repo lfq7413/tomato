@@ -8,7 +8,7 @@ import (
 
 // ResetController 处理 /requestPasswordReset 接口的请求
 type ResetController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleResetRequest 处理通过 email 重置密码的请求
@@ -38,17 +38,17 @@ func (r *ResetController) HandleResetRequest() {
 // Get ...
 // @router / [get]
 func (r *ResetController) Get() {
-	r.ObjectsController.Get()
+	r.ClassesController.Get()
 }
 
 // Delete ...
 // @router / [delete]
 func (r *ResetController) Delete() {
-	r.ObjectsController.Delete()
+	r.ClassesController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (r *ResetController) Put() {
-	r.ObjectsController.Put()
+	r.ClassesController.Put()
 }

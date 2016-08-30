@@ -11,7 +11,7 @@ import (
 // FilesController 处理 /files 接口的请求
 // TODO 可能不需要权限验证
 type FilesController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleGet 处理下载文件请求
@@ -87,23 +87,23 @@ func (f *FilesController) HandleDelete() {
 // Get ...
 // @router / [get]
 func (f *FilesController) Get() {
-	f.ObjectsController.Get()
+	f.ClassesController.Get()
 }
 
 // Post ...
 // @router / [post]
 func (f *FilesController) Post() {
-	f.ObjectsController.Post()
+	f.ClassesController.Post()
 }
 
 // Put ...
 // @router / [put]
 func (f *FilesController) Put() {
-	f.ObjectsController.Put()
+	f.ClassesController.Put()
 }
 
 // Delete ...
 // @router / [delete]
 func (f *FilesController) Delete() {
-	f.ObjectsController.Delete()
+	f.ClassesController.Delete()
 }

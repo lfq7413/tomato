@@ -15,7 +15,7 @@ import (
 	"github.com/lfq7413/tomato/utils"
 )
 
-// ObjectsController 对象操作 API 的基础结构
+// ClassesController 对象操作 API 的基础结构
 // 处理 /classes 接口的所有请求，处理内部类的部分请求
 // Info 当前请求的权限信息
 // Auth 当前请求的用户权限
@@ -23,7 +23,7 @@ import (
 // RawBody 原始请求数据
 // ClassName 要操作的类名
 // ObjectID 要操作的对象 id
-type ObjectsController struct {
+type ClassesController struct {
 	beego.Controller
 	Info      *RequestInfo
 	Auth      *rest.Auth
@@ -50,7 +50,7 @@ type RequestInfo struct {
 // 3. 尝试从 body 中获取各种 key
 // 4. 校验请求权限
 // 5. 生成用户信息
-func (o *ObjectsController) Prepare() {
+func (o *ClassesController) Prepare() {
 	info := &RequestInfo{}
 	info.AppID = o.Ctx.Input.Header("X-Parse-Application-Id")
 	info.MasterKey = o.Ctx.Input.Header("X-Parse-Master-Key")
@@ -237,7 +237,7 @@ func decodeBase64(str string) string {
 
 // HandleCreate 处理对象创建请求，返回对象 id 与对象位置
 // @router /:className [post]
-func (o *ObjectsController) HandleCreate() {
+func (o *ClassesController) HandleCreate() {
 
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
@@ -265,7 +265,7 @@ func (o *ObjectsController) HandleCreate() {
 
 // HandleGet 处理查询指定对象请求，返回查询到的对象
 // @router /:className/:objectId [get]
-func (o *ObjectsController) HandleGet() {
+func (o *ClassesController) HandleGet() {
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
 	}
@@ -311,7 +311,7 @@ func (o *ObjectsController) HandleGet() {
 
 // HandleUpdate 处理更新指定对象请求
 // @router /:className/:objectId [put]
-func (o *ObjectsController) HandleUpdate() {
+func (o *ClassesController) HandleUpdate() {
 
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
@@ -340,7 +340,7 @@ func (o *ObjectsController) HandleUpdate() {
 
 // HandleFind 处理查找对象请求
 // @router /:className [get]
-func (o *ObjectsController) HandleFind() {
+func (o *ClassesController) HandleFind() {
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
 	}
@@ -415,7 +415,7 @@ func (o *ObjectsController) HandleFind() {
 
 // HandleDelete 处理删除指定对象请求
 // @router /:className/:objectId [delete]
-func (o *ObjectsController) HandleDelete() {
+func (o *ClassesController) HandleDelete() {
 
 	if o.ClassName == "" {
 		o.ClassName = o.Ctx.Input.Param(":className")
@@ -437,7 +437,7 @@ func (o *ObjectsController) HandleDelete() {
 
 // Get ...
 // @router / [get]
-func (o *ObjectsController) Get() {
+func (o *ClassesController) Get() {
 	o.Ctx.Output.SetStatus(405)
 	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
 	o.ServeJSON()
@@ -445,7 +445,7 @@ func (o *ObjectsController) Get() {
 
 // Post ...
 // @router / [post]
-func (o *ObjectsController) Post() {
+func (o *ClassesController) Post() {
 	o.Ctx.Output.SetStatus(405)
 	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
 	o.ServeJSON()
@@ -453,7 +453,7 @@ func (o *ObjectsController) Post() {
 
 // Delete ...
 // @router / [delete]
-func (o *ObjectsController) Delete() {
+func (o *ClassesController) Delete() {
 	o.Ctx.Output.SetStatus(405)
 	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
 	o.ServeJSON()
@@ -461,7 +461,7 @@ func (o *ObjectsController) Delete() {
 
 // Put ...
 // @router / [put]
-func (o *ObjectsController) Put() {
+func (o *ClassesController) Put() {
 	o.Ctx.Output.SetStatus(405)
 	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
 	o.ServeJSON()

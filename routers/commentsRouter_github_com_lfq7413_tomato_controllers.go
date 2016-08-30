@@ -48,6 +48,69 @@ func init() {
 			[]string{"put"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"HandleCreate",
+			`/:className`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"HandleGet",
+			`/:className/:objectId`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"HandleUpdate",
+			`/:className/:objectId`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"HandleFind",
+			`/:className`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"HandleDelete",
+			`/:className/:objectId`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"Get",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"Post",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:FilesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:FilesController"],
 		beego.ControllerComments{
 			"HandleGet",
@@ -266,69 +329,6 @@ func init() {
 			nil})
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogoutController"],
-		beego.ControllerComments{
-			"Put",
-			`/`,
-			[]string{"put"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
-		beego.ControllerComments{
-			"HandleCreate",
-			`/:className`,
-			[]string{"post"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
-		beego.ControllerComments{
-			"HandleGet",
-			`/:className/:objectId`,
-			[]string{"get"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
-		beego.ControllerComments{
-			"HandleUpdate",
-			`/:className/:objectId`,
-			[]string{"put"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
-		beego.ControllerComments{
-			"HandleFind",
-			`/:className`,
-			[]string{"get"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
-		beego.ControllerComments{
-			"HandleDelete",
-			`/:className/:objectId`,
-			[]string{"delete"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
-		beego.ControllerComments{
-			"Get",
-			`/`,
-			[]string{"get"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
-		beego.ControllerComments{
-			"Post",
-			`/`,
-			[]string{"post"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
-		beego.ControllerComments{
-			"Delete",
-			`/`,
-			[]string{"delete"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ObjectsController"],
 		beego.ControllerComments{
 			"Put",
 			`/`,

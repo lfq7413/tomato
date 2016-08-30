@@ -7,7 +7,7 @@ import (
 
 // AnalyticsController ...
 type AnalyticsController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleAppOpened ...
@@ -39,23 +39,23 @@ func (a *AnalyticsController) HandleEvent() {
 // Get ...
 // @router / [get]
 func (a *AnalyticsController) Get() {
-	a.ObjectsController.Get()
+	a.ClassesController.Get()
 }
 
 // Post ...
 // @router / [post]
 func (a *AnalyticsController) Post() {
-	a.ObjectsController.Post()
+	a.ClassesController.Post()
 }
 
 // Delete ...
 // @router / [delete]
 func (a *AnalyticsController) Delete() {
-	a.ObjectsController.Delete()
+	a.ClassesController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (a *AnalyticsController) Put() {
-	a.ObjectsController.Put()
+	a.ClassesController.Put()
 }

@@ -9,7 +9,7 @@ import (
 
 // LogoutController 处理 /logout 接口的请求
 type LogoutController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleLogOut 处理用户退出请求
@@ -44,17 +44,17 @@ func (l *LogoutController) HandleLogOut() {
 // Get ...
 // @router / [get]
 func (l *LogoutController) Get() {
-	l.ObjectsController.Get()
+	l.ClassesController.Get()
 }
 
 // Delete ...
 // @router / [delete]
 func (l *LogoutController) Delete() {
-	l.ObjectsController.Delete()
+	l.ClassesController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (l *LogoutController) Put() {
-	l.ObjectsController.Put()
+	l.ClassesController.Put()
 }

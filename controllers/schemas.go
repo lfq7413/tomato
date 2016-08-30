@@ -9,12 +9,12 @@ import (
 
 // SchemasController 处理 /schemas 接口的请求
 type SchemasController struct {
-	ObjectsController
+	ClassesController
 }
 
 // Prepare 访问 /schemas 接口需要 master key
 func (s *SchemasController) Prepare() {
-	s.ObjectsController.Prepare()
+	s.ClassesController.Prepare()
 	if s.Auth.IsMaster == false {
 		s.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
 		s.ServeJSON()
@@ -160,13 +160,13 @@ func (s *SchemasController) HandleDelete() {
 // Delete ...
 // @router / [delete]
 func (s *SchemasController) Delete() {
-	s.ObjectsController.Delete()
+	s.ClassesController.Delete()
 }
 
 // Put ...
 // @router / [put]
 func (s *SchemasController) Put() {
-	s.ObjectsController.Put()
+	s.ClassesController.Put()
 }
 
 // injectDefaultSchema 为 schema 添加默认字段

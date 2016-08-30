@@ -9,7 +9,7 @@ import (
 
 // PurgeController 处理 /purge 接口的请求
 type PurgeController struct {
-	ObjectsController
+	ClassesController
 }
 
 // HandleDelete 处理删除指定类数据请求
@@ -41,17 +41,17 @@ func (p *PurgeController) HandleDelete() {
 // Get ...
 // @router / [get]
 func (p *PurgeController) Get() {
-	p.ObjectsController.Get()
+	p.ClassesController.Get()
 }
 
 // Put ...
 // @router / [put]
 func (p *PurgeController) Put() {
-	p.ObjectsController.Put()
+	p.ClassesController.Put()
 }
 
 // Post ...
 // @router / [post]
 func (p *PurgeController) Post() {
-	p.ObjectsController.Post()
+	p.ClassesController.Post()
 }

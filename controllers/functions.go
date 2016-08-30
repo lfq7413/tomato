@@ -36,6 +36,7 @@ func (f *FunctionsController) HandleCloudFunction() {
 		Params:         f.JSONBody,
 		Master:         false,
 		InstallationID: f.Info.InstallationID,
+		FunctionName:   functionName,
 	}
 	if f.Auth != nil {
 		request.Master = f.Auth.IsMaster

@@ -36,6 +36,7 @@ type FunctionRequest struct {
 	User           types.M
 	InstallationID string
 	Headers        map[string]string
+	FunctionName   string
 }
 
 // JobRequest ...

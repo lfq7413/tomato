@@ -35,10 +35,13 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 
 	data := body["data"]
 	payloadString, _ := json.Marshal(data)
-	var alert string
+	var pushHash = "d41d8cd98f00b204e9800998ecf8427e"
 	if d := utils.M(data); d != nil {
-		if utils.S(d["alert"]) != "" {
-			alert = utils.S(d["alert"])
+		if v, ok := d["alert"].(string); ok {
+			pushHash = utils.MD5Hash(v)
+		} else if v := utils.M(d["alert"]); v != nil {
+			alert, _ := json.Marshal(v)
+			pushHash = utils.MD5Hash(string(alert))
 		}
 	}
 
@@ -53,7 +56,7 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 		"expiry":    body["expiration_time"],
 		"status":    "pending",
 		"numSent":   0,
-		"pushHash":  utils.MD5Hash(alert),
+		"pushHash":  pushHash,
 		// lockdown!
 		"ACL": types.M{},
 	}

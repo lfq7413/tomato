@@ -2447,6 +2447,48 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 	}
 	/*************************************************/
 	mongoObject = types.M{
+		"data": "aGVsbG8=",
+	}
+	schema = types.M{
+		"fields": types.M{
+			"data": types.M{
+				"type": "Bytes",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"data": types.M{
+			"__type": "Bytes",
+			"base64": "aGVsbG8=",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"data": []byte("hello"),
+	}
+	schema = types.M{
+		"fields": types.M{
+			"data": types.M{
+				"type": "Bytes",
+			},
+		},
+	}
+	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
+	expect = types.M{
+		"data": types.M{
+			"__type": "Bytes",
+			"base64": "aGVsbG8=",
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
 		"key": "value",
 	}
 	schema = types.M{}
@@ -2769,7 +2811,7 @@ func Test_bytesCoder(t *testing.T) {
 	jsonObject = bc.databaseToJSON(databaseObject)
 	expect = types.M{
 		"__type": "Bytes",
-		"base64": "",
+		"base64": nil,
 	}
 	if reflect.DeepEqual(jsonObject, expect) == false {
 		t.Error("expect:", expect, "get jsonObject:", jsonObject)
@@ -2792,6 +2834,12 @@ func Test_bytesCoder(t *testing.T) {
 	}
 	/*************************************************/
 	databaseObject = []byte("hello")
+	ok = bc.isValidDatabaseObject(databaseObject)
+	if !ok {
+		t.Error("expect:", "true", "get:", ok)
+	}
+	/*************************************************/
+	databaseObject = "aGVsbG8="
 	ok = bc.isValidDatabaseObject(databaseObject)
 	if !ok {
 		t.Error("expect:", "true", "get:", ok)
@@ -2851,6 +2899,24 @@ func Test_bytesCoder(t *testing.T) {
 	ok = bc.isValidJSON(jsonObject)
 	if !ok {
 		t.Error("expect:", "true", "get:", ok)
+	}
+	/*************************************************/
+	databaseObject = "aGVsbG8="
+	ok = bc.isBase64Value(databaseObject)
+	if !ok {
+		t.Error("expect:", "true", "get:", ok)
+	}
+	/*************************************************/
+	databaseObject = "aaa"
+	ok = bc.isBase64Value(databaseObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
+	}
+	/*************************************************/
+	databaseObject = 1024
+	ok = bc.isBase64Value(databaseObject)
+	if ok {
+		t.Error("expect:", "false", "get:", ok)
 	}
 }
 

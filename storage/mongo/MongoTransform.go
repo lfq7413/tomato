@@ -1290,6 +1290,16 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 						restObject[key] = g.databaseToJSON(value)
 						break
 					}
+					// bytesCoder 类型
+					// {
+					// 	"__type": "Bytes",
+					// 	"base64": "aGVsbG8=",
+					// }
+					b := bytesCoder{}
+					if expectedType != nil && utils.S(expectedType["type"]) == "Bytes" && b.isValidDatabaseObject(value) {
+						restObject[key] = b.databaseToJSON(value)
+						break
+					}
 				}
 				// 转换子对象
 				res, err := t.nestedMongoObjectToNestedParseObject(value)
@@ -1371,23 +1381,33 @@ func (d dateCoder) isValidJSON(value types.M) bool {
 // bytesCoder Bytes 类型处理
 type bytesCoder struct{}
 
-func (b bytesCoder) databaseToJSON(object interface{}) types.M {
-	if data, ok := object.([]byte); ok {
-		json := base64.StdEncoding.EncodeToString(data)
+var base64Pattern = `^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$`
 
-		return types.M{
-			"__type": "Bytes",
-			"base64": json,
-		}
+func (b bytesCoder) isBase64Value(object interface{}) bool {
+	if v, ok := object.(string); ok {
+		m, _ := regexp.MatchString(base64Pattern, v)
+		return m
+	}
+	return false
+}
+
+func (b bytesCoder) databaseToJSON(object interface{}) types.M {
+	var value interface{}
+	if data, ok := object.([]byte); ok {
+		value = base64.StdEncoding.EncodeToString(data)
+	} else if b.isBase64Value(object) {
+		value = object
 	}
 	return types.M{
 		"__type": "Bytes",
-		"base64": "",
+		"base64": value,
 	}
 }
 
 func (b bytesCoder) isValidDatabaseObject(object interface{}) bool {
 	if _, ok := object.([]byte); ok {
+		return true
+	} else if b.isBase64Value(object) {
 		return true
 	}
 	return false

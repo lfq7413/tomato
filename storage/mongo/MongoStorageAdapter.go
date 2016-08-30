@@ -214,7 +214,13 @@ func (m *MongoAdapter) GetAllClasses() ([]types.M, error) {
 func (m *MongoAdapter) getCollectionNames() []string {
 	names, err := storage.TomatoDB.MongoDatabase.CollectionNames()
 	if err == nil && names != nil {
-		return names
+		n := []string{}
+		for _, v := range names {
+			if strings.HasPrefix(v, m.collectionPrefix) {
+				n = append(n, v)
+			}
+		}
+		return n
 	}
 	return []string{}
 }

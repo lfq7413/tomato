@@ -88,10 +88,24 @@ func ExpandFilesInObject(object interface{}) {
 	}
 }
 
+// GetFileStream 获取文件流
+func GetFileStream(filename string) (FileStream, error) {
+	return adapter.getFileStream(filename)
+}
+
 // filesAdapter 规定了文件存储模块需要实现的接口
 type filesAdapter interface {
 	createFile(filename string, data []byte, contentType string) error
 	deleteFile(filename string) error
 	getFileData(filename string) []byte
 	getFileLocation(filename string) string
+	getFileStream(filename string) (FileStream, error)
+}
+
+// FileStream 规定了文件流需要实现的接口
+type FileStream interface {
+	Seek(offset int64, whence int) (ret int64, err error)
+	Read(b []byte) (n int, err error)
+	Size() (bytes int64)
+	Close() (err error)
 }

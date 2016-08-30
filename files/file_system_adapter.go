@@ -86,6 +86,15 @@ func (f *fileSystemAdapter) getFileLocation(filename string) string {
 	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + url.QueryEscape(filename)
 }
 
+func (f *fileSystemAdapter) getFileStream(filename string) (FileStream, error) {
+	filepath := f.getLocalFilePath(filename)
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	return &diskFileStream{file: file}, nil
+}
+
 func (f *fileSystemAdapter) getApplicationDir() string {
 	if f.filesDir != "" {
 		return utils.SelfDir() + string(os.PathSeparator) + "files" + string(os.PathSeparator) + f.filesDir
@@ -107,4 +116,28 @@ func (f *fileSystemAdapter) getLocalFilePath(filename string) string {
 
 func (f *fileSystemAdapter) mkdir(dirPath string) error {
 	return os.MkdirAll(dirPath, 0777)
+}
+
+type diskFileStream struct {
+	file *os.File
+}
+
+func (d *diskFileStream) Seek(offset int64, whence int) (ret int64, err error) {
+	return d.file.Seek(offset, whence)
+}
+
+func (d *diskFileStream) Read(b []byte) (n int, err error) {
+	return d.file.Read(b)
+}
+
+func (d *diskFileStream) Size() (bytes int64) {
+	i, err := d.file.Stat()
+	if err != nil {
+		return 0
+	}
+	return i.Size()
+}
+
+func (d *diskFileStream) Close() (err error) {
+	return d.file.Close()
 }

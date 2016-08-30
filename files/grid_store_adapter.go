@@ -68,3 +68,11 @@ func (g *gridStoreAdapter) getFileData(filename string) []byte {
 func (g *gridStoreAdapter) getFileLocation(filename string) string {
 	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + url.QueryEscape(filename)
 }
+
+func (g *gridStoreAdapter) getFileStream(filename string) (FileStream, error) {
+	file, err := g.gfs.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}

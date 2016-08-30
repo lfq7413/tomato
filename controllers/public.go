@@ -48,7 +48,7 @@ func (p *PublicController) ChangePassword() {
 	}
 
 	data := strings.Replace(choosePasswordPage, "PARSE_SERVER_URL", config.TConfig.ServerURL, -1)
-	p.Ctx.Output.ContentType("text/html")
+	p.Ctx.Output.Header("Content-Type", "text/html")
 	p.Ctx.Output.Body([]byte(data))
 }
 
@@ -119,21 +119,21 @@ func (p *PublicController) RequestResetPassword() {
 // InvalidLink 无效链接页面
 // @router /invalid_link [get]
 func (p *PublicController) InvalidLink() {
-	p.Ctx.Output.ContentType("text/html")
+	p.Ctx.Output.Header("Content-Type", "text/html")
 	p.Ctx.Output.Body([]byte(invalidLinkPage))
 }
 
 // PasswordResetSuccess 密码重置成功页面
 // @router /password_reset_success [get]
 func (p *PublicController) PasswordResetSuccess() {
-	p.Ctx.Output.ContentType("text/html")
+	p.Ctx.Output.Header("Content-Type", "text/html")
 	p.Ctx.Output.Body([]byte(passwordResetSuccessPage))
 }
 
 // VerifyEmailSuccess 验证邮箱成功页面
 // @router /verify_email_success [get]
 func (p *PublicController) VerifyEmailSuccess() {
-	p.Ctx.Output.ContentType("text/html")
+	p.Ctx.Output.Header("Content-Type", "text/html")
 	p.Ctx.Output.Body([]byte(verifyEmailSuccessPage))
 }
 

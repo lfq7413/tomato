@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strconv"
+
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
 	"github.com/lfq7413/tomato/utils"
@@ -20,11 +22,12 @@ func (f *FilesController) HandleGet() {
 	if data != nil {
 		contentType := utils.LookupContentType(filename)
 		f.Ctx.Output.SetStatus(200)
-		f.Ctx.Output.ContentType(contentType)
+		f.Ctx.Output.Header("Content-Type", contentType)
+		f.Ctx.Output.Header("Content-Length", strconv.Itoa(len(data)))
 		f.Ctx.Output.Body(data)
 	} else {
 		f.Ctx.Output.SetStatus(404)
-		f.Ctx.Output.ContentType("text/plain")
+		f.Ctx.Output.Header("Content-Type", "text/plain")
 		f.Ctx.Output.Body([]byte("File not found."))
 	}
 }

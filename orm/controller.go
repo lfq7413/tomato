@@ -1264,6 +1264,22 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 	return query
 }
 
+// PerformInitizalization 初始化数据库索引
+func (d *DBController) PerformInitizalization() {
+	requiredUserFields := types.M{}
+	defaultUserColumns := types.M{}
+	for k, v := range DefaultColumns["_Default"] {
+		defaultUserColumns[k] = v
+	}
+	for k, v := range DefaultColumns["_User"] {
+		defaultUserColumns[k] = v
+	}
+	requiredUserFields["fields"] = defaultUserColumns
+	d.LoadSchema(nil).EnforceClassExists("_User")
+	Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"username"})
+	Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"email"})
+}
+
 func addWriteACL(query types.M, acl []string) types.M {
 	if query == nil {
 		query = types.M{}

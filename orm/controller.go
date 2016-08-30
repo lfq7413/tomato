@@ -975,7 +975,14 @@ func (d *DBController) addNotInObjectIdsIds(ids types.S, query types.M) types.M 
 	}
 
 	// 替换 objectId
-	if objectID := utils.M(query["objectId"]); objectID != nil {
+	if v, ok := query["objectId"]; ok == false || v == nil {
+		query["objectId"] = types.M{"$nin": queryNin}
+	} else if v, ok := query["objectId"].(string); ok {
+		query["objectId"] = types.M{
+			"$eq":  v,
+			"$nin": queryNin,
+		}
+	} else if objectID := utils.M(query["objectId"]); objectID != nil {
 		objectID["$nin"] = queryNin
 	} else {
 		query["objectId"] = types.M{"$nin": queryNin}

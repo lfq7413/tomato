@@ -3962,6 +3962,19 @@ func Test_addNotInObjectIdsIds(t *testing.T) {
 		reflect.DeepEqual(expect1, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
+	/*************************************************/
+	ids = types.S{"1024"}
+	query = types.M{"objectId": "2048"}
+	result = TomatoDBController.addNotInObjectIdsIds(ids, query)
+	expect = types.M{
+		"objectId": types.M{
+			"$eq":  "2048",
+			"$nin": types.S{"1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_reduceInRelation(t *testing.T) {

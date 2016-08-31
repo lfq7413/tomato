@@ -1807,6 +1807,22 @@ func Test_addLegacyACL(t *testing.T) {
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)
 	}
+	/*************************************************/
+	restObject = types.M{
+		"key":    "value",
+		"_rperm": types.S{},
+		"_wperm": types.S{},
+	}
+	result = tf.addLegacyACL(restObject)
+	expect = types.M{
+		"key":    "value",
+		"_rperm": types.S{},
+		"_wperm": types.S{},
+		"_acl":   types.M{},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
 }
 
 func Test_transformWhere(t *testing.T) {

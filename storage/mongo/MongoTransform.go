@@ -1647,6 +1647,7 @@ func (t *Transform) addLegacyACL(restObject types.M) types.M {
 		for _, entry := range wperm {
 			_acl[utils.S(entry)] = types.M{"w": true}
 		}
+		restObjectCopy["_acl"] = _acl
 	}
 	if rperm := utils.A(restObject["_rperm"]); rperm != nil {
 		for _, entry := range rperm {
@@ -1658,9 +1659,6 @@ func (t *Transform) addLegacyACL(restObject types.M) types.M {
 				_acl[utils.S(entry)] = per
 			}
 		}
-	}
-
-	if len(_acl) > 0 {
 		restObjectCopy["_acl"] = _acl
 	}
 

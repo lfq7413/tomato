@@ -13,7 +13,6 @@ import (
 // Run ...
 func Run() {
 
-	storage.OpenDB()
 	defer storage.CloseDB()
 
 	// 创建必要的索引

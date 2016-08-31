@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"fmt"
-
 	"github.com/lfq7413/tomato/config"
 	"gopkg.in/mgo.v2"
 )
@@ -16,13 +14,21 @@ type Database struct {
 	MongoDatabase *mgo.Database
 }
 
+func init() {
+	OpenDB()
+}
+
 // newMongoDB 创建 MongoDB 数据库连接
 func newMongoDB(url string) *Database {
+	// 此处仅用于测试
+	if url == "" {
+		url = "192.168.99.100:27017/test"
+	}
+
 	session, err := mgo.Dial(url)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("connect success")
 	session.SetMode(mgo.Monotonic, true)
 	database := session.DB("")
 	db := &Database{

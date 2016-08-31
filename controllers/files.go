@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
@@ -18,17 +19,28 @@ type FilesController struct {
 // @router /:appId/:filename [get]
 func (f *FilesController) HandleGet() {
 	filename := f.Ctx.Input.Param(":filename")
-	data := files.GetFileData(filename)
-	if data != nil {
-		contentType := utils.LookupContentType(filename)
+	contentType := utils.LookupContentType(filename)
+	if f.isFileStreamable() {
+		s, err := files.GetFileStream(filename)
+		if err != nil {
+			f.Ctx.Output.SetStatus(404)
+			f.Ctx.Output.Header("Content-Type", "text/plain")
+			f.Ctx.Output.Body([]byte("File not found."))
+			return
+		}
+		f.handleFileStream(s, contentType)
+		return
+	}
+	data, err := files.GetFileData(filename)
+	if err != nil {
+		f.Ctx.Output.SetStatus(404)
+		f.Ctx.Output.Header("Content-Type", "text/plain")
+		f.Ctx.Output.Body([]byte("File not found."))
+	} else {
 		f.Ctx.Output.SetStatus(200)
 		f.Ctx.Output.Header("Content-Type", contentType)
 		f.Ctx.Output.Header("Content-Length", strconv.Itoa(len(data)))
 		f.Ctx.Output.Body(data)
-	} else {
-		f.Ctx.Output.SetStatus(404)
-		f.Ctx.Output.Header("Content-Type", "text/plain")
-		f.Ctx.Output.Body([]byte("File not found."))
 	}
 }
 
@@ -106,4 +118,101 @@ func (f *FilesController) Put() {
 // @router / [delete]
 func (f *FilesController) Delete() {
 	f.ClassesController.Delete()
+}
+
+func (f *FilesController) isFileStreamable() bool {
+	if f.Ctx.Input.Header("Range") == "" {
+		return false
+	}
+	n := files.GetAdapterName()
+	if n == "fileSystemAdapter" || n == "gridStoreAdapter" {
+		return true
+	}
+	return false
+}
+
+func (f *FilesController) handleFileStream(stream files.FileStream, contentType string) {
+	defer stream.Close()
+	var bufferSize = 1024 * 1024
+	var r = f.Ctx.Input.Header("Range")
+	r = strings.Replace(r, "bytes=", "", -1)
+	r = strings.Replace(r, " ", "", -1)
+	var parts = strings.Split(r, "-")
+	if len(parts) != 2 {
+		f.fileNotFound()
+		return
+	}
+	// 修正读取范围
+	var start, end, chunksize int
+	if parts[0] == "" {
+		start = 0
+	} else {
+		start, _ = strconv.Atoi(parts[0])
+	}
+	if parts[1] == "" {
+		end = int(stream.Size()) - 1
+	} else {
+		end, _ = strconv.Atoi(parts[1])
+	}
+	if start > end {
+		f.fileNotFound()
+		return
+	}
+	if start > int(stream.Size())-1 {
+		f.fileNotFound()
+		return
+	}
+	chunksize = end - start + 1
+
+	if chunksize > bufferSize {
+		end = start + bufferSize - 1
+		chunksize = bufferSize
+	}
+	// 设置 http 头部
+	f.Ctx.Output.SetStatus(206)
+	f.Ctx.Output.Header("Content-Range", "bytes "+strconv.Itoa(start)+"-"+strconv.Itoa(end)+"/"+strconv.Itoa(int(stream.Size())))
+	f.Ctx.Output.Header("Accept-Ranges", "bytes")
+	f.Ctx.Output.Header("Content-Length", strconv.Itoa(chunksize))
+	f.Ctx.Output.Header("Content-Type", contentType)
+	// 读取数据
+	_, err := stream.Seek(int64(start), 0)
+	if err != nil {
+		f.fileNotFound()
+		return
+	}
+
+	var bufferAvail = 0
+	var size = (end - start) + 1
+	var totalbyteswanted = (end - start) + 1
+	var totalbyteswritten = 0
+
+	data := []byte{}
+	buf := make([]byte, 1024)
+	for {
+		n, _ := stream.Read(buf)
+		if n == 0 {
+			break
+		}
+		bufferAvail += n
+		if bufferAvail < size {
+			data = append(data, buf[:n]...)
+			totalbyteswritten += n
+			size -= n
+			bufferAvail -= n
+		} else {
+			data = append(data, buf[:size]...)
+			totalbyteswritten += n
+			bufferAvail -= size
+		}
+		if totalbyteswritten >= totalbyteswanted {
+			break
+		}
+	}
+	f.Ctx.Output.Body(data)
+}
+
+func (f *FilesController) fileNotFound() {
+	f.Ctx.Output.SetStatus(404)
+	f.Ctx.Output.Header("Content-Type", "text/plain")
+	f.Ctx.Output.Body([]byte("File not found."))
 }

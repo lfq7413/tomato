@@ -3,15 +3,11 @@ package files
 import (
 	"testing"
 
-	"gopkg.in/mgo.v2"
-
 	"github.com/lfq7413/tomato/config"
-	"github.com/lfq7413/tomato/storage"
 )
 import "reflect"
 
 func Test_gridStoreAdapter(t *testing.T) {
-	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
 	f := newGridStoreAdapter()
 	hello := "hello world!"
 	err := f.createFile("hello.txt", []byte(hello), "text/plain")
@@ -19,7 +15,7 @@ func Test_gridStoreAdapter(t *testing.T) {
 		t.Error("expect:", nil, "result:", err)
 	}
 
-	data := f.getFileData("hello.txt")
+	data, _ := f.getFileData("hello.txt")
 	if reflect.DeepEqual(hello, string(data)) == false {
 		t.Error("expect:", hello, "result:", string(data))
 	}
@@ -37,18 +33,4 @@ func Test_gridStoreAdapter(t *testing.T) {
 	if err != nil {
 		t.Error("expect:", nil, "result:", err)
 	}
-}
-
-func newMongoDB(url string) *storage.Database {
-	session, err := mgo.Dial(url)
-	if err != nil {
-		panic(err)
-	}
-	session.SetMode(mgo.Monotonic, true)
-	database := session.DB("")
-	db := &storage.Database{
-		MongoSession:  session,
-		MongoDatabase: database,
-	}
-	return db
 }

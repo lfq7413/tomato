@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/lfq7413/tomato/config"
-	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 )
 
@@ -17,7 +16,7 @@ func Test_FileAdapter(t *testing.T) {
 		t.Error("expect:", "url+name", "result:", resp)
 	}
 
-	data := GetFileData(resp["name"])
+	data, _ := GetFileData(resp["name"])
 	if hello != string(data) {
 		t.Error("expect:", hello, "result:", string(data))
 	}
@@ -27,7 +26,6 @@ func Test_FileAdapter(t *testing.T) {
 		t.Error("expect:", nil, "result:", err)
 	}
 
-	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
 	adapter = newGridStoreAdapter()
 	hello = "hello world!"
 	resp = CreateFile("hellol.txt", []byte(hello), "text/plain")
@@ -35,7 +33,7 @@ func Test_FileAdapter(t *testing.T) {
 		t.Error("expect:", "url+name", "result:", resp)
 	}
 
-	data = GetFileData(resp["name"])
+	data, _ = GetFileData(resp["name"])
 	if hello != string(data) {
 		t.Error("expect:", hello, "result:", string(data))
 	}

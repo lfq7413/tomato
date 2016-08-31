@@ -45,10 +45,10 @@ func (g *gridStoreAdapter) deleteFile(filename string) error {
 	return g.gfs.Remove(filename)
 }
 
-func (g *gridStoreAdapter) getFileData(filename string) []byte {
+func (g *gridStoreAdapter) getFileData(filename string) ([]byte, error) {
 	file, err := g.gfs.Open(filename)
 	if err != nil {
-		return []byte{}
+		return nil, err
 	}
 	defer file.Close()
 
@@ -62,7 +62,7 @@ func (g *gridStoreAdapter) getFileData(filename string) []byte {
 		data = append(data, buf[:n]...)
 	}
 
-	return data
+	return data, nil
 }
 
 func (g *gridStoreAdapter) getFileLocation(filename string) string {
@@ -75,4 +75,8 @@ func (g *gridStoreAdapter) getFileStream(filename string) (FileStream, error) {
 		return nil, err
 	}
 	return file, nil
+}
+
+func (g *gridStoreAdapter) getAdapterName() string {
+	return "gridStoreAdapter"
 }

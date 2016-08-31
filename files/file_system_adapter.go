@@ -59,12 +59,12 @@ func (f *fileSystemAdapter) deleteFile(filename string) error {
 }
 
 // getFileData 从磁盘获取文件数据，出错时返回空数据
-func (f *fileSystemAdapter) getFileData(filename string) []byte {
+func (f *fileSystemAdapter) getFileData(filename string) ([]byte, error) {
 	filepath := f.getLocalFilePath(filename)
 
 	file, err := os.Open(filepath)
 	if err != nil {
-		return []byte{}
+		return nil, err
 	}
 	defer file.Close()
 
@@ -78,7 +78,7 @@ func (f *fileSystemAdapter) getFileData(filename string) []byte {
 		data = append(data, buf[:n]...)
 	}
 
-	return data
+	return data, nil
 }
 
 // getFileLocation 获取文件路径
@@ -93,6 +93,10 @@ func (f *fileSystemAdapter) getFileStream(filename string) (FileStream, error) {
 		return nil, err
 	}
 	return &diskFileStream{file: file}, nil
+}
+
+func (f *fileSystemAdapter) getAdapterName() string {
+	return "fileSystemAdapter"
 }
 
 func (f *fileSystemAdapter) getApplicationDir() string {

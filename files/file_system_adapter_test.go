@@ -15,7 +15,7 @@ func Test_fileSystemAdapter(t *testing.T) {
 		t.Error("expect:", nil, "result:", err)
 	}
 
-	data := f.getFileData("hello.txt")
+	data, _ := f.getFileData("hello.txt")
 	if reflect.DeepEqual(hello, string(data)) == false {
 		t.Error("expect:", hello, "result:", string(data))
 	}

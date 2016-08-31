@@ -22,7 +22,7 @@ func init() {
 }
 
 // GetFileData 获取文件数据
-func GetFileData(filename string) []byte {
+func GetFileData(filename string) ([]byte, error) {
 	return adapter.getFileData(filename)
 }
 
@@ -93,13 +93,19 @@ func GetFileStream(filename string) (FileStream, error) {
 	return adapter.getFileStream(filename)
 }
 
+// GetAdapterName ...
+func GetAdapterName() string {
+	return adapter.getAdapterName()
+}
+
 // filesAdapter 规定了文件存储模块需要实现的接口
 type filesAdapter interface {
 	createFile(filename string, data []byte, contentType string) error
 	deleteFile(filename string) error
-	getFileData(filename string) []byte
+	getFileData(filename string) ([]byte, error)
 	getFileLocation(filename string) string
 	getFileStream(filename string) (FileStream, error)
+	getAdapterName() string
 }
 
 // FileStream 规定了文件流需要实现的接口

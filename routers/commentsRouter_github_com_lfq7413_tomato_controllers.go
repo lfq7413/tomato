@@ -8,13 +8,6 @@ func init() {
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:AnalyticsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:AnalyticsController"],
 		beego.ControllerComments{
-			"HandleAppOpened",
-			`/AppOpened`,
-			[]string{"post"},
-			nil})
-
-	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:AnalyticsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:AnalyticsController"],
-		beego.ControllerComments{
 			"HandleEvent",
 			`/:eventName`,
 			[]string{"post"},
@@ -193,6 +186,34 @@ func init() {
 			"Put",
 			`/`,
 			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:GlobalConfigController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:GlobalConfigController"],
+		beego.ControllerComments{
+			"HandleGet",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:GlobalConfigController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:GlobalConfigController"],
+		beego.ControllerComments{
+			"HandlePut",
+			`/`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:GlobalConfigController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:GlobalConfigController"],
+		beego.ControllerComments{
+			"Post",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:GlobalConfigController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:GlobalConfigController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
 			nil})
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],

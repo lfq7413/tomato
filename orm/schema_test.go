@@ -1345,6 +1345,7 @@ func Test_reloadData(t *testing.T) {
 				"updatedAt": types.M{"type": "Date"},
 				"createdAt": types.M{"type": "Date"},
 				"ACL":       types.M{"type": "ACL"},
+				"params":    types.M{"type": "Object"},
 			},
 			"classLevelPermissions": types.M{},
 		},
@@ -2720,6 +2721,14 @@ func Test_volatileClassesSchemas(t *testing.T) {
 			},
 			"classLevelPermissions": types.M{},
 		},
+		types.M{
+			"className": "_GlobalConfig",
+			"fields": types.M{
+				"objectId": types.M{"type": "String"},
+				"params":   types.M{"type": "Object"},
+			},
+			"classLevelPermissions": types.M{},
+		},
 	}
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
@@ -3105,6 +3114,7 @@ func Test_Load(t *testing.T) {
 				"updatedAt": types.M{"type": "Date"},
 				"createdAt": types.M{"type": "Date"},
 				"ACL":       types.M{"type": "ACL"},
+				"params":    types.M{"type": "Object"},
 			},
 			"classLevelPermissions": types.M{},
 		},
@@ -3177,6 +3187,7 @@ func Test_Load(t *testing.T) {
 				"updatedAt": types.M{"type": "Date"},
 				"createdAt": types.M{"type": "Date"},
 				"ACL":       types.M{"type": "ACL"},
+				"params":    types.M{"type": "Object"},
 			},
 			"classLevelPermissions": types.M{},
 		},

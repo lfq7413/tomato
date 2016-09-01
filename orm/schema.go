@@ -91,6 +91,10 @@ var DefaultColumns = map[string]types.M{
 		"triggerName":  types.M{"type": "String"},
 		"url":          types.M{"type": "String"},
 	},
+	"_GlobalConfig": types.M{
+		"objectId": types.M{"type": "String"},
+		"params":   types.M{"type": "Object"},
+	},
 }
 
 // requiredColumns 类必须要有的字段
@@ -1084,6 +1088,11 @@ func volatileClassesSchemas() []types.M {
 		"fields":                DefaultColumns["_Hooks"],
 		"classLevelPermissions": types.M{},
 	}
+	globalConfigSchema := types.M{
+		"className":             "_GlobalConfig",
+		"fields":                DefaultColumns["_GlobalConfig"],
+		"classLevelPermissions": types.M{},
+	}
 	s := types.M{
 		"className":             "_PushStatus",
 		"fields":                types.M{},
@@ -1091,7 +1100,7 @@ func volatileClassesSchemas() []types.M {
 	}
 	pushStatusSchema := convertSchemaToAdapterSchema(s)
 
-	results = []types.M{hooksSchema, pushStatusSchema}
+	results = []types.M{hooksSchema, pushStatusSchema, globalConfigSchema}
 	return results
 }
 

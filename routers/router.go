@@ -87,6 +87,11 @@ func init() {
 				&controllers.PurgeController{},
 			),
 		),
+		beego.NSNamespace("/config",
+			beego.NSInclude(
+				&controllers.GlobalConfigController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

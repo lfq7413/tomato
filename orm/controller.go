@@ -1134,9 +1134,16 @@ func filterSensitiveData(isMaster bool, aclGroup []string, className string, obj
 	}
 
 	delete(object, "sessionToken")
+
 	if isMaster {
 		return object
 	}
+
+	delete(object, "_email_verify_token")
+	delete(object, "_perishable_token")
+	delete(object, "_tombstone")
+	delete(object, "_email_verify_token_expires_at")
+
 	// 当前用户返回所有信息
 	if aclGroup == nil {
 		aclGroup = []string{}
@@ -1264,8 +1271,8 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 	return query
 }
 
-// PerformInitizalization 初始化数据库索引
-func (d *DBController) PerformInitizalization() {
+// PerformInitialization 初始化数据库索引
+func (d *DBController) PerformInitialization() {
 	requiredUserFields := types.M{}
 	defaultUserColumns := types.M{}
 	for k, v := range DefaultColumns["_Default"] {
@@ -1278,6 +1285,7 @@ func (d *DBController) PerformInitizalization() {
 	d.LoadSchema(nil).EnforceClassExists("_User")
 	Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"username"})
 	Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"email"})
+	Adapter.PerformInitialization(types.M{"VolatileClassesSchemas": volatileClassesSchemas()})
 }
 
 func addWriteACL(query types.M, acl []string) types.M {

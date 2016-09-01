@@ -102,3 +102,8 @@ func (p *PostgresAdapter) UpsertOneObject(className string, schema, query, updat
 func (p *PostgresAdapter) EnsureUniqueness(className string, schema types.M, fieldNames []string) error {
 	return nil
 }
+
+// PerformInitialization ...
+func (p *PostgresAdapter) PerformInitialization(options types.M) error {
+	return nil
+}

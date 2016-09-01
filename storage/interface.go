@@ -21,4 +21,5 @@ type Adapter interface {
 	FindOneAndUpdate(className string, schema, query, update types.M) (types.M, error)
 	UpsertOneObject(className string, schema, query, update types.M) error
 	EnsureUniqueness(className string, schema types.M, fieldNames []string) error
+	PerformInitialization(options types.M) error
 }

@@ -16,7 +16,7 @@ func Run() {
 	defer storage.CloseDB()
 
 	// 创建必要的索引
-	orm.TomatoDBController.PerformInitizalization()
+	orm.TomatoDBController.PerformInitialization()
 
 	if beego.BConfig.RunMode == "dev" {
 		beego.BConfig.WebConfig.DirectoryIndex = true

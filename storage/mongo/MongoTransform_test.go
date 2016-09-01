@@ -2251,21 +2251,29 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 	}
 	/*************************************************/
 	mongoObject = types.M{
-		"_id":              "1024",
-		"_hashed_password": "password",
-		"_acl":             "acl",
-		"_session_token":   "abc",
-		"_updated_at":      tmpTime,
-		"_created_at":      tmpTime,
+		"_id":                            "1024",
+		"_hashed_password":               "password",
+		"_acl":                           "acl",
+		"_email_verify_token":            "abcd",
+		"_perishable_token":              "abcd",
+		"_tombstone":                     "abcd",
+		"_email_verify_token_expires_at": "abcd",
+		"_session_token":                 "abc",
+		"_updated_at":                    tmpTime,
+		"_created_at":                    tmpTime,
 	}
 	schema = types.M{}
 	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
 	expect = types.M{
-		"objectId":         "1024",
-		"_hashed_password": "password",
-		"sessionToken":     "abc",
-		"updatedAt":        tmpTimeStr,
-		"createdAt":        tmpTimeStr,
+		"objectId":                       "1024",
+		"_hashed_password":               "password",
+		"_email_verify_token":            "abcd",
+		"_perishable_token":              "abcd",
+		"_tombstone":                     "abcd",
+		"_email_verify_token_expires_at": "abcd",
+		"sessionToken":                   "abc",
+		"updatedAt":                      tmpTimeStr,
+		"createdAt":                      tmpTimeStr,
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)

@@ -372,6 +372,11 @@ func (m *MongoAdapter) EnsureUniqueness(className string, schema types.M, fieldN
 	return err
 }
 
+// PerformInitialization 性能优化初始化
+func (m *MongoAdapter) PerformInitialization(options types.M) error {
+	return nil
+}
+
 func storageAdapterAllCollections(m *MongoAdapter) []*MongoCollection {
 	names := m.getCollectionNames()
 	collections := []*MongoCollection{}

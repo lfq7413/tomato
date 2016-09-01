@@ -1165,8 +1165,12 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 			case "_hashed_password":
 				restObject["_hashed_password"] = value
 
-			case "_acl", "_email_verify_token", "_perishable_token", "_tombstone", "_email_verify_token_expires_at":
-				// 以上字段不添加到结果中
+			// 不包含 _acl 字段
+			case "_acl":
+
+			// 以下字段在 DB Controller 中决定是否删除
+			case "_email_verify_token", "_perishable_token", "_tombstone", "_email_verify_token_expires_at":
+				restObject[key] = value
 
 			case "_session_token":
 				restObject["sessionToken"] = value

@@ -1311,7 +1311,7 @@ func Test_reloadData(t *testing.T) {
 				"pushTime":      types.M{"type": "String"},
 				"source":        types.M{"type": "String"},
 				"query":         types.M{"type": "String"},
-				"payload":       types.M{"type": "Object"},
+				"payload":       types.M{"type": "String"},
 				"title":         types.M{"type": "String"},
 				"expiry":        types.M{"type": "Number"},
 				"status":        types.M{"type": "String"},
@@ -2678,6 +2678,62 @@ func Test_buildMergedSchemaObject(t *testing.T) {
 	}
 }
 
+func Test_volatileClassesSchemas(t *testing.T) {
+	var result, expect []types.M
+	result = volatileClassesSchemas()
+	expect = []types.M{
+		types.M{
+			"className": "_PushStatus",
+			"fields": types.M{
+				"objectId":      types.M{"type": "String"},
+				"createdAt":     types.M{"type": "Date"},
+				"updatedAt":     types.M{"type": "Date"},
+				"_rperm":        types.M{"type": "Array"},
+				"_wperm":        types.M{"type": "Array"},
+				"pushTime":      types.M{"type": "String"},
+				"source":        types.M{"type": "String"},
+				"query":         types.M{"type": "String"},
+				"payload":       types.M{"type": "String"},
+				"title":         types.M{"type": "String"},
+				"expiry":        types.M{"type": "Number"},
+				"status":        types.M{"type": "String"},
+				"numSent":       types.M{"type": "Number"},
+				"numFailed":     types.M{"type": "Number"},
+				"pushHash":      types.M{"type": "String"},
+				"errorMessage":  types.M{"type": "Object"},
+				"sentPerType":   types.M{"type": "Object"},
+				"failedPerType": types.M{"type": "Object"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		types.M{
+			"className": "_Hooks",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"createdAt": types.M{"type": "Date"},
+				"updatedAt": types.M{"type": "Date"},
+				"_rperm":    types.M{"type": "Array"},
+				"_wperm":    types.M{"type": "Array"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		types.M{
+			"className": "_GlobalConfig",
+			"fields": types.M{
+				"objectId":  types.M{"type": "String"},
+				"createdAt": types.M{"type": "Date"},
+				"updatedAt": types.M{"type": "Date"},
+				"_rperm":    types.M{"type": "Array"},
+				"_wperm":    types.M{"type": "Array"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
+}
+
 func Test_injectDefaultSchema(t *testing.T) {
 	var schema types.M
 	var result types.M
@@ -3023,7 +3079,7 @@ func Test_Load(t *testing.T) {
 				"pushTime":      types.M{"type": "String"},
 				"source":        types.M{"type": "String"},
 				"query":         types.M{"type": "String"},
-				"payload":       types.M{"type": "Object"},
+				"payload":       types.M{"type": "String"},
 				"title":         types.M{"type": "String"},
 				"expiry":        types.M{"type": "Number"},
 				"status":        types.M{"type": "String"},
@@ -3091,7 +3147,7 @@ func Test_Load(t *testing.T) {
 				"pushTime":      types.M{"type": "String"},
 				"source":        types.M{"type": "String"},
 				"query":         types.M{"type": "String"},
-				"payload":       types.M{"type": "Object"},
+				"payload":       types.M{"type": "String"},
 				"title":         types.M{"type": "String"},
 				"expiry":        types.M{"type": "Number"},
 				"status":        types.M{"type": "String"},

@@ -599,8 +599,9 @@ func Test_CheckResetTokenValidity(t *testing.T) {
 	token = "abc1001"
 	result = CheckResetTokenValidity(username, token)
 	expect = types.M{
-		"objectId": "1001",
-		"username": "joe",
+		"objectId":          "1001",
+		"username":          "joe",
+		"_perishable_token": "abc1001",
 	}
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)

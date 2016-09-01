@@ -74,7 +74,7 @@ var DefaultColumns = map[string]types.M{
 		"pushTime":      types.M{"type": "String"},
 		"source":        types.M{"type": "String"}, // rest or webui
 		"query":         types.M{"type": "String"}, // the stringified JSON query
-		"payload":       types.M{"type": "Object"}, // the JSON payload,
+		"payload":       types.M{"type": "String"}, // the stringified payload,
 		"title":         types.M{"type": "String"},
 		"expiry":        types.M{"type": "Number"},
 		"status":        types.M{"type": "String"},
@@ -1068,6 +1068,20 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 	}
 
 	return newSchema
+}
+
+func volatileClassesSchemas() []types.M {
+	var results = []types.M{}
+	for _, className := range volatileClasses {
+		s := types.M{
+			"className":             className,
+			"fields":                types.M{},
+			"classLevelPermissions": types.M{},
+		}
+		result := convertSchemaToAdapterSchema(s)
+		results = append(results, result)
+	}
+	return results
 }
 
 // injectDefaultSchema 为 schema 添加默认字段

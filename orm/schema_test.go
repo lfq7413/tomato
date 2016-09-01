@@ -1327,10 +1327,14 @@ func Test_reloadData(t *testing.T) {
 		"_Hooks": types.M{
 			"className": "_Hooks",
 			"fields": types.M{
-				"objectId":  types.M{"type": "String"},
-				"updatedAt": types.M{"type": "Date"},
-				"createdAt": types.M{"type": "Date"},
-				"ACL":       types.M{"type": "ACL"},
+				"objectId":     types.M{"type": "String"},
+				"updatedAt":    types.M{"type": "Date"},
+				"createdAt":    types.M{"type": "Date"},
+				"ACL":          types.M{"type": "ACL"},
+				"functionName": types.M{"type": "String"},
+				"className":    types.M{"type": "String"},
+				"triggerName":  types.M{"type": "String"},
+				"url":          types.M{"type": "String"},
 			},
 			"classLevelPermissions": types.M{},
 		},
@@ -2683,6 +2687,16 @@ func Test_volatileClassesSchemas(t *testing.T) {
 	result = volatileClassesSchemas()
 	expect = []types.M{
 		types.M{
+			"className": "_Hooks",
+			"fields": types.M{
+				"functionName": types.M{"type": "String"},
+				"className":    types.M{"type": "String"},
+				"triggerName":  types.M{"type": "String"},
+				"url":          types.M{"type": "String"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		types.M{
 			"className": "_PushStatus",
 			"fields": types.M{
 				"objectId":      types.M{"type": "String"},
@@ -2703,28 +2717,6 @@ func Test_volatileClassesSchemas(t *testing.T) {
 				"errorMessage":  types.M{"type": "Object"},
 				"sentPerType":   types.M{"type": "Object"},
 				"failedPerType": types.M{"type": "Object"},
-			},
-			"classLevelPermissions": types.M{},
-		},
-		types.M{
-			"className": "_Hooks",
-			"fields": types.M{
-				"objectId":  types.M{"type": "String"},
-				"createdAt": types.M{"type": "Date"},
-				"updatedAt": types.M{"type": "Date"},
-				"_rperm":    types.M{"type": "Array"},
-				"_wperm":    types.M{"type": "Array"},
-			},
-			"classLevelPermissions": types.M{},
-		},
-		types.M{
-			"className": "_GlobalConfig",
-			"fields": types.M{
-				"objectId":  types.M{"type": "String"},
-				"createdAt": types.M{"type": "Date"},
-				"updatedAt": types.M{"type": "Date"},
-				"_rperm":    types.M{"type": "Array"},
-				"_wperm":    types.M{"type": "Array"},
 			},
 			"classLevelPermissions": types.M{},
 		},
@@ -3095,10 +3087,14 @@ func Test_Load(t *testing.T) {
 		"_Hooks": types.M{
 			"className": "_Hooks",
 			"fields": types.M{
-				"objectId":  types.M{"type": "String"},
-				"updatedAt": types.M{"type": "Date"},
-				"createdAt": types.M{"type": "Date"},
-				"ACL":       types.M{"type": "ACL"},
+				"objectId":     types.M{"type": "String"},
+				"updatedAt":    types.M{"type": "Date"},
+				"createdAt":    types.M{"type": "Date"},
+				"ACL":          types.M{"type": "ACL"},
+				"functionName": types.M{"type": "String"},
+				"className":    types.M{"type": "String"},
+				"triggerName":  types.M{"type": "String"},
+				"url":          types.M{"type": "String"},
 			},
 			"classLevelPermissions": types.M{},
 		},
@@ -3163,10 +3159,14 @@ func Test_Load(t *testing.T) {
 		"_Hooks": types.M{
 			"className": "_Hooks",
 			"fields": types.M{
-				"objectId":  types.M{"type": "String"},
-				"updatedAt": types.M{"type": "Date"},
-				"createdAt": types.M{"type": "Date"},
-				"ACL":       types.M{"type": "ACL"},
+				"objectId":     types.M{"type": "String"},
+				"updatedAt":    types.M{"type": "Date"},
+				"createdAt":    types.M{"type": "Date"},
+				"ACL":          types.M{"type": "ACL"},
+				"functionName": types.M{"type": "String"},
+				"className":    types.M{"type": "String"},
+				"triggerName":  types.M{"type": "String"},
+				"url":          types.M{"type": "String"},
 			},
 			"classLevelPermissions": types.M{},
 		},

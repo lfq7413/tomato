@@ -85,6 +85,12 @@ var DefaultColumns = map[string]types.M{
 		"sentPerType":   types.M{"type": "Object"},
 		"failedPerType": types.M{"type": "Object"},
 	},
+	"_Hooks": types.M{
+		"functionName": types.M{"type": "String"},
+		"className":    types.M{"type": "String"},
+		"triggerName":  types.M{"type": "String"},
+		"url":          types.M{"type": "String"},
+	},
 }
 
 // requiredColumns 类必须要有的字段
@@ -1071,16 +1077,21 @@ func buildMergedSchemaObject(existingFields types.M, putRequest types.M) types.M
 }
 
 func volatileClassesSchemas() []types.M {
-	var results = []types.M{}
-	for _, className := range volatileClasses {
-		s := types.M{
-			"className":             className,
-			"fields":                types.M{},
-			"classLevelPermissions": types.M{},
-		}
-		result := convertSchemaToAdapterSchema(s)
-		results = append(results, result)
+	var results []types.M
+
+	hooksSchema := types.M{
+		"className":             "_Hooks",
+		"fields":                DefaultColumns["_Hooks"],
+		"classLevelPermissions": types.M{},
 	}
+	s := types.M{
+		"className":             "_PushStatus",
+		"fields":                types.M{},
+		"classLevelPermissions": types.M{},
+	}
+	pushStatusSchema := convertSchemaToAdapterSchema(s)
+
+	results = []types.M{hooksSchema, pushStatusSchema}
 	return results
 }
 

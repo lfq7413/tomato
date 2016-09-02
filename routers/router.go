@@ -97,6 +97,11 @@ func init() {
 				&controllers.LogsController{},
 			),
 		),
+		beego.NSNamespace("/validate_purchase",
+			beego.NSInclude(
+				&controllers.IAPValidationController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

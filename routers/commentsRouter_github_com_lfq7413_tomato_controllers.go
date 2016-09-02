@@ -216,6 +216,34 @@ func init() {
 			[]string{"delete"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"],
+		beego.ControllerComments{
+			"HandlePost",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"],
+		beego.ControllerComments{
+			"Get",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:InstallationsController"],
 		beego.ControllerComments{
 			"HandleFind",

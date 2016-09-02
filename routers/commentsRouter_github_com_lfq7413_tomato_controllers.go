@@ -356,6 +356,34 @@ func init() {
 			[]string{"put"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogsController"],
+		beego.ControllerComments{
+			"HandleGet",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogsController"],
+		beego.ControllerComments{
+			"Post",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogsController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:LogsController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:PublicController"],
 		beego.ControllerComments{
 			"VerifyEmail",

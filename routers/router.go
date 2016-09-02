@@ -92,6 +92,11 @@ func init() {
 				&controllers.GlobalConfigController{},
 			),
 		),
+		beego.NSNamespace("/scriptlog",
+			beego.NSInclude(
+				&controllers.LogsController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

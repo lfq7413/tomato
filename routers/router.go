@@ -102,6 +102,11 @@ func init() {
 				&controllers.IAPValidationController{},
 			),
 		),
+		beego.NSNamespace("/serverInfo",
+			beego.NSInclude(
+				&controllers.FeaturesController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

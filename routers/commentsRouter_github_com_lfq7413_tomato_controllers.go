@@ -244,6 +244,90 @@ func init() {
 			[]string{"delete"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"HandleGetAllFunctions",
+			`/functions`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"HandleGetFunction",
+			`/functions/:functionName`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"HandleCreateFunction",
+			`/functions`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"HandleUpdateFunction",
+			`/functions/:functionName`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"HandleGetAllTriggers",
+			`/triggers`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"HandleGetTrigger",
+			`/triggers/:className/:triggerName`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"HandleCreateTrigger",
+			`/triggers`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"HandleUpdateTrigger",
+			`/triggers/:className/:triggerName`,
+			[]string{"put"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"Get",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"Post",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:HooksController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:IAPValidationController"],
 		beego.ControllerComments{
 			"HandlePost",

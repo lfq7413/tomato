@@ -107,6 +107,11 @@ func init() {
 				&controllers.FeaturesController{},
 			),
 		),
+		beego.NSNamespace("/hooks",
+			beego.NSInclude(
+				&controllers.HooksController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

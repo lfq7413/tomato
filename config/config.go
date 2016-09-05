@@ -32,6 +32,7 @@ type Config struct {
 	SMTPServer                       string
 	MailUsername                     string
 	MailPassword                     string
+	WebhookKey                       string
 }
 
 var (
@@ -95,6 +96,7 @@ func parseConfig() {
 	TConfig.SMTPServer = beego.AppConfig.DefaultString("SMTPServer", "")
 	TConfig.MailUsername = beego.AppConfig.DefaultString("MailUsername", "")
 	TConfig.MailPassword = beego.AppConfig.DefaultString("MailPassword", "")
+	TConfig.WebhookKey = beego.AppConfig.DefaultString("WebhookKey", "")
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

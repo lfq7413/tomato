@@ -1,36 +1,34 @@
 package cloud
 
-import (
-	"github.com/lfq7413/tomato/types"
-	"github.com/lfq7413/tomato/utils"
-)
+import "github.com/lfq7413/tomato/types"
 
 // RemoteDefine ...
 func RemoteDefine(functionName string, functionHandlerURL, validatorHandlerURL string) {
-	Define(functionName, getFunctionHandler(functionHandlerURL), getValidatorHandler(validatorHandlerURL))
+	Define(functionName, GetFunctionHandler(functionHandlerURL), GetValidatorHandler(validatorHandlerURL))
 }
 
 // RemoteBeforeSave ...
 func RemoteBeforeSave(className string, triggerHandlerURL string) error {
-	return BeforeSave(className, getTriggerHandler(triggerHandlerURL))
+	return BeforeSave(className, GetTriggerHandler(triggerHandlerURL))
 }
 
 // RemoteBeforeDelete ...
 func RemoteBeforeDelete(className string, triggerHandlerURL string) error {
-	return BeforeDelete(className, getTriggerHandler(triggerHandlerURL))
+	return BeforeDelete(className, GetTriggerHandler(triggerHandlerURL))
 }
 
 // RemoteAfterSave ...
 func RemoteAfterSave(className string, triggerHandlerURL string) error {
-	return AfterSave(className, getTriggerHandler(triggerHandlerURL))
+	return AfterSave(className, GetTriggerHandler(triggerHandlerURL))
 }
 
 // RemoteAfterDelete ...
 func RemoteAfterDelete(className string, triggerHandlerURL string) error {
-	return AfterDelete(className, getTriggerHandler(triggerHandlerURL))
+	return AfterDelete(className, GetTriggerHandler(triggerHandlerURL))
 }
 
-func getFunctionHandler(url string) FunctionHandler {
+// GetFunctionHandler ...
+func GetFunctionHandler(url string) FunctionHandler {
 	return func(request FunctionRequest, response Response) {
 		params := types.M{
 			"params":         request.Params,
@@ -39,24 +37,17 @@ func getFunctionHandler(url string) FunctionHandler {
 			"installationID": request.InstallationID,
 			"headers":        request.Headers,
 		}
-		result := post(params, url)
-		if result["code"] != nil && result["message"] != nil {
-			var code int
-			if v, ok := result["code"].(float64); ok {
-				code = int(v)
-			}
-			var message string
-			if v, ok := result["message"].(string); ok {
-				message = v
-			}
-			response.Error(code, message)
+		result, err := post(params, url)
+		if err != nil {
+			response.Error(err["code"].(int), err["message"].(string))
 			return
 		}
 		response.Success(result["result"])
 	}
 }
 
-func getValidatorHandler(url string) ValidatorHandler {
+// GetValidatorHandler ...
+func GetValidatorHandler(url string) ValidatorHandler {
 	return func(request FunctionRequest) bool {
 		params := types.M{
 			"params":         request.Params,
@@ -65,7 +56,7 @@ func getValidatorHandler(url string) ValidatorHandler {
 			"installationID": request.InstallationID,
 			"headers":        request.Headers,
 		}
-		result := post(params, url)
+		result, _ := post(params, url)
 		if v, ok := result["result"].(bool); ok {
 			return v
 		}
@@ -73,7 +64,8 @@ func getValidatorHandler(url string) ValidatorHandler {
 	}
 }
 
-func getTriggerHandler(url string) TriggerHandler {
+// GetTriggerHandler ...
+func GetTriggerHandler(url string) TriggerHandler {
 	return func(request TriggerRequest, response Response) {
 		params := types.M{
 			"triggerName":    request.TriggerName,
@@ -83,21 +75,15 @@ func getTriggerHandler(url string) TriggerHandler {
 			"user":           request.User,
 			"installationID": request.InstallationID,
 		}
-		result := post(params, url)
-		if result["code"] != nil && result["message"] != nil {
-			var code int
-			if v, ok := result["code"].(float64); ok {
-				code = int(v)
-			}
-			var message string
-			if v, ok := result["message"].(string); ok {
-				message = v
-			}
-			response.Error(code, message)
+		result, err := post(params, url)
+		if err != nil {
+			response.Error(err["code"].(int), err["message"].(string))
 			return
 		}
-		if object := utils.M(result["object"]); object != nil {
-			request.Object = object
+		if request.TriggerName == TypeBeforeSave {
+			delete(result, "createdAt")
+			delete(result, "updatedAt")
+			request.Object = result
 		}
 		response.Success(nil)
 	}

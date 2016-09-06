@@ -4080,7 +4080,7 @@ func initEnv() {
 }
 
 func getAdapter() *mongo.MongoAdapter {
-	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
+	storage.TomatoDB = newMongoDB("127.0.0.1:27017/test")
 	return mongo.NewMongoAdapter("tomato")
 }
 

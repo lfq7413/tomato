@@ -1110,7 +1110,7 @@ func Test_ensureSparseUniqueIndexInBackground(t *testing.T) {
 }
 
 func openDB() *mgo.Database {
-	session, err := mgo.Dial("192.168.99.100:27017/test")
+	session, err := mgo.Dial("127.0.0.1:27017/test")
 	if err != nil {
 		panic(err)
 	}

@@ -22,7 +22,7 @@ func init() {
 func newMongoDB(url string) *Database {
 	// 此处仅用于测试
 	if url == "" {
-		url = "192.168.99.100:27017/test"
+		url = "127.0.0.1:27017/test"
 	}
 
 	session, err := mgo.Dial(url)

@@ -44,7 +44,7 @@ func init() {
 	TConfig = &Config{
 		AppName:                          "",
 		ServerURL:                        "http://127.0.0.1:8080/v1",
-		DatabaseURI:                      "192.168.99.100:27017/test",
+		DatabaseURI:                      "127.0.0.1:27017/test",
 		AppID:                            "",
 		MasterKey:                        "",
 		ClientKey:                        "",

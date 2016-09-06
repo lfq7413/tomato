@@ -15,9 +15,9 @@ import (
 var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField", "readUserFields", "writeUserFields"}
 
 // SystemClasses 系统表
-var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product", "_PushStatus"}
+var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product", "_PushStatus", "_JobStatus"}
 
-var volatileClasses = []string{"_PushStatus", "_Hooks", "_GlobalConfig"}
+var volatileClasses = []string{"_JobStatus", "_PushStatus", "_Hooks", "_GlobalConfig"}
 
 // DefaultColumns 所有类的默认字段，以及系统类的默认字段
 var DefaultColumns = map[string]types.M{
@@ -84,6 +84,14 @@ var DefaultColumns = map[string]types.M{
 		"errorMessage":  types.M{"type": "Object"},
 		"sentPerType":   types.M{"type": "Object"},
 		"failedPerType": types.M{"type": "Object"},
+	},
+	"_JobStatus": types.M{
+		"jobName":    types.M{"type": "String"},
+		"source":     types.M{"type": "String"},
+		"status":     types.M{"type": "String"},
+		"message":    types.M{"type": "String"},
+		"params":     types.M{"type": "Object"}, // params received when calling the job
+		"finishedAt": types.M{"type": "Date"},
 	},
 	"_Hooks": types.M{
 		"functionName": types.M{"type": "String"},
@@ -1099,8 +1107,14 @@ func volatileClassesSchemas() []types.M {
 		"classLevelPermissions": types.M{},
 	}
 	pushStatusSchema := convertSchemaToAdapterSchema(s)
+	s = types.M{
+		"className":             "_JobStatus",
+		"fields":                types.M{},
+		"classLevelPermissions": types.M{},
+	}
+	jobStatusSchema := convertSchemaToAdapterSchema(s)
 
-	results = []types.M{hooksSchema, pushStatusSchema, globalConfigSchema}
+	results = []types.M{hooksSchema, jobStatusSchema, pushStatusSchema, globalConfigSchema}
 	return results
 }
 

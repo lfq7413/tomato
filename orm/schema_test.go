@@ -1324,6 +1324,22 @@ func Test_reloadData(t *testing.T) {
 			},
 			"classLevelPermissions": types.M{},
 		},
+		"_JobStatus": types.M{
+			"className": "_JobStatus",
+			"fields": types.M{
+				"objectId":   types.M{"type": "String"},
+				"updatedAt":  types.M{"type": "Date"},
+				"createdAt":  types.M{"type": "Date"},
+				"ACL":        types.M{"type": "ACL"},
+				"jobName":    types.M{"type": "String"},
+				"source":     types.M{"type": "String"},
+				"status":     types.M{"type": "String"},
+				"message":    types.M{"type": "String"},
+				"params":     types.M{"type": "Object"},
+				"finishedAt": types.M{"type": "Date"},
+			},
+			"classLevelPermissions": types.M{},
+		},
 		"_Hooks": types.M{
 			"className": "_Hooks",
 			"fields": types.M{
@@ -2698,6 +2714,23 @@ func Test_volatileClassesSchemas(t *testing.T) {
 			"classLevelPermissions": types.M{},
 		},
 		types.M{
+			"className": "_JobStatus",
+			"fields": types.M{
+				"objectId":   types.M{"type": "String"},
+				"createdAt":  types.M{"type": "Date"},
+				"updatedAt":  types.M{"type": "Date"},
+				"_rperm":     types.M{"type": "Array"},
+				"_wperm":     types.M{"type": "Array"},
+				"jobName":    types.M{"type": "String"},
+				"source":     types.M{"type": "String"},
+				"status":     types.M{"type": "String"},
+				"message":    types.M{"type": "String"},
+				"params":     types.M{"type": "Object"},
+				"finishedAt": types.M{"type": "Date"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		types.M{
 			"className": "_PushStatus",
 			"fields": types.M{
 				"objectId":      types.M{"type": "String"},
@@ -3093,6 +3126,22 @@ func Test_Load(t *testing.T) {
 			},
 			"classLevelPermissions": types.M{},
 		},
+		"_JobStatus": types.M{
+			"className": "_JobStatus",
+			"fields": types.M{
+				"objectId":   types.M{"type": "String"},
+				"updatedAt":  types.M{"type": "Date"},
+				"createdAt":  types.M{"type": "Date"},
+				"ACL":        types.M{"type": "ACL"},
+				"jobName":    types.M{"type": "String"},
+				"source":     types.M{"type": "String"},
+				"status":     types.M{"type": "String"},
+				"message":    types.M{"type": "String"},
+				"params":     types.M{"type": "Object"},
+				"finishedAt": types.M{"type": "Date"},
+			},
+			"classLevelPermissions": types.M{},
+		},
 		"_Hooks": types.M{
 			"className": "_Hooks",
 			"fields": types.M{
@@ -3163,6 +3212,22 @@ func Test_Load(t *testing.T) {
 				"errorMessage":  types.M{"type": "Object"},
 				"sentPerType":   types.M{"type": "Object"},
 				"failedPerType": types.M{"type": "Object"},
+			},
+			"classLevelPermissions": types.M{},
+		},
+		"_JobStatus": types.M{
+			"className": "_JobStatus",
+			"fields": types.M{
+				"objectId":   types.M{"type": "String"},
+				"updatedAt":  types.M{"type": "Date"},
+				"createdAt":  types.M{"type": "Date"},
+				"ACL":        types.M{"type": "ACL"},
+				"jobName":    types.M{"type": "String"},
+				"source":     types.M{"type": "String"},
+				"status":     types.M{"type": "String"},
+				"message":    types.M{"type": "String"},
+				"params":     types.M{"type": "Object"},
+				"finishedAt": types.M{"type": "Date"},
 			},
 			"classLevelPermissions": types.M{},
 		},

@@ -35,15 +35,16 @@ type FunctionRequest struct {
 	Master         bool
 	User           types.M
 	InstallationID string
-	Headers        map[string]string
+	Headers        map[string][]string
 	FunctionName   string
 }
 
 // JobRequest ...
 type JobRequest struct {
-	Params types.M
-	Master bool
-	User   types.M
+	Params  types.M
+	Headers map[string][]string
+	JobName string
+	JobID   string
 }
 
 // Response ...
@@ -62,7 +63,7 @@ type FunctionHandler func(FunctionRequest, Response)
 type ValidatorHandler func(FunctionRequest) bool
 
 // JobHandler ...
-type JobHandler func(JobRequest)
+type JobHandler func(JobRequest, JobResponse)
 
 var triggers map[string]map[string]TriggerHandler
 var functions map[string]FunctionHandler
@@ -195,6 +196,14 @@ func GetJob(name string) JobHandler {
 	return nil
 }
 
+// GetJobs 获取定时任务
+func GetJobs() map[string]JobHandler {
+	if jobs == nil {
+		return nil
+	}
+	return jobs
+}
+
 // TriggerResponse ...
 type TriggerResponse struct {
 	Request  TriggerRequest
@@ -243,4 +252,31 @@ func (f *FunctionResponse) Error(code int, message string) {
 		code = errs.ScriptFailed
 	}
 	f.Err = errs.E(code, message)
+}
+
+// JobStatus ...
+type JobStatus interface {
+	SetSucceeded(message string)
+	SetFailed(message string)
+	SetMessage(message string)
+}
+
+// JobResponse ...
+type JobResponse struct {
+	JobStatus JobStatus
+}
+
+// Success ...
+func (j JobResponse) Success(message string) {
+	j.JobStatus.SetSucceeded(message)
+}
+
+// Error ...
+func (j JobResponse) Error(message string) {
+	j.JobStatus.SetFailed(message)
+}
+
+// Message ...
+func (j JobResponse) Message(message string) {
+	j.JobStatus.SetMessage(message)
 }

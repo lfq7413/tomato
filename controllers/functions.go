@@ -31,12 +31,12 @@ func (f *FunctionsController) HandleCloudFunction() {
 		f.JSONBody = types.M{}
 	}
 
-	// TODO 补全 Headers
 	request := cloud.FunctionRequest{
 		Params:         f.JSONBody,
 		Master:         false,
 		InstallationID: f.Info.InstallationID,
 		FunctionName:   functionName,
+		Headers:        f.Ctx.Input.Context.Request.Header,
 	}
 	if f.Auth != nil {
 		request.Master = f.Auth.IsMaster

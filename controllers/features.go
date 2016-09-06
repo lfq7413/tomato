@@ -32,6 +32,9 @@ func (f *FeaturesController) HandleGet() {
 			"update": false,
 			"delete": false,
 		},
+		"cloudCode": types.M{
+			"jobs": true,
+		},
 		"logs": types.M{
 			"level": true,
 			"size":  true,

@@ -18,6 +18,11 @@ func Define(functionName string, handler FunctionHandler, validationHandler Vali
 	AddFunction(functionName, handler, validationHandler)
 }
 
+// Job ...
+func Job(functionName string, handler JobHandler) {
+	AddJob(functionName, handler)
+}
+
 // BeforeSave ...
 func BeforeSave(className string, handler TriggerHandler) error {
 	err := validateClassNameForTriggers(className)

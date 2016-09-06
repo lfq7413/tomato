@@ -104,6 +104,41 @@ func init() {
 			[]string{"put"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"],
+		beego.ControllerComments{
+			"HandleGet",
+			`/jobs`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"],
+		beego.ControllerComments{
+			"Get",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"],
+		beego.ControllerComments{
+			"Post",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:CloudCodeController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:FeaturesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:FeaturesController"],
 		beego.ControllerComments{
 			"HandleGet",
@@ -414,16 +449,16 @@ func init() {
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:JobsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:JobsController"],
 		beego.ControllerComments{
-			"Get",
+			"HandlePost",
 			`/`,
-			[]string{"get"},
+			[]string{"post"},
 			nil})
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:JobsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:JobsController"],
 		beego.ControllerComments{
-			"Post",
+			"Get",
 			`/`,
-			[]string{"post"},
+			[]string{"get"},
 			nil})
 
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:JobsController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:JobsController"],

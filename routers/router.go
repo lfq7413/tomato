@@ -112,6 +112,11 @@ func init() {
 				&controllers.HooksController{},
 			),
 		),
+		beego.NSNamespace("/cloud_code",
+			beego.NSInclude(
+				&controllers.CloudCodeController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

@@ -1,5 +1,11 @@
 package livequery
 
+import (
+	"strings"
+
+	"github.com/lfq7413/tomato/config"
+)
+
 // M ...
 type M map[string]interface{}
 
@@ -7,6 +13,16 @@ type M map[string]interface{}
 type LiveQuery struct {
 	classNames         []string
 	liveQueryPublisher *cloudCodePublisher
+}
+
+// TLiveQuery ...
+var TLiveQuery *LiveQuery
+
+func init() {
+	classeNames := strings.Split(config.TConfig.LiveQueryClasses, "|")
+	pubType := config.TConfig.PublisherType
+	pubURL := config.TConfig.PublisherURL
+	TLiveQuery = NewLiveQuery(classeNames, pubType, pubURL)
 }
 
 // NewLiveQuery 初始化 LiveQuery

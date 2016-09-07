@@ -13,6 +13,7 @@ import (
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
+	"github.com/lfq7413/tomato/livequery"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -1040,8 +1041,8 @@ func (w *Write) runAfterTrigger() error {
 
 	hasAfterSaveHook := cloud.TriggerExists(cloud.TypeAfterSave, w.className)
 	hasLiveQuery := false
-	if config.TConfig.LiveQuery != nil {
-		hasLiveQuery = config.TConfig.LiveQuery.HasLiveQuery(w.className)
+	if livequery.TLiveQuery != nil {
+		hasLiveQuery = livequery.TLiveQuery.HasLiveQuery(w.className)
 	}
 	if hasAfterSaveHook == false && hasLiveQuery == false {
 		return nil
@@ -1065,7 +1066,7 @@ func (w *Write) runAfterTrigger() error {
 
 	if hasLiveQuery {
 		// 尝试通知 LiveQueryServer
-		config.TConfig.LiveQuery.OnAfterSave(w.className, updatedObject, originalObject)
+		livequery.TLiveQuery.OnAfterSave(w.className, updatedObject, originalObject)
 	}
 
 	if hasAfterSaveHook {

@@ -1,11 +1,9 @@
 package config
 
 import (
-	"strings"
 	"time"
 
 	"github.com/astaxie/beego"
-	"github.com/lfq7413/tomato/livequery"
 )
 
 // Config ...
@@ -25,7 +23,9 @@ type Config struct {
 	FileAdapter                      string
 	PushAdapter                      string
 	MailAdapter                      string
-	LiveQuery                        *livequery.LiveQuery
+	LiveQueryClasses                 string
+	PublisherType                    string
+	PublisherURL                     string
 	SessionLength                    int
 	RevokeSessionOnPasswordReset     bool
 	PreventLoginWithUnverifiedEmail  bool
@@ -83,12 +83,10 @@ func parseConfig() {
 	TConfig.PushAdapter = beego.AppConfig.DefaultString("PushAdapter", "tomato")
 	TConfig.MailAdapter = beego.AppConfig.DefaultString("MailAdapter", "smtp")
 
-	// LiveQuery 支持的类列表，格式： classeA|classeB|classeC
-	classeNames := beego.AppConfig.String("LiveQuery")
-	pubType := beego.AppConfig.String("PubType")
-	pubURL := beego.AppConfig.String("pubURL")
-	liveQuery := strings.Split(classeNames, "|")
-	TConfig.LiveQuery = livequery.NewLiveQuery(liveQuery, pubType, pubURL)
+	// LiveQueryClasses 支持的类列表，格式： classeA|classeB|classeC
+	TConfig.LiveQueryClasses = beego.AppConfig.String("LiveQueryClasses")
+	TConfig.PublisherType = beego.AppConfig.String("PublisherType")
+	TConfig.PublisherURL = beego.AppConfig.String("PublisherURL")
 
 	TConfig.SessionLength = beego.AppConfig.DefaultInt("SessionLength", 31536000)
 	TConfig.RevokeSessionOnPasswordReset = beego.AppConfig.DefaultBool("RevokeSessionOnPasswordReset", true)

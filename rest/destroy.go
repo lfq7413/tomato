@@ -3,7 +3,7 @@ package rest
 import (
 	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/cloud"
-	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/livequery"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -75,8 +75,8 @@ func (d *Destroy) handleSession() error {
 
 // runBeforeTrigger 执行删前回调
 func (d *Destroy) runBeforeTrigger() error {
-	if config.TConfig.LiveQuery != nil {
-		config.TConfig.LiveQuery.OnAfterDelete(d.className, d.originalData, nil)
+	if livequery.TLiveQuery != nil {
+		livequery.TLiveQuery.OnAfterDelete(d.className, d.originalData, nil)
 	}
 
 	d.originalData["className"] = d.className

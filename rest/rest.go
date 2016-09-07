@@ -2,8 +2,8 @@ package rest
 
 import (
 	"github.com/lfq7413/tomato/cloud"
-	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/livequery"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -61,7 +61,7 @@ func Delete(auth *Auth, className, objectID string, clientSDK map[string]string)
 	// 如果存在删前回调、或者删后回调、或者要删除的属于 _Session 类，则需要获取到要删除的对象数据
 	if cloud.TriggerExists(cloud.TypeBeforeDelete, className) ||
 		cloud.TriggerExists(cloud.TypeAfterDelete, className) ||
-		(config.TConfig.LiveQuery != nil && config.TConfig.LiveQuery.HasLiveQuery(className)) ||
+		(livequery.TLiveQuery != nil && livequery.TLiveQuery.HasLiveQuery(className)) ||
 		className == "_Session" {
 		response, err := Find(auth, className, types.M{"objectId": objectID}, types.M{}, clientSDK)
 		if err != nil || utils.HasResults(response) == false {
@@ -117,7 +117,7 @@ func Update(auth *Auth, className, objectID string, object types.M, clientSDK ma
 	var response types.M
 	if cloud.TriggerExists(cloud.TypeBeforeSave, className) ||
 		cloud.TriggerExists(cloud.TypeAfterSave, className) ||
-		(config.TConfig.LiveQuery != nil && config.TConfig.LiveQuery.HasLiveQuery(className)) {
+		(livequery.TLiveQuery != nil && livequery.TLiveQuery.HasLiveQuery(className)) {
 
 		response, err = Find(auth, className, types.M{"objectId": objectID}, types.M{}, clientSDK)
 		if err != nil || utils.HasResults(response) == false {

@@ -884,7 +884,7 @@ func Test_handleSession(t *testing.T) {
 	data = types.M{}
 	originalData = nil
 	config.TConfig.SessionLength = 31536000
-	config.TConfig.LiveQuery = livequery.NewLiveQuery([]string{}, "", "")
+	livequery.TLiveQuery = livequery.NewLiveQuery([]string{}, "", "")
 	w, _ = NewWrite(auth, "_Session", query, data, originalData, nil)
 	err = w.handleSession()
 	expectErr = nil
@@ -1883,7 +1883,7 @@ func Test_runAfterTrigger(t *testing.T) {
 	var data types.M
 	var originalData types.M
 	/***************************************************************/
-	config.TConfig.LiveQuery = livequery.NewLiveQuery([]string{}, "", "")
+	livequery.TLiveQuery = livequery.NewLiveQuery([]string{}, "", "")
 	className = "user"
 	query = nil
 	data = types.M{"key": "hello"}
@@ -1892,7 +1892,7 @@ func Test_runAfterTrigger(t *testing.T) {
 	w.response = types.M{"response": "hello"}
 	w.runAfterTrigger()
 	/***************************************************************/
-	config.TConfig.LiveQuery = livequery.NewLiveQuery([]string{}, "", "")
+	livequery.TLiveQuery = livequery.NewLiveQuery([]string{}, "", "")
 	cloud.AfterSave("user", func(res cloud.TriggerRequest, resp cloud.Response) {
 	})
 	className = "user"
@@ -2454,7 +2454,7 @@ func Test_createSessionToken(t *testing.T) {
 	var results types.S
 	/***************************************************************/
 	initEnv()
-	config.TConfig.LiveQuery = livequery.NewLiveQuery([]string{}, "", "")
+	livequery.TLiveQuery = livequery.NewLiveQuery([]string{}, "", "")
 	config.TConfig.SessionLength = 31536000
 	query = nil
 	data = types.M{

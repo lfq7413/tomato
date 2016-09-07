@@ -16,11 +16,13 @@ type Config struct {
 	AppID                            string
 	MasterKey                        string
 	ClientKey                        string
+	JavascriptKey                    string
+	DotNetKey                        string
+	RestAPIKey                       string
 	AllowClientClassCreation         bool
 	EnableAnonymousUsers             bool
 	VerifyUserEmails                 bool
 	FileAdapter                      string
-	FileDir                          string
 	PushAdapter                      string
 	MailAdapter                      string
 	LiveQuery                        *livequery.LiveQuery
@@ -52,7 +54,6 @@ func init() {
 		EnableAnonymousUsers:             true,
 		VerifyUserEmails:                 false,
 		FileAdapter:                      "disk",
-		FileDir:                          "/Users",
 		PushAdapter:                      "tomato",
 		MailAdapter:                      "smtp",
 		SessionLength:                    31536000,
@@ -67,23 +68,25 @@ func init() {
 
 func parseConfig() {
 	TConfig.AppName = beego.AppConfig.String("appname")
-	TConfig.ServerURL = beego.AppConfig.String("serverurl")
-	TConfig.DatabaseURI = beego.AppConfig.String("databaseuri")
-	TConfig.AppID = beego.AppConfig.String("appid")
-	TConfig.MasterKey = beego.AppConfig.String("masterkey")
-	TConfig.ClientKey = beego.AppConfig.String("clientkey")
-	TConfig.AllowClientClassCreation = beego.AppConfig.DefaultBool("allowclientclasscreation", false)
+	TConfig.ServerURL = beego.AppConfig.String("ServerURL")
+	TConfig.DatabaseURI = beego.AppConfig.String("DatabaseURI")
+	TConfig.AppID = beego.AppConfig.String("AppID")
+	TConfig.MasterKey = beego.AppConfig.String("MasterKey")
+	TConfig.ClientKey = beego.AppConfig.String("ClientKey")
+	TConfig.JavascriptKey = beego.AppConfig.String("JavascriptKey")
+	TConfig.DotNetKey = beego.AppConfig.String("DotNetKey")
+	TConfig.RestAPIKey = beego.AppConfig.String("RestAPIKey")
+	TConfig.AllowClientClassCreation = beego.AppConfig.DefaultBool("AllowClientClassCreation", false)
 	TConfig.EnableAnonymousUsers = beego.AppConfig.DefaultBool("EnableAnonymousUsers", true)
 	TConfig.VerifyUserEmails = beego.AppConfig.DefaultBool("VerifyUserEmails", false)
 	TConfig.FileAdapter = beego.AppConfig.DefaultString("FileAdapter", "disk")
-	TConfig.FileDir = beego.AppConfig.DefaultString("FileDir", "/Users")
 	TConfig.PushAdapter = beego.AppConfig.DefaultString("PushAdapter", "tomato")
 	TConfig.MailAdapter = beego.AppConfig.DefaultString("MailAdapter", "smtp")
 
 	// LiveQuery 支持的类列表，格式： classeA|classeB|classeC
-	classeNames := beego.AppConfig.DefaultString("LiveQuery", "")
-	pubType := beego.AppConfig.DefaultString("PubType", "")
-	pubURL := beego.AppConfig.DefaultString("pubURL", "")
+	classeNames := beego.AppConfig.String("LiveQuery")
+	pubType := beego.AppConfig.String("PubType")
+	pubURL := beego.AppConfig.String("pubURL")
 	liveQuery := strings.Split(classeNames, "|")
 	TConfig.LiveQuery = livequery.NewLiveQuery(liveQuery, pubType, pubURL)
 
@@ -93,10 +96,10 @@ func parseConfig() {
 	TConfig.EmailVerifyTokenValidityDuration = beego.AppConfig.DefaultInt("EmailVerifyTokenValidityDuration", -1)
 	TConfig.SchemaCacheTTL = beego.AppConfig.DefaultInt("SchemaCacheTTL", 5)
 
-	TConfig.SMTPServer = beego.AppConfig.DefaultString("SMTPServer", "")
-	TConfig.MailUsername = beego.AppConfig.DefaultString("MailUsername", "")
-	TConfig.MailPassword = beego.AppConfig.DefaultString("MailPassword", "")
-	TConfig.WebhookKey = beego.AppConfig.DefaultString("WebhookKey", "")
+	TConfig.SMTPServer = beego.AppConfig.String("SMTPServer")
+	TConfig.MailUsername = beego.AppConfig.String("MailUsername")
+	TConfig.MailPassword = beego.AppConfig.String("MailPassword")
+	TConfig.WebhookKey = beego.AppConfig.String("WebhookKey")
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

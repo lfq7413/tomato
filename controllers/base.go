@@ -31,6 +31,9 @@ type RequestInfo struct {
 	AppID          string
 	MasterKey      string
 	ClientKey      string
+	JavascriptKey  string
+	DotNetKey      string
+	RestAPIKey     string
 	SessionToken   string
 	InstallationID string
 	ClientVersion  string
@@ -48,6 +51,9 @@ func (o *ClassesController) Prepare() {
 	info.AppID = o.Ctx.Input.Header("X-Parse-Application-Id")
 	info.MasterKey = o.Ctx.Input.Header("X-Parse-Master-Key")
 	info.ClientKey = o.Ctx.Input.Header("X-Parse-Client-Key")
+	info.JavascriptKey = o.Ctx.Input.Header("X-Parse-Javascript-Key")
+	info.DotNetKey = o.Ctx.Input.Header("X-Parse-Windows-Key")
+	info.RestAPIKey = o.Ctx.Input.Header("X-Parse-REST-API-Key")
 	info.SessionToken = o.Ctx.Input.Header("X-Parse-Session-Token")
 	info.InstallationID = o.Ctx.Input.Header("X-Parse-Installation-Id")
 	info.ClientVersion = o.Ctx.Input.Header("X-Parse-Client-Version")
@@ -158,7 +164,14 @@ func (o *ClassesController) Prepare() {
 		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: true}
 		return
 	}
-	if info.ClientKey != config.TConfig.ClientKey {
+	var allow = false
+	if info.ClientKey == config.TConfig.ClientKey ||
+		info.JavascriptKey == config.TConfig.JavascriptKey ||
+		info.RestAPIKey == config.TConfig.RestAPIKey ||
+		info.DotNetKey == config.TConfig.DotNetKey {
+		allow = true
+	}
+	if allow == false {
 		o.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
 		o.Ctx.Output.SetStatus(403)
 		o.ServeJSON()

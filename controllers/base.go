@@ -46,19 +46,19 @@ type RequestInfo struct {
 // 3. 尝试从 body 中获取各种 key
 // 4. 校验请求权限
 // 5. 生成用户信息
-func (o *ClassesController) Prepare() {
+func (b *BaseController) Prepare() {
 	info := &RequestInfo{}
-	info.AppID = o.Ctx.Input.Header("X-Parse-Application-Id")
-	info.MasterKey = o.Ctx.Input.Header("X-Parse-Master-Key")
-	info.ClientKey = o.Ctx.Input.Header("X-Parse-Client-Key")
-	info.JavascriptKey = o.Ctx.Input.Header("X-Parse-Javascript-Key")
-	info.DotNetKey = o.Ctx.Input.Header("X-Parse-Windows-Key")
-	info.RestAPIKey = o.Ctx.Input.Header("X-Parse-REST-API-Key")
-	info.SessionToken = o.Ctx.Input.Header("X-Parse-Session-Token")
-	info.InstallationID = o.Ctx.Input.Header("X-Parse-Installation-Id")
-	info.ClientVersion = o.Ctx.Input.Header("X-Parse-Client-Version")
+	info.AppID = b.Ctx.Input.Header("X-Parse-Application-Id")
+	info.MasterKey = b.Ctx.Input.Header("X-Parse-Master-Key")
+	info.ClientKey = b.Ctx.Input.Header("X-Parse-Client-Key")
+	info.JavascriptKey = b.Ctx.Input.Header("X-Parse-Javascript-Key")
+	info.DotNetKey = b.Ctx.Input.Header("X-Parse-Windows-Key")
+	info.RestAPIKey = b.Ctx.Input.Header("X-Parse-REST-API-Key")
+	info.SessionToken = b.Ctx.Input.Header("X-Parse-Session-Token")
+	info.InstallationID = b.Ctx.Input.Header("X-Parse-Installation-Id")
+	info.ClientVersion = b.Ctx.Input.Header("X-Parse-Client-Version")
 
-	basicAuth := httpAuth(o.Ctx.Input.Header("authorization"))
+	basicAuth := httpAuth(b.Ctx.Input.Header("authorization"))
 	if basicAuth != nil {
 		info.AppID = basicAuth["appId"]
 		if basicAuth["masterKey"] != "" {
@@ -69,72 +69,72 @@ func (o *ClassesController) Prepare() {
 		}
 	}
 
-	if o.Ctx.Input.RequestBody != nil {
-		contentType := o.Ctx.Input.Header("Content-type")
+	if b.Ctx.Input.RequestBody != nil {
+		contentType := b.Ctx.Input.Header("Content-type")
 		if strings.HasPrefix(contentType, "application/json") {
 			// 请求数据为 json 格式，进行转换，转换出错则返回错误
 			var object types.M
-			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)
+			err := json.Unmarshal(b.Ctx.Input.RequestBody, &object)
 			if err != nil {
-				o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "invalid JSON")
-				o.ServeJSON()
+				b.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "invalid JSON")
+				b.ServeJSON()
 				return
 			}
-			o.JSONBody = object
+			b.JSONBody = object
 		} else {
 			// TODO 转换 json 之前，可能需要判断一下数据大小，以确保不会去转换超大数据
 			// 其他格式的请求数据，仅尝试转换，转换失败不返回错误
 			var object types.M
-			err := json.Unmarshal(o.Ctx.Input.RequestBody, &object)
+			err := json.Unmarshal(b.Ctx.Input.RequestBody, &object)
 			if err != nil {
-				o.RawBody = o.Ctx.Input.RequestBody
+				b.RawBody = b.Ctx.Input.RequestBody
 			} else {
-				o.JSONBody = object
+				b.JSONBody = object
 			}
 		}
 	}
 
-	if o.JSONBody != nil {
+	if b.JSONBody != nil {
 		// Unity SDK sends a _noBody key which needs to be removed.
 		// Unclear at this point if action needs to be taken.
-		delete(o.JSONBody, "_noBody")
+		delete(b.JSONBody, "_noBody")
 
-		delete(o.JSONBody, "_RevocableSession")
+		delete(b.JSONBody, "_RevocableSession")
 	}
 
 	if info.AppID == "" {
-		if o.JSONBody != nil {
-			delete(o.JSONBody, "_RevocableSession")
+		if b.JSONBody != nil {
+			delete(b.JSONBody, "_RevocableSession")
 		}
 		// 从请求数据中获取各种 key
-		if o.JSONBody != nil && o.JSONBody["_ApplicationId"] != nil {
-			info.AppID = o.JSONBody["_ApplicationId"].(string)
-			delete(o.JSONBody, "_ApplicationId")
-			if o.JSONBody["_ClientKey"] != nil {
-				info.ClientKey = o.JSONBody["_ClientKey"].(string)
-				delete(o.JSONBody, "_ClientKey")
+		if b.JSONBody != nil && b.JSONBody["_ApplicationId"] != nil {
+			info.AppID = b.JSONBody["_ApplicationId"].(string)
+			delete(b.JSONBody, "_ApplicationId")
+			if b.JSONBody["_ClientKey"] != nil {
+				info.ClientKey = b.JSONBody["_ClientKey"].(string)
+				delete(b.JSONBody, "_ClientKey")
 			}
-			if o.JSONBody["_InstallationId"] != nil {
-				info.InstallationID = o.JSONBody["_InstallationId"].(string)
-				delete(o.JSONBody, "_InstallationId")
+			if b.JSONBody["_InstallationId"] != nil {
+				info.InstallationID = b.JSONBody["_InstallationId"].(string)
+				delete(b.JSONBody, "_InstallationId")
 			}
-			if o.JSONBody["_SessionToken"] != nil {
-				info.SessionToken = o.JSONBody["_SessionToken"].(string)
-				delete(o.JSONBody, "_SessionToken")
+			if b.JSONBody["_SessionToken"] != nil {
+				info.SessionToken = b.JSONBody["_SessionToken"].(string)
+				delete(b.JSONBody, "_SessionToken")
 			}
-			if o.JSONBody["_MasterKey"] != nil {
-				info.MasterKey = o.JSONBody["_MasterKey"].(string)
-				delete(o.JSONBody, "_MasterKey")
+			if b.JSONBody["_MasterKey"] != nil {
+				info.MasterKey = b.JSONBody["_MasterKey"].(string)
+				delete(b.JSONBody, "_MasterKey")
 			}
-			if o.JSONBody["_ContentType"] != nil {
-				o.Ctx.Input.Context.Request.Header.Set("Content-type", o.JSONBody["_ContentType"].(string))
-				delete(o.JSONBody, "_ContentType")
+			if b.JSONBody["_ContentType"] != nil {
+				b.Ctx.Input.Context.Request.Header.Set("Content-type", b.JSONBody["_ContentType"].(string))
+				delete(b.JSONBody, "_ContentType")
 			}
 		} else {
 			// 请求数据中也不存在 APPID 时，返回错误
-			o.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
-			o.Ctx.Output.SetStatus(403)
-			o.ServeJSON()
+			b.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
+			b.Ctx.Output.SetStatus(403)
+			b.ServeJSON()
 			return
 		}
 	}
@@ -143,54 +143,54 @@ func (o *ClassesController) Prepare() {
 		info.ClientSDK = client.FromString(info.ClientVersion)
 	}
 
-	if o.JSONBody != nil && o.JSONBody["base64"] != nil {
+	if b.JSONBody != nil && b.JSONBody["base64"] != nil {
 		// 请求数据中存在 base64 字段，表明为文件上传，解码并设置到 RawBody 上
-		data, err := base64.StdEncoding.DecodeString(o.JSONBody["base64"].(string))
+		data, err := base64.StdEncoding.DecodeString(b.JSONBody["base64"].(string))
 		if err == nil {
-			o.RawBody = data
+			b.RawBody = data
 		}
 	}
 
-	o.Info = info
+	b.Info = info
 
 	// 校验请求权限
 	if info.AppID != config.TConfig.AppID {
-		o.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
-		o.Ctx.Output.SetStatus(403)
-		o.ServeJSON()
+		b.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
+		b.Ctx.Output.SetStatus(403)
+		b.ServeJSON()
 		return
 	}
 	if info.MasterKey == config.TConfig.MasterKey {
-		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: true}
+		b.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: true}
 		return
 	}
 	var allow = false
-	if info.ClientKey == config.TConfig.ClientKey ||
-		info.JavascriptKey == config.TConfig.JavascriptKey ||
-		info.RestAPIKey == config.TConfig.RestAPIKey ||
-		info.DotNetKey == config.TConfig.DotNetKey {
+	if (len(info.ClientKey) > 0 && info.ClientKey == config.TConfig.ClientKey) ||
+		(len(info.JavascriptKey) > 0 && info.JavascriptKey == config.TConfig.JavascriptKey) ||
+		(len(info.RestAPIKey) > 0 && info.RestAPIKey == config.TConfig.RestAPIKey) ||
+		(len(info.DotNetKey) > 0 && info.DotNetKey == config.TConfig.DotNetKey) {
 		allow = true
 	}
 	if allow == false {
-		o.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
-		o.Ctx.Output.SetStatus(403)
-		o.ServeJSON()
+		b.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
+		b.Ctx.Output.SetStatus(403)
+		b.ServeJSON()
 		return
 	}
 	// 登录时删除 Token
-	url := o.Ctx.Input.URL()
+	url := b.Ctx.Input.URL()
 	if strings.HasSuffix(url, "/login/") {
 		info.SessionToken = ""
 	}
 	// 生成当前会话用户权限信息
 	if info.SessionToken == "" {
-		o.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: false}
+		b.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: false}
 	} else {
 		var err error
-		o.Auth, err = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
+		b.Auth, err = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
 		if err != nil {
-			o.Data["json"] = errs.ErrorToMap(err)
-			o.ServeJSON()
+			b.Data["json"] = errs.ErrorToMap(err)
+			b.ServeJSON()
 			return
 		}
 	}

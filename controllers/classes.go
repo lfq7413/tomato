@@ -22,232 +22,232 @@ type ClassesController struct {
 
 // HandleCreate 处理对象创建请求，返回对象 id 与对象位置
 // @router /:className [post]
-func (o *ClassesController) HandleCreate() {
+func (c *ClassesController) HandleCreate() {
 
-	if o.ClassName == "" {
-		o.ClassName = o.Ctx.Input.Param(":className")
+	if c.ClassName == "" {
+		c.ClassName = c.Ctx.Input.Param(":className")
 	}
 
-	if o.JSONBody == nil {
-		o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
-		o.ServeJSON()
+	if c.JSONBody == nil {
+		c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
+		c.ServeJSON()
 		return
 	}
 
-	result, err := rest.Create(o.Auth, o.ClassName, o.JSONBody, o.Info.ClientSDK)
+	result, err := rest.Create(c.Auth, c.ClassName, c.JSONBody, c.Info.ClientSDK)
 	if err != nil {
-		o.Data["json"] = errs.ErrorToMap(err)
-		o.ServeJSON()
+		c.Data["json"] = errs.ErrorToMap(err)
+		c.ServeJSON()
 		return
 	}
 
-	o.Data["json"] = result["response"]
-	o.Ctx.Output.SetStatus(201)
-	o.Ctx.Output.Header("location", result["location"].(string))
-	o.ServeJSON()
+	c.Data["json"] = result["response"]
+	c.Ctx.Output.SetStatus(201)
+	c.Ctx.Output.Header("location", result["location"].(string))
+	c.ServeJSON()
 
 }
 
 // HandleGet 处理查询指定对象请求，返回查询到的对象
 // @router /:className/:objectId [get]
-func (o *ClassesController) HandleGet() {
-	if o.ClassName == "" {
-		o.ClassName = o.Ctx.Input.Param(":className")
+func (c *ClassesController) HandleGet() {
+	if c.ClassName == "" {
+		c.ClassName = c.Ctx.Input.Param(":className")
 	}
-	if o.ObjectID == "" {
-		o.ObjectID = o.Ctx.Input.Param(":objectId")
+	if c.ObjectID == "" {
+		c.ObjectID = c.Ctx.Input.Param(":objectId")
 	}
 	options := types.M{}
-	if o.GetString("keys") != "" {
-		options["keys"] = o.GetString("keys")
+	if c.GetString("keys") != "" {
+		options["keys"] = c.GetString("keys")
 	}
-	if o.GetString("include") != "" {
-		options["include"] = o.GetString("include")
+	if c.GetString("include") != "" {
+		options["include"] = c.GetString("include")
 	}
-	response, err := rest.Get(o.Auth, o.ClassName, o.ObjectID, options, o.Info.ClientSDK)
+	response, err := rest.Get(c.Auth, c.ClassName, c.ObjectID, options, c.Info.ClientSDK)
 
 	if err != nil {
-		o.Data["json"] = errs.ErrorToMap(err)
-		o.ServeJSON()
+		c.Data["json"] = errs.ErrorToMap(err)
+		c.ServeJSON()
 		return
 	}
 
 	results := utils.A(response["results"])
 	if results == nil && len(results) == 0 {
-		o.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Object not found.")
-		o.ServeJSON()
+		c.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Object not found.")
+		c.ServeJSON()
 		return
 	}
 
 	result := utils.M(results[0])
 
-	if o.ClassName == "_User" {
+	if c.ClassName == "_User" {
 		delete(result, "sessionToken")
-		if o.Auth.User != nil && result["objectId"].(string) == o.Auth.User["objectId"].(string) {
+		if c.Auth.User != nil && result["objectId"].(string) == c.Auth.User["objectId"].(string) {
 			// 重新设置 session token
-			result["sessionToken"] = o.Info.SessionToken
+			result["sessionToken"] = c.Info.SessionToken
 		}
 	}
 
-	o.Data["json"] = result
-	o.ServeJSON()
+	c.Data["json"] = result
+	c.ServeJSON()
 
 }
 
 // HandleUpdate 处理更新指定对象请求
 // @router /:className/:objectId [put]
-func (o *ClassesController) HandleUpdate() {
+func (c *ClassesController) HandleUpdate() {
 
-	if o.ClassName == "" {
-		o.ClassName = o.Ctx.Input.Param(":className")
+	if c.ClassName == "" {
+		c.ClassName = c.Ctx.Input.Param(":className")
 	}
-	if o.ObjectID == "" {
-		o.ObjectID = o.Ctx.Input.Param(":objectId")
+	if c.ObjectID == "" {
+		c.ObjectID = c.Ctx.Input.Param(":objectId")
 	}
 
-	if o.JSONBody == nil {
-		o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
-		o.ServeJSON()
+	if c.JSONBody == nil {
+		c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
+		c.ServeJSON()
 		return
 	}
 
-	result, err := rest.Update(o.Auth, o.ClassName, o.ObjectID, o.JSONBody, o.Info.ClientSDK)
+	result, err := rest.Update(c.Auth, c.ClassName, c.ObjectID, c.JSONBody, c.Info.ClientSDK)
 	if err != nil {
-		o.Data["json"] = errs.ErrorToMap(err)
-		o.ServeJSON()
+		c.Data["json"] = errs.ErrorToMap(err)
+		c.ServeJSON()
 		return
 	}
 
-	o.Data["json"] = result["response"]
-	o.ServeJSON()
+	c.Data["json"] = result["response"]
+	c.ServeJSON()
 
 }
 
 // HandleFind 处理查找对象请求
 // @router /:className [get]
-func (o *ClassesController) HandleFind() {
-	if o.ClassName == "" {
-		o.ClassName = o.Ctx.Input.Param(":className")
+func (c *ClassesController) HandleFind() {
+	if c.ClassName == "" {
+		c.ClassName = c.Ctx.Input.Param(":className")
 	}
 
 	// 获取查询参数，并组装
 	options := types.M{}
-	if o.GetString("skip") != "" {
-		if i, err := strconv.Atoi(o.GetString("skip")); err == nil {
+	if c.GetString("skip") != "" {
+		if i, err := strconv.Atoi(c.GetString("skip")); err == nil {
 			options["skip"] = i
 		} else {
-			o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidQuery, "skip should be int")
-			o.ServeJSON()
+			c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidQuery, "skip should be int")
+			c.ServeJSON()
 			return
 		}
 	}
-	if o.GetString("limit") != "" {
-		if i, err := strconv.Atoi(o.GetString("limit")); err == nil {
+	if c.GetString("limit") != "" {
+		if i, err := strconv.Atoi(c.GetString("limit")); err == nil {
 			options["limit"] = i
 		} else {
-			o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidQuery, "limit should be int")
-			o.ServeJSON()
+			c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidQuery, "limit should be int")
+			c.ServeJSON()
 			return
 		}
 	} else {
 		options["limit"] = 100
 	}
-	if o.GetString("order") != "" {
-		options["order"] = o.GetString("order")
+	if c.GetString("order") != "" {
+		options["order"] = c.GetString("order")
 	}
-	if o.GetString("count") != "" {
+	if c.GetString("count") != "" {
 		options["count"] = true
 	}
-	if o.GetString("keys") != "" {
-		options["keys"] = o.GetString("keys")
+	if c.GetString("keys") != "" {
+		options["keys"] = c.GetString("keys")
 	}
-	if o.GetString("include") != "" {
-		options["include"] = o.GetString("include")
+	if c.GetString("include") != "" {
+		options["include"] = c.GetString("include")
 	}
-	if o.GetString("redirectClassNameForKey") != "" {
-		options["redirectClassNameForKey"] = o.GetString("redirectClassNameForKey")
+	if c.GetString("redirectClassNameForKey") != "" {
+		options["redirectClassNameForKey"] = c.GetString("redirectClassNameForKey")
 	}
 
 	where := types.M{}
-	if o.GetString("where") != "" {
-		err := json.Unmarshal([]byte(o.GetString("where")), &where)
+	if c.GetString("where") != "" {
+		err := json.Unmarshal([]byte(c.GetString("where")), &where)
 		if err != nil {
-			o.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "where should be valid json")
-			o.ServeJSON()
+			c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "where should be valid json")
+			c.ServeJSON()
 			return
 		}
 	}
 
-	response, err := rest.Find(o.Auth, o.ClassName, where, options, o.Info.ClientSDK)
+	response, err := rest.Find(c.Auth, c.ClassName, where, options, c.Info.ClientSDK)
 	if err != nil {
-		o.Data["json"] = errs.ErrorToMap(err)
-		o.ServeJSON()
+		c.Data["json"] = errs.ErrorToMap(err)
+		c.ServeJSON()
 		return
 	}
 	if utils.HasResults(response) {
 		results := utils.A(response["results"])
 		for _, v := range results {
 			result := utils.M(v)
-			if result["sessionToken"] != nil && o.Info.SessionToken != "" {
-				result["sessionToken"] = o.Info.SessionToken
+			if result["sessionToken"] != nil && c.Info.SessionToken != "" {
+				result["sessionToken"] = c.Info.SessionToken
 			}
 		}
 	}
 
-	o.Data["json"] = response
-	o.ServeJSON()
+	c.Data["json"] = response
+	c.ServeJSON()
 }
 
 // HandleDelete 处理删除指定对象请求
 // @router /:className/:objectId [delete]
-func (o *ClassesController) HandleDelete() {
+func (c *ClassesController) HandleDelete() {
 
-	if o.ClassName == "" {
-		o.ClassName = o.Ctx.Input.Param(":className")
+	if c.ClassName == "" {
+		c.ClassName = c.Ctx.Input.Param(":className")
 	}
-	if o.ObjectID == "" {
-		o.ObjectID = o.Ctx.Input.Param(":objectId")
+	if c.ObjectID == "" {
+		c.ObjectID = c.Ctx.Input.Param(":objectId")
 	}
 
-	err := rest.Delete(o.Auth, o.ClassName, o.ObjectID, o.Info.ClientSDK)
+	err := rest.Delete(c.Auth, c.ClassName, c.ObjectID, c.Info.ClientSDK)
 	if err != nil {
-		o.Data["json"] = errs.ErrorToMap(err)
-		o.ServeJSON()
+		c.Data["json"] = errs.ErrorToMap(err)
+		c.ServeJSON()
 		return
 	}
 
-	o.Data["json"] = types.M{}
-	o.ServeJSON()
+	c.Data["json"] = types.M{}
+	c.ServeJSON()
 }
 
 // Get ...
 // @router / [get]
-func (o *ClassesController) Get() {
-	o.Ctx.Output.SetStatus(405)
-	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
-	o.ServeJSON()
+func (c *ClassesController) Get() {
+	c.Ctx.Output.SetStatus(405)
+	c.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
+	c.ServeJSON()
 }
 
 // Post ...
 // @router / [post]
-func (o *ClassesController) Post() {
-	o.Ctx.Output.SetStatus(405)
-	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
-	o.ServeJSON()
+func (c *ClassesController) Post() {
+	c.Ctx.Output.SetStatus(405)
+	c.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
+	c.ServeJSON()
 }
 
 // Delete ...
 // @router / [delete]
-func (o *ClassesController) Delete() {
-	o.Ctx.Output.SetStatus(405)
-	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
-	o.ServeJSON()
+func (c *ClassesController) Delete() {
+	c.Ctx.Output.SetStatus(405)
+	c.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
+	c.ServeJSON()
 }
 
 // Put ...
 // @router / [put]
-func (o *ClassesController) Put() {
-	o.Ctx.Output.SetStatus(405)
-	o.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
-	o.ServeJSON()
+func (c *ClassesController) Put() {
+	c.Ctx.Output.SetStatus(405)
+	c.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
+	c.ServeJSON()
 }

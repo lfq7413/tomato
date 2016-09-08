@@ -271,3 +271,15 @@ func (b *BaseController) InvalidRequest() {
 	b.Data["json"] = types.M{"error": "unauthorized"}
 	b.ServeJSON()
 }
+
+// EnforceMasterKeyAccess 接口需要 Master 权限
+// 返回 true 表示当前请求是 Master 权限
+func (b *BaseController) EnforceMasterKeyAccess() bool {
+	if b.Auth.IsMaster == false {
+		b.Ctx.Output.SetStatus(403)
+		b.Data["json"] = types.M{"error": "unauthorized: master key is required"}
+		b.ServeJSON()
+		return false
+	}
+	return true
+}

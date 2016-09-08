@@ -11,6 +11,7 @@ import (
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 // BaseController ...
@@ -22,6 +23,7 @@ type BaseController struct {
 	beego.Controller
 	Info     *RequestInfo
 	Auth     *rest.Auth
+	Query    map[string]string
 	JSONBody types.M
 	RawBody  []byte
 }
@@ -58,7 +60,7 @@ func (b *BaseController) Prepare() {
 	info.InstallationID = b.Ctx.Input.Header("X-Parse-Installation-Id")
 	info.ClientVersion = b.Ctx.Input.Header("X-Parse-Client-Version")
 
-	basicAuth := httpAuth(b.Ctx.Input.Header("authorization"))
+	basicAuth := httpAuth(b.Ctx.Input.Header("Authorization"))
 	if basicAuth != nil {
 		info.AppID = basicAuth["appId"]
 		if basicAuth["masterKey"] != "" {
@@ -67,6 +69,12 @@ func (b *BaseController) Prepare() {
 		if basicAuth["javascriptKey"] != "" {
 			info.ClientKey = basicAuth["javascriptKey"]
 		}
+	}
+
+	b.Query = map[string]string{}
+	input := b.Input()
+	for key := range input {
+		b.Query[key] = input.Get(key)
 	}
 
 	if b.Ctx.Input.RequestBody != nil {
@@ -82,14 +90,13 @@ func (b *BaseController) Prepare() {
 			}
 			b.JSONBody = object
 		} else {
-			// TODO 转换 json 之前，可能需要判断一下数据大小，以确保不会去转换超大数据
-			// 其他格式的请求数据，仅尝试转换，转换失败不返回错误
-			var object types.M
-			err := json.Unmarshal(b.Ctx.Input.RequestBody, &object)
-			if err != nil {
-				b.RawBody = b.Ctx.Input.RequestBody
-			} else {
-				b.JSONBody = object
+			// 当 AppID 不存在时，尝试转换，转换失败不返回错误
+			if info.AppID == "" {
+				var object types.M
+				err := json.Unmarshal(b.Ctx.Input.RequestBody, &object)
+				if err == nil {
+					b.JSONBody = object
+				}
 			}
 		}
 	}
@@ -98,8 +105,6 @@ func (b *BaseController) Prepare() {
 		// Unity SDK sends a _noBody key which needs to be removed.
 		// Unclear at this point if action needs to be taken.
 		delete(b.JSONBody, "_noBody")
-
-		delete(b.JSONBody, "_RevocableSession")
 	}
 
 	if info.AppID == "" {
@@ -108,26 +113,29 @@ func (b *BaseController) Prepare() {
 		}
 		// 从请求数据中获取各种 key
 		if b.JSONBody != nil && b.JSONBody["_ApplicationId"] != nil {
-			info.AppID = b.JSONBody["_ApplicationId"].(string)
+			info.AppID = utils.S(b.JSONBody["_ApplicationId"])
+			info.JavascriptKey = utils.S(b.JSONBody["_JavaScriptKey"])
 			delete(b.JSONBody, "_ApplicationId")
-			if b.JSONBody["_ClientKey"] != nil {
-				info.ClientKey = b.JSONBody["_ClientKey"].(string)
-				delete(b.JSONBody, "_ClientKey")
+			delete(b.JSONBody, "_JavaScriptKey")
+
+			if b.JSONBody["_ClientVersion"] != nil {
+				info.ClientVersion = utils.S(b.JSONBody["_ClientVersion"])
+				delete(b.JSONBody, "_ClientVersion")
 			}
 			if b.JSONBody["_InstallationId"] != nil {
-				info.InstallationID = b.JSONBody["_InstallationId"].(string)
+				info.InstallationID = utils.S(b.JSONBody["_InstallationId"])
 				delete(b.JSONBody, "_InstallationId")
 			}
 			if b.JSONBody["_SessionToken"] != nil {
-				info.SessionToken = b.JSONBody["_SessionToken"].(string)
+				info.SessionToken = utils.S(b.JSONBody["_SessionToken"])
 				delete(b.JSONBody, "_SessionToken")
 			}
 			if b.JSONBody["_MasterKey"] != nil {
-				info.MasterKey = b.JSONBody["_MasterKey"].(string)
+				info.MasterKey = utils.S(b.JSONBody["_MasterKey"])
 				delete(b.JSONBody, "_MasterKey")
 			}
 			if b.JSONBody["_ContentType"] != nil {
-				b.Ctx.Input.Context.Request.Header.Set("Content-type", b.JSONBody["_ContentType"].(string))
+				b.Ctx.Input.Context.Request.Header.Set("Content-type", utils.S(b.JSONBody["_ContentType"]))
 				delete(b.JSONBody, "_ContentType")
 			}
 		} else {
@@ -141,14 +149,6 @@ func (b *BaseController) Prepare() {
 
 	if info.ClientVersion != "" {
 		info.ClientSDK = client.FromString(info.ClientVersion)
-	}
-
-	if b.JSONBody != nil && b.JSONBody["base64"] != nil {
-		// 请求数据中存在 base64 字段，表明为文件上传，解码并设置到 RawBody 上
-		data, err := base64.StdEncoding.DecodeString(b.JSONBody["base64"].(string))
-		if err == nil {
-			b.RawBody = data
-		}
 	}
 
 	b.Info = info
@@ -177,9 +177,9 @@ func (b *BaseController) Prepare() {
 		b.ServeJSON()
 		return
 	}
-	// 登录时删除 Token
+	// TODO 登录时删除 Token ，如何处理接口地址？
 	url := b.Ctx.Input.URL()
-	if strings.HasSuffix(url, "/login/") {
+	if url == "/v1/login" || url == "/v1/login/" {
 		info.SessionToken = ""
 	}
 	// 生成当前会话用户权限信息
@@ -201,13 +201,13 @@ func httpAuth(authorization string) map[string]string {
 		return nil
 	}
 
-	header := authorization
 	var appID, masterKey, javascriptKey string
-	authPrefix := "basic "
+	authPrefix1 := "basic "
+	authPrefix2 := "basic "
 
-	match := strings.HasPrefix(strings.ToLower(header), authPrefix)
+	match := strings.HasPrefix(authorization, authPrefix1) || strings.HasPrefix(authorization, authPrefix2)
 	if match {
-		encodedAuth := header[len(authPrefix):len(header)]
+		encodedAuth := authorization[len(authPrefix1):]
 		credentials := strings.Split(decodeBase64(encodedAuth), ":")
 
 		if len(credentials) == 2 {
@@ -217,7 +217,7 @@ func httpAuth(authorization string) map[string]string {
 
 			matchKey := strings.HasPrefix(key, jsKeyPrefix)
 			if matchKey {
-				javascriptKey = key[len(jsKeyPrefix):len(key)]
+				javascriptKey = key[len(jsKeyPrefix):]
 			} else {
 				masterKey = key
 			}

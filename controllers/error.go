@@ -11,31 +11,19 @@ type ErrorController struct {
 }
 
 // Error404 ...
-func (c *ErrorController) Error404() {
-	e := types.M{
-		"code":  404,
-		"error": "Method Not Allowed",
-	}
-	c.Data["json"] = e
-	c.ServeJSON()
+func (e *ErrorController) Error404() {
+	e.Data["json"] = types.M{"error": "Method Not Allowed"}
+	e.ServeJSON()
 }
 
 // Error405 ...
-func (c *ErrorController) Error405() {
-	e := types.M{
-		"code":  405,
-		"error": "Method Not Allowed",
-	}
-	c.Data["json"] = e
-	c.ServeJSON()
+func (e *ErrorController) Error405() {
+	e.Data["json"] = types.M{"error": "Method Not Allowed"}
+	e.ServeJSON()
 }
 
 // Error501 ...
-func (c *ErrorController) Error501() {
-	e := types.M{
-		"code":  501,
-		"error": "server error",
-	}
-	c.Data["json"] = e
-	c.ServeJSON()
+func (e *ErrorController) Error501() {
+	e.Data["json"] = types.M{"error": "Method Not Allowed"}
+	e.ServeJSON()
 }

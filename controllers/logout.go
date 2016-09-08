@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -22,8 +21,7 @@ func (l *LogoutController) HandleLogOut() {
 		records, err := rest.Find(rest.Master(), "_Session", where, types.M{}, l.Info.ClientSDK)
 
 		if err != nil {
-			l.Data["json"] = errs.ErrorToMap(err)
-			l.ServeJSON()
+			l.HandleError(err, 0)
 			return
 		}
 		if utils.HasResults(records) {
@@ -31,8 +29,7 @@ func (l *LogoutController) HandleLogOut() {
 			obj := utils.M(results[0])
 			err := rest.Delete(rest.Master(), "_Session", utils.S(obj["objectId"]), l.Info.ClientSDK)
 			if err != nil {
-				l.Data["json"] = errs.ErrorToMap(err)
-				l.ServeJSON()
+				l.HandleError(err, 0)
 				return
 			}
 		}

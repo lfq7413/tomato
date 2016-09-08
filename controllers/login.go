@@ -21,13 +21,11 @@ func (l *LoginController) HandleLogIn() {
 	username := l.GetString("username")
 	password := l.GetString("password")
 	if username == "" {
-		l.Data["json"] = errs.ErrorMessageToMap(errs.UsernameMissing, "username is required.")
-		l.ServeJSON()
+		l.HandleError(errs.E(errs.UsernameMissing, "username is required."), 0)
 		return
 	}
 	if password == "" {
-		l.Data["json"] = errs.ErrorMessageToMap(errs.PasswordMissing, "password is required.")
-		l.ServeJSON()
+		l.HandleError(errs.E(errs.PasswordMissing, "password is required."), 0)
 		return
 	}
 
@@ -36,13 +34,11 @@ func (l *LoginController) HandleLogIn() {
 	}
 	results, err := orm.TomatoDBController.Find("_User", where, types.M{})
 	if err != nil {
-		l.Data["json"] = errs.ErrorToMap(err)
-		l.ServeJSON()
+		l.HandleError(err, 0)
 		return
 	}
 	if results == nil || len(results) == 0 {
-		l.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Invalid username/password.")
-		l.ServeJSON()
+		l.HandleError(errs.E(errs.ObjectNotFound, "Invalid username/password."), 0)
 		return
 	}
 	user := utils.M(results[0])
@@ -55,16 +51,14 @@ func (l *LoginController) HandleLogIn() {
 	}
 	if config.TConfig.VerifyUserEmails && config.TConfig.PreventLoginWithUnverifiedEmail && emailVerified == false {
 		// 拒绝未验证邮箱的用户登录
-		l.Data["json"] = errs.ErrorMessageToMap(errs.EmailNotFound, "User email is not verified.")
-		l.ServeJSON()
+		l.HandleError(errs.E(errs.EmailNotFound, "User email is not verified."), 0)
 		return
 	}
 
 	// TODO 换用高强度的加密方式
 	correct := utils.Compare(password, utils.S(user["password"]))
 	if correct == false {
-		l.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Invalid username/password.")
-		l.ServeJSON()
+		l.HandleError(errs.E(errs.ObjectNotFound, "Invalid username/password."), 0)
 		return
 	}
 
@@ -110,14 +104,12 @@ func (l *LoginController) HandleLogIn() {
 	// 为新登录用户创建 sessionToken
 	write, err := rest.NewWrite(rest.Master(), "_Session", nil, sessionData, nil, l.Info.ClientSDK)
 	if err != nil {
-		l.Data["json"] = errs.ErrorToMap(err)
-		l.ServeJSON()
+		l.HandleError(err, 0)
 		return
 	}
 	_, err = write.Execute()
 	if err != nil {
-		l.Data["json"] = errs.ErrorToMap(err)
-		l.ServeJSON()
+		l.HandleError(err, 0)
 		return
 	}
 

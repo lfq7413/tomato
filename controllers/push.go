@@ -16,14 +16,12 @@ type PushController struct {
 // @router / [post]
 func (p *PushController) HandlePost() {
 	if p.JSONBody == nil {
-		p.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
-		p.ServeJSON()
+		p.HandleError(errs.E(errs.InvalidJSON, "request body is empty"), 0)
 		return
 	}
 	where, err := getQueryCondition(p.JSONBody)
 	if err != nil {
-		p.Data["json"] = errs.ErrorToMap(err)
-		p.ServeJSON()
+		p.HandleError(err, 0)
 		return
 	}
 	onPushStatusSaved := func(pushStatusID string) {
@@ -31,8 +29,7 @@ func (p *PushController) HandlePost() {
 	}
 	err = push.SendPush(p.JSONBody, where, p.Auth, onPushStatusSaved)
 	if err != nil {
-		p.Data["json"] = errs.ErrorToMap(err)
-		p.ServeJSON()
+		p.HandleError(err, 0)
 		return
 	}
 	p.Data["json"] = types.M{"result": true}

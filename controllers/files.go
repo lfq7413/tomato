@@ -6,6 +6,7 @@ import (
 
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
+	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
 
@@ -50,18 +51,15 @@ func (f *FilesController) HandleCreate() {
 	filename := f.Ctx.Input.Param(":filename")
 	data := f.Ctx.Input.RequestBody
 	if data == nil && len(data) == 0 {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.FileSaveError, "Invalid file upload.")
-		f.ServeJSON()
+		f.HandleError(errs.E(errs.FileSaveError, "Invalid file upload."), 0)
 		return
 	}
 	if len(filename) > 128 {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.InvalidFileName, "Filename too long.")
-		f.ServeJSON()
+		f.HandleError(errs.E(errs.InvalidFileName, "Filename too long."), 0)
 		return
 	}
 	if utils.IsFileName(filename) == false {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.InvalidFileName, "Filename contains invalid characters.")
-		f.ServeJSON()
+		f.HandleError(errs.E(errs.InvalidFileName, "Filename contains invalid characters."), 0)
 		return
 	}
 	contentType := f.Ctx.Input.Header("Content-type")
@@ -72,8 +70,7 @@ func (f *FilesController) HandleCreate() {
 		f.Data["json"] = result
 		f.ServeJSON()
 	} else {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.FileSaveError, "Could not store file.")
-		f.ServeJSON()
+		f.HandleError(errs.E(errs.FileSaveError, "Could not store file."), 0)
 	}
 }
 
@@ -88,11 +85,10 @@ func (f *FilesController) HandleDelete() {
 	filename := f.Ctx.Input.Param(":filename")
 	err := files.DeleteFile(filename)
 	if err != nil {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.FileDeleteError, "Could not delete file.")
-		f.ServeJSON()
+		f.HandleError(errs.E(errs.FileDeleteError, "Could not delete file."), 0)
 		return
 	}
-	f.Data["json"] = "{}"
+	f.Data["json"] = types.M{}
 	f.ServeJSON()
 }
 

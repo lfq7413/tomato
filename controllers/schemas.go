@@ -46,8 +46,7 @@ func (s *SchemasController) HandleGet() {
 	schema := orm.TomatoDBController.LoadSchema(types.M{"clearCache": true})
 	sch, err := schema.GetOneSchema(className, false, types.M{"clearCache": true})
 	if err != nil {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, "Class "+className+" does not exist.")
-		s.ServeJSON()
+		s.HandleError(errs.E(errs.InvalidClassName, "Class "+className+" does not exist."), 0)
 		return
 	}
 	s.Data["json"] = sch
@@ -60,8 +59,7 @@ func (s *SchemasController) HandleCreate() {
 	className := s.Ctx.Input.Param(":className")
 	var data = s.JSONBody
 	if data == nil {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
-		s.ServeJSON()
+		s.HandleError(errs.E(errs.InvalidJSON, "request body is empty"), 0)
 		return
 	}
 
@@ -71,8 +69,7 @@ func (s *SchemasController) HandleCreate() {
 	}
 	if className != "" && bodyClassName != "" {
 		if className != bodyClassName {
-			s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, "Class name mismatch between "+bodyClassName+" and "+className+".")
-			s.ServeJSON()
+			s.HandleError(errs.E(errs.InvalidClassName, "Class name mismatch between "+bodyClassName+" and "+className+"."), 0)
 			return
 		}
 	}
@@ -80,16 +77,14 @@ func (s *SchemasController) HandleCreate() {
 		className = bodyClassName
 	}
 	if className == "" {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.MissingRequiredFieldError, "POST schemas needs a class name.")
-		s.ServeJSON()
+		s.HandleError(errs.E(errs.MissingRequiredFieldError, "POST schemas needs a class name."), 0)
 		return
 	}
 
 	schema := orm.TomatoDBController.LoadSchema(types.M{"clearCache": true})
 	result, err := schema.AddClassIfNotExists(className, utils.M(data["fields"]), utils.M(data["classLevelPermissions"]))
 	if err != nil {
-		s.Data["json"] = errs.ErrorToMap(err)
-		s.ServeJSON()
+		s.HandleError(err, 0)
 		return
 	}
 
@@ -103,8 +98,7 @@ func (s *SchemasController) HandleUpdate() {
 	className := s.Ctx.Input.Param(":className")
 	var data = s.JSONBody
 	if data == nil {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
-		s.ServeJSON()
+		s.HandleError(errs.E(errs.InvalidJSON, "request body is empty"), 0)
 		return
 	}
 
@@ -113,8 +107,7 @@ func (s *SchemasController) HandleUpdate() {
 		bodyClassName = utils.S(data["className"])
 	}
 	if className != bodyClassName {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, "Class name mismatch between "+bodyClassName+" and "+className+".")
-		s.ServeJSON()
+		s.HandleError(errs.E(errs.InvalidClassName, "Class name mismatch between "+bodyClassName+" and "+className+"."), 0)
 		return
 	}
 
@@ -126,8 +119,7 @@ func (s *SchemasController) HandleUpdate() {
 	schema := orm.TomatoDBController.LoadSchema(types.M{"clearCache": true})
 	result, err := schema.UpdateClass(className, submittedFields, utils.M(data["classLevelPermissions"]))
 	if err != nil {
-		s.Data["json"] = errs.ErrorToMap(err)
-		s.ServeJSON()
+		s.HandleError(err, 0)
 		return
 	}
 
@@ -140,15 +132,13 @@ func (s *SchemasController) HandleUpdate() {
 func (s *SchemasController) HandleDelete() {
 	className := s.Ctx.Input.Param(":className")
 	if orm.ClassNameIsValid(className) == false {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidClassName, orm.InvalidClassNameMessage(className))
-		s.ServeJSON()
+		s.HandleError(errs.E(errs.InvalidClassName, orm.InvalidClassNameMessage(className)), 0)
 		return
 	}
 
 	err := orm.TomatoDBController.DeleteSchema(className)
 	if err != nil {
-		s.Data["json"] = errs.ErrorToMap(err)
-		s.ServeJSON()
+		s.HandleError(err)
 		return
 	}
 

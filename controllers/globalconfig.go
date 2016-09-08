@@ -58,8 +58,7 @@ func (g *GlobalConfigController) HandlePut() {
 	}
 	_, err := orm.TomatoDBController.Update("_GlobalConfig", types.M{"objectId": "1"}, update, types.M{"upsert": true}, false)
 	if err != nil {
-		g.Data["json"] = errs.ErrorToMap(err)
-		g.ServeJSON()
+		g.HandleError(err, 0)
 		return
 	}
 	g.Data["json"] = types.M{"result": true}

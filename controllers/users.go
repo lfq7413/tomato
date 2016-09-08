@@ -66,8 +66,7 @@ func (u *UsersController) HandleDelete() {
 // @router /me [get]
 func (u *UsersController) HandleMe() {
 	if u.Info == nil || u.Info.SessionToken == "" {
-		u.Data["json"] = errs.ErrorMessageToMap(errs.InvalidSessionToken, "invalid session token")
-		u.ServeJSON()
+		u.HandleError(errs.E(errs.InvalidSessionToken, "invalid session token"), 0)
 		return
 	}
 	sessionToken := u.Info.SessionToken
@@ -80,21 +79,18 @@ func (u *UsersController) HandleMe() {
 	response, err := rest.Find(rest.Master(), "_Session", where, option, u.Info.ClientSDK)
 
 	if err != nil {
-		u.Data["json"] = errs.ErrorToMap(err)
-		u.ServeJSON()
+		u.HandleError(err, 0)
 		return
 	}
 
 	if utils.HasResults(response) == false {
-		u.Data["json"] = errs.ErrorMessageToMap(errs.InvalidSessionToken, "invalid session token")
-		u.ServeJSON()
+		u.HandleError(errs.E(errs.InvalidSessionToken, "invalid session token"), 0)
 		return
 	}
 	results := utils.A(response["results"])
 	result := utils.M(results[0])
 	if result["user"] == nil {
-		u.Data["json"] = errs.ErrorMessageToMap(errs.InvalidSessionToken, "invalid session token")
-		u.ServeJSON()
+		u.HandleError(errs.E(errs.InvalidSessionToken, "invalid session token"), 0)
 		return
 	}
 	user := utils.M(result["user"])

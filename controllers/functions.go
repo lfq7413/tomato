@@ -22,8 +22,7 @@ func (f *FunctionsController) HandleCloudFunction() {
 	theFunction := cloud.GetFunction(functionName)
 	theValidator := cloud.GetValidator(functionName)
 	if theFunction == nil {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.ScriptFailed, "Invalid function.")
-		f.ServeJSON()
+		f.HandleError(errs.E(errs.ScriptFailed, "Invalid function."), 0)
 		return
 	}
 
@@ -46,8 +45,7 @@ func (f *FunctionsController) HandleCloudFunction() {
 	if theValidator != nil {
 		result := theValidator(request)
 		if result == false {
-			f.Data["json"] = errs.ErrorMessageToMap(errs.ValidationError, "Validation failed.")
-			f.ServeJSON()
+			f.HandleError(errs.E(errs.ValidationError, "Validation failed."), 0)
 			return
 		}
 	}
@@ -55,8 +53,7 @@ func (f *FunctionsController) HandleCloudFunction() {
 	response := &cloud.FunctionResponse{}
 	theFunction(request, response)
 	if response.Err != nil {
-		f.Data["json"] = errs.ErrorToMap(response.Err)
-		f.ServeJSON()
+		f.HandleError(response.Err, 0)
 		return
 	}
 

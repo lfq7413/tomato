@@ -39,8 +39,7 @@ func (i *IAPValidationController) HandlePost() {
 	receipt := i.JSONBody["receipt"]
 	productIdentifier := i.JSONBody["productIdentifier"]
 	if receipt == nil || productIdentifier == nil {
-		i.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "missing receipt or productIdentifier")
-		i.ServeJSON()
+		i.HandleError(errs.E(errs.InvalidJSON, "missing receipt or productIdentifier"), 0)
 		return
 	}
 
@@ -79,20 +78,17 @@ func (i *IAPValidationController) HandlePost() {
 func (i *IAPValidationController) getFileForProductIdentifier(productIdentifier string) {
 	r, err := rest.Find(i.Auth, "_Product", types.M{"productIdentifier": productIdentifier}, types.M{}, i.Info.ClientSDK)
 	if err != nil {
-		i.Data["json"] = errs.ErrorToMap(err)
-		i.ServeJSON()
+		i.HandleError(err, 0)
 		return
 	}
 	products := utils.A(r["results"])
 	if products == nil || len(products) != 1 {
-		i.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Object not found.")
-		i.ServeJSON()
+		i.HandleError(errs.E(errs.ObjectNotFound, "Object not found."), 0)
 		return
 	}
 	product := utils.M(products[0])
 	if product == nil {
-		i.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Object not found.")
-		i.ServeJSON()
+		i.HandleError(errs.E(errs.ObjectNotFound, "Object not found."), 0)
 		return
 	}
 	i.Data["json"] = product["download"]

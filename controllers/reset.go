@@ -15,8 +15,7 @@ type ResetController struct {
 // @router / [post]
 func (r *ResetController) HandleResetRequest() {
 	if r.JSONBody == nil && r.JSONBody["email"] == nil {
-		r.Data["json"] = errs.ErrorMessageToMap(errs.EmailMissing, "you must provide an email")
-		r.ServeJSON()
+		r.HandleError(errs.E(errs.EmailMissing, "you must provide an email"), 0)
 		return
 	}
 	email := r.JSONBody["email"].(string)
@@ -26,8 +25,7 @@ func (r *ResetController) HandleResetRequest() {
 			err = errs.E(errs.EmailNotFound, "No user found with email "+email)
 		}
 
-		r.Data["json"] = errs.ErrorToMap(err)
-		r.ServeJSON()
+		r.HandleError(err, 0)
 		return
 	}
 

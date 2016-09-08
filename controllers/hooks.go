@@ -23,8 +23,7 @@ func (h *HooksController) HandleGetAllFunctions() {
 
 	results, err := hooks.GetFunctions()
 	if err != nil {
-		h.Data["json"] = errs.ErrorToMap(err)
-		h.ServeJSON()
+		h.HandleError(err, 0)
 		return
 	}
 	if results == nil {
@@ -46,13 +45,11 @@ func (h *HooksController) HandleGetFunction() {
 	functionName := h.Ctx.Input.Param(":functionName")
 	result, err := hooks.GetFunction(functionName)
 	if err != nil {
-		h.Data["json"] = errs.ErrorToMap(err)
-		h.ServeJSON()
+		h.HandleError(err, 0)
 		return
 	}
 	if result == nil {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.WebhookError, "no function named: "+functionName+" is defined")
-		h.ServeJSON()
+		h.HandleError(errs.E(errs.WebhookError, "no function named: "+functionName+" is defined"), 0)
 		return
 	}
 	h.Data["json"] = result
@@ -70,8 +67,7 @@ func (h *HooksController) HandleCreateFunction() {
 
 	result, err := hooks.CreateHook(h.JSONBody)
 	if err != nil {
-		h.Data["json"] = errs.ErrorToMap(err)
-		h.ServeJSON()
+		h.HandleError(err, 0)
 		return
 	}
 	h.Data["json"] = result
@@ -96,8 +92,7 @@ func (h *HooksController) HandleUpdateFunction() {
 	} else {
 		// update
 		if h.JSONBody["url"] == nil {
-			h.Data["json"] = errs.ErrorMessageToMap(errs.WebhookError, "invalid hook declaration")
-			h.ServeJSON()
+			h.HandleError(errs.E(errs.WebhookError, "invalid hook declaration"), 0)
 			return
 		}
 		hook := types.M{
@@ -107,8 +102,7 @@ func (h *HooksController) HandleUpdateFunction() {
 		result, err = hooks.UpdateHook(hook)
 	}
 	if err != nil {
-		h.Data["json"] = errs.ErrorToMap(err)
-		h.ServeJSON()
+		h.HandleError(err, 0)
 		return
 	}
 	h.Data["json"] = result
@@ -126,8 +120,7 @@ func (h *HooksController) HandleGetAllTriggers() {
 
 	results, err := hooks.GetTriggers()
 	if err != nil {
-		h.Data["json"] = errs.ErrorToMap(err)
-		h.ServeJSON()
+		h.HandleError(err, 0)
 		return
 	}
 	if results == nil {
@@ -150,13 +143,11 @@ func (h *HooksController) HandleGetTrigger() {
 	triggerName := h.Ctx.Input.Param(":triggerName")
 	result, err := hooks.GetTrigger(className, triggerName)
 	if err != nil {
-		h.Data["json"] = errs.ErrorToMap(err)
-		h.ServeJSON()
+		h.HandleError(err, 0)
 		return
 	}
 	if result == nil {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.WebhookError, "class "+className+" does not exist")
-		h.ServeJSON()
+		h.HandleError(errs.E(errs.WebhookError, "class "+className+" does not exist"), 0)
 		return
 	}
 	h.Data["json"] = result
@@ -174,8 +165,7 @@ func (h *HooksController) HandleCreateTrigger() {
 
 	result, err := hooks.CreateHook(h.JSONBody)
 	if err != nil {
-		h.Data["json"] = errs.ErrorToMap(err)
-		h.ServeJSON()
+		h.HandleError(err, 0)
 		return
 	}
 	h.Data["json"] = result
@@ -201,8 +191,7 @@ func (h *HooksController) HandleUpdateTrigger() {
 	} else {
 		// update
 		if h.JSONBody["url"] == nil {
-			h.Data["json"] = errs.ErrorMessageToMap(errs.WebhookError, "invalid hook declaration")
-			h.ServeJSON()
+			h.HandleError(errs.E(errs.WebhookError, "invalid hook declaration"), 0)
 			return
 		}
 		hook := types.M{
@@ -213,8 +202,7 @@ func (h *HooksController) HandleUpdateTrigger() {
 		result, err = hooks.UpdateHook(hook)
 	}
 	if err != nil {
-		h.Data["json"] = errs.ErrorToMap(err)
-		h.ServeJSON()
+		h.HandleError(err, 0)
 		return
 	}
 	h.Data["json"] = result

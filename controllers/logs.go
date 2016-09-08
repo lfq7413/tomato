@@ -37,8 +37,7 @@ func (l *LogsController) HandleGet() {
 	}
 	result, err := logger.GetLogs(options)
 	if err != nil {
-		l.Data["json"] = errs.ErrorToMap(err)
-		l.ServeJSON()
+		l.HandleError(err, 0)
 		return
 	}
 	l.Data["json"] = result

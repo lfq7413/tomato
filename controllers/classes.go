@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	"github.com/lfq7413/tomato/errs"
@@ -29,21 +30,19 @@ func (c *ClassesController) HandleCreate() {
 	}
 
 	if c.JSONBody == nil {
-		c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
-		c.ServeJSON()
+		c.HandleError(errs.E(errs.InvalidJSON, "request body is empty"), 0)
 		return
 	}
 
 	result, err := rest.Create(c.Auth, c.ClassName, c.JSONBody, c.Info.ClientSDK)
 	if err != nil {
-		c.Data["json"] = errs.ErrorToMap(err)
-		c.ServeJSON()
+		c.HandleError(err, 0)
 		return
 	}
 
 	c.Data["json"] = result["response"]
 	c.Ctx.Output.SetStatus(201)
-	c.Ctx.Output.Header("location", result["location"].(string))
+	c.Ctx.Output.Header("Location", result["location"].(string))
 	c.ServeJSON()
 
 }
@@ -67,15 +66,13 @@ func (c *ClassesController) HandleGet() {
 	response, err := rest.Get(c.Auth, c.ClassName, c.ObjectID, options, c.Info.ClientSDK)
 
 	if err != nil {
-		c.Data["json"] = errs.ErrorToMap(err)
-		c.ServeJSON()
+		c.HandleError(err, 0)
 		return
 	}
 
 	results := utils.A(response["results"])
 	if results == nil || len(results) == 0 {
-		c.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Object not found.")
-		c.ServeJSON()
+		c.HandleError(errs.E(errs.ObjectNotFound, "Object not found."), 0)
 		return
 	}
 
@@ -106,15 +103,13 @@ func (c *ClassesController) HandleUpdate() {
 	}
 
 	if c.JSONBody == nil {
-		c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "request body is empty")
-		c.ServeJSON()
+		c.HandleError(errs.E(errs.InvalidJSON, "request body is empty"), 0)
 		return
 	}
 
 	result, err := rest.Update(c.Auth, c.ClassName, c.ObjectID, c.JSONBody, c.Info.ClientSDK)
 	if err != nil {
-		c.Data["json"] = errs.ErrorToMap(err)
-		c.ServeJSON()
+		c.HandleError(err, 0)
 		return
 	}
 
@@ -136,8 +131,7 @@ func (c *ClassesController) HandleFind() {
 		if i, err := strconv.Atoi(c.GetString("skip")); err == nil {
 			options["skip"] = i
 		} else {
-			c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidQuery, "skip should be int")
-			c.ServeJSON()
+			c.HandleError(errs.E(errs.InvalidQuery, "skip should be int"), 0)
 			return
 		}
 	}
@@ -145,8 +139,7 @@ func (c *ClassesController) HandleFind() {
 		if i, err := strconv.Atoi(c.GetString("limit")); err == nil {
 			options["limit"] = i
 		} else {
-			c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidQuery, "limit should be int")
-			c.ServeJSON()
+			c.HandleError(errs.E(errs.InvalidQuery, "limit should be int"), 0)
 			return
 		}
 	} else {
@@ -172,16 +165,14 @@ func (c *ClassesController) HandleFind() {
 	if c.GetString("where") != "" {
 		err := json.Unmarshal([]byte(c.GetString("where")), &where)
 		if err != nil {
-			c.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "where should be valid json")
-			c.ServeJSON()
+			c.HandleError(errs.E(errs.InvalidJSON, "where should be valid json"), 0)
 			return
 		}
 	}
 
 	response, err := rest.Find(c.Auth, c.ClassName, where, options, c.Info.ClientSDK)
 	if err != nil {
-		c.Data["json"] = errs.ErrorToMap(err)
-		c.ServeJSON()
+		c.HandleError(err, 0)
 		return
 	}
 	if utils.HasResults(response) {
@@ -211,8 +202,7 @@ func (c *ClassesController) HandleDelete() {
 
 	err := rest.Delete(c.Auth, c.ClassName, c.ObjectID, c.Info.ClientSDK)
 	if err != nil {
-		c.Data["json"] = errs.ErrorToMap(err)
-		c.ServeJSON()
+		c.HandleError(err, 0)
 		return
 	}
 
@@ -223,31 +213,23 @@ func (c *ClassesController) HandleDelete() {
 // Get ...
 // @router / [get]
 func (c *ClassesController) Get() {
-	c.Ctx.Output.SetStatus(405)
-	c.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
-	c.ServeJSON()
+	c.HandleError(errors.New("Method Not Allowed"), 405)
 }
 
 // Post ...
 // @router / [post]
 func (c *ClassesController) Post() {
-	c.Ctx.Output.SetStatus(405)
-	c.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
-	c.ServeJSON()
+	c.HandleError(errors.New("Method Not Allowed"), 405)
 }
 
 // Delete ...
 // @router / [delete]
 func (c *ClassesController) Delete() {
-	c.Ctx.Output.SetStatus(405)
-	c.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
-	c.ServeJSON()
+	c.HandleError(errors.New("Method Not Allowed"), 405)
 }
 
 // Put ...
 // @router / [put]
 func (c *ClassesController) Put() {
-	c.Ctx.Output.SetStatus(405)
-	c.Data["json"] = errs.ErrorMessageToMap(405, "Method Not Allowed")
-	c.ServeJSON()
+	c.HandleError(errors.New("Method Not Allowed"), 405)
 }

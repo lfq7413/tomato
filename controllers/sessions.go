@@ -59,8 +59,7 @@ func (s *SessionsController) HandleDelete() {
 // @router /me [get]
 func (s *SessionsController) HandleGetMe() {
 	if s.Info == nil || s.Info.SessionToken == "" {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidSessionToken, "Session token required.")
-		s.ServeJSON()
+		s.HandleError(errs.E(errs.InvalidSessionToken, "Session token required."), 0)
 		return
 	}
 	where := types.M{
@@ -68,13 +67,11 @@ func (s *SessionsController) HandleGetMe() {
 	}
 	response, err := rest.Find(rest.Master(), "_Session", where, types.M{}, s.Info.ClientSDK)
 	if err != nil {
-		s.Data["json"] = errs.ErrorToMap(err)
-		s.ServeJSON()
+		s.HandleError(err, 0)
 		return
 	}
 	if utils.HasResults(response) == false {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.InvalidSessionToken, "Session token not found.")
-		s.ServeJSON()
+		s.HandleError(errs.E(errs.InvalidSessionToken, "Session token not found."), 0)
 		return
 	}
 	results := utils.A(response["results"])

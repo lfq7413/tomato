@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"github.com/lfq7413/tomato/cache"
-	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 )
@@ -21,8 +20,7 @@ func (p *PurgeController) HandleDelete() {
 	}
 	err := orm.TomatoDBController.PurgeCollection(className)
 	if err != nil {
-		p.Data["json"] = errs.ErrorToMap(err)
-		p.ServeJSON()
+		p.HandleError(err, 0)
 		return
 	}
 

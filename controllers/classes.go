@@ -73,7 +73,7 @@ func (c *ClassesController) HandleGet() {
 	}
 
 	results := utils.A(response["results"])
-	if results == nil && len(results) == 0 {
+	if results == nil || len(results) == 0 {
 		c.Data["json"] = errs.ErrorMessageToMap(errs.ObjectNotFound, "Object not found.")
 		c.ServeJSON()
 		return

@@ -84,8 +84,7 @@ func (b *BaseController) Prepare() {
 			var object types.M
 			err := json.Unmarshal(b.Ctx.Input.RequestBody, &object)
 			if err != nil {
-				b.Data["json"] = errs.ErrorMessageToMap(errs.InvalidJSON, "invalid JSON")
-				b.ServeJSON()
+				b.HandleError(errs.E(errs.InvalidJSON, "invalid JSON"), 0)
 				return
 			}
 			b.JSONBody = object
@@ -140,9 +139,7 @@ func (b *BaseController) Prepare() {
 			}
 		} else {
 			// 请求数据中也不存在 APPID 时，返回错误
-			b.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
-			b.Ctx.Output.SetStatus(403)
-			b.ServeJSON()
+			b.InvalidRequest()
 			return
 		}
 	}
@@ -155,9 +152,7 @@ func (b *BaseController) Prepare() {
 
 	// 校验请求权限
 	if info.AppID != config.TConfig.AppID {
-		b.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
-		b.Ctx.Output.SetStatus(403)
-		b.ServeJSON()
+		b.InvalidRequest()
 		return
 	}
 	if info.MasterKey == config.TConfig.MasterKey {
@@ -172,9 +167,7 @@ func (b *BaseController) Prepare() {
 		allow = true
 	}
 	if allow == false {
-		b.Data["json"] = errs.ErrorMessageToMap(403, "unauthorized")
-		b.Ctx.Output.SetStatus(403)
-		b.ServeJSON()
+		b.InvalidRequest()
 		return
 	}
 	// TODO 登录时删除 Token ，如何处理接口地址？
@@ -189,8 +182,7 @@ func (b *BaseController) Prepare() {
 		var err error
 		b.Auth, err = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
 		if err != nil {
-			b.Data["json"] = errs.ErrorToMap(err)
-			b.ServeJSON()
+			b.HandleError(err, 0)
 			return
 		}
 	}
@@ -239,4 +231,43 @@ func decodeBase64(str string) string {
 		return ""
 	}
 	return string(data)
+}
+
+// HandleError 返回错误信息，不指定 status 参数时，默认为 0
+func (b *BaseController) HandleError(err error, status int) {
+	code := errs.GetErrorCode(err)
+	if code != 0 {
+		var httpStatus int
+		switch code {
+		case errs.InternalServerError:
+			httpStatus = 500
+		case errs.ObjectNotFound:
+			httpStatus = 404
+		default:
+			httpStatus = 400
+		}
+
+		b.Ctx.Output.SetStatus(httpStatus)
+		b.Data["json"] = errs.ErrorToMap(err)
+		b.ServeJSON()
+		return
+	}
+
+	if status != 0 {
+		b.Ctx.Output.SetStatus(status)
+		b.Data["json"] = types.M{"error": err.Error()}
+		b.ServeJSON()
+		return
+	}
+
+	b.Ctx.Output.SetStatus(500)
+	b.Data["json"] = errs.ErrorMessageToMap(errs.InternalServerError, "Internal server error: "+err.Error())
+	b.ServeJSON()
+}
+
+// InvalidRequest 无效请求
+func (b *BaseController) InvalidRequest() {
+	b.Ctx.Output.SetStatus(403)
+	b.Data["json"] = types.M{"error": "unauthorized"}
+	b.ServeJSON()
 }

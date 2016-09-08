@@ -138,7 +138,7 @@ func (s *SchemasController) HandleDelete() {
 
 	err := orm.TomatoDBController.DeleteSchema(className)
 	if err != nil {
-		s.HandleError(err)
+		s.HandleError(err, 0)
 		return
 	}
 

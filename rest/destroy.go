@@ -75,6 +75,9 @@ func (d *Destroy) handleSession() error {
 
 // runBeforeTrigger 执行删前回调
 func (d *Destroy) runBeforeTrigger() error {
+	if d.originalData == nil {
+		return nil
+	}
 	if livequery.TLiveQuery != nil {
 		livequery.TLiveQuery.OnAfterDelete(d.className, d.originalData, nil)
 	}

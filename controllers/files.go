@@ -77,9 +77,7 @@ func (f *FilesController) HandleCreate() {
 // HandleDelete 处理删除文件请求
 // @router /:filename [delete]
 func (f *FilesController) HandleDelete() {
-	if f.Auth.IsMaster == false {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.FileDeleteError, "This user is not allowed to delete file.")
-		f.ServeJSON()
+	if f.EnforceMasterKeyAccess() == false {
 		return
 	}
 	filename := f.Ctx.Input.Param(":filename")

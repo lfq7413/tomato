@@ -15,9 +15,8 @@ type SchemasController struct {
 // Prepare 访问 /schemas 接口需要 master key
 func (s *SchemasController) Prepare() {
 	s.ClassesController.Prepare()
-	if s.Auth.IsMaster == false {
-		s.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		s.ServeJSON()
+	if s.Ctx.ResponseWriter.Started == false {
+		s.EnforceMasterKeyAccess()
 	}
 }
 

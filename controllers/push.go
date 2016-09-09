@@ -15,6 +15,9 @@ type PushController struct {
 // HandlePost 处理发送推送消息请求
 // @router / [post]
 func (p *PushController) HandlePost() {
+	if p.EnforceMasterKeyAccess() == false {
+		return
+	}
 	if p.JSONBody == nil {
 		p.HandleError(errs.E(errs.InvalidJSON, "request body is empty"), 0)
 		return

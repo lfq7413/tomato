@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -15,12 +14,6 @@ type GlobalConfigController struct {
 // HandleGet 获取配置信息
 // @router / [get]
 func (g *GlobalConfigController) HandleGet() {
-	if g.Auth.IsMaster == false {
-		g.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		g.ServeJSON()
-		return
-	}
-
 	results, _ := orm.TomatoDBController.Find("_GlobalConfig", types.M{"objectId": "1"}, types.M{"limit": 1})
 	if len(results) != 1 {
 		g.Data["json"] = types.M{"params": types.M{}}
@@ -40,9 +33,7 @@ func (g *GlobalConfigController) HandleGet() {
 // HandlePut 修改配置信息
 // @router / [put]
 func (g *GlobalConfigController) HandlePut() {
-	if g.Auth.IsMaster == false {
-		g.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		g.ServeJSON()
+	if g.EnforceMasterKeyAccess() == false {
 		return
 	}
 

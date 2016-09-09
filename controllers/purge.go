@@ -14,10 +14,10 @@ type PurgeController struct {
 // HandleDelete 处理删除指定类数据请求
 // @router /:className [delete]
 func (p *PurgeController) HandleDelete() {
-	className := p.Ctx.Input.Param(":className")
-	if p.Auth.IsMaster == false {
+	if p.EnforceMasterKeyAccess() == false {
 		return
 	}
+	className := p.Ctx.Input.Param(":className")
 	err := orm.TomatoDBController.PurgeCollection(className)
 	if err != nil {
 		p.HandleError(err, 0)
@@ -33,7 +33,6 @@ func (p *PurgeController) HandleDelete() {
 	p.Data["json"] = types.M{}
 	p.ServeJSON()
 	return
-
 }
 
 // Get ...

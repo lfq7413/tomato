@@ -1,9 +1,6 @@
 package controllers
 
-import (
-	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/types"
-)
+import "github.com/lfq7413/tomato/types"
 
 // FeaturesController ...
 type FeaturesController struct {
@@ -13,9 +10,7 @@ type FeaturesController struct {
 // HandleGet ...
 // @router / [get]
 func (f *FeaturesController) HandleGet() {
-	if f.Auth.IsMaster == false {
-		f.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		f.ServeJSON()
+	if f.EnforceMasterKeyAccess() == false {
 		return
 	}
 

@@ -12,15 +12,17 @@ type HooksController struct {
 	ClassesController
 }
 
+// Prepare ...
+func (h *HooksController) Prepare() {
+	h.ClassesController.Prepare()
+	if h.Ctx.ResponseWriter.Started == false {
+		h.EnforceMasterKeyAccess()
+	}
+}
+
 // HandleGetAllFunctions ...
 // @router /functions [get]
 func (h *HooksController) HandleGetAllFunctions() {
-	if h.Auth.IsMaster == false {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		h.ServeJSON()
-		return
-	}
-
 	results, err := hooks.GetFunctions()
 	if err != nil {
 		h.HandleError(err, 0)
@@ -36,12 +38,6 @@ func (h *HooksController) HandleGetAllFunctions() {
 // HandleGetFunction ...
 // @router /functions/:functionName [get]
 func (h *HooksController) HandleGetFunction() {
-	if h.Auth.IsMaster == false {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		h.ServeJSON()
-		return
-	}
-
 	functionName := h.Ctx.Input.Param(":functionName")
 	result, err := hooks.GetFunction(functionName)
 	if err != nil {
@@ -59,12 +55,6 @@ func (h *HooksController) HandleGetFunction() {
 // HandleCreateFunction ...
 // @router /functions [post]
 func (h *HooksController) HandleCreateFunction() {
-	if h.Auth.IsMaster == false {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		h.ServeJSON()
-		return
-	}
-
 	result, err := hooks.CreateHook(h.JSONBody)
 	if err != nil {
 		h.HandleError(err, 0)
@@ -77,12 +67,6 @@ func (h *HooksController) HandleCreateFunction() {
 // HandleUpdateFunction ...
 // @router /functions/:functionName [put]
 func (h *HooksController) HandleUpdateFunction() {
-	if h.Auth.IsMaster == false {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		h.ServeJSON()
-		return
-	}
-
 	functionName := h.Ctx.Input.Param(":functionName")
 	var err error
 	var result = types.M{}
@@ -112,12 +96,6 @@ func (h *HooksController) HandleUpdateFunction() {
 // HandleGetAllTriggers ...
 // @router /triggers [get]
 func (h *HooksController) HandleGetAllTriggers() {
-	if h.Auth.IsMaster == false {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		h.ServeJSON()
-		return
-	}
-
 	results, err := hooks.GetTriggers()
 	if err != nil {
 		h.HandleError(err, 0)
@@ -133,12 +111,6 @@ func (h *HooksController) HandleGetAllTriggers() {
 // HandleGetTrigger ...
 // @router /triggers/:className/:triggerName [get]
 func (h *HooksController) HandleGetTrigger() {
-	if h.Auth.IsMaster == false {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		h.ServeJSON()
-		return
-	}
-
 	className := h.Ctx.Input.Param(":className")
 	triggerName := h.Ctx.Input.Param(":triggerName")
 	result, err := hooks.GetTrigger(className, triggerName)
@@ -157,12 +129,6 @@ func (h *HooksController) HandleGetTrigger() {
 // HandleCreateTrigger ...
 // @router /triggers [post]
 func (h *HooksController) HandleCreateTrigger() {
-	if h.Auth.IsMaster == false {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		h.ServeJSON()
-		return
-	}
-
 	result, err := hooks.CreateHook(h.JSONBody)
 	if err != nil {
 		h.HandleError(err, 0)
@@ -175,12 +141,6 @@ func (h *HooksController) HandleCreateTrigger() {
 // HandleUpdateTrigger ...
 // @router /triggers/:className/:triggerName [put]
 func (h *HooksController) HandleUpdateTrigger() {
-	if h.Auth.IsMaster == false {
-		h.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		h.ServeJSON()
-		return
-	}
-
 	className := h.Ctx.Input.Param(":className")
 	triggerName := h.Ctx.Input.Param(":triggerName")
 	var err error

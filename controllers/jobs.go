@@ -16,9 +16,7 @@ type JobsController struct {
 // HandleCloudJob 执行后台任务
 // @router /:jobName [post]
 func (j *JobsController) HandleCloudJob() {
-	if j.Auth.IsMaster == false {
-		j.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "need master key")
-		j.ServeJSON()
+	if j.EnforceMasterKeyAccess() == false {
 		return
 	}
 	jobName := j.Ctx.Input.Param(":jobName")
@@ -28,9 +26,7 @@ func (j *JobsController) HandleCloudJob() {
 // HandlePost ...
 // @router / [post]
 func (j *JobsController) HandlePost() {
-	if j.Auth.IsMaster == false {
-		j.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "need master key")
-		j.ServeJSON()
+	if j.EnforceMasterKeyAccess() == false {
 		return
 	}
 	jobName := utils.S(j.JSONBody["jobName"])

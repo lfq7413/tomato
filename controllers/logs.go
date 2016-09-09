@@ -1,9 +1,6 @@
 package controllers
 
-import (
-	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/logger"
-)
+import "github.com/lfq7413/tomato/logger"
 
 // LogsController ...
 type LogsController struct {
@@ -13,9 +10,7 @@ type LogsController struct {
 // HandleGet ...
 // @router / [get]
 func (l *LogsController) HandleGet() {
-	if l.Auth.IsMaster == false {
-		l.Data["json"] = errs.ErrorMessageToMap(errs.OperationForbidden, "Need master key!")
-		l.ServeJSON()
+	if l.EnforceMasterKeyAccess() == false {
 		return
 	}
 

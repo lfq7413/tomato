@@ -24,11 +24,9 @@ type ClassesController struct {
 // HandleCreate 处理对象创建请求，返回对象 id 与对象位置
 // @router /:className [post]
 func (c *ClassesController) HandleCreate() {
-
 	if c.ClassName == "" {
 		c.ClassName = c.Ctx.Input.Param(":className")
 	}
-
 	if c.JSONBody == nil {
 		c.HandleError(errs.E(errs.InvalidJSON, "request body is empty"), 0)
 		return
@@ -42,9 +40,8 @@ func (c *ClassesController) HandleCreate() {
 
 	c.Data["json"] = result["response"]
 	c.Ctx.Output.SetStatus(201)
-	c.Ctx.Output.Header("Location", result["location"].(string))
+	c.Ctx.Output.Header("Location", utils.S(result["location"]))
 	c.ServeJSON()
-
 }
 
 // HandleGet 处理查询指定对象请求，返回查询到的对象
@@ -56,6 +53,7 @@ func (c *ClassesController) HandleGet() {
 	if c.ObjectID == "" {
 		c.ObjectID = c.Ctx.Input.Param(":objectId")
 	}
+
 	options := types.M{}
 	if c.GetString("keys") != "" {
 		options["keys"] = c.GetString("keys")
@@ -63,8 +61,8 @@ func (c *ClassesController) HandleGet() {
 	if c.GetString("include") != "" {
 		options["include"] = c.GetString("include")
 	}
-	response, err := rest.Get(c.Auth, c.ClassName, c.ObjectID, options, c.Info.ClientSDK)
 
+	response, err := rest.Get(c.Auth, c.ClassName, c.ObjectID, options, c.Info.ClientSDK)
 	if err != nil {
 		c.HandleError(err, 0)
 		return
@@ -80,7 +78,7 @@ func (c *ClassesController) HandleGet() {
 
 	if c.ClassName == "_User" {
 		delete(result, "sessionToken")
-		if c.Auth.User != nil && result["objectId"].(string) == c.Auth.User["objectId"].(string) {
+		if c.Auth.User != nil && utils.S(result["objectId"]) == utils.S(c.Auth.User["objectId"]) {
 			// 重新设置 session token
 			result["sessionToken"] = c.Info.SessionToken
 		}
@@ -88,20 +86,17 @@ func (c *ClassesController) HandleGet() {
 
 	c.Data["json"] = result
 	c.ServeJSON()
-
 }
 
 // HandleUpdate 处理更新指定对象请求
 // @router /:className/:objectId [put]
 func (c *ClassesController) HandleUpdate() {
-
 	if c.ClassName == "" {
 		c.ClassName = c.Ctx.Input.Param(":className")
 	}
 	if c.ObjectID == "" {
 		c.ObjectID = c.Ctx.Input.Param(":objectId")
 	}
-
 	if c.JSONBody == nil {
 		c.HandleError(errs.E(errs.InvalidJSON, "request body is empty"), 0)
 		return
@@ -115,7 +110,6 @@ func (c *ClassesController) HandleUpdate() {
 
 	c.Data["json"] = result["response"]
 	c.ServeJSON()
-
 }
 
 // HandleFind 处理查找对象请求
@@ -192,7 +186,6 @@ func (c *ClassesController) HandleFind() {
 // HandleDelete 处理删除指定对象请求
 // @router /:className/:objectId [delete]
 func (c *ClassesController) HandleDelete() {
-
 	if c.ClassName == "" {
 		c.ClassName = c.Ctx.Input.Param(":className")
 	}

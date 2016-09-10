@@ -379,8 +379,8 @@ func Test_addSchema(t *testing.T) {
 			"get":      types.M{"*": true},
 			"create":   types.M{"*": true},
 			"update":   types.M{"*": true},
-			"delete":   types.M{},
-			"addField": types.M{},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
 		},
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
@@ -1050,8 +1050,8 @@ func Test_mongoSchemaToParseSchema(t *testing.T) {
 			"get":      types.M{"*": true},
 			"create":   types.M{"*": true},
 			"update":   types.M{"*": true},
-			"delete":   types.M{},
-			"addField": types.M{},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
 		},
 	}
 	if reflect.DeepEqual(expect, result) == false {
@@ -1097,8 +1097,8 @@ func Test_mongoSchemaToParseSchema(t *testing.T) {
 			"get":      types.M{"*": true},
 			"create":   types.M{"*": true},
 			"update":   types.M{"*": true},
-			"delete":   types.M{},
-			"addField": types.M{},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
 		},
 	}
 	if reflect.DeepEqual(expect, result) == false {

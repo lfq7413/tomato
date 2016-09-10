@@ -407,7 +407,7 @@ func (s *Schema) EnforceClassExists(className string) error {
 	}
 
 	// 添加不存在的类定义
-	_, err := s.AddClassIfNotExists(className, types.M{}, types.M{})
+	_, err := s.AddClassIfNotExists(className, nil, nil)
 	if err != nil {
 
 	}
@@ -436,7 +436,7 @@ func (s *Schema) validateNewClass(className string, fields types.M, classLevelPe
 // validateSchemaData 校验 Schema 数据
 func (s *Schema) validateSchemaData(className string, fields types.M, classLevelPermissions types.M, existingFieldNames []string) error {
 	if fields == nil {
-		return nil
+		fields = types.M{}
 	}
 	if existingFieldNames == nil {
 		existingFieldNames = []string{}

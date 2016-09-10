@@ -317,8 +317,8 @@ func Test_CreateClass(t *testing.T) {
 			"get":      types.M{"*": true},
 			"create":   types.M{"*": true},
 			"update":   types.M{"*": true},
-			"delete":   types.M{},
-			"addField": types.M{},
+			"delete":   types.M{"*": true},
+			"addField": types.M{"*": true},
 		},
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {

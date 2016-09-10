@@ -243,7 +243,7 @@ func Test_UpdateClass(t *testing.T) {
 			"create":   types.M{"*": true},
 			"update":   types.M{"*": true},
 			"delete":   types.M{"*": true},
-			"addField": types.M{},
+			"addField": types.M{"*": true},
 		},
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
@@ -1137,11 +1137,11 @@ func Test_setPermissions(t *testing.T) {
 	}
 	expect = types.M{
 		"get":      types.M{"*": true},
-		"create":   types.M{},
-		"find":     types.M{},
-		"update":   types.M{},
-		"delete":   types.M{},
-		"addField": types.M{},
+		"create":   types.M{"*": true},
+		"find":     types.M{"*": true},
+		"update":   types.M{"*": true},
+		"delete":   types.M{"*": true},
+		"addField": types.M{"*": true},
 	}
 	if reflect.DeepEqual(expect, schama.perms[className]) == false {
 		t.Error("expect:", expect, "result:", schama.perms[className])

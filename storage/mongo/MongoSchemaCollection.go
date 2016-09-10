@@ -283,7 +283,8 @@ func mongoSchemaToParseSchema(schema types.M) types.M {
 	clps = utils.CopyMap(defaultCLPS)
 	if metadata := utils.M(schema["_metadata"]); metadata != nil {
 		if classPermissions := utils.M(metadata["class_permissions"]); classPermissions != nil {
-			clps = utils.CopyMap(emptyCLPS)
+			// clps = utils.CopyMap(emptyCLPS)
+			// 不存在的 action 默认为公共权限
 			for k, v := range classPermissions {
 				clps[k] = v
 			}

@@ -3198,11 +3198,11 @@ func Test_LoadSchema(t *testing.T) {
 	}
 	expect = types.M{
 		"get":      types.M{"*": true},
-		"find":     types.M{},
-		"create":   types.M{},
-		"update":   types.M{},
-		"delete":   types.M{},
-		"addField": types.M{},
+		"find":     types.M{"*": true},
+		"create":   types.M{"*": true},
+		"update":   types.M{"*": true},
+		"delete":   types.M{"*": true},
+		"addField": types.M{"*": true},
 	}
 	if reflect.DeepEqual(expect, result.perms["user"]) == false {
 		t.Error("expect:", expect, "result:", result.perms["user"])
@@ -3344,7 +3344,8 @@ func Test_canAddField(t *testing.T) {
 			"key": types.M{"type": "String"},
 		},
 		"classLevelPermissions": types.M{
-			"get": types.M{"*": true},
+			"get":      types.M{"*": true},
+			"addField": types.M{},
 		},
 	}
 	Adapter.CreateClass("user", object)

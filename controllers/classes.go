@@ -54,12 +54,23 @@ func (c *ClassesController) HandleGet() {
 		c.ObjectID = c.Ctx.Input.Param(":objectId")
 	}
 
-	options := types.M{}
-	if c.GetString("keys") != "" {
-		options["keys"] = c.GetString("keys")
+	allowedGetQueryKeys := map[string]bool{
+		"keys":    true,
+		"include": true,
 	}
-	if c.GetString("include") != "" {
-		options["include"] = c.GetString("include")
+	for k := range c.Query {
+		if allowedGetQueryKeys[k] == false {
+			c.HandleError(errs.E(errs.InvalidQuery, "`Invalid parameter for query: "+k), 0)
+			return
+		}
+	}
+
+	options := types.M{}
+	if c.Query["keys"] != "" {
+		options["keys"] = c.Query["keys"]
+	}
+	if c.Query["include"] != "" {
+		options["include"] = c.Query["include"]
 	}
 
 	response, err := rest.Get(c.Auth, c.ClassName, c.ObjectID, options, c.Info.ClientSDK)
@@ -119,45 +130,58 @@ func (c *ClassesController) HandleFind() {
 		c.ClassName = c.Ctx.Input.Param(":className")
 	}
 
-	// 获取查询参数，并组装
-	options := types.M{}
-	if c.GetString("skip") != "" {
-		if i, err := strconv.Atoi(c.GetString("skip")); err == nil {
-			options["skip"] = i
-		} else {
-			c.HandleError(errs.E(errs.InvalidQuery, "skip should be int"), 0)
+	allowConstraints := map[string]bool{
+		"skip":                    true,
+		"limit":                   true,
+		"order":                   true,
+		"count":                   true,
+		"keys":                    true,
+		"include":                 true,
+		"redirectClassNameForKey": true,
+		"where":                   true,
+	}
+	for k := range c.Query {
+		if allowConstraints[k] == false {
+			c.HandleError(errs.E(errs.InvalidQuery, "`Invalid parameter for query: "+k), 0)
 			return
 		}
 	}
-	if c.GetString("limit") != "" {
-		if i, err := strconv.Atoi(c.GetString("limit")); err == nil {
+
+	// 获取查询参数，并组装
+	options := types.M{}
+	if c.Query["skip"] != "" {
+		if i, err := strconv.Atoi(c.Query["skip"]); err == nil {
+			options["skip"] = i
+		}
+	}
+	if c.Query["limit"] != "" {
+		if i, err := strconv.Atoi(c.Query["limit"]); err == nil {
 			options["limit"] = i
 		} else {
-			c.HandleError(errs.E(errs.InvalidQuery, "limit should be int"), 0)
-			return
+			options["limit"] = 100
 		}
 	} else {
 		options["limit"] = 100
 	}
-	if c.GetString("order") != "" {
-		options["order"] = c.GetString("order")
+	if c.Query["order"] != "" {
+		options["order"] = c.Query["order"]
 	}
-	if c.GetString("count") != "" {
+	if c.Query["count"] != "" {
 		options["count"] = true
 	}
-	if c.GetString("keys") != "" {
-		options["keys"] = c.GetString("keys")
+	if c.Query["keys"] != "" {
+		options["keys"] = c.Query["keys"]
 	}
-	if c.GetString("include") != "" {
-		options["include"] = c.GetString("include")
+	if c.Query["include"] != "" {
+		options["include"] = c.Query["include"]
 	}
-	if c.GetString("redirectClassNameForKey") != "" {
-		options["redirectClassNameForKey"] = c.GetString("redirectClassNameForKey")
+	if c.Query["redirectClassNameForKey"] != "" {
+		options["redirectClassNameForKey"] = c.Query["redirectClassNameForKey"]
 	}
 
 	where := types.M{}
-	if c.GetString("where") != "" {
-		err := json.Unmarshal([]byte(c.GetString("where")), &where)
+	if c.Query["where"] != "" {
+		err := json.Unmarshal([]byte(c.Query["where"]), &where)
 		if err != nil {
 			c.HandleError(errs.E(errs.InvalidJSON, "where should be valid json"), 0)
 			return

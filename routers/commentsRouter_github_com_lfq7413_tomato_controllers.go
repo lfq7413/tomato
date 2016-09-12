@@ -41,6 +41,34 @@ func init() {
 			[]string{"put"},
 			nil})
 
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:BatchController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:BatchController"],
+		beego.ControllerComments{
+			"HandleBatch",
+			`/`,
+			[]string{"post"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:BatchController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:BatchController"],
+		beego.ControllerComments{
+			"Get",
+			`/`,
+			[]string{"get"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:BatchController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:BatchController"],
+		beego.ControllerComments{
+			"Delete",
+			`/`,
+			[]string{"delete"},
+			nil})
+
+	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:BatchController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:BatchController"],
+		beego.ControllerComments{
+			"Put",
+			`/`,
+			[]string{"put"},
+			nil})
+
 	beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"] = append(beego.GlobalControllerRouter["github.com/lfq7413/tomato/controllers:ClassesController"],
 		beego.ControllerComments{
 			"HandleCreate",

@@ -117,6 +117,11 @@ func init() {
 				&controllers.CloudCodeController{},
 			),
 		),
+		beego.NSNamespace("/batch",
+			beego.NSInclude(
+				&controllers.BatchController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

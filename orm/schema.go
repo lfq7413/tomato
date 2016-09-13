@@ -808,7 +808,7 @@ func getObjectType(obj interface{}) (types.M, error) {
 		}
 	}
 
-	return types.M{"type": "object"}, nil
+	return types.M{"type": "Object"}, nil
 }
 
 // ClassNameIsValid 校验类名，可以是系统内置类、join 类

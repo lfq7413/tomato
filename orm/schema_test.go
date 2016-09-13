@@ -1964,7 +1964,7 @@ func Test_getObjectType(t *testing.T) {
 	/************************************************************/
 	object = types.M{"key": "value"}
 	result, err = getObjectType(object)
-	expect = types.M{"type": "object"}
+	expect = types.M{"type": "Object"}
 	if err != nil || reflect.DeepEqual(expect, expect) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	}

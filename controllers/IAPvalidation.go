@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/astaxie/beego"
@@ -97,8 +96,7 @@ func (i *IAPValidationController) getFileForProductIdentifier(productIdentifier 
 
 func validateWithAppStore(URL, receipt string) types.M {
 	jsonParams := `{ "receipt-data": ` + receipt + ` }`
-	encodeParams := url.QueryEscape(jsonParams)
-	request, err := http.NewRequest("POST", URL, strings.NewReader(encodeParams))
+	request, err := http.NewRequest("POST", URL, strings.NewReader(jsonParams))
 	if err != nil {
 		return types.M{}
 	}

@@ -33,7 +33,7 @@ func (p *PublicController) VerifyEmail() {
 	ok := rest.VerifyEmail(username, token)
 	if ok {
 		p.Ctx.Output.SetStatus(302)
-		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"apps/verify_email_success?username="+username)
+		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"/apps/verify_email_success?username="+username)
 	} else {
 		p.invalid()
 	}
@@ -47,7 +47,7 @@ func (p *PublicController) ChangePassword() {
 		return
 	}
 
-	data := strings.Replace(choosePasswordPage, "PARSE_SERVER_URL", config.TConfig.ServerURL, -1)
+	data := strings.Replace(choosePasswordPage, "PARSE_SERVER_URL", `"`+config.TConfig.ServerURL+`"`, -1)
 	p.Ctx.Output.Header("Content-Type", "text/html")
 	p.Ctx.Output.Body([]byte(data))
 }
@@ -72,10 +72,10 @@ func (p *PublicController) ResetPassword() {
 	err := rest.UpdatePassword(username, token, newPassword)
 	if err == nil {
 		p.Ctx.Output.SetStatus(302)
-		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"apps/password_reset_success")
+		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"/apps/password_reset_success")
 	} else {
 		p.Ctx.Output.SetStatus(302)
-		location := config.TConfig.ServerURL + "apps/choose_password"
+		location := config.TConfig.ServerURL + "/apps/choose_password"
 		location += "?token=" + token
 		location += "&id=" + config.TConfig.AppID
 		location += "&username=" + username
@@ -105,7 +105,7 @@ func (p *PublicController) RequestResetPassword() {
 	user := rest.CheckResetTokenValidity(username, token)
 	if user != nil {
 		p.Ctx.Output.SetStatus(302)
-		location := config.TConfig.ServerURL + "apps/choose_password"
+		location := config.TConfig.ServerURL + "/apps/choose_password"
 		location += "?token=" + token
 		location += "&id=" + config.TConfig.AppID
 		location += "&username=" + username
@@ -139,7 +139,7 @@ func (p *PublicController) VerifyEmailSuccess() {
 
 func (p *PublicController) invalid() {
 	p.Ctx.Output.SetStatus(302)
-	p.Ctx.Output.Header("location", config.TConfig.ServerURL+"apps/invalid_link")
+	p.Ctx.Output.Header("location", config.TConfig.ServerURL+"/apps/invalid_link")
 }
 
 func (p *PublicController) missingPublicServerURL() {
@@ -398,7 +398,6 @@ var choosePasswordPage = `
   </form>
 
 <script language='javascript' type='text/javascript'>
-  <!--
   window.onload = function() {
     var urlParams = {};
     (function () {
@@ -427,7 +426,6 @@ var choosePasswordPage = `
       document.getElementById('app').appendChild(document.createTextNode(' for ' + urlParams['app']));
     }
   }
-  //-->
 </script>
 </body>
 `

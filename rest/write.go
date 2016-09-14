@@ -536,6 +536,7 @@ func (w *Write) handleAuthData(authData types.M) error {
 			}
 
 			w.response = types.M{
+				"status":   200,
 				"response": userResult,
 				"location": w.location(),
 			}

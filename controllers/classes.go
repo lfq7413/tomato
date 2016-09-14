@@ -38,9 +38,16 @@ func (c *ClassesController) HandleCreate() {
 		return
 	}
 
+	status := 201
+	if i, ok := result["status"].(int); ok {
+		status = i
+	}
+
 	c.Data["json"] = result["response"]
-	c.Ctx.Output.SetStatus(201)
-	c.Ctx.Output.Header("Location", utils.S(result["location"]))
+	c.Ctx.Output.SetStatus(status)
+	if status == 201 {
+		c.Ctx.Output.Header("Location", utils.S(result["location"]))
+	}
 	c.ServeJSON()
 }
 

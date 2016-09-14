@@ -79,10 +79,40 @@ func (s *SessionsController) HandleGetMe() {
 	s.ServeJSON()
 }
 
-// HandleUpdateMe ...
+// HandleUpdateMe 仅用于更新 installationId
 // @router /me [put]
 func (s *SessionsController) HandleUpdateMe() {
-	// TODO
+	if s.Info == nil || s.Info.SessionToken == "" {
+		s.HandleError(errs.E(errs.InvalidSessionToken, "Session token required."), 0)
+		return
+	}
+	if s.Info.InstallationID == "" {
+		s.Data["json"] = types.M{}
+		s.ServeJSON()
+		return
+	}
+	where := types.M{
+		"sessionToken": s.Info.SessionToken,
+	}
+	response, err := rest.Find(rest.Master(), "_Session", where, types.M{}, s.Info.ClientSDK)
+	if err != nil {
+		s.HandleError(err, 0)
+		return
+	}
+	if utils.HasResults(response) == false {
+		s.HandleError(errs.E(errs.InvalidSessionToken, "Session token not found."), 0)
+		return
+	}
+	results := utils.A(response["results"])
+	session := utils.M(results[0])
+	update := types.M{"installationId": s.Info.InstallationID}
+	result, err := rest.Update(rest.Master(), "_Session", utils.S(session["objectId"]), update, nil)
+	if err != nil {
+		s.HandleError(err, 0)
+		return
+	}
+	s.Data["json"] = result["response"]
+	s.ServeJSON()
 }
 
 // Put ...

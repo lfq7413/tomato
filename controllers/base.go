@@ -104,6 +104,7 @@ func (b *BaseController) Prepare() {
 		// Unity SDK sends a _noBody key which needs to be removed.
 		// Unclear at this point if action needs to be taken.
 		delete(b.JSONBody, "_noBody")
+		delete(b.JSONBody, "_method")
 	}
 
 	if info.AppID == "" {

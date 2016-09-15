@@ -1,12 +1,15 @@
 package tomato
 
 import (
-	"github.com/lfq7413/tomato/controllers"
+	"encoding/json"
+	"strings"
+
 	_ "github.com/lfq7413/tomato/routers"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
 	"github.com/astaxie/beego/plugins/cors"
+	"github.com/lfq7413/tomato/controllers"
 	"github.com/lfq7413/tomato/livequery"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/storage"
@@ -27,6 +30,7 @@ func Run() {
 
 	beego.ErrorController(&controllers.ErrorController{})
 
+	allowMethodOverride()
 	allowCrossDomain()
 
 	beego.Run()
@@ -54,6 +58,29 @@ func allowCrossDomain() {
 		if ctx.Input.Method() == "OPTIONS" {
 			ctx.Output.SetStatus(200)
 			ctx.ResponseWriter.Started = true
+		}
+	})
+}
+
+func allowMethodOverride() {
+	beego.InsertFilter("*", beego.BeforeRouter, func(ctx *context.Context) {
+		if ctx.Input.Method() != "POST" {
+			return
+		}
+		contentType := ctx.Input.Header("Content-type")
+		if strings.HasPrefix(contentType, "application/json") == false {
+			return
+		}
+		if ctx.Input.RequestBody == nil || len(ctx.Input.RequestBody) == 0 {
+			return
+		}
+		var object map[string]interface{}
+		err := json.Unmarshal(ctx.Input.RequestBody, &object)
+		if err != nil {
+			return
+		}
+		if m, ok := object["_method"].(string); ok && m != "" {
+			ctx.Request.Method = m
 		}
 	})
 }

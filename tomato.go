@@ -68,7 +68,8 @@ func allowMethodOverride() {
 			return
 		}
 		contentType := ctx.Input.Header("Content-type")
-		if strings.HasPrefix(contentType, "application/json") == false {
+		if strings.HasPrefix(contentType, "text/plain") == false &&
+			strings.HasPrefix(contentType, "application/json") == false {
 			return
 		}
 		if ctx.Input.RequestBody == nil || len(ctx.Input.RequestBody) == 0 {

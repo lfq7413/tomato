@@ -196,7 +196,7 @@ func httpAuth(authorization string) map[string]string {
 
 	var appID, masterKey, javascriptKey string
 	authPrefix1 := "basic "
-	authPrefix2 := "basic "
+	authPrefix2 := "Basic "
 
 	match := strings.HasPrefix(authorization, authPrefix1) || strings.HasPrefix(authorization, authPrefix2)
 	if match {

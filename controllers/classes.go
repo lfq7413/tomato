@@ -67,7 +67,13 @@ func (c *ClassesController) HandleGet() {
 	}
 	for k := range c.Query {
 		if allowedGetQueryKeys[k] == false {
-			c.HandleError(errs.E(errs.InvalidQuery, "`Invalid parameter for query: "+k), 0)
+			c.HandleError(errs.E(errs.InvalidQuery, "Invalid parameter for query: "+k), 0)
+			return
+		}
+	}
+	for k := range c.JSONBody {
+		if allowedGetQueryKeys[k] == false {
+			c.HandleError(errs.E(errs.InvalidQuery, "Invalid parameter for query: "+k), 0)
 			return
 		}
 	}
@@ -75,9 +81,14 @@ func (c *ClassesController) HandleGet() {
 	options := types.M{}
 	if c.Query["keys"] != "" {
 		options["keys"] = c.Query["keys"]
+	} else if c.JSONBody["keys"] != "" {
+		options["keys"] = c.JSONBody["keys"]
 	}
+
 	if c.Query["include"] != "" {
 		options["include"] = c.Query["include"]
+	} else if c.JSONBody["include"] != "" {
+		options["include"] = c.JSONBody["include"]
 	}
 
 	response, err := rest.Get(c.Auth, c.ClassName, c.ObjectID, options, c.Info.ClientSDK)
@@ -149,7 +160,13 @@ func (c *ClassesController) HandleFind() {
 	}
 	for k := range c.Query {
 		if allowConstraints[k] == false {
-			c.HandleError(errs.E(errs.InvalidQuery, "`Invalid parameter for query: "+k), 0)
+			c.HandleError(errs.E(errs.InvalidQuery, "Invalid parameter for query: "+k), 0)
+			return
+		}
+	}
+	for k := range c.JSONBody {
+		if allowConstraints[k] == false {
+			c.HandleError(errs.E(errs.InvalidQuery, "Invalid parameter for query: "+k), 0)
 			return
 		}
 	}
@@ -160,30 +177,56 @@ func (c *ClassesController) HandleFind() {
 		if i, err := strconv.Atoi(c.Query["skip"]); err == nil {
 			options["skip"] = i
 		}
+	} else if c.JSONBody != nil && c.JSONBody["skip"] != nil {
+		if i, ok := c.JSONBody["skip"].(float64); ok {
+			options["skip"] = int(i)
+		}
 	}
+
 	if c.Query["limit"] != "" {
 		if i, err := strconv.Atoi(c.Query["limit"]); err == nil {
 			options["limit"] = i
 		} else {
 			options["limit"] = 100
 		}
+	} else if c.JSONBody != nil && c.JSONBody["limit"] != nil {
+		if i, ok := c.JSONBody["limit"].(float64); ok {
+			options["limit"] = int(i)
+		} else {
+			options["limit"] = 100
+		}
 	} else {
 		options["limit"] = 100
 	}
+
 	if c.Query["order"] != "" {
 		options["order"] = c.Query["order"]
+	} else if c.JSONBody != nil && c.JSONBody["order"] != nil {
+		options["order"] = c.JSONBody["order"]
 	}
+
 	if c.Query["count"] != "" {
 		options["count"] = true
+	} else if c.JSONBody != nil && c.JSONBody["count"] != nil {
+		options["count"] = true
 	}
+
 	if c.Query["keys"] != "" {
 		options["keys"] = c.Query["keys"]
+	} else if c.JSONBody != nil && c.JSONBody["keys"] != nil {
+		options["keys"] = c.JSONBody["keys"]
 	}
+
 	if c.Query["include"] != "" {
 		options["include"] = c.Query["include"]
+	} else if c.JSONBody != nil && c.JSONBody["include"] != nil {
+		options["include"] = c.JSONBody["include"]
 	}
+
 	if c.Query["redirectClassNameForKey"] != "" {
 		options["redirectClassNameForKey"] = c.Query["redirectClassNameForKey"]
+	} else if c.JSONBody != nil && c.JSONBody["redirectClassNameForKey"] != nil {
+		options["redirectClassNameForKey"] = c.JSONBody["redirectClassNameForKey"]
 	}
 
 	where := types.M{}
@@ -193,6 +236,8 @@ func (c *ClassesController) HandleFind() {
 			c.HandleError(errs.E(errs.InvalidJSON, "where should be valid json"), 0)
 			return
 		}
+	} else if c.JSONBody != nil && c.JSONBody["where"] != nil {
+		where = utils.M(c.JSONBody["where"])
 	}
 
 	response, err := rest.Find(c.Auth, c.ClassName, where, options, c.Info.ClientSDK)

@@ -35,14 +35,14 @@ type FunctionRequest struct {
 	Master         bool
 	User           types.M
 	InstallationID string
-	Headers        map[string][]string
+	Headers        map[string]string
 	FunctionName   string
 }
 
 // JobRequest ...
 type JobRequest struct {
 	Params  types.M
-	Headers map[string][]string
+	Headers map[string]string
 	JobName string
 	JobID   string
 }

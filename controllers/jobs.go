@@ -46,10 +46,23 @@ func (j *JobsController) runJob(jobName string) {
 		j.JSONBody = types.M{}
 	}
 
+	params := types.M{}
+	for k, v := range j.JSONBody {
+		params[k] = v
+	}
+	for k, v := range j.Query {
+		params[k] = v
+	}
+
+	headers := map[string]string{}
+	for k := range j.Ctx.Request.Header {
+		headers[k] = j.Ctx.Request.Header.Get(k)
+	}
+
 	request := cloud.JobRequest{
-		Params:  j.JSONBody,
+		Params:  params,
 		JobName: jobName,
-		Headers: j.Ctx.Input.Context.Request.Header,
+		Headers: headers,
 	}
 	response := cloud.JobResponse{
 		JobStatus: jobHandler,

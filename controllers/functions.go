@@ -30,12 +30,25 @@ func (f *FunctionsController) HandleCloudFunction() {
 		f.JSONBody = types.M{}
 	}
 
+	params := types.M{}
+	for k, v := range f.JSONBody {
+		params[k] = v
+	}
+	for k, v := range f.Query {
+		params[k] = v
+	}
+
+	headers := map[string]string{}
+	for k := range f.Ctx.Request.Header {
+		headers[k] = f.Ctx.Request.Header.Get(k)
+	}
+
 	request := cloud.FunctionRequest{
-		Params:         f.JSONBody,
+		Params:         params,
 		Master:         false,
 		InstallationID: f.Info.InstallationID,
 		FunctionName:   functionName,
-		Headers:        f.Ctx.Input.Context.Request.Header,
+		Headers:        headers,
 	}
 	if f.Auth != nil {
 		request.Master = f.Auth.IsMaster

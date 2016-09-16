@@ -18,8 +18,18 @@ type LoginController struct {
 // HandleLogIn 处理登录请求
 // @router / [get]
 func (l *LoginController) HandleLogIn() {
-	username := l.GetString("username")
-	password := l.GetString("password")
+	var username, password string
+	if l.JSONBody != nil && l.JSONBody["username"] != nil {
+		username = utils.S(l.JSONBody["username"])
+	} else {
+		username = l.Query["username"]
+	}
+	if l.JSONBody != nil && l.JSONBody["password"] != nil {
+		password = utils.S(l.JSONBody["password"])
+	} else {
+		password = l.Query["password"]
+	}
+
 	if username == "" {
 		l.HandleError(errs.E(errs.UsernameMissing, "username is required."), 0)
 		return

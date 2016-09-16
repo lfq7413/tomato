@@ -2261,6 +2261,7 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 		"_session_token":                 "abc",
 		"_updated_at":                    tmpTime,
 		"_created_at":                    tmpTime,
+		"expiresAt":                      tmpTime,
 	}
 	schema = types.M{}
 	result, err = tf.mongoObjectToParseObject("", mongoObject, schema)
@@ -2274,6 +2275,10 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 		"sessionToken":                   "abc",
 		"updatedAt":                      tmpTimeStr,
 		"createdAt":                      tmpTimeStr,
+		"expiresAt": types.M{
+			"__type": "Date",
+			"iso":    tmpTimeStr,
+		},
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)

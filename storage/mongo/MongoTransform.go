@@ -1192,9 +1192,15 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 
 			case "expiresAt", "_expiresAt":
 				if t, ok := value.(time.Time); ok {
-					restObject["expiresAt"] = utils.TimetoString(t)
+					restObject["expiresAt"] = types.M{
+						"__type": "Date",
+						"iso":    utils.TimetoString(t),
+					}
 				} else {
-					restObject["expiresAt"] = value
+					restObject["expiresAt"] = types.M{
+						"__type": "Date",
+						"iso":    value,
+					}
 				}
 
 			default:

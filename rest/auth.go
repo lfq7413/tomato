@@ -75,7 +75,8 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 	if result["expiresAt"] == nil {
 		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")
 	}
-	expiresAtString := utils.S(result["expiresAt"])
+	expiresAtDate := utils.M(result["expiresAt"])
+	expiresAtString := utils.S(expiresAtDate["iso"])
 	expiresAt, err := utils.StringtoTime(expiresAtString)
 	if err != nil {
 		return nil, errs.E(errs.InvalidSessionToken, "Session token is expired.")

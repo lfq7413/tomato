@@ -1,7 +1,6 @@
 package tomato
 
 import (
-	"encoding/json"
 	"strings"
 
 	_ "github.com/lfq7413/tomato/routers"
@@ -75,13 +74,43 @@ func allowMethodOverride() {
 		if ctx.Input.RequestBody == nil || len(ctx.Input.RequestBody) == 0 {
 			return
 		}
-		var object map[string]interface{}
-		err := json.Unmarshal(ctx.Input.RequestBody, &object)
-		if err != nil {
+		// 通过字符串搜索查找 "_method": "GET" 中的 GET
+		body := string(ctx.Input.RequestBody)
+		// 查找 "_method"
+		pos := strings.Index(body, `"_method"`)
+		if pos == -1 {
 			return
 		}
-		if m, ok := object["_method"].(string); ok && m != "" {
-			ctx.Request.Method = m
+		pos += len(`"_method"`)
+		body = body[pos:]
+		// 查找 : ，中间仅允许空格存在
+		pos = strings.Index(body, `:`)
+		if pos == -1 {
+			return
 		}
+		s1 := body[:pos]
+		if len(strings.Replace(s1, " ", "", -1)) > 0 {
+			return
+		}
+		pos += len(`:`)
+		body = body[pos:]
+		// 查找 " ，中间仅允许空格存在
+		pos = strings.Index(body, `"`)
+		if pos == -1 {
+			return
+		}
+		s2 := body[:pos]
+		if len(strings.Replace(s2, " ", "", -1)) > 0 {
+			return
+		}
+		pos += len(`"`)
+		body = body[pos:]
+		// 查找最后的 "
+		pos = strings.Index(body, `"`)
+		if pos == -1 {
+			return
+		}
+		method := body[:pos]
+		ctx.Request.Method = method
 	})
 }

@@ -27,7 +27,7 @@ copyrequestbody = true
 EnableDocs = true
 
 serverurl = http://127.0.0.1:8080/v1/
-databaseuri = 127.0.0.1:27017/test
+databaseuri = 192.168.99.100:27017/test
 ```
 ###### 运行
 ```bash

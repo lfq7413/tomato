@@ -17,7 +17,7 @@ type liveQueryServer struct {
 	addr              string
 	clientID          int
 	clients           map[int]*client
-	subscriptions     map[string]map[string]*subscription // className -> (queryHash -> subscription)
+	subscriptions     map[string]map[string]*subscription // className -> (queryHash -> subscription) TODO 增加并发锁
 	keyPairs          map[string]string
 	subscriber        subscriber
 	sessionTokenCache *sessionTokenCache

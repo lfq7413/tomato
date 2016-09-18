@@ -15,7 +15,7 @@ func (p *eventEmitterPublisher) publish(channel, message string) {
 type eventEmitterSubscriber struct {
 	EventEmitter
 	emitter       *EventEmitter
-	subscriptions map[string]HandlerType
+	subscriptions map[string]HandlerType // TODO 增加并发锁
 }
 
 func (s *eventEmitterSubscriber) subscribe(channel string) {

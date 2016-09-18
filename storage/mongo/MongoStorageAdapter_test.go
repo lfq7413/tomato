@@ -1598,7 +1598,7 @@ func Test_mongoSchemaFromFieldsAndClassNameAndCLP(t *testing.T) {
 }
 
 func getAdapter() *MongoAdapter {
-	storage.TomatoDB = newMongoDB("127.0.0.1:27017/test")
+	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
 	return NewMongoAdapter("tomato")
 }
 

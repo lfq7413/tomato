@@ -3,6 +3,7 @@ package orm
 import (
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/errs"
@@ -113,10 +114,12 @@ var requiredColumns = map[string][]string{
 
 // Schema schema 操作对象
 type Schema struct {
+	dataMutex         sync.Mutex
+	permsMutex        sync.Mutex
 	dbAdapter         storage.Adapter
 	cache             *cache.SchemaCache
-	data              types.M // data 保存类的字段信息，类型为 API 类型
-	perms             types.M // perms 保存类的操作权限
+	data              types.M // data 保存类的字段信息，类型为 API 类型 TODO 增加并发锁
+	perms             types.M // perms 保存类的操作权限 TODO 增加并发锁
 	reloadDataPromise []types.M
 }
 
@@ -233,6 +236,10 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 		return nil, err
 	}
 
+	s.dataMutex.Lock()
+	defer s.dataMutex.Unlock()
+	s.permsMutex.Lock()
+	defer s.permsMutex.Unlock()
 	return types.M{
 		"className":             className,
 		"fields":                s.data[className],
@@ -340,6 +347,8 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 
 // testBaseCLP 校验用户是否有权限对表进行指定操作
 func (s *Schema) testBaseCLP(className string, aclGroup []string, operation string) bool {
+	s.permsMutex.Lock()
+	defer s.permsMutex.Unlock()
 	if s.perms == nil {
 		return true
 	}
@@ -380,6 +389,8 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 		return nil
 	}
 
+	s.permsMutex.Lock()
+	defer s.permsMutex.Unlock()
 	classPerms := utils.M(s.perms[className])
 
 	var permissionField string
@@ -402,9 +413,12 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 
 // EnforceClassExists 校验类名
 func (s *Schema) EnforceClassExists(className string) error {
+	s.dataMutex.Lock()
 	if s.data != nil && s.data[className] != nil {
+		s.dataMutex.Unlock()
 		return nil
 	}
+	s.dataMutex.Unlock()
 
 	// 添加不存在的类定义
 	_, err := s.AddClassIfNotExists(className, nil, nil)
@@ -413,6 +427,8 @@ func (s *Schema) EnforceClassExists(className string) error {
 	}
 	s.reloadData(types.M{"clearCache": true})
 
+	s.dataMutex.Lock()
+	defer s.dataMutex.Unlock()
 	if s.data[className] != nil {
 		return nil
 	}
@@ -581,11 +597,15 @@ func (s *Schema) setPermissions(className string, perms types.M, newSchema types
 // HasClass Schema 中是否存在类定义
 func (s *Schema) HasClass(className string) bool {
 	s.reloadData(nil)
+	s.dataMutex.Lock()
+	defer s.dataMutex.Unlock()
 	return s.data[className] != nil
 }
 
 // getExpectedType 获取期望的字段类型
 func (s *Schema) getExpectedType(className, fieldName string) types.M {
+	s.dataMutex.Lock()
+	defer s.dataMutex.Unlock()
 	if s.data != nil && s.data[className] != nil {
 		cls := utils.M(s.data[className])
 		expectedType := utils.M(cls[fieldName])
@@ -623,6 +643,8 @@ func (s *Schema) reloadData(options types.M) {
 		s.reloadDataPromise = nil
 		return
 	}
+	s.dataMutex.Lock()
+	s.permsMutex.Lock()
 	for _, schema := range allSchemas {
 		if schema == nil {
 			continue
@@ -631,6 +653,7 @@ func (s *Schema) reloadData(options types.M) {
 		s.data[utils.S(schema["className"])] = schema["fields"]
 		s.perms[utils.S(schema["className"])] = schema["classLevelPermissions"]
 	}
+	s.permsMutex.Unlock()
 
 	for _, className := range volatileClasses {
 		sch := types.M{
@@ -640,6 +663,7 @@ func (s *Schema) reloadData(options types.M) {
 		}
 		s.data[className] = injectDefaultSchema(sch)
 	}
+	s.dataMutex.Unlock()
 
 	s.reloadDataPromise = allSchemas
 }
@@ -693,6 +717,8 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool, optio
 	if allowVolatileClasses {
 		for _, name := range volatileClasses {
 			if name == className {
+				s.dataMutex.Lock()
+				defer s.dataMutex.Unlock()
 				if s.data != nil && utils.M(s.data[className]) != nil {
 					return utils.M(s.data[className]), nil
 				}

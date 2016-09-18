@@ -4,7 +4,7 @@ import "unsafe"
 
 // EventEmitter 事件发射器
 type EventEmitter struct {
-	events map[string][]HandlerType
+	events map[string][]HandlerType // TODO 增加并发锁
 }
 
 // HandlerType ...

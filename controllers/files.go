@@ -11,9 +11,16 @@ import (
 )
 
 // FilesController 处理 /files 接口的请求
-// TODO 可能不需要权限验证
 type FilesController struct {
 	ClassesController
+}
+
+// Prepare ...
+func (f *FilesController) Prepare() {
+	if f.Ctx.Input.Method() == "GET" && strings.HasPrefix(f.Ctx.Input.URL(), "/v1/files") {
+		return
+	}
+	f.ClassesController.Prepare()
 }
 
 // HandleGet 处理下载文件请求

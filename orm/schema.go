@@ -118,8 +118,8 @@ type Schema struct {
 	permsMutex        sync.Mutex
 	dbAdapter         storage.Adapter
 	cache             *cache.SchemaCache
-	data              types.M // data 保存类的字段信息，类型为 API 类型 TODO 增加并发锁
-	perms             types.M // perms 保存类的操作权限 TODO 增加并发锁
+	data              types.M // data 保存类的字段信息，类型为 API 类型
+	perms             types.M // perms 保存类的操作权限
 	reloadDataPromise []types.M
 }
 

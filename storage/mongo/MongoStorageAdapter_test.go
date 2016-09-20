@@ -378,8 +378,8 @@ func Test_DeleteClass(t *testing.T) {
 	/*****************************************************/
 	className = "user"
 	result, err = adapter.DeleteClass(className)
-	expect = nil
-	if err != nil || result != nil {
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	}
 	/*****************************************************/

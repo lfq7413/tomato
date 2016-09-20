@@ -117,10 +117,9 @@ func (m *MongoAdapter) DeleteClass(className string) (types.M, error) {
 	err := coll.drop()
 	m.collectionList = m.getCollectionNames()
 	if err != nil {
-		if err.Error() == "ns not found" {
-			return nil, nil
+		if err.Error() != "ns not found" {
+			return nil, err
 		}
-		return nil, err
 	}
 	schemaCollection := m.schemaCollection()
 	return schemaCollection.findAndDeleteSchema(className)

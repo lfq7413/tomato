@@ -105,7 +105,7 @@ func (s *SchemasController) HandleUpdate() {
 	if data["className"] != nil && utils.S(data["className"]) != "" {
 		bodyClassName = utils.S(data["className"])
 	}
-	if className != bodyClassName {
+	if bodyClassName != "" && className != bodyClassName {
 		s.HandleError(errs.E(errs.InvalidClassName, "Class name mismatch between "+bodyClassName+" and "+className+"."), 0)
 		return
 	}

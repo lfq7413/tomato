@@ -10,6 +10,10 @@ import (
 
 const defaultHooksCollectionName = "_Hooks"
 
+func init() {
+	Load()
+}
+
 // Load ...
 func Load() {
 	hooks, _ := getHooks(types.M{}, types.M{})

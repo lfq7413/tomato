@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -9,6 +11,14 @@ import (
 // GlobalConfigController 处理 /config 接口的请求
 type GlobalConfigController struct {
 	ClassesController
+}
+
+// Prepare ...
+func (g *GlobalConfigController) Prepare() {
+	if g.Ctx.Input.Method() == "GET" && strings.HasPrefix(g.Ctx.Input.URL(), "/v1/config") {
+		return
+	}
+	g.ClassesController.Prepare()
 }
 
 // HandleGet 获取配置信息

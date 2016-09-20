@@ -47,8 +47,8 @@ func allowCrossDomain() {
 	beego.InsertFilter("*", beego.BeforeRouter, cors.Allow(&cors.Options{
 		AllowAllOrigins: true,
 		AllowMethods:    []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:    []string{"Origin", "Authorization", "Access-Control-Allow-Origin"},
-		ExposeHeaders: []string{"Access-Control-Allow-Headers", "X-Parse-Master-Key", "X-Parse-REST-API-Key",
+		AllowHeaders: []string{"Origin", "Authorization", "Access-Control-Allow-Origin",
+			"Access-Control-Allow-Headers", "X-Parse-Master-Key", "X-Parse-REST-API-Key",
 			"X-Parse-Javascript-Key", "X-Parse-Application-Id", "X-Parse-Client-Version", "X-Parse-Session-Token",
 			"X-Requested-With", "X-Parse-Revocable-Session", "Content-Type"},
 		AllowCredentials: true,

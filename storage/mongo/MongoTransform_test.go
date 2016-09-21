@@ -3020,6 +3020,28 @@ func Test_geoPointCoder(t *testing.T) {
 		"latitude":  20.0,
 	}
 	databaseObject, err = gpc.jsonToDatabase(jsonObject)
+	expect = types.S{20.0, 20.0}
+	if err != nil || reflect.DeepEqual(databaseObject, expect) == false {
+		t.Error("expect:", expect, "get:", databaseObject)
+	}
+	/*************************************************/
+	jsonObject = types.M{
+		"__type":    "GeoPoint",
+		"longitude": 20.0,
+		"latitude":  "20.0",
+	}
+	databaseObject, err = gpc.jsonToDatabase(jsonObject)
+	expect = types.S{20.0, 20.0}
+	if err != nil || reflect.DeepEqual(databaseObject, expect) == false {
+		t.Error("expect:", expect, "get:", databaseObject)
+	}
+	/*************************************************/
+	jsonObject = types.M{
+		"__type":    "GeoPoint",
+		"longitude": "abc",
+		"latitude":  20.0,
+	}
+	databaseObject, err = gpc.jsonToDatabase(jsonObject)
 	expect = errs.E(errs.InvalidJSON, "invalid longitude")
 	if reflect.DeepEqual(err, expect) == false {
 		t.Error("expect:", expect, "get:", err)
@@ -3028,7 +3050,7 @@ func Test_geoPointCoder(t *testing.T) {
 	jsonObject = types.M{
 		"__type":    "GeoPoint",
 		"longitude": 20.0,
-		"latitude":  "20.0",
+		"latitude":  "abc",
 	}
 	databaseObject, err = gpc.jsonToDatabase(jsonObject)
 	expect = errs.E(errs.InvalidJSON, "invalid latitude")

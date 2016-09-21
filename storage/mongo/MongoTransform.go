@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1463,15 +1464,13 @@ func (g geoPointCoder) isValidDatabaseObject(object interface{}) bool {
 	p1 := false
 	if _, ok := points[0].(float64); ok {
 		p1 = true
-	}
-	if _, ok := points[0].(int); ok {
+	} else if _, ok := points[0].(int); ok {
 		p1 = true
 	}
 	p2 := false
 	if _, ok := points[1].(float64); ok {
 		p2 = true
-	}
-	if _, ok := points[1].(int); ok {
+	} else if _, ok := points[1].(int); ok {
 		p2 = true
 	}
 	if p1 && p2 {
@@ -1485,9 +1484,16 @@ func (g geoPointCoder) jsonToDatabase(json types.M) (interface{}, error) {
 	p1 := false
 	if _, ok := json["longitude"].(float64); ok {
 		p1 = true
-	}
-	if _, ok := json["longitude"].(int); ok {
+	} else if _, ok := json["longitude"].(int); ok {
 		p1 = true
+	} else if s, ok := json["longitude"].(string); ok {
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			p1 = false
+		} else {
+			json["longitude"] = f
+			p1 = true
+		}
 	}
 	if p1 == false {
 		return nil, errs.E(errs.InvalidJSON, "invalid longitude")
@@ -1495,9 +1501,16 @@ func (g geoPointCoder) jsonToDatabase(json types.M) (interface{}, error) {
 	p2 := false
 	if _, ok := json["latitude"].(float64); ok {
 		p2 = true
-	}
-	if _, ok := json["latitude"].(int); ok {
+	} else if _, ok := json["latitude"].(int); ok {
 		p2 = true
+	} else if s, ok := json["latitude"].(string); ok {
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			p2 = false
+		} else {
+			json["latitude"] = f
+			p2 = true
+		}
 	}
 	if p2 == false {
 		return nil, errs.E(errs.InvalidJSON, "invalid latitude")

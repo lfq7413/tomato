@@ -1,6 +1,10 @@
 package controllers
 
-import "github.com/lfq7413/tomato/logger"
+import (
+	"fmt"
+
+	"github.com/lfq7413/tomato/logger"
+)
 
 // LogsController ...
 type LogsController struct {
@@ -14,14 +18,14 @@ func (l *LogsController) HandleGet() {
 		return
 	}
 
-	from := l.Ctx.Input.Param("from")
-	until := l.Ctx.Input.Param("until")
-	size := l.Ctx.Input.Param("size")
-	if n := l.Ctx.Input.Param("size"); n != "" {
+	from := l.Query["from"]
+	until := l.Query["until"]
+	size := l.Query["size"]
+	if n := l.Query["n"]; n != "" {
 		size = n
 	}
-	order := l.Ctx.Input.Param("order")
-	level := l.Ctx.Input.Param("level")
+	order := l.Query["order"]
+	level := l.Query["level"]
 
 	options := map[string]string{
 		"from":  from,
@@ -30,6 +34,7 @@ func (l *LogsController) HandleGet() {
 		"order": order,
 		"level": level,
 	}
+	fmt.Println(options)
 	result, err := logger.GetLogs(options)
 	if err != nil {
 		l.HandleError(err, 0)

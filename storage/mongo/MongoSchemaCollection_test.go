@@ -704,6 +704,26 @@ func Test_addFieldIfNotExists(t *testing.T) {
 	className = "user"
 	fields = types.M{
 		"key1": types.M{
+			"type": "GeoPoint",
+		},
+	}
+	classLevelPermissions = nil
+	msc.addSchema(className, fields, classLevelPermissions)
+	className = "user"
+	fieldName = "key2"
+	fieldType = types.M{
+		"type": "File",
+	}
+	err = msc.addFieldIfNotExists(className, fieldName, fieldType)
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	msc.collection.drop()
+	/*****************************************************/
+	className = "user"
+	fields = types.M{
+		"key1": types.M{
 			"type": "String",
 		},
 	}

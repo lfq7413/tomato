@@ -110,7 +110,7 @@ func (m *MongoSchemaCollection) addFieldIfNotExists(className string, fieldName 
 		return nil
 	}
 
-	if fieldType != nil || utils.S(fieldType["type"]) == "GeoPoint" {
+	if fieldType != nil && utils.S(fieldType["type"]) == "GeoPoint" {
 		if fields := utils.M(schema["fields"]); fields != nil {
 			for _, v := range fields {
 				if existingField := utils.M(v); existingField != nil {

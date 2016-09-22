@@ -399,10 +399,16 @@ func convertParseSchemaToMongoSchema(schema types.M) types.M {
 	}
 
 	if fields := utils.M(schema["fields"]); fields != nil {
-		delete(fields, "_rperm")
-		delete(fields, "_wperm")
+		if _, ok := fields["_rperm"]; ok {
+			delete(fields, "_rperm")
+		}
+		if _, ok := fields["_wperm"]; ok {
+			delete(fields, "_wperm")
+		}
 		if utils.S(schema["className"]) == "_User" {
-			delete(fields, "_hashed_password")
+			if _, ok := fields["_hashed_password"]; ok {
+				delete(fields, "_hashed_password")
+			}
 		}
 	}
 

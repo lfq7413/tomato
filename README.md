@@ -28,13 +28,24 @@ EnableDocs = true
 
 serverurl = http://127.0.0.1:8080/v1/
 databaseuri = 192.168.99.100:27017/test
+AppID = test
+MasterKey = test
+ClientKey = test
+AllowClientClassCreation = true
 ```
 ###### 运行
 ```bash
     go run hello.go
 ```
-###### 完成
-打开浏览器，访问 `http://127.0.0.1:8080`
+###### 创建对象
+```bash
+    curl -X POST \
+    -H "X-Parse-Application-Id: test" \
+    -H "X-Parse-Client-Key: test" \
+    -H "Content-Type: application/json" \
+    -d '{"score":1337,"playerName":"Sean Plott","cheatMode":false}' \
+    http://127.0.0.1:8080/v1/classes/GameScore
+```
 
 ## 功能
 

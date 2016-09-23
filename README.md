@@ -49,11 +49,6 @@ AllowClientClassCreation = true
 
 ## 功能
 
-## 注意事项
-
-* 修改 tomato 工程的路由信息之后，需要运行 refresh.sh ，更新注解路由
-* 使用 tomato 的应用，可在应用同目录下添加配置文件：/conf/app.conf，文件格式与 beego 完全一致
-
 ## 开发日志
 
 [开发日志.md](/开发日志.md)

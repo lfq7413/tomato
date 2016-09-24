@@ -35,6 +35,9 @@ type Config struct {
 	MailUsername                     string
 	MailPassword                     string
 	WebhookKey                       string
+	EnableAccountLockout             bool
+	AccountLockoutThreshold          int
+	AccountLockoutDuration           int
 }
 
 var (
@@ -98,6 +101,10 @@ func parseConfig() {
 	TConfig.MailUsername = beego.AppConfig.String("MailUsername")
 	TConfig.MailPassword = beego.AppConfig.String("MailPassword")
 	TConfig.WebhookKey = beego.AppConfig.String("WebhookKey")
+
+	TConfig.EnableAccountLockout = beego.AppConfig.DefaultBool("EnableAccountLockout", false)
+	TConfig.AccountLockoutThreshold = beego.AppConfig.DefaultInt("AccountLockoutThreshold", 0)
+	TConfig.AccountLockoutDuration = beego.AppConfig.DefaultInt("AccountLockoutDuration", 0)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

@@ -79,6 +79,11 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	case "_email_verify_token_expires_at":
 		key = "_email_verify_token_expires_at"
 		timeField = true
+	case "_account_lockout_expires_at":
+		key = "_account_lockout_expires_at"
+		timeField = true
+	case "_failed_login_count":
+		key = "_failed_login_count"
 	case "_rperm", "_wperm":
 		return key, restValue, nil
 
@@ -213,6 +218,15 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 
 	case "objectId":
 		return "_id", value, nil
+
+	case "_account_lockout_expires_at":
+		if t, ok := valueAsDate(value); ok {
+			return "_account_lockout_expires_at", t, nil
+		}
+		key = "_account_lockout_expires_at"
+
+	case "_failed_login_count":
+		return key, value, nil
 
 	case "sessionToken":
 		return "_session_token", value, nil
@@ -861,7 +875,22 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(restKey string, res
 		}
 		return "_email_verify_token_expires_at", coercedToDate, nil
 
-	case "_rperm", "_wperm", "_email_verify_token", "_hashed_password", "_perishable_token":
+	case "_account_lockout_expires_at":
+		transformedValue, err = t.transformTopLevelAtom(restValue)
+		if err != nil {
+			return "", nil, err
+		}
+		if v, ok := transformedValue.(string); ok {
+			coercedToDate, err = utils.StringtoTime(v)
+			if err != nil {
+				return "", nil, err
+			}
+		} else {
+			coercedToDate = transformedValue
+		}
+		return "_account_lockout_expires_at", coercedToDate, nil
+
+	case "_failed_login_count", "_rperm", "_wperm", "_email_verify_token", "_hashed_password", "_perishable_token":
 		return restKey, restValue, nil
 
 	case "sessionToken":
@@ -1172,7 +1201,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 			case "_acl":
 
 			// 以下字段在 DB Controller 中决定是否删除
-			case "_email_verify_token", "_perishable_token", "_tombstone", "_email_verify_token_expires_at":
+			case "_email_verify_token", "_perishable_token", "_tombstone", "_email_verify_token_expires_at", "_account_lockout_expires_at", "_failed_login_count":
 				restObject[key] = value
 
 			case "_session_token":

@@ -167,6 +167,26 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 		t.Error("expect:", expectValue, "get result:", resultValue)
 	}
 	/*************************************************/
+	restKey = "_account_lockout_expires_at"
+	restValue = tmpTimeStr
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_account_lockout_expires_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
+	restKey = "_failed_login_count"
+	restValue = 3
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_failed_login_count"
+	expectValue = 3
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
 	restKey = "_rperm"
 	restValue = "r"
 	parseFormatSchema = types.M{}
@@ -355,6 +375,26 @@ func Test_transformQueryKeyValue(t *testing.T) {
 	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
 	expectKey = "_id"
 	expectValue = "1024"
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "_account_lockout_expires_at"
+	value = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_account_lockout_expires_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "_failed_login_count"
+	value = 3
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_failed_login_count"
+	expectValue = 3
 	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
 	}
@@ -1580,6 +1620,36 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
 	}
 	/*************************************************/
+	restKey = "_account_lockout_expires_at"
+	restValue = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "_account_lockout_expires_at"
+	expectValue = tmpTime
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
+	restKey = "_account_lockout_expires_at"
+	restValue = tmpTime
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "_account_lockout_expires_at"
+	expectValue = tmpTime
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
+	restKey = "_failed_login_count"
+	restValue = 3
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "_failed_login_count"
+	expectValue = 3
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
 	restKey = "_email_verify_token"
 	restValue = "abcd"
 	schema = types.M{}
@@ -2276,6 +2346,8 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 		"_perishable_token":              "abcd",
 		"_tombstone":                     "abcd",
 		"_email_verify_token_expires_at": "abcd",
+		"_account_lockout_expires_at":    "abc",
+		"_failed_login_count":            3,
 		"_session_token":                 "abc",
 		"_updated_at":                    tmpTime,
 		"_created_at":                    tmpTime,
@@ -2290,6 +2362,8 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 		"_perishable_token":              "abcd",
 		"_tombstone":                     "abcd",
 		"_email_verify_token_expires_at": "abcd",
+		"_account_lockout_expires_at":    "abc",
+		"_failed_login_count":            3,
 		"sessionToken":                   "abc",
 		"updatedAt":                      tmpTimeStr,
 		"createdAt":                      tmpTimeStr,

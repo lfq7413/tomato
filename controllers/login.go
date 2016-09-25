@@ -67,6 +67,12 @@ func (l *LoginController) HandleLogIn() {
 
 	// TODO 换用高强度的加密方式
 	correct := utils.Compare(password, utils.S(user["password"]))
+	accountLockoutPolicy := rest.NewAccountLockout(utils.S(user["username"]))
+	err = accountLockoutPolicy.HandleLoginAttempt(correct)
+	if err != nil {
+		l.HandleError(err, 0)
+		return
+	}
 	if correct == false {
 		l.HandleError(errs.E(errs.ObjectNotFound, "Invalid username/password."), 0)
 		return

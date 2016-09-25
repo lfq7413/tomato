@@ -5144,9 +5144,15 @@ func Test_filterSensitiveData(t *testing.T) {
 	isMaster = false
 	aclGroup = []string{"1024"}
 	object = types.M{
-		"objectId":         "1024",
-		"_hashed_password": "1024",
-		"sessionToken":     "abc",
+		"objectId":                       "1024",
+		"_hashed_password":               "1024",
+		"_email_verify_token":            "abc",
+		"_perishable_token":              "abc",
+		"_tombstone":                     "abc",
+		"_email_verify_token_expires_at": "abc",
+		"_failed_login_count":            "abc",
+		"_account_lockout_expires_at":    "abc",
+		"sessionToken":                   "abc",
 		"authData": types.M{
 			"facebook": types.M{"id": "1024"},
 		},
@@ -5303,6 +5309,8 @@ func Test_validateQuery(t *testing.T) {
 		"_perishable_token":              "hello",
 		"_email_verify_token":            "hello",
 		"_email_verify_token_expires_at": "hello",
+		"_account_lockout_expires_at":    "hello",
+		"_failed_login_count":            "hello",
 	}
 	err = validateQuery(query)
 	expect = nil

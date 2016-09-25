@@ -251,7 +251,14 @@ func (d *DBController) Destroy(className string, query types.M, options types.M)
 	return nil
 }
 
-var specialKeysForUpdate = []string{"_hashed_password", "_perishable_token", "_email_verify_token", "_email_verify_token_expires_at"}
+var specialKeysForUpdate = []string{
+	"_hashed_password",
+	"_perishable_token",
+	"_email_verify_token",
+	"_email_verify_token_expires_at",
+	"_account_lockout_expires_at",
+	"_failed_login_count",
+}
 
 // Update 更新对象
 // options 中的参数包括：acl、many、upsert
@@ -1143,6 +1150,8 @@ func filterSensitiveData(isMaster bool, aclGroup []string, className string, obj
 	delete(object, "_perishable_token")
 	delete(object, "_tombstone")
 	delete(object, "_email_verify_token_expires_at")
+	delete(object, "_failed_login_count")
+	delete(object, "_account_lockout_expires_at")
 
 	// 当前用户返回所有信息
 	if aclGroup == nil {
@@ -1320,7 +1329,17 @@ func addReadACL(query types.M, acl []string) types.M {
 	return newQuery
 }
 
-var specialQuerykeys = []string{"$and", "$or", "_rperm", "_wperm", "_perishable_token", "_email_verify_token", "_email_verify_token_expires_at"}
+var specialQuerykeys = []string{
+	"$and",
+	"$or",
+	"_rperm",
+	"_wperm",
+	"_perishable_token",
+	"_email_verify_token",
+	"_email_verify_token_expires_at",
+	"_account_lockout_expires_at",
+	"_failed_login_count",
+}
 
 func validateQuery(query types.M) error {
 	if query == nil {

@@ -33,6 +33,7 @@ var DefaultColumns = map[string]types.M{
 		"password":      types.M{"type": "String"},
 		"email":         types.M{"type": "String"},
 		"emailVerified": types.M{"type": "Boolean"},
+		"authData":      types.M{"type": "Object"},
 	},
 	"_Installation": types.M{
 		"installationId":   types.M{"type": "String"},

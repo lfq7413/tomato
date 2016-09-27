@@ -1300,6 +1300,7 @@ func Test_reloadData(t *testing.T) {
 			"password":      types.M{"type": "String"},
 			"email":         types.M{"type": "String"},
 			"emailVerified": types.M{"type": "Boolean"},
+			"authData":      types.M{"type": "Object"},
 		},
 		"_PushStatus": types.M{
 			"className": "_PushStatus",
@@ -1462,6 +1463,7 @@ func Test_GetAllClasses(t *testing.T) {
 				"password":      types.M{"type": "String"},
 				"email":         types.M{"type": "String"},
 				"emailVerified": types.M{"type": "Boolean"},
+				"authData":      types.M{"type": "Object"},
 			},
 			"classLevelPermissions": types.M{
 				"find":     types.M{"*": true},
@@ -2839,6 +2841,7 @@ func Test_injectDefaultSchema(t *testing.T) {
 			"password":      types.M{"type": "String"},
 			"email":         types.M{"type": "String"},
 			"emailVerified": types.M{"type": "Boolean"},
+			"authData":      types.M{"type": "Object"},
 		},
 		"classLevelPermissions": nil,
 	}
@@ -2868,6 +2871,7 @@ func Test_injectDefaultSchema(t *testing.T) {
 			"password":      types.M{"type": "String"},
 			"email":         types.M{"type": "String"},
 			"emailVerified": types.M{"type": "Boolean"},
+			"authData":      types.M{"type": "Object"},
 		},
 		"classLevelPermissions": types.M{
 			"find": types.M{"*": true},
@@ -2929,6 +2933,7 @@ func Test_convertSchemaToAdapterSchema(t *testing.T) {
 			"emailVerified":    types.M{"type": "Boolean"},
 			"_rperm":           types.M{"type": "Array"},
 			"_wperm":           types.M{"type": "Array"},
+			"authData":         types.M{"type": "Object"},
 		},
 		"classLevelPermissions": nil,
 	}

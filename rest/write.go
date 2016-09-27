@@ -90,10 +90,6 @@ func (w *Write) Execute() (types.M, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = w.validateSchema()
-	if err != nil {
-		return nil, err
-	}
 	err = w.handleInstallation()
 	if err != nil {
 		return nil, err
@@ -107,6 +103,10 @@ func (w *Write) Execute() (types.M, error) {
 		return nil, err
 	}
 	err = w.runBeforeTrigger()
+	if err != nil {
+		return nil, err
+	}
+	err = w.validateSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -666,7 +666,6 @@ func (w *Write) runBeforeTrigger() error {
 		if len(fields) > 0 {
 			w.storage["fieldsChangedByTrigger"] = fields
 			w.data = object
-			return w.validateSchema()
 		}
 	}
 

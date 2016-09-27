@@ -157,16 +157,3 @@ func (s *SchemasController) Delete() {
 func (s *SchemasController) Put() {
 	s.ClassesController.Put()
 }
-
-// injectDefaultSchema 为 schema 添加默认字段
-func injectDefaultSchema(schema types.M) types.M {
-	defaultSchema := orm.DefaultColumns[schema["className"].(string)]
-	if defaultSchema != nil {
-		fields := schema["fields"].(map[string]interface{})
-		for k, v := range defaultSchema {
-			fields[k] = v
-		}
-		schema["fields"] = fields
-	}
-	return schema
-}

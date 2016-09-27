@@ -18,7 +18,13 @@ func (r *ResetController) HandleResetRequest() {
 		r.HandleError(errs.E(errs.EmailMissing, "you must provide an email"), 0)
 		return
 	}
-	email := r.JSONBody["email"].(string)
+	var email string
+	if v, ok := r.JSONBody["email"].(string); ok {
+		email = v
+	} else {
+		r.HandleError(errs.E(errs.InvalidEmailAddress, "you must provide a valid email string"), 0)
+		return
+	}
 	err := rest.SendPasswordResetEmail(email)
 	if err != nil {
 		if errs.GetErrorCode(err) == errs.ObjectNotFound {

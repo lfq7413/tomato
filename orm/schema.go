@@ -557,7 +557,7 @@ func (s *Schema) enforceFieldExists(className, fieldName string, fieldtype types
 	expectedType := s.getExpectedType(className, fieldName)
 	if expectedType != nil {
 		if dbTypeMatchesObjectType(expectedType, fieldtype) == false {
-			return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+fieldName+"; expected "+utils.S(expectedType["type"])+" but got "+utils.S(fieldtype["type"]))
+			return errs.E(errs.IncorrectType, "schema mismatch for "+className+"."+fieldName+"; expected "+typeToString(expectedType)+" but got "+utils.S(fieldtype["type"]))
 		}
 		return nil
 	}
@@ -1258,6 +1258,15 @@ func dbTypeMatchesObjectType(dbType, objectType types.M) bool {
 		return true
 	}
 	return false
+}
+
+func typeToString(objectType types.M) string {
+	tp := utils.S(objectType["type"])
+	targetClass := utils.S(objectType["targetClass"])
+	if targetClass != "" {
+		return tp + "<" + targetClass + ">"
+	}
+	return tp
 }
 
 // Load 返回一个新的 Schema 结构体

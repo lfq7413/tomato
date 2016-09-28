@@ -99,6 +99,38 @@ func GetAuthForSessionToken(sessionToken string, installationID string) (*Auth, 
 	}, nil
 }
 
+// GetAuthForLegacySessionToken 处理保存在 _User 中的 sessionToken。
+// 该方法处理从 parse 中迁移过来的用户数据，在 tomato 中其实不需要处理这种类型的数据，以后考虑删除
+func GetAuthForLegacySessionToken(sessionToken, installationID string) (*Auth, error) {
+	restOptions := types.M{"limit": 1}
+	query, err := NewQuery(Master(), "_User", types.M{"sessionToken": sessionToken}, restOptions, nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := query.Execute()
+	if err != nil {
+		return nil, err
+	}
+	sessionErr := errs.E(errs.InvalidSessionToken, "invalid legacy session token")
+	if response == nil || response["results"] == nil {
+		return nil, sessionErr
+	}
+	results := utils.A(response["results"])
+	if results == nil || len(results) != 1 {
+		return nil, sessionErr
+	}
+	userObject := utils.M(results[0])
+	if userObject == nil {
+		return nil, sessionErr
+	}
+	userObject["className"] = "_User"
+	return &Auth{
+		IsMaster:       false,
+		InstallationID: installationID,
+		User:           userObject,
+	}, nil
+}
+
 // CouldUpdateUserID Master 与当前用户可进行修改
 func (a *Auth) CouldUpdateUserID(objectID string) bool {
 	if a.IsMaster {

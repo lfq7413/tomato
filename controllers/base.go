@@ -179,14 +179,21 @@ func (b *BaseController) Prepare() {
 	// 生成当前会话用户权限信息
 	if info.SessionToken == "" {
 		b.Auth = &rest.Auth{InstallationID: info.InstallationID, IsMaster: false}
-	} else {
-		var err error
-		b.Auth, err = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
-		if err != nil {
-			b.HandleError(err, 0)
-			return
-		}
+		return
 	}
+	var auth *rest.Auth
+	var err error
+	if (url == "/v1/upgradeToRevocableSession" || url == "/v1/upgradeToRevocableSession/") &&
+		strings.Index(info.SessionToken, "r:") != 0 {
+		auth, err = rest.GetAuthForLegacySessionToken(info.SessionToken, info.InstallationID)
+	} else {
+		auth, err = rest.GetAuthForSessionToken(info.SessionToken, info.InstallationID)
+	}
+	if err != nil {
+		b.HandleError(err, 0)
+		return
+	}
+	b.Auth = auth
 }
 
 func httpAuth(authorization string) map[string]string {

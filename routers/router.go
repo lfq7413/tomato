@@ -122,6 +122,11 @@ func init() {
 				&controllers.BatchController{},
 			),
 		),
+		beego.NSNamespace("/upgradeToRevocableSession",
+			beego.NSInclude(
+				&controllers.UpgradeSessionController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

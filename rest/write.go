@@ -418,7 +418,10 @@ func (w *Write) handleSession() error {
 			"user":         user,
 			"createdWith":  createdWith,
 			"restricted":   true,
-			"expiresAt":    utils.TimetoString(expiresAt),
+			"expiresAt": types.M{
+				"__type": "Date",
+				"iso":    utils.TimetoString(expiresAt),
+			},
 		}
 		// 添加请求数据中的各字段
 		for k, v := range w.data {
@@ -980,7 +983,10 @@ func (w *Write) createSessionToken() error {
 		"createdWith":    createdWith,
 		"restricted":     false,
 		"installationId": w.auth.InstallationID,
-		"expiresAt":      utils.TimetoString(expiresAt),
+		"expiresAt": types.M{
+			"__type": "Date",
+			"iso":    utils.TimetoString(expiresAt),
+		},
 	}
 	if w.response != nil {
 		if r := utils.M(w.response["response"]); r != nil {

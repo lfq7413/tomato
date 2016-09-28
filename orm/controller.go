@@ -1245,7 +1245,7 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 		if permsMap := utils.M(perms); permsMap != nil {
 			if permFields := utils.A(permsMap[field]); permFields != nil {
 				if permFields != nil && len(permFields) > 0 {
-					// 用户 ID 不唯一时，表示没有数据可供操作
+					// 用户 ID 有多个时，表示没有正确处理 ACL
 					if len(userACL) != 1 {
 						return nil
 					}

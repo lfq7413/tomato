@@ -194,9 +194,10 @@ func (q *Query) getUserAndRoleACL() error {
 	if q.auth.IsMaster || q.auth.User == nil {
 		return nil
 	}
+	acl := []string{utils.S(q.auth.User["objectId"])}
 	roles := q.auth.GetUserRoles()
-	roles = append(roles, utils.S(q.auth.User["objectId"]))
-	q.findOptions["acl"] = roles
+	acl = append(acl, roles...)
+	q.findOptions["acl"] = acl
 	return nil
 }
 

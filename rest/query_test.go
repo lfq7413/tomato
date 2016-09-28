@@ -383,7 +383,7 @@ func Test_getUserAndRoleACL(t *testing.T) {
 	}
 	q, _ = NewQuery(auth, "user", nil, nil, nil)
 	q.getUserAndRoleACL()
-	expect = []string{"role:role1001", "role:role1002", "9001"}
+	expect = []string{"9001", "role:role1001", "role:role1002"}
 	if reflect.DeepEqual(expect, q.findOptions["acl"]) == false {
 		t.Error("expect:", expect, "result:", q.findOptions["acl"])
 	}

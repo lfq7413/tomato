@@ -1156,22 +1156,6 @@ func Test_replaceInQuery(t *testing.T) {
 		t.Error("expect:", expectErr, "result:", err)
 	}
 	/**********************************************************/
-	where = types.M{
-		"post": types.M{
-			"$inQuery": types.M{
-				"where":     types.M{},
-				"className": "hello",
-				"other":     "world",
-			},
-		},
-	}
-	q, _ = NewQuery(nil, "user", where, nil, nil)
-	err = q.replaceInQuery()
-	expectErr = errs.E(errs.InvalidQuery, "improper usage of $inQuery")
-	if err == nil || reflect.DeepEqual(expectErr, err) == false {
-		t.Error("expect:", expectErr, "result:", err)
-	}
-	/**********************************************************/
 	initEnv()
 	where = types.M{
 		"post": types.M{
@@ -1451,22 +1435,6 @@ func Test_replaceNotInQuery(t *testing.T) {
 			"$notInQuery": types.M{
 				"where":     types.M{},
 				"className": 1024,
-			},
-		},
-	}
-	q, _ = NewQuery(nil, "user", where, nil, nil)
-	err = q.replaceNotInQuery()
-	expectErr = errs.E(errs.InvalidQuery, "improper usage of $notInQuery")
-	if err == nil || reflect.DeepEqual(expectErr, err) == false {
-		t.Error("expect:", expectErr, "result:", err)
-	}
-	/**********************************************************/
-	where = types.M{
-		"post": types.M{
-			"$notInQuery": types.M{
-				"where":     types.M{},
-				"className": "hello",
-				"other":     "world",
 			},
 		},
 	}

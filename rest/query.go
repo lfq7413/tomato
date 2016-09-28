@@ -270,34 +270,30 @@ func (q *Query) replaceSelect() error {
 	}
 	// 必须包含两个 key ： query key
 	selectValue := utils.M(selectObject["$select"])
-	if selectValue == nil ||
-		selectValue["query"] == nil ||
-		utils.S(selectValue["key"]) == "" ||
-		len(selectValue) != 2 {
+	if selectValue == nil || len(selectValue) != 2 {
 		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
 	queryValue := utils.M(selectValue["query"])
-	// iOS SDK 中不设置 where 时，没有 where 字段，所以此处不检测 where
-	if queryValue == nil ||
-		utils.S(queryValue["className"]) == "" {
+	key := utils.S(selectValue["key"])
+	if queryValue == nil || key == "" {
 		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
-
-	additionalOptions := types.M{
-		"redirectClassNameForKey": queryValue["redirectClassNameForKey"],
+	className := utils.S(queryValue["className"])
+	where := utils.M(queryValue["where"])
+	// iOS SDK 中不设置 where 时，没有 where 字段，所以此处不检测 where
+	if className == "" {
+		return errs.E(errs.InvalidQuery, "improper usage of $select")
 	}
-
-	var where types.M
-	if w := utils.M(queryValue["where"]); w == nil {
+	if where == nil {
 		where = types.M{}
-	} else {
-		where = w
 	}
-	query, err := NewQuery(
-		q.auth,
-		utils.S(queryValue["className"]),
-		where,
-		additionalOptions, q.clientSDK)
+
+	// where 与 className 之外的字段默认为 Options
+	delete(queryValue, "where")
+	delete(queryValue, "className")
+	additionalOptions := queryValue
+
+	query, err := NewQuery(q.auth, className, where, additionalOptions, q.clientSDK)
 	if err != nil {
 		return err
 	}
@@ -317,7 +313,7 @@ func (q *Query) replaceSelect() error {
 		}
 	}
 	// 替换 $select 为 $in
-	transformSelect(selectObject, utils.S(selectValue["key"]), values)
+	transformSelect(selectObject, key, values)
 	// 继续搜索替换
 	return q.replaceSelect()
 }
@@ -331,33 +327,30 @@ func (q *Query) replaceDontSelect() error {
 	}
 	// 必须包含两个 key ： query key
 	dontSelectValue := utils.M(dontSelectObject["$dontSelect"])
-	if dontSelectValue == nil ||
-		dontSelectValue["query"] == nil ||
-		utils.S(dontSelectValue["key"]) == "" ||
-		len(dontSelectValue) != 2 {
+	if dontSelectValue == nil || len(dontSelectValue) != 2 {
 		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
 	queryValue := utils.M(dontSelectValue["query"])
-	if queryValue == nil ||
-		utils.S(queryValue["className"]) == "" {
+	key := utils.S(dontSelectValue["key"])
+	if queryValue == nil || key == "" {
 		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
-
-	additionalOptions := types.M{
-		"redirectClassNameForKey": queryValue["redirectClassNameForKey"],
+	className := utils.S(queryValue["className"])
+	where := utils.M(queryValue["where"])
+	// iOS SDK 中不设置 where 时，没有 where 字段，所以此处不检测 where
+	if className == "" {
+		return errs.E(errs.InvalidQuery, "improper usage of $dontSelect")
 	}
-
-	var where types.M
-	if w := utils.M(queryValue["where"]); w == nil {
+	if where == nil {
 		where = types.M{}
-	} else {
-		where = w
 	}
-	query, err := NewQuery(
-		q.auth,
-		utils.S(queryValue["className"]),
-		where,
-		additionalOptions, q.clientSDK)
+
+	// where 与 className 之外的字段默认为 Options
+	delete(queryValue, "where")
+	delete(queryValue, "className")
+	additionalOptions := queryValue
+
+	query, err := NewQuery(q.auth, className, where, additionalOptions, q.clientSDK)
 	if err != nil {
 		return err
 	}
@@ -377,7 +370,7 @@ func (q *Query) replaceDontSelect() error {
 		}
 	}
 	// 替换 $dontSelect 为 $nin
-	transformDontSelect(dontSelectObject, utils.S(dontSelectValue["key"]), values)
+	transformDontSelect(dontSelectObject, key, values)
 	// 继续搜索替换
 	return q.replaceDontSelect()
 }
@@ -416,22 +409,21 @@ func (q *Query) replaceInQuery() error {
 	}
 	// 必须包含两个 key ： where className
 	inQueryValue := utils.M(inQueryObject["$inQuery"])
-	if inQueryValue == nil ||
-		utils.M(inQueryValue["where"]) == nil ||
-		utils.S(inQueryValue["className"]) == "" ||
-		len(inQueryValue) != 2 {
+	if inQueryValue == nil {
+		return errs.E(errs.InvalidQuery, "improper usage of $inQuery")
+	}
+	where := utils.M(inQueryValue["where"])
+	className := utils.S(inQueryValue["className"])
+	if where == nil || className == "" {
 		return errs.E(errs.InvalidQuery, "improper usage of $inQuery")
 	}
 
-	additionalOptions := types.M{
-		"redirectClassNameForKey": inQueryValue["redirectClassNameForKey"],
-	}
+	// where 与 className 之外的字段默认为 Options
+	delete(inQueryValue, "where")
+	delete(inQueryValue, "className")
+	additionalOptions := inQueryValue
 
-	query, err := NewQuery(
-		q.auth,
-		utils.S(inQueryValue["className"]),
-		utils.M(inQueryValue["where"]),
-		additionalOptions, q.clientSDK)
+	query, err := NewQuery(q.auth, className, where, additionalOptions, q.clientSDK)
 	if err != nil {
 		return err
 	}
@@ -465,22 +457,21 @@ func (q *Query) replaceNotInQuery() error {
 	}
 	// 必须包含两个 key ： where className
 	notInQueryValue := utils.M(notInQueryObject["$notInQuery"])
-	if notInQueryValue == nil ||
-		utils.M(notInQueryValue["where"]) == nil ||
-		utils.S(notInQueryValue["className"]) == "" ||
-		len(notInQueryValue) != 2 {
+	if notInQueryValue == nil {
+		return errs.E(errs.InvalidQuery, "improper usage of $notInQuery")
+	}
+	where := utils.M(notInQueryValue["where"])
+	className := utils.S(notInQueryValue["className"])
+	if where == nil || className == "" {
 		return errs.E(errs.InvalidQuery, "improper usage of $notInQuery")
 	}
 
-	additionalOptions := types.M{
-		"redirectClassNameForKey": notInQueryValue["redirectClassNameForKey"],
-	}
+	// where 与 className 之外的字段默认为 Options
+	delete(notInQueryValue, "where")
+	delete(notInQueryValue, "className")
+	additionalOptions := notInQueryValue
 
-	query, err := NewQuery(
-		q.auth,
-		utils.S(notInQueryValue["className"]),
-		utils.M(notInQueryValue["where"]),
-		additionalOptions, q.clientSDK)
+	query, err := NewQuery(q.auth, className, where, additionalOptions, q.clientSDK)
 	if err != nil {
 		return err
 	}

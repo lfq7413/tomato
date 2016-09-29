@@ -35,7 +35,7 @@ func CreateFile(filename string, data []byte, contentType string) map[string]str
 		contentType = utils.LookupContentType(filename)
 	}
 
-	filename = utils.CreateToken() + "-" + filename
+	filename = utils.CreateFileName() + "-" + filename
 	location := adapter.getFileLocation(filename)
 
 	err := adapter.createFile(filename, data, contentType)

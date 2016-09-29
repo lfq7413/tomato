@@ -10,6 +10,19 @@ type AnalyticsController struct {
 	ClassesController
 }
 
+// AppOpened ...
+// @router /AppOpened [post]
+func (a *AnalyticsController) AppOpened() {
+	if a.JSONBody == nil {
+		a.Data["json"] = types.M{}
+		a.ServeJSON()
+		return
+	}
+	response := analytics.AppOpened(a.JSONBody)
+	a.Data["json"] = response
+	a.ServeJSON()
+}
+
 // HandleEvent ...
 // @router /:eventName [post]
 func (a *AnalyticsController) HandleEvent() {

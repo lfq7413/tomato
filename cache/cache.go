@@ -12,7 +12,16 @@ var User *SubCache
 var adapter Adapter
 
 func init() {
-	adapter = newInMemoryCacheAdapter(5)
+	a := config.TConfig.CacheAdapter
+	if a == "InMemory" {
+		adapter = newInMemoryCacheAdapter(5)
+	} else if a == "Redis" {
+		adapter = newRedisMemoryCacheAdapter(config.TConfig.RedisAddress)
+	} else if a == "Null" {
+		adapter = newNullMemoryCacheAdapter()
+	} else {
+		adapter = newInMemoryCacheAdapter(5)
+	}
 	Role = &SubCache{
 		prefix: "role",
 	}

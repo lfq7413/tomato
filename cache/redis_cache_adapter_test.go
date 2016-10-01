@@ -6,7 +6,7 @@ import (
 )
 
 func Test_redis(t *testing.T) {
-	cache := newRedisMemoryCacheAdapter()
+	cache := newRedisMemoryCacheAdapter("192.168.99.100:6379")
 	cache.put("k1", "hello", 0)
 	fmt.Println("get k1:", cache.get("k1"))
 	cache.del("k1")

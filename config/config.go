@@ -38,6 +38,8 @@ type Config struct {
 	EnableAccountLockout             bool
 	AccountLockoutThreshold          int
 	AccountLockoutDuration           int
+	CacheAdapter                     string
+	RedisAddress                     string
 }
 
 var (
@@ -105,6 +107,9 @@ func parseConfig() {
 	TConfig.EnableAccountLockout = beego.AppConfig.DefaultBool("EnableAccountLockout", false)
 	TConfig.AccountLockoutThreshold = beego.AppConfig.DefaultInt("AccountLockoutThreshold", 0)
 	TConfig.AccountLockoutDuration = beego.AppConfig.DefaultInt("AccountLockoutDuration", 0)
+
+	TConfig.CacheAdapter = beego.AppConfig.DefaultString("CacheAdapter", "InMemory")
+	TConfig.RedisAddress = beego.AppConfig.String("RedisAddress")
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

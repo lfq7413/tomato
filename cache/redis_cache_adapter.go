@@ -10,8 +10,8 @@ type redisCacheAdapter struct {
 	conn redis.Conn
 }
 
-func newRedisMemoryCacheAdapter() *redisCacheAdapter {
-	c, err := redis.Dial("tcp", "192.168.99.100:6379")
+func newRedisMemoryCacheAdapter(address string) *redisCacheAdapter {
+	c, err := redis.Dial("tcp", address)
 	if err != nil {
 		panic(err)
 	}

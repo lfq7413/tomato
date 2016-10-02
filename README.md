@@ -26,7 +26,7 @@ autorender = false
 copyrequestbody = true
 EnableDocs = true
 
-serverurl = http://127.0.0.1:8080/v1/
+serverurl = http://127.0.0.1:8080/v1
 databaseuri = 192.168.99.100:27017/test
 AppID = test
 MasterKey = test

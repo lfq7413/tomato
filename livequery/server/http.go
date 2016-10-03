@@ -1,22 +1,25 @@
-package livequery
+package server
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/lfq7413/tomato/livequery/t"
 )
 
-var tomatoInfo map[string]string
+// TomatoInfo ...
+var TomatoInfo map[string]string
 
-func getUser(sessionToken string) (M, error) {
+func getUser(sessionToken string) (t.M, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", tomatoInfo["serverURL"]+"/users/me", nil)
+	req, err := http.NewRequest("GET", TomatoInfo["serverURL"]+"/users/me", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("X-Parse-Application-Id", tomatoInfo["appId"])
-	req.Header.Add("X-Parse-Client-Key", tomatoInfo["clientKey"])
+	req.Header.Add("X-Parse-Application-Id", TomatoInfo["appId"])
+	req.Header.Add("X-Parse-Client-Key", TomatoInfo["clientKey"])
 	req.Header.Add("X-Parse-Session-Token", sessionToken)
 
 	resp, err := client.Do(req)
@@ -29,7 +32,7 @@ func getUser(sessionToken string) (M, error) {
 	if err != nil {
 		return nil, err
 	}
-	var user M
+	var user t.M
 	err = json.Unmarshal(body, &user)
 	if err != nil {
 		return nil, err

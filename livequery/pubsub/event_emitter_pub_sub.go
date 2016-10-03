@@ -1,4 +1,4 @@
-package livequery
+package pubsub
 
 var emitter = NewEventEmitter()
 
@@ -7,7 +7,7 @@ type eventEmitterPublisher struct {
 	emitter *EventEmitter
 }
 
-func (p *eventEmitterPublisher) publish(channel, message string) {
+func (p *eventEmitterPublisher) Publish(channel, message string) {
 	p.emitter.Emit(channel, message)
 }
 
@@ -18,7 +18,7 @@ type eventEmitterSubscriber struct {
 	subscriptions map[string]HandlerType // TODO 增加并发锁
 }
 
-func (s *eventEmitterSubscriber) subscribe(channel string) {
+func (s *eventEmitterSubscriber) Subscribe(channel string) {
 	var handler HandlerType
 	handler = func(args ...string) {
 		a := append([]string{channel}, args...)
@@ -28,14 +28,14 @@ func (s *eventEmitterSubscriber) subscribe(channel string) {
 	s.emitter.On(channel, handler)
 }
 
-func (s *eventEmitterSubscriber) unsubscribe(channel string) {
+func (s *eventEmitterSubscriber) Unsubscribe(channel string) {
 	if handler, ok := s.subscriptions[channel]; ok {
 		s.emitter.RemoveListener(channel, handler)
 		delete(s.subscriptions, channel)
 	}
 }
 
-func (s *eventEmitterSubscriber) on(channel string, listener HandlerType) {
+func (s *eventEmitterSubscriber) On(channel string, listener HandlerType) {
 	s.On(channel, listener)
 }
 

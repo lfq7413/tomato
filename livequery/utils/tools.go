@@ -1,21 +1,25 @@
-package livequery
+package utils
 
 import (
 	"math"
 	"regexp"
+
+	"github.com/lfq7413/tomato/livequery/t"
 )
 
-func queryHash(query M) string {
+// QueryHash ...
+func QueryHash(query t.M) string {
 	return ""
 }
 
-func matchesQuery(object, query M) bool {
+// MatchesQuery ...
+func MatchesQuery(object, query t.M) bool {
 
 	if className, ok := query["className"]; ok {
 		if object["className"].(string) != className {
 			return false
 		}
-		return matchesQuery(object, query["where"].(map[string]interface{}))
+		return MatchesQuery(object, query["where"].(map[string]interface{}))
 	}
 
 	for field, constraints := range query {
@@ -27,7 +31,7 @@ func matchesQuery(object, query M) bool {
 	return true
 }
 
-func matchesKeyConstraints(object M, key string, constraints interface{}) bool {
+func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool {
 	if constraints == nil {
 		return false
 	}
@@ -35,7 +39,7 @@ func matchesKeyConstraints(object M, key string, constraints interface{}) bool {
 		if querys, ok := constraints.([]interface{}); ok {
 			for _, query := range querys {
 				if q, ok := query.(map[string]interface{}); ok {
-					if matchesQuery(object, q) {
+					if MatchesQuery(object, q) {
 						return true
 					}
 				}
@@ -55,7 +59,7 @@ func matchesKeyConstraints(object M, key string, constraints interface{}) bool {
 		return false
 	}
 
-	var constraint M
+	var constraint t.M
 	if v, ok := constraints.(map[string]interface{}); ok {
 		constraint = v
 	} else {

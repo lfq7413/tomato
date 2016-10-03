@@ -4,15 +4,14 @@ import (
 	"strings"
 
 	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/livequery/pubsub"
+	"github.com/lfq7413/tomato/livequery/t"
 )
-
-// M ...
-type M map[string]interface{}
 
 // LiveQuery 接收指定类的对象保存与对象删除的通知，发送对象数据到发布者，由发布者通知订阅者，订阅者实时接收数据
 type LiveQuery struct {
 	classNames         []string
-	liveQueryPublisher *cloudCodePublisher
+	liveQueryPublisher *pubsub.CloudCodePublisher
 }
 
 // TLiveQuery ...
@@ -36,7 +35,7 @@ func NewLiveQuery(classNames []string, pubType, pubURL string) *LiveQuery {
 	} else {
 		liveQuery.classNames = classNames
 	}
-	liveQuery.liveQueryPublisher = newCloudCodePublisher(pubType, pubURL)
+	liveQuery.liveQueryPublisher = pubsub.NewCloudCodePublisher(pubType, pubURL)
 
 	return liveQuery
 }
@@ -47,7 +46,7 @@ func (l *LiveQuery) OnAfterSave(className string, currentObject, originalObject 
 		return
 	}
 	req := l.makePublisherRequest(currentObject, originalObject)
-	l.liveQueryPublisher.onCloudCodeAfterSave(req)
+	l.liveQueryPublisher.OnCloudCodeAfterSave(req)
 }
 
 // OnAfterDelete 删除对象之后调用
@@ -56,7 +55,7 @@ func (l *LiveQuery) OnAfterDelete(className string, currentObject, originalObjec
 		return
 	}
 	req := l.makePublisherRequest(currentObject, originalObject)
-	l.liveQueryPublisher.onCloudCodeAfterDelete(req)
+	l.liveQueryPublisher.OnCloudCodeAfterDelete(req)
 }
 
 // HasLiveQuery 是否有对应的 className
@@ -74,8 +73,8 @@ func (l *LiveQuery) HasLiveQuery(className string) bool {
 // 	"object": {...},
 // 	"original": {...}
 // }
-func (l *LiveQuery) makePublisherRequest(currentObject, originalObject M) M {
-	req := M{
+func (l *LiveQuery) makePublisherRequest(currentObject, originalObject t.M) t.M {
+	req := t.M{
 		"object": currentObject,
 	}
 	if currentObject != nil {

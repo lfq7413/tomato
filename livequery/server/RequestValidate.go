@@ -1,8 +1,13 @@
-package livequery
+package server
 
-import "errors"
+import (
+	"errors"
 
-func validate(data M, op string) error {
+	"github.com/lfq7413/tomato/livequery/t"
+)
+
+// Validate ...
+func Validate(data t.M, op string) error {
 	switch op {
 	case "general":
 		return validateGeneral(data)
@@ -17,7 +22,7 @@ func validate(data M, op string) error {
 	}
 }
 
-func validateGeneral(data M) error {
+func validateGeneral(data t.M) error {
 	if v, ok := data["op"]; ok {
 		if op, ok := v.(string); ok {
 			if op != "connect" && op != "subscribe" && op != "unsubscribe" {
@@ -30,7 +35,7 @@ func validateGeneral(data M) error {
 	return errors.New("need op")
 }
 
-func validateConnect(data M) error {
+func validateConnect(data t.M) error {
 	if v, ok := data["applicationId"]; ok {
 		if _, ok := v.(string); ok == false {
 			return errors.New("applicationId is not string")
@@ -60,7 +65,7 @@ func validateConnect(data M) error {
 	return nil
 }
 
-func validateSubscribe(data M) error {
+func validateSubscribe(data t.M) error {
 	if v, ok := data["requestId"]; ok {
 		if _, ok := v.(float64); ok == false {
 			return errors.New("requestId is not number")
@@ -91,7 +96,7 @@ func validateSubscribe(data M) error {
 	return nil
 }
 
-func validateUnsubscribe(data M) error {
+func validateUnsubscribe(data t.M) error {
 	if v, ok := data["requestId"]; ok {
 		if _, ok := v.(float64); ok == false {
 			return errors.New("requestId is not number")
@@ -103,7 +108,7 @@ func validateUnsubscribe(data M) error {
 	return nil
 }
 
-func validateQuery(data M) error {
+func validateQuery(data t.M) error {
 	if v, ok := data["className"]; ok {
 		if _, ok := v.(string); ok == false {
 			return errors.New("className is not string")

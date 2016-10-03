@@ -1,4 +1,4 @@
-package livequery
+package pubsub
 
 import "unsafe"
 

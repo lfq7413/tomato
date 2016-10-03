@@ -1,26 +1,33 @@
 package livequery
 
-import "encoding/json"
-import "strconv"
+import (
+	"encoding/json"
+	"strconv"
 
-var server *liveQueryServer
+	"github.com/lfq7413/tomato/livequery/pubsub"
+	"github.com/lfq7413/tomato/livequery/server"
+	"github.com/lfq7413/tomato/livequery/t"
+	"github.com/lfq7413/tomato/livequery/utils"
+)
+
+var s *liveQueryServer
 
 // Run ...
 func Run(args map[string]string) {
-	server = &liveQueryServer{}
-	server.initServer(args)
-	server.run()
+	s = &liveQueryServer{}
+	s.initServer(args)
+	s.run()
 }
 
 type liveQueryServer struct {
 	pattern           string
 	addr              string
 	clientID          int
-	clients           map[int]*client
-	subscriptions     map[string]map[string]*subscription // className -> (queryHash -> subscription) TODO 增加并发锁
+	clients           map[int]*server.Client
+	subscriptions     map[string]map[string]*server.Subscription // className -> (queryHash -> subscription) TODO 增加并发锁
 	keyPairs          map[string]string
-	subscriber        subscriber
-	sessionTokenCache *sessionTokenCache
+	subscriber        pubsub.Subscriber
+	sessionTokenCache *server.SessionTokenCache
 }
 
 // initServer 初始化 liveQuery 服务
@@ -29,14 +36,14 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 	l.addr = args["addr"]
 
 	l.clientID = 1
-	l.clients = map[int]*client{}
-	l.subscriptions = map[string]map[string]*subscription{}
+	l.clients = map[int]*server.Client{}
+	l.subscriptions = map[string]map[string]*server.Subscription{}
 
 	// 设置日志级别
 	if level, ok := args["logLevel"]; ok {
-		TLog.level = level
+		utils.TLog.Level = level
 	} else {
-		TLog.level = "NONE"
+		utils.TLog.Level = "NONE"
 	}
 
 	// 设置 keyPairs ，用于校验客户端
@@ -50,26 +57,26 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 	} else {
 		l.keyPairs = map[string]string{}
 	}
-	TLog.verbose("Support key pairs", l.keyPairs)
+	utils.TLog.Verbose("Support key pairs", l.keyPairs)
 
-	tomatoInfo["serverURL"] = args["serverURL"]
-	tomatoInfo["appId"] = args["appId"]
-	tomatoInfo["clientKey"] = args["clientKey"]
-	tomatoInfo["masterKey"] = args["masterKey"]
+	server.TomatoInfo["serverURL"] = args["serverURL"]
+	server.TomatoInfo["appId"] = args["appId"]
+	server.TomatoInfo["clientKey"] = args["clientKey"]
+	server.TomatoInfo["masterKey"] = args["masterKey"]
 
-	l.subscriber = createSubscriber("", "")
-	l.subscriber.subscribe("afterSave")
-	l.subscriber.subscribe("afterDelete")
+	l.subscriber = pubsub.CreateSubscriber("", "")
+	l.subscriber.Subscribe("afterSave")
+	l.subscriber.Subscribe("afterDelete")
 	// 向 subscriber 订阅 "message" ，当有对象操作消息时，以下处理函数将会被调起
-	var h HandlerType
+	var h pubsub.HandlerType
 	h = func(args ...string) {
 		channel := args[0]
 		messageStr := args[1]
-		TLog.verbose("Subscribe messsage", messageStr)
-		var message M
+		utils.TLog.Verbose("Subscribe messsage", messageStr)
+		var message t.M
 		err := json.Unmarshal([]byte(messageStr), &message)
 		if err != nil {
-			TLog.error("json.Unmarshal error")
+			utils.TLog.Error("json.Unmarshal error")
 			return
 		}
 		l.inflateParseObject(message)
@@ -78,44 +85,44 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 		} else if channel == "afterDelete" {
 			l.onAfterDelete(message)
 		} else {
-			TLog.error("Get message", message, "from unknown channel", channel)
+			utils.TLog.Error("Get message", message, "from unknown channel", channel)
 		}
 	}
-	l.subscriber.on("message", h)
-	l.sessionTokenCache = newSessionTokenCache()
+	l.subscriber.On("message", h)
+	l.sessionTokenCache = server.NewSessionTokenCache()
 }
 
 // run 启动 WebSocket 服务
 func (l *liveQueryServer) run() {
-	runWebSocketServer(l.pattern, l.addr, l)
+	server.RunWebSocketServer(l.pattern, l.addr, l)
 }
 
-// onConnect 当有客户端连接成功时调用
-func (l *liveQueryServer) onConnect(ws *webSocket) {
+// OnConnect 当有客户端连接成功时调用
+func (l *liveQueryServer) OnConnect(ws *server.WebSocket) {
 
 }
 
-// onMessage 当接收到客户端发来的消息时调用
-func (l *liveQueryServer) onMessage(ws *webSocket, msg interface{}) {
-	var request M
+// OnMessage 当接收到客户端发来的消息时调用
+func (l *liveQueryServer) OnMessage(ws *server.WebSocket, msg interface{}) {
+	var request t.M
 	if message, ok := msg.(string); ok {
 		err := json.Unmarshal([]byte(message), &request)
 		if err != nil {
 			return
 		}
 	}
-	TLog.verbose("Request:", request)
+	utils.TLog.Verbose("Request:", request)
 
-	err := validate(request, "general")
+	err := server.Validate(request, "general")
 	if err != nil {
-		pushError(ws, 1, err.Error(), true)
-		TLog.error("Connect message error", err.Error())
+		server.PushError(ws, 1, err.Error(), true)
+		utils.TLog.Error("Connect message error", err.Error())
 		return
 	}
-	err = validate(request, request["op"].(string))
+	err = server.Validate(request, request["op"].(string))
 	if err != nil {
-		pushError(ws, 1, err.Error(), true)
-		TLog.error("Connect message error", err.Error())
+		server.PushError(ws, 1, err.Error(), true)
+		utils.TLog.Error("Connect message error", err.Error())
 		return
 	}
 
@@ -128,59 +135,59 @@ func (l *liveQueryServer) onMessage(ws *webSocket, msg interface{}) {
 	case "unsubscribe":
 		l.handleUnsubscribe(ws, request)
 	default:
-		pushError(ws, 3, "Get unknown operation", true)
-		TLog.error("Get unknown operation", op)
+		server.PushError(ws, 3, "Get unknown operation", true)
+		utils.TLog.Error("Get unknown operation", op)
 	}
 }
 
-// onDisconnect 当客户端断开时调用
-func (l *liveQueryServer) onDisconnect(ws *webSocket) {
-	TLog.log("Client disconnect:", ws.clientID)
+// OnDisconnect 当客户端断开时调用
+func (l *liveQueryServer) OnDisconnect(ws *server.WebSocket) {
+	utils.TLog.Log("Client disconnect:", ws.ClientID)
 
-	clientID := ws.clientID
+	clientID := ws.ClientID
 	if _, ok := l.clients[clientID]; ok == false {
-		TLog.error("Can not find client", clientID, "on disconnect")
+		utils.TLog.Error("Can not find client", clientID, "on disconnect")
 		return
 	}
 
 	client := l.clients[clientID]
 	delete(l.clients, clientID)
 
-	for requestID, subscriptionInfo := range client.subscriptionInfos {
-		subscription := subscriptionInfo.subscription
-		subscription.deleteClientSubscription(clientID, requestID)
+	for requestID, subscriptionInfo := range client.SubscriptionInfos {
+		subscription := subscriptionInfo.Subscription
+		subscription.DeleteClientSubscription(clientID, requestID)
 
-		classSubscriptions := l.subscriptions[subscription.className]
-		if subscription.hasSubscribingClient() == false {
-			delete(classSubscriptions, subscription.hash)
+		classSubscriptions := l.subscriptions[subscription.ClassName]
+		if subscription.HasSubscribingClient() == false {
+			delete(classSubscriptions, subscription.Hash)
 		}
 
 		if len(classSubscriptions) == 0 {
-			delete(l.subscriptions, subscription.className)
+			delete(l.subscriptions, subscription.ClassName)
 		}
 	}
 
-	TLog.verbose("Current clients", len(l.clients))
-	TLog.verbose("Current subscriptions", len(l.subscriptions))
+	utils.TLog.Verbose("Current clients", len(l.clients))
+	utils.TLog.Verbose("Current subscriptions", len(l.subscriptions))
 }
 
 // inflateParseObject 展开对象
-func (l *liveQueryServer) inflateParseObject(message M) {
+func (l *liveQueryServer) inflateParseObject(message t.M) {
 
 }
 
 // onAfterDelete 有对象删除时调用
-func (l *liveQueryServer) onAfterDelete(message M) {
-	TLog.verbose("afterDelete is triggered")
+func (l *liveQueryServer) onAfterDelete(message t.M) {
+	utils.TLog.Verbose("afterDelete is triggered")
 
 	deletedParseObject := message["currentParseObject"].(map[string]interface{})
 	className := deletedParseObject["className"].(string)
-	TLog.verbose("ClassName:", className, "| ObjectId:", deletedParseObject["objectId"])
-	TLog.verbose("Current client number :", len(l.clients))
+	utils.TLog.Verbose("ClassName:", className, "| ObjectId:", deletedParseObject["objectId"])
+	utils.TLog.Verbose("Current client number :", len(l.clients))
 
 	classSubscriptions := l.subscriptions[className]
 	if classSubscriptions == nil {
-		TLog.error("Can not find subscriptions under this class", className)
+		utils.TLog.Error("Can not find subscriptions under this class", className)
 		return
 	}
 	for _, subscription := range classSubscriptions {
@@ -188,7 +195,7 @@ func (l *liveQueryServer) onAfterDelete(message M) {
 		if isSubscriptionMatched == false {
 			continue
 		}
-		for clientID, requestIDs := range subscription.clientRequestIDs {
+		for clientID, requestIDs := range subscription.ClientRequestIDs {
 			client := l.clients[clientID]
 			if client == nil {
 				continue
@@ -197,40 +204,40 @@ func (l *liveQueryServer) onAfterDelete(message M) {
 				acl := deletedParseObject["ACL"].(map[string]interface{})
 				isMatched, err := l.matchesACL(acl, client, requestID)
 				if err != nil {
-					TLog.error("Matching ACL error :", err)
+					utils.TLog.Error("Matching ACL error :", err)
 				}
 				if isMatched == false {
 					return
 				}
-				client.pushDelete(requestID, deletedParseObject)
+				client.PushDelete(requestID, deletedParseObject)
 			}
 		}
 	}
 }
 
 // onAfterSave 有对象保存时调用
-func (l *liveQueryServer) onAfterSave(message M) {
-	TLog.verbose("afterSave is triggered")
+func (l *liveQueryServer) onAfterSave(message t.M) {
+	utils.TLog.Verbose("afterSave is triggered")
 
-	var originalParseObject M
+	var originalParseObject t.M
 	if message["originalParseObject"] != nil {
 		originalParseObject = message["originalParseObject"].(map[string]interface{})
 	}
 	currentParseObject := message["currentParseObject"].(map[string]interface{})
 	className := currentParseObject["className"].(string)
-	TLog.verbose("ClassName:", className, "| ObjectId:", currentParseObject["objectId"])
-	TLog.verbose("Current client number :", len(l.clients))
+	utils.TLog.Verbose("ClassName:", className, "| ObjectId:", currentParseObject["objectId"])
+	utils.TLog.Verbose("Current client number :", len(l.clients))
 
 	classSubscriptions := l.subscriptions[className]
 	if classSubscriptions == nil {
-		TLog.error("Can not find subscriptions under this class", className)
+		utils.TLog.Error("Can not find subscriptions under this class", className)
 		return
 	}
 
 	for _, subscription := range classSubscriptions {
 		isOriginalSubscriptionMatched := l.matchesSubscription(originalParseObject, subscription)
 		isCurrentSubscriptionMatched := l.matchesSubscription(currentParseObject, subscription)
-		for clientID, requestIDs := range subscription.clientRequestIDs {
+		for clientID, requestIDs := range subscription.ClientRequestIDs {
 			client := l.clients[clientID]
 			if client == nil {
 				continue
@@ -241,13 +248,13 @@ func (l *liveQueryServer) onAfterSave(message M) {
 				if isOriginalSubscriptionMatched == false {
 					isOriginalMatched = false
 				} else {
-					var originalACL M
+					var originalACL t.M
 					if originalParseObject != nil {
 						originalACL = originalParseObject["ACL"].(map[string]interface{})
 					}
 					isOriginalMatched, err = l.matchesACL(originalACL, client, requestID)
 					if err != nil {
-						TLog.error("Matching ACL error :", err)
+						utils.TLog.Error("Matching ACL error :", err)
 						continue
 					}
 				}
@@ -259,25 +266,25 @@ func (l *liveQueryServer) onAfterSave(message M) {
 					currentACL := currentParseObject["ACL"].(map[string]interface{})
 					isCurrentMatched, err = l.matchesACL(currentACL, client, requestID)
 					if err != nil {
-						TLog.error("Matching ACL error :", err)
+						utils.TLog.Error("Matching ACL error :", err)
 						continue
 					}
 				}
 
-				TLog.verbose("Original", originalParseObject,
+				utils.TLog.Verbose("Original", originalParseObject,
 					"| Current", currentParseObject,
 					"| Match:", isOriginalSubscriptionMatched, isCurrentSubscriptionMatched, isOriginalMatched, isCurrentMatched,
-					"| Query:", subscription.hash)
+					"| Query:", subscription.Hash)
 
 				if isOriginalMatched && isCurrentMatched {
-					client.pushUpdate(requestID, currentParseObject)
+					client.PushUpdate(requestID, currentParseObject)
 				} else if isOriginalMatched && !isCurrentMatched {
-					client.pushLeave(requestID, currentParseObject)
+					client.PushLeave(requestID, currentParseObject)
 				} else if !isOriginalMatched && isCurrentMatched {
 					if originalParseObject != nil {
-						client.pushEnter(requestID, currentParseObject)
+						client.PushEnter(requestID, currentParseObject)
 					} else {
-						client.pushCreate(requestID, currentParseObject)
+						client.PushCreate(requestID, currentParseObject)
 					}
 				} else {
 					continue
@@ -288,119 +295,119 @@ func (l *liveQueryServer) onAfterSave(message M) {
 }
 
 // handleConnect 处理客户端 Connect 操作
-func (l *liveQueryServer) handleConnect(ws *webSocket, request M) {
+func (l *liveQueryServer) handleConnect(ws *server.WebSocket, request t.M) {
 	if l.validateKeys(request, l.keyPairs) == false {
-		pushError(ws, 4, "Key in request is not valid", true)
-		TLog.error("Key in request is not valid")
+		server.PushError(ws, 4, "Key in request is not valid", true)
+		utils.TLog.Error("Key in request is not valid")
 		return
 	}
 
-	client := newClient(l.clientID, ws)
-	ws.clientID = l.clientID
+	client := server.NewClient(l.clientID, ws)
+	ws.ClientID = l.clientID
 	l.clientID++
-	l.clients[ws.clientID] = client
-	TLog.log("Create new client:", ws.clientID)
-	client.pushConnect(0, nil)
+	l.clients[ws.ClientID] = client
+	utils.TLog.Log("Create new client:", ws.ClientID)
+	client.PushConnect(0, nil)
 }
 
 // handleSubscribe 处理客户端 Subscribe 操作
-func (l *liveQueryServer) handleSubscribe(ws *webSocket, request M) {
-	if ws.clientID == 0 {
-		pushError(ws, 2, "Can not find this client, make sure you connect to server before subscribing", true)
-		TLog.error("Can not find this client, make sure you connect to server before subscribing")
+func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
+	if ws.ClientID == 0 {
+		server.PushError(ws, 2, "Can not find this client, make sure you connect to server before subscribing", true)
+		utils.TLog.Error("Can not find this client, make sure you connect to server before subscribing")
 		return
 	}
 
-	client := l.clients[ws.clientID]
+	client := l.clients[ws.ClientID]
 
 	query := request["query"].(map[string]interface{})
-	subscriptionHash := queryHash(query)
+	subscriptionHash := utils.QueryHash(query)
 	className := query["className"].(string)
 	if _, ok := l.subscriptions[className]; ok == false {
-		l.subscriptions[className] = map[string]*subscription{}
+		l.subscriptions[className] = map[string]*server.Subscription{}
 	}
 	classSubscriptions := l.subscriptions[className]
-	var subscription *subscription
+	var subscription *server.Subscription
 	if s, ok := classSubscriptions[subscriptionHash]; ok {
 		subscription = s
 	} else {
 		where := query["where"].(map[string]interface{})
-		subscription = newSubscription(className, where, subscriptionHash)
+		subscription = server.NewSubscription(className, where, subscriptionHash)
 		classSubscriptions[subscriptionHash] = subscription
 	}
 
-	subscriptionInfo := &subscriptionInfo{
-		subscription: subscription,
+	subscriptionInfo := &server.SubscriptionInfo{
+		Subscription: subscription,
 	}
 
 	if fields, ok := query["fields"]; ok {
-		subscriptionInfo.fields = fields.([]string)
+		subscriptionInfo.Fields = fields.([]string)
 	}
 	if sessionToken, ok := request["sessionToken"]; ok {
-		subscriptionInfo.sessionToken = sessionToken.(string)
+		subscriptionInfo.SessionToken = sessionToken.(string)
 	}
 	requestID := int(request["requestId"].(float64))
-	client.addSubscriptionInfo(requestID, subscriptionInfo)
+	client.AddSubscriptionInfo(requestID, subscriptionInfo)
 
-	subscription.addClientSubscription(ws.clientID, requestID)
+	subscription.AddClientSubscription(ws.ClientID, requestID)
 
-	client.pushSubscribe(requestID, nil)
+	client.PushSubscribe(requestID, nil)
 
-	TLog.verbose("Create client", ws.clientID, "new subscription:", requestID)
-	TLog.verbose("Current client number:", len(l.clients))
+	utils.TLog.Verbose("Create client", ws.ClientID, "new subscription:", requestID)
+	utils.TLog.Verbose("Current client number:", len(l.clients))
 }
 
 // handleUnsubscribe 处理客户端 Unsubscribe 操作
-func (l *liveQueryServer) handleUnsubscribe(ws *webSocket, request M) {
-	if ws.clientID == 0 {
-		pushError(ws, 2, "Can not find this client, make sure you connect to server before unsubscribing", true)
-		TLog.error("Can not find this client, make sure you connect to server before unsubscribing")
+func (l *liveQueryServer) handleUnsubscribe(ws *server.WebSocket, request t.M) {
+	if ws.ClientID == 0 {
+		server.PushError(ws, 2, "Can not find this client, make sure you connect to server before unsubscribing", true)
+		utils.TLog.Error("Can not find this client, make sure you connect to server before unsubscribing")
 		return
 	}
 
 	requestID := int(request["requestId"].(float64))
 
-	client := l.clients[ws.clientID]
+	client := l.clients[ws.ClientID]
 	if client == nil {
-		pushError(ws, 2, "Cannot find client with clientId "+strconv.Itoa(ws.clientID)+". Make sure you connect to live query server before unsubscribing.", true)
-		TLog.error("Can not find this client", ws.clientID)
+		server.PushError(ws, 2, "Cannot find client with clientId "+strconv.Itoa(ws.ClientID)+". Make sure you connect to live query server before unsubscribing.", true)
+		utils.TLog.Error("Can not find this client", ws.ClientID)
 		return
 	}
 
-	subscriptionInfo := client.getSubscriptionInfo(requestID)
+	subscriptionInfo := client.GetSubscriptionInfo(requestID)
 	if subscriptionInfo == nil {
-		pushError(ws, 2, "Cannot find subscription with clientId "+strconv.Itoa(ws.clientID)+" subscriptionId "+strconv.Itoa(requestID)+". Make sure you subscribe to live query server before unsubscribing.", true)
-		TLog.error("Can not find subscription with clientId", ws.clientID, "subscriptionId", requestID)
+		server.PushError(ws, 2, "Cannot find subscription with clientId "+strconv.Itoa(ws.ClientID)+" subscriptionId "+strconv.Itoa(requestID)+". Make sure you subscribe to live query server before unsubscribing.", true)
+		utils.TLog.Error("Can not find subscription with clientId", ws.ClientID, "subscriptionId", requestID)
 		return
 	}
 
-	client.deleteSubscriptionInfo(requestID)
+	client.DeleteSubscriptionInfo(requestID)
 
-	subscription := subscriptionInfo.subscription
-	className := subscription.className
-	subscription.deleteClientSubscription(ws.clientID, requestID)
+	subscription := subscriptionInfo.Subscription
+	className := subscription.ClassName
+	subscription.DeleteClientSubscription(ws.ClientID, requestID)
 
 	classSubscriptions := l.subscriptions[className]
-	if subscription.hasSubscribingClient() == false {
-		delete(classSubscriptions, subscription.hash)
+	if subscription.HasSubscribingClient() == false {
+		delete(classSubscriptions, subscription.Hash)
 	}
 
 	if len(classSubscriptions) == 0 {
 		delete(l.subscriptions, className)
 	}
 
-	client.pushUnsubscribe(requestID, nil)
+	client.PushUnsubscribe(requestID, nil)
 }
 
-func (l *liveQueryServer) matchesSubscription(object M, subscription *subscription) bool {
+func (l *liveQueryServer) matchesSubscription(object t.M, subscription *server.Subscription) bool {
 	if object == nil {
 		return false
 	}
 
-	return matchesQuery(object, subscription.query)
+	return utils.MatchesQuery(object, subscription.Query)
 }
 
-func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool, error) {
+func (l *liveQueryServer) matchesACL(acl t.M, client *server.Client, requestID int) (bool, error) {
 	if acl == nil {
 		return true, nil
 	}
@@ -409,13 +416,13 @@ func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool
 		return true, nil
 	}
 
-	subscriptionInfo := client.getSubscriptionInfo(requestID)
+	subscriptionInfo := client.GetSubscriptionInfo(requestID)
 	if subscriptionInfo == nil {
 		return false, nil
 	}
 
-	subscriptionSessionToken := subscriptionInfo.sessionToken
-	userID := l.sessionTokenCache.getUserID(subscriptionSessionToken)
+	subscriptionSessionToken := subscriptionInfo.SessionToken
+	userID := l.sessionTokenCache.GetUserID(subscriptionSessionToken)
 	if userID == "" {
 		return false, nil
 	}
@@ -427,7 +434,7 @@ func (l *liveQueryServer) matchesACL(acl M, client *client, requestID int) (bool
 	return false, nil
 }
 
-func (l *liveQueryServer) validateKeys(request M, validKeyPairs map[string]string) bool {
+func (l *liveQueryServer) validateKeys(request t.M, validKeyPairs map[string]string) bool {
 	if validKeyPairs == nil || len(validKeyPairs) == 0 {
 		return true
 	}
@@ -446,7 +453,7 @@ func (l *liveQueryServer) validateKeys(request M, validKeyPairs map[string]strin
 	return isValid
 }
 
-func getPublicReadAccess(acl M) bool {
+func getPublicReadAccess(acl t.M) bool {
 	return getReadAccess(acl, "*")
 }
 
@@ -460,7 +467,7 @@ func getPublicReadAccess(acl M) bool {
 // 		"read":true
 // 	}
 // }
-func getReadAccess(acl M, id string) bool {
+func getReadAccess(acl t.M, id string) bool {
 	if p, ok := acl[id]; ok {
 		if per, ok := p.(map[string]interface{}); ok {
 			if _, ok := per["read"]; ok {

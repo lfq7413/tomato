@@ -36,7 +36,7 @@ func (s *eventEmitterSubscriber) Unsubscribe(channel string) {
 }
 
 func (s *eventEmitterSubscriber) On(channel string, listener HandlerType) {
-	s.On(channel, listener)
+	s.EventEmitter.On(channel, listener)
 }
 
 func createEventEmitterPublisher() *eventEmitterPublisher {

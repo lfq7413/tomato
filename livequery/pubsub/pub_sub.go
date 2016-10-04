@@ -3,8 +3,7 @@ package pubsub
 // CreatePublisher 创建发布者，当前仅支持 EventEmitter
 func CreatePublisher(pubType, pubURL string) Publisher {
 	if useRedis(pubType) {
-		// TODO 后期添加 Redis 支持
-		return createEventEmitterPublisher()
+		return createRedisPublisher()
 	}
 	return createEventEmitterPublisher()
 }
@@ -12,8 +11,7 @@ func CreatePublisher(pubType, pubURL string) Publisher {
 // CreateSubscriber 创建订阅者，当前仅支持 EventEmitter
 func CreateSubscriber(subType, subURL string) Subscriber {
 	if useRedis(subType) {
-		// TODO 后期添加 Redis 支持
-		return createEventEmitterSubscriber()
+		return createRedisSubscriber()
 	}
 	return createEventEmitterSubscriber()
 }
@@ -25,6 +23,9 @@ func useRedis(pubType string) bool {
 	}
 	return false
 }
+
+// HandlerType ...
+type HandlerType func(args ...string)
 
 // Publisher ...
 type Publisher interface {

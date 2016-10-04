@@ -7,9 +7,6 @@ type EventEmitter struct {
 	events map[string][]HandlerType // TODO 增加并发锁
 }
 
-// HandlerType ...
-type HandlerType func(args ...string)
-
 // NewEventEmitter ...
 func NewEventEmitter() *EventEmitter {
 	return &EventEmitter{

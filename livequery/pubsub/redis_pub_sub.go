@@ -1,9 +1,6 @@
 package pubsub
 
-import (
-	"github.com/garyburd/redigo/redis"
-	"github.com/lfq7413/tomato/config"
-)
+import "github.com/garyburd/redigo/redis"
 
 type redisPublisher struct {
 	c redis.Conn
@@ -44,8 +41,8 @@ func (r *redisSubscriber) receive() {
 	}()
 }
 
-func createRedisPublisher() *redisPublisher {
-	c, err := redis.Dial("tcp", config.TConfig.RedisAddress)
+func createRedisPublisher(address string) *redisPublisher {
+	c, err := redis.Dial("tcp", address)
 	if err != nil {
 		panic(err)
 	}
@@ -54,8 +51,8 @@ func createRedisPublisher() *redisPublisher {
 	}
 }
 
-func createRedisSubscriber() *redisSubscriber {
-	c, err := redis.Dial("tcp", config.TConfig.RedisAddress)
+func createRedisSubscriber(address string) *redisSubscriber {
+	c, err := redis.Dial("tcp", address)
 	if err != nil {
 		panic(err)
 	}

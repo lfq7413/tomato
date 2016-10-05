@@ -3,7 +3,7 @@ package pubsub
 // CreatePublisher 创建发布者，当前仅支持 EventEmitter
 func CreatePublisher(pubType, pubURL string) Publisher {
 	if useRedis(pubType) {
-		return createRedisPublisher()
+		return createRedisPublisher(pubURL)
 	}
 	return createEventEmitterPublisher()
 }
@@ -11,7 +11,7 @@ func CreatePublisher(pubType, pubURL string) Publisher {
 // CreateSubscriber 创建订阅者，当前仅支持 EventEmitter
 func CreateSubscriber(subType, subURL string) Subscriber {
 	if useRedis(subType) {
-		return createRedisSubscriber()
+		return createRedisSubscriber(subType)
 	}
 	return createEventEmitterSubscriber()
 }

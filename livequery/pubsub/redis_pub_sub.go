@@ -12,7 +12,7 @@ func (r *redisPublisher) Publish(channel, message string) {
 
 type redisSubscriber struct {
 	psc       redis.PubSubConn
-	listeners map[string]HandlerType // TODO 增加并发锁
+	listeners []HandlerType
 }
 
 func (r *redisSubscriber) Subscribe(channel string) {
@@ -24,7 +24,7 @@ func (r *redisSubscriber) Unsubscribe(channel string) {
 }
 
 func (r *redisSubscriber) On(channel string, listener HandlerType) {
-	r.listeners[channel] = listener
+	r.listeners = append(r.listeners, listener)
 }
 
 func (r *redisSubscriber) receive() {
@@ -32,9 +32,8 @@ func (r *redisSubscriber) receive() {
 		for {
 			switch n := r.psc.Receive().(type) {
 			case redis.Message:
-				listener := r.listeners[n.Channel]
-				if listener != nil {
-					listener(n.Channel, string(n.Data))
+				for _, listener := range r.listeners {
+					go listener(n.Channel, string(n.Data))
 				}
 			}
 		}
@@ -58,7 +57,7 @@ func createRedisSubscriber(address string) *redisSubscriber {
 	}
 	r := &redisSubscriber{
 		psc:       redis.PubSubConn{Conn: c},
-		listeners: map[string]HandlerType{},
+		listeners: []HandlerType{},
 	}
 	r.receive()
 	return r

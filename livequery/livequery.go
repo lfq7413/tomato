@@ -10,7 +10,7 @@ import (
 
 // LiveQuery 接收指定类的对象保存与对象删除的通知，发送对象数据到发布者，由发布者通知订阅者，订阅者实时接收数据
 type LiveQuery struct {
-	classNames         []string
+	classNames         map[string]bool
 	liveQueryPublisher *pubsub.CloudCodePublisher
 }
 
@@ -30,10 +30,11 @@ func init() {
 // pubURL 发布者的 URL
 func NewLiveQuery(classNames []string, pubType, pubURL string) *LiveQuery {
 	liveQuery := &LiveQuery{}
-	if classNames == nil && len(classNames) == 0 {
-		liveQuery.classNames = []string{}
-	} else {
-		liveQuery.classNames = classNames
+	liveQuery.classNames = map[string]bool{}
+	if len(classNames) > 0 {
+		for _, n := range classNames {
+			liveQuery.classNames[n] = true
+		}
 	}
 	liveQuery.liveQueryPublisher = pubsub.NewCloudCodePublisher(pubType, pubURL)
 
@@ -60,12 +61,7 @@ func (l *LiveQuery) OnAfterDelete(className string, currentObject, originalObjec
 
 // HasLiveQuery 是否有对应的 className
 func (l *LiveQuery) HasLiveQuery(className string) bool {
-	for _, n := range l.classNames {
-		if n == className {
-			return true
-		}
-	}
-	return false
+	return l.classNames[className]
 }
 
 // makePublisherRequest 组装待发布的消息，格式如下

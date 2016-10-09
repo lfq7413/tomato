@@ -4,20 +4,20 @@ import "unsafe"
 
 // EventEmitter 事件发射器
 type EventEmitter struct {
-	events map[string][]HandlerType // TODO 增加并发锁
+	events map[string]map[int]HandlerType // TODO 增加并发锁
 }
 
 // NewEventEmitter ...
 func NewEventEmitter() *EventEmitter {
 	return &EventEmitter{
-		events: map[string][]HandlerType{},
+		events: map[string]map[int]HandlerType{},
 	}
 }
 
 // Emit 向指定通道中的所有订阅者发送事件消息
 func (e *EventEmitter) Emit(messageType string, args ...string) bool {
 	if e.events == nil {
-		e.events = map[string][]HandlerType{}
+		e.events = map[string]map[int]HandlerType{}
 	}
 
 	if handler, ok := e.events[messageType]; ok {
@@ -36,14 +36,15 @@ func (e *EventEmitter) Emit(messageType string, args ...string) bool {
 // AddListener 向指定通道添加订阅者的消息监听器
 func (e *EventEmitter) AddListener(messageType string, listener HandlerType) *EventEmitter {
 	if e.events == nil {
-		e.events = map[string][]HandlerType{}
+		e.events = map[string]map[int]HandlerType{}
 	}
 
+	addr := *(*int)(unsafe.Pointer(&listener))
 	if handler, ok := e.events[messageType]; ok {
-		handler = append(handler, listener)
+		handler[addr] = listener
 		e.events[messageType] = handler
 	} else {
-		e.events[messageType] = []HandlerType{listener}
+		e.events[messageType] = map[int]HandlerType{addr: listener}
 	}
 
 	return e
@@ -77,24 +78,16 @@ func (e *EventEmitter) RemoveListener(messageType string, listener HandlerType) 
 		return e
 	}
 
+	addr := *(*int)(unsafe.Pointer(&listener))
 	if handler, ok := e.events[messageType]; ok {
-		position := -1
-		for p, l := range handler {
-			if equal(listener, l) {
-				position = p
-				break
-			}
-		}
-		if position < 0 {
+		if _, ok := handler[addr]; ok == false {
 			return e
 		}
 		if len(handler) == 1 {
-			handler[0] = nil
+			delete(handler, addr)
 			delete(e.events, messageType)
 		} else {
-			handler[position] = handler[len(handler)-1]
-			handler[len(handler)-1] = nil // 置空，防止内存泄漏
-			handler = handler[:len(handler)-1]
+			delete(handler, addr)
 		}
 	}
 
@@ -111,13 +104,13 @@ func (e *EventEmitter) RemoveAllListeners(messageType string) *EventEmitter {
 		for key := range e.events {
 			e.RemoveAllListeners(key)
 		}
-		e.events = map[string][]HandlerType{}
+		e.events = map[string]map[int]HandlerType{}
 		return e
 	}
 
 	listeners := e.events[messageType]
-	for key := range listeners {
-		listeners[key] = nil // 置空，防止内存泄漏
+	for addr := range listeners {
+		delete(listeners, addr)
 	}
 	delete(e.events, messageType)
 
@@ -125,9 +118,9 @@ func (e *EventEmitter) RemoveAllListeners(messageType string) *EventEmitter {
 }
 
 // Listeners ...
-func (e *EventEmitter) Listeners(messageType string) []HandlerType {
+func (e *EventEmitter) Listeners(messageType string) map[int]HandlerType {
 	if e.events == nil {
-		return []HandlerType{}
+		return map[int]HandlerType{}
 	}
 	return e.events[messageType]
 }
@@ -138,11 +131,4 @@ func (e *EventEmitter) ListenerCount(messageType string) int {
 		return 0
 	}
 	return len(e.events[messageType])
-}
-
-// equal 判断两个闭包函数地址是否相同
-func equal(f, s HandlerType) bool {
-	addrF := *(*int)(unsafe.Pointer(&f))
-	addrS := *(*int)(unsafe.Pointer(&s))
-	return addrF == addrS
 }

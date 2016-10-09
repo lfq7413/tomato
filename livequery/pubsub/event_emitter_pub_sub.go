@@ -50,6 +50,6 @@ func createEventEmitterSubscriber() *eventEmitterSubscriber {
 		emitter:       emitter,
 		subscriptions: map[string]HandlerType{},
 	}
-	s.events = map[string][]HandlerType{}
+	s.events = map[string]map[int]HandlerType{}
 	return s
 }

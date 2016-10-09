@@ -9,11 +9,14 @@ import (
 func Test_EventEmitter(t *testing.T) {
 	sub := createEventEmitterSubscriber()
 	pub := createEventEmitterPublisher()
-	sub.Subscribe("message")
+	sub.Subscribe("afterSave")
+	sub.Subscribe("afterDelete")
 	sub.On("message", func(args ...string) {
 		fmt.Println("event emitter msg", args)
 	})
-	pub.Publish("message", "hello")
+	pub.Publish("afterSave", "hello")
+	pub.Publish("afterDelete", "hello")
 	time.Sleep(500 * time.Millisecond)
-	sub.Unsubscribe("message")
+	sub.Unsubscribe("afterSave")
+	sub.Unsubscribe("afterDelete")
 }

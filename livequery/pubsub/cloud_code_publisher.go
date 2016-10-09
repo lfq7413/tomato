@@ -13,7 +13,6 @@ type CloudCodePublisher struct {
 
 // NewCloudCodePublisher 创建云代码发布者，其中的 Publisher 当前仅支持实验性质的 EventEmitter
 func NewCloudCodePublisher(pubType, pubURL string) *CloudCodePublisher {
-	// TODO 后期添加更多 Publisher
 	return &CloudCodePublisher{
 		publisher: CreatePublisher(pubType, pubURL),
 	}

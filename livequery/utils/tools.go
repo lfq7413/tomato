@@ -1,15 +1,73 @@
 package utils
 
 import (
+	"fmt"
 	"math"
 	"regexp"
+	"sort"
+	"strings"
 
 	"github.com/lfq7413/tomato/livequery/t"
 )
 
-// QueryHash ...
+// QueryHash 计算 query 的 hash
 func QueryHash(query t.M) string {
-	return ""
+	where := query["where"].(map[string]interface{})
+	if where == nil {
+		where = map[string]interface{}{}
+	}
+
+	list := flattenOrQueries(where)
+	columns := []string{}
+	values := []interface{}{}
+	if len(list) > 0 {
+		uniqueColumns := map[string]bool{}
+		for _, subQuery := range list {
+			keys := []string{}
+			for k := range subQuery {
+				keys = append(keys, k)
+			}
+			sort.Sort(sort.StringSlice(keys))
+			for _, k := range keys {
+				values = append(values, subQuery[k])
+				uniqueColumns[k] = true
+			}
+		}
+		for k := range uniqueColumns {
+			columns = append(columns, k)
+		}
+		sort.Sort(sort.StringSlice(columns))
+	} else {
+		for k := range where {
+			columns = append(columns, k)
+		}
+		sort.Sort(sort.StringSlice(columns))
+		for _, k := range columns {
+			values = append(values, where[k])
+		}
+	}
+
+	sections := []string{strings.Join(columns, ","), fmt.Sprint(values)}
+
+	return query["className"].(string) + ":" + strings.Join(sections, "|")
+}
+
+// flattenOrQueries 处理 where 中的 $or 字段
+func flattenOrQueries(where t.M) []map[string]interface{} {
+	ors := where["$or"]
+	if ors == nil {
+		return nil
+	}
+	if v, ok := ors.([]interface{}); ok {
+		accum := []map[string]interface{}{}
+		for _, sub := range v {
+			if query, ok := sub.(map[string]interface{}); ok {
+				accum = append(accum, query)
+			}
+		}
+		return accum
+	}
+	return nil
 }
 
 // MatchesQuery ...

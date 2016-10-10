@@ -148,7 +148,7 @@ type liveQueryServer struct {
 	addr              string                                     // WebSocket 监听地址与端口
 	clientID          int                                        // 客户端 id ，递增
 	clients           map[int]*server.Client                     // 当前已连接的客户端，以 clientID 为索引 TODO 增加并发锁
-	subscriptions     map[string]map[string]*server.Subscription // className -> (queryHash -> subscription) TODO 增加并发锁
+	subscriptions     map[string]map[string]*server.Subscription // 当前所有的订阅对象 className -> (queryHash -> subscription) TODO 增加并发锁
 	keyPairs          map[string]string                          // 用于客户端鉴权的键值对，如 secretKey:abcd
 	subscriber        pubsub.Subscriber                          // 订阅者
 	sessionTokenCache *server.SessionTokenCache                  // 缓存 sessionToken 对应的用户 id
@@ -329,30 +329,38 @@ func (l *liveQueryServer) onAfterDelete(message t.M) {
 	utils.TLog.Verbose("ClassName:", className, "| ObjectId:", deletedParseObject["objectId"])
 	utils.TLog.Verbose("Current client number :", len(l.clients))
 
+	// 取出当前类对应的订阅对象列表
 	classSubscriptions := l.subscriptions[className]
 	if classSubscriptions == nil {
 		utils.TLog.Error("Can not find subscriptions under this class", className)
 		return
 	}
 	for _, subscription := range classSubscriptions {
+		// 检测要删除的对象是否符合订阅条件
 		isSubscriptionMatched := l.matchesSubscription(deletedParseObject, subscription)
 		if isSubscriptionMatched == false {
 			continue
 		}
+		// 如果符合订阅条件，则向指定的 client 的 request 返回对象
 		for clientID, requestIDs := range subscription.ClientRequestIDs {
 			client := l.clients[clientID]
 			if client == nil {
 				continue
 			}
 			for _, requestID := range requestIDs {
-				acl := deletedParseObject["ACL"].(map[string]interface{})
+				var acl map[string]interface{}
+				if v, ok := deletedParseObject["ACL"].(map[string]interface{}); ok {
+					acl = v
+				}
+				// 检测 client 是否有权限接收这条删除信息
 				isMatched, err := l.matchesACL(acl, client, requestID)
 				if err != nil {
 					utils.TLog.Error("Matching ACL error :", err)
 				}
 				if isMatched == false {
-					return
+					continue
 				}
+				// 向 client 发送删除的对象
 				client.PushDelete(requestID, deletedParseObject)
 			}
 		}
@@ -472,12 +480,15 @@ func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
 	}
 
 	query := request["query"].(map[string]interface{})
+	// 计算 query 的 hash ，参与计算的字段包括： className 与 where
 	subscriptionHash := utils.QueryHash(query)
 	className := query["className"].(string)
 	if _, ok := l.subscriptions[className]; ok == false {
 		l.subscriptions[className] = map[string]*server.Subscription{}
 	}
+	// 取出当前 className 对应的 订阅对象列表
 	classSubscriptions := l.subscriptions[className]
+	// 取出当前 queryHash 对应的 订阅对象，如果没有则根据 queryHash 生成，并保存到 订阅对象列表
 	var subscription *server.Subscription
 	if s, ok := classSubscriptions[subscriptionHash]; ok {
 		subscription = s
@@ -487,10 +498,10 @@ func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
 		classSubscriptions[subscriptionHash] = subscription
 	}
 
+	// 生成订阅信息对象，用于设置到 client 中
 	subscriptionInfo := &server.SubscriptionInfo{
 		Subscription: subscription,
 	}
-
 	if fields, ok := query["fields"]; ok {
 		subscriptionInfo.Fields = fields.([]string)
 	}
@@ -498,10 +509,11 @@ func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
 		subscriptionInfo.SessionToken = sessionToken.(string)
 	}
 	requestID := int(request["requestId"].(float64))
+	// 根据 requestID ，把订阅信息对象设置到 client 中
 	client.AddSubscriptionInfo(requestID, subscriptionInfo)
-
+	// 更新订阅对象，添加使用该对象的 ClientID 与 requestID
 	subscription.AddClientSubscription(ws.ClientID, requestID)
-
+	// 订阅成功
 	client.PushSubscribe(requestID, nil)
 
 	utils.TLog.Verbose("Create client", ws.ClientID, "new subscription:", requestID)
@@ -524,29 +536,30 @@ func (l *liveQueryServer) handleUnsubscribe(ws *server.WebSocket, request t.M) {
 		utils.TLog.Error("Can not find this client", ws.ClientID)
 		return
 	}
-
+	// 取出 requestID 对应的订阅信息对象
 	subscriptionInfo := client.GetSubscriptionInfo(requestID)
 	if subscriptionInfo == nil {
 		server.PushError(ws, 2, "Cannot find subscription with clientId "+strconv.Itoa(ws.ClientID)+" subscriptionId "+strconv.Itoa(requestID)+". Make sure you subscribe to live query server before unsubscribing.", true)
 		utils.TLog.Error("Can not find subscription with clientId", ws.ClientID, "subscriptionId", requestID)
 		return
 	}
-
+	// 从 client 中删除 requestID 对应的 订阅信息对象
 	client.DeleteSubscriptionInfo(requestID)
-
+	// 取出 订阅对象
 	subscription := subscriptionInfo.Subscription
 	className := subscription.ClassName
+	// 更新订阅对象，删除使用该对象的 ClientID 与 requestID
 	subscription.DeleteClientSubscription(ws.ClientID, requestID)
-
+	// 如果没有任何 client 订阅该对象，则从 订阅对象列表中删除
 	classSubscriptions := l.subscriptions[className]
 	if subscription.HasSubscribingClient() == false {
 		delete(classSubscriptions, subscription.Hash)
 	}
-
+	// 如果当前类对应的 订阅对象列表 长度为 0 ，则删除往前类对应的列表
 	if len(classSubscriptions) == 0 {
 		delete(l.subscriptions, className)
 	}
-
+	// 退订成功
 	client.PushUnsubscribe(requestID, nil)
 }
 

@@ -10,24 +10,155 @@ import (
 	"github.com/lfq7413/tomato/livequery/utils"
 )
 
+/*
+Parse LiveQuery Protocol Specification
+https://github.com/ParsePlatform/parse-server/wiki/Parse-LiveQuery-Protocol-Specification
+
+Connect message:
+request
+{
+	"op": "connect",
+	"restAPIKey": "",  // Optional
+	"javascriptKey": "", // Optional
+	"clientKey": "", //Optional
+	"windowsKey": "", //Optional
+	"masterKey": "", // Optional
+	"sessionToken": "" // Optional
+}
+response
+{
+	"op": "connected"
+}
+
+Subscribe message:
+request
+{
+	op": "subscribe",
+	requestId": 1,
+	query": {
+		className": "Player",
+		where": {"name": "test"},
+		fields": ["name"] // Optional
+	},
+	sessionToken": "" // Optional
+}
+response
+{
+	"op": "subscribed",
+	"requestId":1
+}
+
+Event message:
+Suppose you subscribe like this ->
+{
+	"op": "subscribe",
+	"requestId": 1,
+	"query": {
+		"className": "Player",
+		"where": {"name": "test"}
+	}
+}
+response - Create event - create object name = test
+{
+	"op": "create",
+	"requestId": 1,
+	"object": {
+		"className": "Player",
+		"objectId": "",
+		"createdAt": "",
+		"updatedAt": "",
+		...
+	}
+}
+response - Enter event - update object name unknown -> test
+{
+	"op": "enter",
+	"requestId": 1,
+	"object": {
+		"className": "Player",
+		"objectId": "",
+		"createdAt": "",
+		"updatedAt": "",
+		...
+	}
+}
+response - Update event - update object name unchanged
+{
+	"op": "update",
+	"requestId": 1,
+	"object": {
+		"className": "Player",
+		"objectId": "",
+		"createdAt": "",
+		"updatedAt": "",
+		...
+	}
+}
+response - Leave event - update object name test -> unknown
+{
+	"op": "leave",
+	"requestId": 1,
+	"object": {
+		"className": "Player",
+		"objectId": "",
+		"createdAt": "",
+		"updatedAt": "",
+		...
+	}
+}
+response - Delete event - delete object name = test
+{
+	"op": "delete",
+	"requestId": 1,
+	"object": {
+		"className": "Player",
+		"objectId": "",
+		"createdAt": "",
+		"updatedAt": "",
+		...
+	}
+}
+
+Unsubscribe message:
+request
+{
+	"op": "unsubscribe",
+	"requestId":1
+}
+response
+{
+	"op": "unsubscribed",
+	"requestId":1
+}
+
+Error message:
+response
+{
+  "op": "error",
+  "code": 1,
+  "error": "",
+  "reconnect": true
+}
+*/
+
 var s *liveQueryServer
 
-// Run ...
+type liveQueryServer struct {
+	pattern           string                                     // WebSocket 所在子地址
+	addr              string                                     // WebSocket 监听地址与端口
+	clientID          int                                        // 客户端 id ，递增
+	clients           map[int]*server.Client                     // 当前已连接的客户端，以 clientID 为索引 TODO 增加并发锁
+	subscriptions     map[string]map[string]*server.Subscription // className -> (queryHash -> subscription) TODO 增加并发锁
+	keyPairs          map[string]string                          // 用于客户端鉴权的键值对，如 secretKey:abcd
+	subscriber        pubsub.Subscriber                          // 订阅者
+	sessionTokenCache *server.SessionTokenCache                  // 缓存 sessionToken 对应的用户 id
+}
+
+// Run 初始化 server ，启动 WebSocket
 func Run(args map[string]string) {
 	s = &liveQueryServer{}
 	s.initServer(args)
 	s.run()
-}
-
-type liveQueryServer struct {
-	pattern           string
-	addr              string
-	clientID          int
-	clients           map[int]*server.Client
-	subscriptions     map[string]map[string]*server.Subscription // className -> (queryHash -> subscription) TODO 增加并发锁
-	keyPairs          map[string]string
-	subscriber        pubsub.Subscriber
-	sessionTokenCache *server.SessionTokenCache
 }
 
 // initServer 初始化 liveQuery 服务
@@ -59,17 +190,23 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 	}
 	utils.TLog.Verbose("Support key pairs", l.keyPairs)
 
+	// 初始化 tomato 服务参数，用于获取用户信息
 	server.TomatoInfo["serverURL"] = args["serverURL"]
 	server.TomatoInfo["appId"] = args["appId"]
 	server.TomatoInfo["clientKey"] = args["clientKey"]
 	server.TomatoInfo["masterKey"] = args["masterKey"]
 
-	l.subscriber = pubsub.CreateSubscriber("", "")
+	// 向 subscriber 订阅 afterSave 、 afterDelete 两个频道
+	l.subscriber = pubsub.CreateSubscriber(args["subType"], args["subURL"])
 	l.subscriber.Subscribe("afterSave")
 	l.subscriber.Subscribe("afterDelete")
-	// 向 subscriber 订阅 "message" ，当有对象操作消息时，以下处理函数将会被调起
+
+	// 设置从 subscriber 接收到消息时的处理函数
 	var h pubsub.HandlerType
 	h = func(args ...string) {
+		if len(args) < 2 {
+			return
+		}
 		channel := args[0]
 		messageStr := args[1]
 		utils.TLog.Verbose("Subscribe messsage", messageStr)
@@ -89,20 +226,23 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 		}
 	}
 	l.subscriber.On("message", h)
+
+	// 设置 cache
 	l.sessionTokenCache = server.NewSessionTokenCache()
 }
 
 // run 启动 WebSocket 服务
+// liveQueryServer 通过 OnConnect 、 OnMessage 、 OnDisconnect 处理与客户端的交互
 func (l *liveQueryServer) run() {
 	server.RunWebSocketServer(l.pattern, l.addr, l)
 }
 
-// OnConnect 当有客户端连接成功时调用
+// OnConnect 当有客户端连接到 WebSocket 时调用
 func (l *liveQueryServer) OnConnect(ws *server.WebSocket) {
 
 }
 
-// OnMessage 当接收到客户端发来的消息时调用
+// OnMessage 当 WebSocket 接收到客户端发来的消息时调用
 func (l *liveQueryServer) OnMessage(ws *server.WebSocket, msg interface{}) {
 	var request t.M
 	if message, ok := msg.(string); ok {
@@ -110,15 +250,19 @@ func (l *liveQueryServer) OnMessage(ws *server.WebSocket, msg interface{}) {
 		if err != nil {
 			return
 		}
+	} else {
+		return
 	}
 	utils.TLog.Verbose("Request:", request)
 
+	// 校验 op 操作否是否支持
 	err := server.Validate(request, "general")
 	if err != nil {
 		server.PushError(ws, 1, err.Error(), true)
 		utils.TLog.Error("Connect message error", err.Error())
 		return
 	}
+	// 校验 指定的操作符 格式是否正确
 	err = server.Validate(request, request["op"].(string))
 	if err != nil {
 		server.PushError(ws, 1, err.Error(), true)
@@ -140,7 +284,7 @@ func (l *liveQueryServer) OnMessage(ws *server.WebSocket, msg interface{}) {
 	}
 }
 
-// OnDisconnect 当客户端断开时调用
+// OnDisconnect 当客户端从 WebSocket 断开时调用
 func (l *liveQueryServer) OnDisconnect(ws *server.WebSocket) {
 	utils.TLog.Log("Client disconnect:", ws.ClientID)
 
@@ -176,7 +320,7 @@ func (l *liveQueryServer) inflateParseObject(message t.M) {
 
 }
 
-// onAfterDelete 有对象删除时调用
+// onAfterDelete 从 subscriber 中接收到对象删除消息时调用
 func (l *liveQueryServer) onAfterDelete(message t.M) {
 	utils.TLog.Verbose("afterDelete is triggered")
 
@@ -215,7 +359,7 @@ func (l *liveQueryServer) onAfterDelete(message t.M) {
 	}
 }
 
-// onAfterSave 有对象保存时调用
+// onAfterSave 从 subscriber 中接收到对象保存消息时调用
 func (l *liveQueryServer) onAfterSave(message t.M) {
 	utils.TLog.Verbose("afterSave is triggered")
 
@@ -296,12 +440,14 @@ func (l *liveQueryServer) onAfterSave(message t.M) {
 
 // handleConnect 处理客户端 Connect 操作
 func (l *liveQueryServer) handleConnect(ws *server.WebSocket, request t.M) {
+	// 校验是否含有必要的键值对
 	if l.validateKeys(request, l.keyPairs) == false {
 		server.PushError(ws, 4, "Key in request is not valid", true)
 		utils.TLog.Error("Key in request is not valid")
 		return
 	}
 
+	// 创建新的 client 并更新 l.clientID
 	client := server.NewClient(l.clientID, ws)
 	ws.ClientID = l.clientID
 	l.clientID++
@@ -319,6 +465,11 @@ func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
 	}
 
 	client := l.clients[ws.ClientID]
+	if client == nil {
+		server.PushError(ws, 2, "Can not find this client, make sure you connect to server before subscribing", true)
+		utils.TLog.Error("Can not find this client, make sure you connect to server before subscribing")
+		return
+	}
 
 	query := request["query"].(map[string]interface{})
 	subscriptionHash := utils.QueryHash(query)
@@ -434,6 +585,7 @@ func (l *liveQueryServer) matchesACL(acl t.M, client *server.Client, requestID i
 	return false, nil
 }
 
+// validateKeys 校验 connect 请求中是否包含必要的键值对
 func (l *liveQueryServer) validateKeys(request t.M, validKeyPairs map[string]string) bool {
 	if validKeyPairs == nil || len(validKeyPairs) == 0 {
 		return true
@@ -443,7 +595,11 @@ func (l *liveQueryServer) validateKeys(request t.M, validKeyPairs map[string]str
 		if request[key] == nil {
 			continue
 		}
-		if request[key].(string) != secret {
+		if v, ok := request[key].(string); ok {
+			if v != secret {
+				continue
+			}
+		} else {
 			continue
 		}
 		isValid = true

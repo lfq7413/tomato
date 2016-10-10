@@ -98,6 +98,7 @@ func (c *Client) pushEvent(eventType string) func(int, t.M) {
 		pushResponse(c.ws, string(r))
 	}
 }
+
 func (c *Client) toObjectWithFields(object t.M, fields []string) t.M {
 	if fields == nil {
 		return object

@@ -39,7 +39,7 @@ func Run() {
 func RunLiveQueryServer() {
 	args := map[string]string{}
 	args["pattern"] = "/livequery"
-	args["addr"] = "/8089"
+	args["addr"] = ":8089"
 	livequery.Run(args)
 }
 

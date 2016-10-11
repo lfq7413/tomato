@@ -353,10 +353,7 @@ func (l *liveQueryServer) onAfterDelete(message t.M) {
 					acl = v
 				}
 				// 检测 client 是否有权限接收这条删除信息
-				isMatched, err := l.matchesACL(acl, client, requestID)
-				if err != nil {
-					utils.TLog.Error("Matching ACL error :", err)
-				}
+				isMatched := l.matchesACL(acl, client, requestID)
 				if isMatched == false {
 					continue
 				}
@@ -379,7 +376,7 @@ func (l *liveQueryServer) onAfterSave(message t.M) {
 	className := currentParseObject["className"].(string)
 	utils.TLog.Verbose("ClassName:", className, "| ObjectId:", currentParseObject["objectId"])
 	utils.TLog.Verbose("Current client number :", len(l.clients))
-
+	// 取出当前类对应的订阅信息列表
 	classSubscriptions := l.subscriptions[className]
 	if classSubscriptions == nil {
 		utils.TLog.Error("Can not find subscriptions under this class", className)
@@ -387,40 +384,42 @@ func (l *liveQueryServer) onAfterSave(message t.M) {
 	}
 
 	for _, subscription := range classSubscriptions {
+		// 检测要保存的对象是否符合订阅条件
 		isOriginalSubscriptionMatched := l.matchesSubscription(originalParseObject, subscription)
 		isCurrentSubscriptionMatched := l.matchesSubscription(currentParseObject, subscription)
+		// 均不符合则跳过
+		if isOriginalSubscriptionMatched == false && isCurrentSubscriptionMatched == false {
+			continue
+		}
 		for clientID, requestIDs := range subscription.ClientRequestIDs {
 			client := l.clients[clientID]
 			if client == nil {
 				continue
 			}
 			for _, requestID := range requestIDs {
-				var err error
+				// 检测 client 是否有权限接收这条保存信息
 				var isOriginalMatched bool
 				if isOriginalSubscriptionMatched == false {
 					isOriginalMatched = false
 				} else {
 					var originalACL t.M
 					if originalParseObject != nil {
-						originalACL = originalParseObject["ACL"].(map[string]interface{})
+						if v, ok := originalParseObject["ACL"].(map[string]interface{}); ok {
+							originalACL = v
+						}
 					}
-					isOriginalMatched, err = l.matchesACL(originalACL, client, requestID)
-					if err != nil {
-						utils.TLog.Error("Matching ACL error :", err)
-						continue
-					}
+					isOriginalMatched = l.matchesACL(originalACL, client, requestID)
 				}
 
 				var isCurrentMatched bool
 				if isCurrentSubscriptionMatched == false {
 					isCurrentMatched = false
 				} else {
-					currentACL := currentParseObject["ACL"].(map[string]interface{})
-					isCurrentMatched, err = l.matchesACL(currentACL, client, requestID)
-					if err != nil {
-						utils.TLog.Error("Matching ACL error :", err)
-						continue
+					var currentACL t.M
+					if v, ok := currentParseObject["ACL"].(map[string]interface{}); ok {
+						currentACL = v
 					}
+					isCurrentMatched = l.matchesACL(currentACL, client, requestID)
 				}
 
 				utils.TLog.Verbose("Original", originalParseObject,
@@ -429,13 +428,17 @@ func (l *liveQueryServer) onAfterSave(message t.M) {
 					"| Query:", subscription.Hash)
 
 				if isOriginalMatched && isCurrentMatched {
+					// 原对象与新对象均符合条件，则为 Update
 					client.PushUpdate(requestID, currentParseObject)
 				} else if isOriginalMatched && !isCurrentMatched {
+					// 原对象符合条件，但是新对象不符合，则为 Leave
 					client.PushLeave(requestID, currentParseObject)
 				} else if !isOriginalMatched && isCurrentMatched {
 					if originalParseObject != nil {
+						// 原对象不符合条件，但是新对象符合，则为 Enter
 						client.PushEnter(requestID, currentParseObject)
 					} else {
+						// 原对象不存在，同时新对象符合条件，则为 Create
 						client.PushCreate(requestID, currentParseObject)
 					}
 				} else {
@@ -563,6 +566,7 @@ func (l *liveQueryServer) handleUnsubscribe(ws *server.WebSocket, request t.M) {
 	client.PushUnsubscribe(requestID, nil)
 }
 
+// matchesSubscription 检测对象是否符合订阅条件
 func (l *liveQueryServer) matchesSubscription(object t.M, subscription *server.Subscription) bool {
 	if object == nil {
 		return false
@@ -571,31 +575,32 @@ func (l *liveQueryServer) matchesSubscription(object t.M, subscription *server.S
 	return utils.MatchesQuery(object, subscription.Query)
 }
 
-func (l *liveQueryServer) matchesACL(acl t.M, client *server.Client, requestID int) (bool, error) {
+// matchesACL 检测客户端是否有权限接收消息
+func (l *liveQueryServer) matchesACL(acl t.M, client *server.Client, requestID int) bool {
 	if acl == nil {
-		return true, nil
+		return true
 	}
 
 	if getPublicReadAccess(acl) {
-		return true, nil
+		return true
 	}
 
 	subscriptionInfo := client.GetSubscriptionInfo(requestID)
 	if subscriptionInfo == nil {
-		return false, nil
+		return false
 	}
 
 	subscriptionSessionToken := subscriptionInfo.SessionToken
 	userID := l.sessionTokenCache.GetUserID(subscriptionSessionToken)
 	if userID == "" {
-		return false, nil
+		return false
 	}
 	isSubscriptionSessionTokenMatched := getReadAccess(acl, userID)
 	if isSubscriptionSessionTokenMatched {
-		return true, nil
+		return true
 	}
 
-	return false, nil
+	return false
 }
 
 // validateKeys 校验 connect 请求中是否包含必要的键值对

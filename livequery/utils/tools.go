@@ -70,7 +70,7 @@ func flattenOrQueries(where t.M) []map[string]interface{} {
 	return nil
 }
 
-// MatchesQuery ...
+// MatchesQuery 检测对象是否符合订阅条件
 func MatchesQuery(object, query t.M) bool {
 
 	if className, ok := query["className"]; ok {
@@ -89,10 +89,12 @@ func MatchesQuery(object, query t.M) bool {
 	return true
 }
 
+// matchesKeyConstraints 检测对象中的字段是否符合指定的条件
 func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool {
 	if constraints == nil {
 		return false
 	}
+	// 处理 $or ，有一处符合即可
 	if key == "$or" {
 		if querys, ok := constraints.([]interface{}); ok {
 			for _, query := range querys {
@@ -117,10 +119,12 @@ func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool
 		return false
 	}
 
+	// 处理 constraints 不为 array map 时的情况
 	var constraint t.M
 	if v, ok := constraints.(map[string]interface{}); ok {
 		constraint = v
 	} else {
+		// 当 object[key] 为数组时，只要有一个符合即可
 		if objects, ok := object[key].([]interface{}); ok {
 			for _, o := range objects {
 				if equalObject(o, constraints) {
@@ -132,10 +136,17 @@ func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool
 		return equalObject(object[key], constraints)
 	}
 
-	objectType := constraint["__type"].(string)
+	// 处理 constraint 为 __type 类型时的情况
+	var objectType string
+	if v, ok := constraint["__type"].(string); ok {
+		objectType = v
+	}
 	if objectType != "" {
 		if objectType == "Pointer" {
-			o := object[key].(map[string]interface{})
+			var o map[string]interface{}
+			if v, ok := object[key].(map[string]interface{}); ok {
+				o = v
+			}
 			if o == nil {
 				return false
 			}
@@ -143,12 +154,13 @@ func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool
 			class2 := o["className"]
 			id1 := constraint["objectId"]
 			id2 := o["objectId"]
-			return class1 == class2 && id1 == id2
+			return equalObject(class1, class2) && equalObject(id1, id2)
 		}
 
-		if objects, ok := object[key].([]interface{}); ok {
-			for _, object := range objects {
-				if equalObject(object, constraint) {
+		// 如果 object[key] 为数组，只要一个符合条件即可
+		if objs, ok := object[key].([]interface{}); ok {
+			for _, obj := range objs {
+				if equalObject(obj, constraint) {
 					return true
 				}
 			}
@@ -157,6 +169,7 @@ func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool
 		return equalObject(object[key], constraint)
 	}
 
+	// 处理 constraint 包含限制条件时的情况
 	for condition, compareTo := range constraint {
 		switch condition {
 		case "$lt", "$lte", "$gt", "$gte":
@@ -227,6 +240,7 @@ func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool
 	return true
 }
 
+// compareBox 校验一点是否在指定区域内
 func compareBox(compareTo, point interface{}) bool {
 	southWest := map[string]float64{}
 	northEast := map[string]float64{}
@@ -248,15 +262,23 @@ func compareBox(compareTo, point interface{}) bool {
 	}
 
 	if p, ok := box[0].(map[string]interface{}); ok {
-		southWest["longitude"] = p["longitude"].(float64)
-		southWest["latitude"] = p["latitude"].(float64)
+		if v, ok := p["longitude"].(float64); ok {
+			southWest["longitude"] = v
+		}
+		if v, ok := p["latitude"].(float64); ok {
+			southWest["latitude"] = v
+		}
 	} else {
 		return false
 	}
 
 	if p, ok := box[1].(map[string]interface{}); ok {
-		northEast["longitude"] = p["longitude"].(float64)
-		northEast["latitude"] = p["latitude"].(float64)
+		if v, ok := p["longitude"].(float64); ok {
+			northEast["longitude"] = v
+		}
+		if v, ok := p["latitude"].(float64); ok {
+			northEast["latitude"] = v
+		}
 	} else {
 		return false
 	}
@@ -267,8 +289,12 @@ func compareBox(compareTo, point interface{}) bool {
 	}
 
 	if p, ok := point.(map[string]interface{}); ok {
-		geoPoint["longitude"] = p["longitude"].(float64)
-		geoPoint["latitude"] = p["latitude"].(float64)
+		if v, ok := p["longitude"].(float64); ok {
+			geoPoint["longitude"] = v
+		}
+		if v, ok := p["latitude"].(float64); ok {
+			geoPoint["latitude"] = v
+		}
 	} else {
 		return false
 	}
@@ -279,6 +305,7 @@ func compareBox(compareTo, point interface{}) bool {
 		geoPoint["longitude"] < northEast["longitude"]
 }
 
+// compareGeoPoint 比较两点是否相邻
 func compareGeoPoint(p1, p2, maxDistance interface{}) bool {
 	if v1, ok := p1.(map[string]interface{}); ok {
 		if v2, ok := p2.(map[string]interface{}); ok {
@@ -361,6 +388,23 @@ func compareNumber(i1, i2 interface{}, op string) bool {
 		}
 		return false
 	}
+	if v1, ok := i1.(int); ok {
+		if v2, ok := i2.(int); ok {
+			switch op {
+			case "$lt":
+				return v1 < v2
+			case "$lte":
+				return v1 <= v2
+			case "$gt":
+				return v1 > v2
+			case "$gte":
+				return v1 >= v2
+			default:
+				return false
+			}
+		}
+		return false
+	}
 	return false
 }
 
@@ -375,6 +419,13 @@ func equalObject(i1, i2 interface{}) bool {
 
 	if v1, ok := i1.(float64); ok {
 		if v2, ok := i2.(float64); ok {
+			return v1 == v2
+		}
+		return false
+	}
+
+	if v1, ok := i1.(int); ok {
+		if v2, ok := i2.(int); ok {
 			return v1 == v2
 		}
 		return false

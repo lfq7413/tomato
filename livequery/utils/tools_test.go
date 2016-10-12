@@ -135,7 +135,6 @@ func Test_MatchesQuery(t *testing.T) {
 
 func Test_matchesKeyConstraints(t *testing.T) {
 	// TODO
-	// inSlice
 	// compareRegexp
 	// compareGeoPoint
 	// compareBox
@@ -158,7 +157,22 @@ func Test_compareRegexp(t *testing.T) {
 }
 
 func Test_inSlice(t *testing.T) {
-	// TODO
+	data := []struct {
+		s      interface{}
+		o      interface{}
+		expect bool
+	}{
+		{s: "hello", o: 1, expect: false},
+		{s: []interface{}{1, 2, 3}, o: 4, expect: false},
+		{s: []interface{}{1, 2, 3}, o: 3, expect: true},
+	}
+
+	for _, d := range data {
+		result := inSlice(d.s, d.o)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }
 
 func Test_compareNumber(t *testing.T) {

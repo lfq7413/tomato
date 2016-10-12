@@ -135,11 +135,152 @@ func Test_MatchesQuery(t *testing.T) {
 
 func Test_matchesKeyConstraints(t *testing.T) {
 	// TODO
-	// compareBox
 }
 
 func Test_compareBox(t *testing.T) {
-	// TODO
+	data := []struct {
+		compareTo interface{}
+		point     interface{}
+		expect    bool
+	}{
+		{
+			compareTo: "hello",
+			point: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			expect: false,
+		},
+		{
+			compareTo: map[string]interface{}{
+				"$box": "hello",
+			},
+			point: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			expect: false,
+		},
+		{
+			compareTo: map[string]interface{}{
+				"$box": []interface{}{1},
+			},
+			point: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			expect: false,
+		},
+		{
+			compareTo: map[string]interface{}{
+				"$box": []interface{}{1, 2},
+			},
+			point: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			expect: false,
+		},
+		{
+			compareTo: map[string]interface{}{
+				"$box": []interface{}{
+					map[string]interface{}{
+						"longitude": 10.0,
+						"latitude":  0.0,
+					},
+					map[string]interface{}{
+						"longitude": 0.0,
+						"latitude":  0.0,
+					},
+				},
+			},
+			point: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			expect: false,
+		},
+		{
+			compareTo: map[string]interface{}{
+				"$box": []interface{}{
+					map[string]interface{}{
+						"longitude": 0.0,
+						"latitude":  10.0,
+					},
+					map[string]interface{}{
+						"longitude": 10.0,
+						"latitude":  0.0,
+					},
+				},
+			},
+			point: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			expect: false,
+		},
+		{
+			compareTo: map[string]interface{}{
+				"$box": []interface{}{
+					map[string]interface{}{
+						"longitude": 0.0,
+						"latitude":  0.0,
+					},
+					map[string]interface{}{
+						"longitude": 10.0,
+						"latitude":  10.0,
+					},
+				},
+			},
+			point:  "hello",
+			expect: false,
+		},
+		{
+			compareTo: map[string]interface{}{
+				"$box": []interface{}{
+					map[string]interface{}{
+						"longitude": 0.0,
+						"latitude":  0.0,
+					},
+					map[string]interface{}{
+						"longitude": 10.0,
+						"latitude":  10.0,
+					},
+				},
+			},
+			point: map[string]interface{}{
+				"longitude": 20.0,
+				"latitude":  20.0,
+			},
+			expect: false,
+		},
+		{
+			compareTo: map[string]interface{}{
+				"$box": []interface{}{
+					map[string]interface{}{
+						"longitude": 0.0,
+						"latitude":  0.0,
+					},
+					map[string]interface{}{
+						"longitude": 10.0,
+						"latitude":  10.0,
+					},
+				},
+			},
+			point: map[string]interface{}{
+				"longitude": 5.0,
+				"latitude":  5.0,
+			},
+			expect: true,
+		},
+	}
+
+	for _, d := range data {
+		result := compareBox(d.compareTo, d.point)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }
 
 func Test_compareGeoPoint(t *testing.T) {

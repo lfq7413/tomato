@@ -135,7 +135,6 @@ func Test_MatchesQuery(t *testing.T) {
 
 func Test_matchesKeyConstraints(t *testing.T) {
 	// TODO
-	// compareGeoPoint
 	// compareBox
 }
 
@@ -144,7 +143,86 @@ func Test_compareBox(t *testing.T) {
 }
 
 func Test_compareGeoPoint(t *testing.T) {
-	// TODO
+	data := []struct {
+		p1          interface{}
+		p2          interface{}
+		maxDistance interface{}
+		expect      bool
+	}{
+		{
+			p1: 1024,
+			p2: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			maxDistance: nil,
+			expect:      false,
+		},
+		{
+			p1: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			p2:          1024,
+			maxDistance: nil,
+			expect:      false,
+		},
+		{
+			p1: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			p2: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  20.0,
+			},
+			maxDistance: nil,
+			expect:      true,
+		},
+		{
+			p1: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  10.0,
+			},
+			p2: map[string]interface{}{
+				"longitude": 10.0,
+				"latitude":  20.0,
+			},
+			maxDistance: "hello",
+			expect:      true,
+		},
+		{
+			p1: map[string]interface{}{
+				"longitude": 0.0,
+				"latitude":  0.0,
+			},
+			p2: map[string]interface{}{
+				"longitude": 90.0,
+				"latitude":  0.0,
+			},
+			maxDistance: 2.0,
+			expect:      true,
+		},
+		{
+			p1: map[string]interface{}{
+				"longitude": 0.0,
+				"latitude":  0.0,
+			},
+			p2: map[string]interface{}{
+				"longitude": 90.0,
+				"latitude":  0.0,
+			},
+			maxDistance: 1.0,
+			expect:      false,
+		},
+	}
+
+	for _, d := range data {
+		result := compareGeoPoint(d.p1, d.p2, d.maxDistance)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }
 
 func Test_distance(t *testing.T) {

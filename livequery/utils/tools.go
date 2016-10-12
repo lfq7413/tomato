@@ -320,6 +320,7 @@ func compareGeoPoint(p1, p2, maxDistance interface{}) bool {
 							if max, ok := maxDistance.(float64); ok {
 								return d <= max
 							}
+							return true
 						}
 					}
 				}

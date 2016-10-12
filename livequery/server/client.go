@@ -8,7 +8,9 @@ import (
 
 var dafaultFields = []string{"className", "objectId", "updatedAt", "createdAt", "ACL"}
 
-// Client ...
+// Client 客户端信息
+// ws 当前对象的 WebSocket 连接
+// SubscriptionInfos 当前客户端发起的所有请求对应的订阅信息
 type Client struct {
 	id                int
 	ws                *WebSocket
@@ -45,7 +47,7 @@ func pushResponse(ws *WebSocket, msg string) {
 	ws.send(msg)
 }
 
-// PushError ...
+// PushError 发送错误信息
 func PushError(ws *WebSocket, code int, errMsg string, reconnect bool) {
 	errResp := t.M{
 		"op":        "error",
@@ -60,21 +62,22 @@ func PushError(ws *WebSocket, code int, errMsg string, reconnect bool) {
 	pushResponse(ws, string(data))
 }
 
-// AddSubscriptionInfo ...
+// AddSubscriptionInfo 添加 requestID 对应的订阅信息
 func (c *Client) AddSubscriptionInfo(requestID int, subscriptionInfo *SubscriptionInfo) {
 	c.SubscriptionInfos[requestID] = subscriptionInfo
 }
 
-// GetSubscriptionInfo ...
+// GetSubscriptionInfo 获取 requestID 对应的订阅信息
 func (c *Client) GetSubscriptionInfo(requestID int) *SubscriptionInfo {
 	return c.SubscriptionInfos[requestID]
 }
 
-// DeleteSubscriptionInfo ...
+// DeleteSubscriptionInfo 删除 requestID 对应的订阅信息
 func (c *Client) DeleteSubscriptionInfo(requestID int) {
 	delete(c.SubscriptionInfos, requestID)
 }
 
+// pushEvent 发送消息
 func (c *Client) pushEvent(eventType string) func(int, t.M) {
 	return func(subscriptionId int, object t.M) {
 		response := t.M{
@@ -99,8 +102,9 @@ func (c *Client) pushEvent(eventType string) func(int, t.M) {
 	}
 }
 
+// toObjectWithFields 返回指定字段
 func (c *Client) toObjectWithFields(object t.M, fields []string) t.M {
-	if fields == nil {
+	if len(fields) == 0 {
 		return object
 	}
 

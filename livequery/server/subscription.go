@@ -2,14 +2,17 @@ package server
 
 import "github.com/lfq7413/tomato/livequery/t"
 
-// SubscriptionInfo ...
+// SubscriptionInfo 订阅对象信息
+// 每一个客户端请求对应一个对象
 type SubscriptionInfo struct {
 	Subscription *Subscription
 	SessionToken string
 	Fields       []string
 }
 
-// Subscription ...
+// Subscription 订阅对象
+// 一组 ClassName Hash 对应唯一一个对象
+// ClientRequestIDs 记录连接到该对象的所有客户端
 type Subscription struct {
 	Query            t.M
 	ClassName        string
@@ -27,7 +30,7 @@ func NewSubscription(className string, query t.M, queryHash string) *Subscriptio
 	return s
 }
 
-// AddClientSubscription ...
+// AddClientSubscription 添加连接到该订阅对象的客户端请求
 func (s *Subscription) AddClientSubscription(clientID, requestID int) {
 	requestIDs := s.ClientRequestIDs[clientID]
 	if requestIDs == nil {
@@ -37,7 +40,7 @@ func (s *Subscription) AddClientSubscription(clientID, requestID int) {
 	s.ClientRequestIDs[clientID] = requestIDs
 }
 
-// DeleteClientSubscription ...
+// DeleteClientSubscription 删除连接到该订阅对象的客户端请求
 func (s *Subscription) DeleteClientSubscription(clientID, requestID int) {
 	requestIDs := s.ClientRequestIDs[clientID]
 	if requestIDs == nil {
@@ -61,7 +64,7 @@ func (s *Subscription) DeleteClientSubscription(clientID, requestID int) {
 	}
 }
 
-// HasSubscribingClient ...
+// HasSubscribingClient 返回连接到该对象的客户端数量
 func (s *Subscription) HasSubscribingClient() bool {
 	return len(s.ClientRequestIDs) > 0
 }

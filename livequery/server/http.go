@@ -11,8 +11,8 @@ import (
 // TomatoInfo ...
 var TomatoInfo map[string]string
 
+// getUser 访问接口 获取用户信息
 func getUser(sessionToken string) (t.M, error) {
-	client := &http.Client{}
 	req, err := http.NewRequest("GET", TomatoInfo["serverURL"]+"/users/me", nil)
 	if err != nil {
 		return nil, err
@@ -20,8 +20,9 @@ func getUser(sessionToken string) (t.M, error) {
 
 	req.Header.Add("X-Parse-Application-Id", TomatoInfo["appId"])
 	req.Header.Add("X-Parse-Client-Key", TomatoInfo["clientKey"])
-	req.Header.Add("X-Parse-Session-Token", sessionToken)
+	req.Header.Add("X-Parse-Session-Token", "r:"+sessionToken)
 
+	client := http.DefaultClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

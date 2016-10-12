@@ -5,7 +5,7 @@ import (
 	"github.com/lfq7413/tomato/livequery/utils"
 )
 
-// SessionTokenCache ...
+// SessionTokenCache 缓存 SessionToken 及其对应的用户 ID
 type SessionTokenCache struct {
 	cache *lru.Cache
 }
@@ -17,7 +17,7 @@ func NewSessionTokenCache() *SessionTokenCache {
 	}
 }
 
-// GetUserID ...
+// GetUserID 获取用户 ID
 func (s *SessionTokenCache) GetUserID(sessionToken string) string {
 	if v, ok := s.cache.Get(sessionToken); ok {
 		utils.TLog.Verbose("Fetch userId", v, "of sessionToken", sessionToken, "from Cache")
@@ -31,7 +31,10 @@ func (s *SessionTokenCache) GetUserID(sessionToken string) string {
 	}
 
 	utils.TLog.Verbose("Fetch userId", user["objectId"], "of sessionToken", sessionToken, "from Parse")
-	userID := user["objectId"].(string)
+	var userID string
+	if v, ok := user["objectId"].(string); ok {
+		userID = v
+	}
 	s.cache.Add(sessionToken, userID)
 	return userID
 }

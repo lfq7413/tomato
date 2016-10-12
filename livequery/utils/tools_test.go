@@ -135,7 +135,6 @@ func Test_MatchesQuery(t *testing.T) {
 
 func Test_matchesKeyConstraints(t *testing.T) {
 	// TODO
-	// equalObject
 	// compareNumber
 	// inSlice
 	// compareRegexp
@@ -161,7 +160,6 @@ func Test_compareRegexp(t *testing.T) {
 
 func Test_inSlice(t *testing.T) {
 	// TODO
-	// equalObject
 }
 
 func Test_compareNumber(t *testing.T) {
@@ -170,4 +168,88 @@ func Test_compareNumber(t *testing.T) {
 
 func Test_equalObject(t *testing.T) {
 	// TODO
+	data := []struct {
+		i1     interface{}
+		i2     interface{}
+		expect bool
+	}{
+		{i1: "hello", i2: "hello", expect: true},
+		{i1: "hello", i2: 11.0, expect: false},
+		{i1: "hello", i2: 1024, expect: false},
+		{i1: 10.0, i2: 10.0, expect: true},
+		{i1: 10.0, i2: 11.0, expect: false},
+		{i1: 10.0, i2: "hi", expect: false},
+		{i1: 10, i2: 10, expect: true},
+		{i1: 10, i2: 11, expect: false},
+		{i1: 10, i2: "hi", expect: false},
+		{i1: true, i2: true, expect: true},
+		{i1: true, i2: false, expect: false},
+		{i1: true, i2: "hi", expect: false},
+		{
+			i1:     []interface{}{1, 2, 3},
+			i2:     []interface{}{1, 2},
+			expect: false,
+		},
+		{
+			i1:     []interface{}{1, 2, 3},
+			i2:     []interface{}{1, 2, 4},
+			expect: false,
+		},
+		{
+			i1:     []interface{}{1, 2, 3},
+			i2:     []interface{}{1, 2, 3},
+			expect: true,
+		},
+		{
+			i1:     []interface{}{1, 2, 3},
+			i2:     "hi",
+			expect: false,
+		},
+		{
+			i1: map[string]interface{}{
+				"name": "joe",
+				"age":  12,
+			},
+			i2: map[string]interface{}{
+				"name": "joe",
+			},
+			expect: false,
+		},
+		{
+			i1: map[string]interface{}{
+				"name": "joe",
+				"age":  12,
+			},
+			i2: map[string]interface{}{
+				"name": "joe",
+				"age":  20,
+			},
+			expect: false,
+		},
+		{
+			i1: map[string]interface{}{
+				"name": "joe",
+				"age":  12,
+			},
+			i2: map[string]interface{}{
+				"name": "joe",
+				"age":  12,
+			},
+			expect: true,
+		},
+		{
+			i1: map[string]interface{}{
+				"name": "joe",
+				"age":  12,
+			},
+			i2:     "hi",
+			expect: false,
+		},
+	}
+	for _, d := range data {
+		result := equalObject(d.i1, d.i2)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }

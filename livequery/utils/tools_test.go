@@ -135,7 +135,6 @@ func Test_MatchesQuery(t *testing.T) {
 
 func Test_matchesKeyConstraints(t *testing.T) {
 	// TODO
-	// compareRegexp
 	// compareGeoPoint
 	// compareBox
 }
@@ -153,7 +152,24 @@ func Test_distance(t *testing.T) {
 }
 
 func Test_compareRegexp(t *testing.T) {
-	// TODO
+	data := []struct {
+		exp    interface{}
+		object interface{}
+		expect bool
+	}{
+		{exp: "hello", object: 1024, expect: false},
+		{exp: 1024, object: "hello", expect: false},
+		{exp: "hello", object: "hello", expect: true},
+		{exp: "hell*", object: "hello", expect: true},
+		{exp: "hell*", object: "hi", expect: false},
+	}
+
+	for _, d := range data {
+		result := compareRegexp(d.exp, d.object)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }
 
 func Test_inSlice(t *testing.T) {

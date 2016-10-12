@@ -148,7 +148,24 @@ func Test_compareGeoPoint(t *testing.T) {
 }
 
 func Test_distance(t *testing.T) {
-	// TODO
+	data := []struct {
+		x1     float64
+		y1     float64
+		x2     float64
+		y2     float64
+		expect float64
+	}{
+		{x1: 0, y1: 0, x2: 0, y2: 0, expect: 0},
+		{x1: 0, y1: 0, x2: 180, y2: 0, expect: 3.141592653589793},
+		{x1: 0, y1: 0, x2: 0, y2: 90, expect: 1.5707963267948966},
+	}
+
+	for _, d := range data {
+		result := distance(d.x1, d.y1, d.x2, d.y2)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }
 
 func Test_compareRegexp(t *testing.T) {

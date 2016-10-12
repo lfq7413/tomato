@@ -135,7 +135,6 @@ func Test_MatchesQuery(t *testing.T) {
 
 func Test_matchesKeyConstraints(t *testing.T) {
 	// TODO
-	// compareNumber
 	// inSlice
 	// compareRegexp
 	// compareGeoPoint
@@ -163,11 +162,37 @@ func Test_inSlice(t *testing.T) {
 }
 
 func Test_compareNumber(t *testing.T) {
-	// TODO
+	data := []struct {
+		i1     interface{}
+		i2     interface{}
+		op     string
+		expect bool
+	}{
+		{i1: 10.0, i2: 20.0, op: "$lt", expect: true},
+		{i1: 10, i2: 20.0, op: "$lt", expect: true},
+		{i1: 10.0, i2: 20, op: "$lt", expect: true},
+		{i1: "hi", i2: 20, op: "$lt", expect: false},
+		{i1: 10, i2: "hi", op: "$lt", expect: false},
+		{i1: 10, i2: 20, op: "$lt", expect: true},
+		{i1: 20, i2: 20, op: "$lte", expect: true},
+		{i1: 20, i2: 10, op: "$gt", expect: true},
+		{i1: 20, i2: 20, op: "$gte", expect: true},
+		{i1: 30, i2: 20, op: "$lt", expect: false},
+		{i1: 30, i2: 20, op: "$lte", expect: false},
+		{i1: 20, i2: 30, op: "$gt", expect: false},
+		{i1: 20, i2: 30, op: "$gte", expect: false},
+		{i1: 30, i2: 20, op: "$other", expect: false},
+	}
+
+	for _, d := range data {
+		result := compareNumber(d.i1, d.i2, d.op)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }
 
 func Test_equalObject(t *testing.T) {
-	// TODO
 	data := []struct {
 		i1     interface{}
 		i2     interface{}

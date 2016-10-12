@@ -371,41 +371,39 @@ func inSlice(s, o interface{}) bool {
 
 // compareNumber i1, i2 均为数字类型时才比较大小
 func compareNumber(i1, i2 interface{}, op string) bool {
-	if v1, ok := i1.(float64); ok {
-		if v2, ok := i2.(float64); ok {
-			switch op {
-			case "$lt":
-				return v1 < v2
-			case "$lte":
-				return v1 <= v2
-			case "$gt":
-				return v1 > v2
-			case "$gte":
-				return v1 >= v2
-			default:
-				return false
-			}
-		}
+	var v1 float64
+	var v2 float64
+
+	switch i1.(type) {
+	case float64:
+		v1 = i1.(float64)
+	case int:
+		v1 = float64(i1.(int))
+	default:
 		return false
 	}
-	if v1, ok := i1.(int); ok {
-		if v2, ok := i2.(int); ok {
-			switch op {
-			case "$lt":
-				return v1 < v2
-			case "$lte":
-				return v1 <= v2
-			case "$gt":
-				return v1 > v2
-			case "$gte":
-				return v1 >= v2
-			default:
-				return false
-			}
-		}
+
+	switch i2.(type) {
+	case float64:
+		v2 = i2.(float64)
+	case int:
+		v2 = float64(i2.(int))
+	default:
 		return false
 	}
-	return false
+
+	switch op {
+	case "$lt":
+		return v1 < v2
+	case "$lte":
+		return v1 <= v2
+	case "$gt":
+		return v1 > v2
+	case "$gte":
+		return v1 >= v2
+	default:
+		return false
+	}
 }
 
 // equalObject 仅比较基础类型：string float64 bool slice map

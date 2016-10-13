@@ -9,7 +9,7 @@ import (
 )
 
 // TomatoInfo ...
-var TomatoInfo map[string]string
+var TomatoInfo = map[string]string{}
 
 // getUser 访问接口 获取用户信息
 func getUser(sessionToken string) (t.M, error) {

@@ -36,10 +36,7 @@ func Run() {
 }
 
 // RunLiveQueryServer 运行 LiveQuery 服务
-func RunLiveQueryServer() {
-	args := map[string]string{}
-	args["pattern"] = "/livequery"
-	args["addr"] = ":8089"
+func RunLiveQueryServer(args map[string]string) {
 	livequery.Run(args)
 }
 

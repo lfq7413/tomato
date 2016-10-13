@@ -157,6 +157,17 @@ type liveQueryServer struct {
 }
 
 // Run 初始化 server ，启动 WebSocket
+// args 支持的参数包括：
+// pattern WebSocket 运行路径，例如： /livequery
+// addr WebSocket 监听地址，例如： 127.0.0.1:8089
+// logLevel 日志级别，包含： VERBOSE DEBUG INFO ERROR NONE ，默认为 NONE
+// keyPairs 用于校验客户端权限的键值对，JSON格式字符串 例如： {"clientKey":"test"}
+// serverURL tomato 地址
+// appId tomato 对应的 appId
+// clientKey tomato 对应的 clientKey
+// masterKey tomato 对应的 masterKey
+// subType 订阅服务类型，支持 EventEmitter Redis
+// subURL 订阅服务地址，如果是 EventEmitter 可不填写
 func Run(args map[string]string) {
 	s = &liveQueryServer{}
 	s.initServer(args)

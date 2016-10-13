@@ -33,18 +33,21 @@ func (l *tLog) getCurrentLogLevel() int {
 
 func (l *tLog) Verbose(args ...interface{}) {
 	if l.getCurrentLogLevel() <= LogLevel["VERBOSE"] {
+		fmt.Print("[VERBOSE] ")
 		fmt.Println(args...)
 	}
 }
 
 func (l *tLog) Log(args ...interface{}) {
 	if l.getCurrentLogLevel() <= LogLevel["INFO"] {
+		fmt.Print("[INFO] ")
 		fmt.Println(args...)
 	}
 }
 
 func (l *tLog) Error(args ...interface{}) {
 	if l.getCurrentLogLevel() <= LogLevel["ERROR"] {
+		fmt.Print("[ERROR] ")
 		fmt.Println(args...)
 	}
 }

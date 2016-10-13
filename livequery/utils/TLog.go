@@ -1,6 +1,6 @@
 package utils
 
-import "fmt"
+import "github.com/astaxie/beego/logs"
 
 // LogLevel ...
 var LogLevel = map[string]int{
@@ -33,21 +33,18 @@ func (l *tLog) getCurrentLogLevel() int {
 
 func (l *tLog) Verbose(args ...interface{}) {
 	if l.getCurrentLogLevel() <= LogLevel["VERBOSE"] {
-		fmt.Print("[VERBOSE] ")
-		fmt.Println(args...)
+		logs.Debug("[LiveQuery]", args)
 	}
 }
 
 func (l *tLog) Log(args ...interface{}) {
 	if l.getCurrentLogLevel() <= LogLevel["INFO"] {
-		fmt.Print("[INFO] ")
-		fmt.Println(args...)
+		logs.Informational("[LiveQuery]", args)
 	}
 }
 
 func (l *tLog) Error(args ...interface{}) {
 	if l.getCurrentLogLevel() <= LogLevel["ERROR"] {
-		fmt.Print("[ERROR] ")
-		fmt.Println(args...)
+		logs.Error("[LiveQuery]", args)
 	}
 }

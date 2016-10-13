@@ -44,7 +44,7 @@ func NewClient(id int, ws *WebSocket) *Client {
 }
 
 func pushResponse(ws *WebSocket, msg string) {
-	ws.send(msg)
+	go ws.send(msg)
 }
 
 // PushError 发送错误信息

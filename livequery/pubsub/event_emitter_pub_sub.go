@@ -1,5 +1,7 @@
 package pubsub
 
+import "sync"
+
 var emitter = NewEventEmitter()
 
 // eventEmitterPublisher 使用 EventEmitter 实现的发布者
@@ -14,6 +16,7 @@ func (p *eventEmitterPublisher) Publish(channel, message string) {
 // eventEmitterPublisher 使用 EventEmitter 实现的订阅者
 type eventEmitterSubscriber struct {
 	EventEmitter
+	mutex         sync.Mutex
 	emitter       *EventEmitter
 	subscriptions map[string]HandlerType
 }
@@ -24,11 +27,15 @@ func (s *eventEmitterSubscriber) Subscribe(channel string) {
 		a := append([]string{channel}, args...)
 		s.Emit("message", a...)
 	}
+	s.mutex.Lock()
 	s.subscriptions[channel] = handler
+	s.mutex.Unlock()
 	s.emitter.On(channel, handler)
 }
 
 func (s *eventEmitterSubscriber) Unsubscribe(channel string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	if handler, ok := s.subscriptions[channel]; ok {
 		s.emitter.RemoveListener(channel, handler)
 		delete(s.subscriptions, channel)

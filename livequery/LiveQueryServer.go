@@ -3,6 +3,7 @@ package livequery
 import (
 	"encoding/json"
 	"strconv"
+	"sync"
 
 	"github.com/lfq7413/tomato/livequery/pubsub"
 	"github.com/lfq7413/tomato/livequery/server"
@@ -144,6 +145,7 @@ response
 var s *liveQueryServer
 
 type liveQueryServer struct {
+	mutex             sync.Mutex
 	pattern           string                                     // WebSocket 所在子地址
 	addr              string                                     // WebSocket 监听地址与端口
 	clientID          int                                        // 客户端 id ，递增
@@ -286,6 +288,8 @@ func (l *liveQueryServer) OnMessage(ws *server.WebSocket, msg interface{}) {
 
 // OnDisconnect 当客户端从 WebSocket 断开时调用
 func (l *liveQueryServer) OnDisconnect(ws *server.WebSocket) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	utils.TLog.Log("Client disconnect:", ws.ClientID)
 
 	clientID := ws.ClientID
@@ -462,13 +466,17 @@ func (l *liveQueryServer) handleConnect(ws *server.WebSocket, request t.M) {
 	client := server.NewClient(l.clientID, ws)
 	ws.ClientID = l.clientID
 	l.clientID++
+	l.mutex.Lock()
 	l.clients[ws.ClientID] = client
+	l.mutex.Unlock()
 	utils.TLog.Log("Create new client:", ws.ClientID)
 	client.PushConnect(0, nil)
 }
 
 // handleSubscribe 处理客户端 Subscribe 操作
 func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	if ws.ClientID == 0 {
 		server.PushError(ws, 2, "Can not find this client, make sure you connect to server before subscribing", true)
 		utils.TLog.Error("Can not find this client, make sure you connect to server before subscribing")
@@ -525,6 +533,8 @@ func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
 
 // handleUnsubscribe 处理客户端 Unsubscribe 操作
 func (l *liveQueryServer) handleUnsubscribe(ws *server.WebSocket, request t.M) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
 	if ws.ClientID == 0 {
 		server.PushError(ws, 2, "Can not find this client, make sure you connect to server before unsubscribing", true)
 		utils.TLog.Error("Can not find this client, make sure you connect to server before unsubscribing")
@@ -642,6 +652,9 @@ func getPublicReadAccess(acl t.M) bool {
 // 	}
 // }
 func getReadAccess(acl t.M, id string) bool {
+	if acl == nil {
+		return true
+	}
 	if p, ok := acl[id]; ok {
 		if per, ok := p.(map[string]interface{}); ok {
 			if _, ok := per["read"]; ok {

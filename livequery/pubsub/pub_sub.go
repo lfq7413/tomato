@@ -11,7 +11,7 @@ func CreatePublisher(pubType, pubURL string) Publisher {
 // CreateSubscriber 创建订阅者，当前支持 EventEmitter 、 Redis
 func CreateSubscriber(subType, subURL string) Subscriber {
 	if useRedis(subType) {
-		return createRedisSubscriber(subType)
+		return createRedisSubscriber(subURL)
 	}
 	return createEventEmitterSubscriber()
 }

@@ -129,7 +129,119 @@ func Test_flattenOrQueries(t *testing.T) {
 }
 
 func Test_MatchesQuery(t *testing.T) {
-	// TODO
+	data := []struct {
+		object tp.M
+		query  tp.M
+		expect bool
+	}{
+		{
+			object: tp.M{
+				"name":  "joe",
+				"names": []interface{}{"joe", "tom"},
+				"user": map[string]interface{}{
+					"__type":    "Pointer",
+					"className": "user",
+					"objectId":  "1024",
+				},
+				"time": map[string]interface{}{
+					"__type": "Date",
+					"iso":    "2016-09-28T08:33:34.551Z",
+				},
+				"times": []interface{}{
+					map[string]interface{}{
+						"__type": "Date",
+						"iso":    "2016-09-28T08:33:34.551Z",
+					},
+					map[string]interface{}{
+						"__type": "Date",
+						"iso":    "2017-09-28T08:33:34.551Z",
+					},
+				},
+				"age1":  20,
+				"age2":  20,
+				"age3":  20,
+				"age4":  20,
+				"age5":  []interface{}{15, 20, 25},
+				"age6":  20,
+				"name2": "jack",
+				"location": map[string]interface{}{
+					"longitude": 0.0,
+					"latitude":  0.0,
+				},
+				"location2": map[string]interface{}{
+					"longitude": 10.0,
+					"latitude":  10.0,
+				},
+			},
+			query: tp.M{
+				"name":  "joe",
+				"names": "joe",
+				"user": map[string]interface{}{
+					"__type":    "Pointer",
+					"className": "user",
+					"objectId":  "1024",
+				},
+				"time": map[string]interface{}{
+					"__type": "Date",
+					"iso":    "2016-09-28T08:33:34.551Z",
+				},
+				"times": map[string]interface{}{
+					"__type": "Date",
+					"iso":    "2016-09-28T08:33:34.551Z",
+				},
+				"age1": map[string]interface{}{
+					"$lt": 25,
+				},
+				"age2": map[string]interface{}{
+					"$ne": 25,
+				},
+				"age3": map[string]interface{}{
+					"$in": []interface{}{15, 20, 25},
+				},
+				"age4": map[string]interface{}{
+					"$nin": []interface{}{15, 25},
+				},
+				"age5": map[string]interface{}{
+					"$all": []interface{}{15, 25},
+				},
+				"age6": map[string]interface{}{
+					"$exists": true,
+				},
+				"name2": map[string]interface{}{
+					"$regex": "j*",
+				},
+				"location": map[string]interface{}{
+					"$nearSphere": map[string]interface{}{
+						"longitude": 90.0,
+						"latitude":  0.0,
+					},
+					"$maxDistance": 2.0,
+				},
+				"location2": map[string]interface{}{
+					"$within": map[string]interface{}{
+						"$box": []interface{}{
+							map[string]interface{}{
+								"longitude": 0.0,
+								"latitude":  0.0,
+							},
+							map[string]interface{}{
+								"longitude": 20.0,
+								"latitude":  20.0,
+							},
+						},
+					},
+				},
+			},
+			expect: true,
+		},
+	}
+
+	for _, d := range data {
+		result := MatchesQuery(d.object, d.query)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }
 
 func Test_matchesKeyConstraints(t *testing.T) {

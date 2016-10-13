@@ -234,6 +234,22 @@ func Test_MatchesQuery(t *testing.T) {
 			},
 			expect: true,
 		},
+		{
+			object: tp.M{
+				"age": 15,
+			},
+			query: tp.M{
+				"$or": []interface{}{
+					map[string]interface{}{
+						"age": 20,
+					},
+					map[string]interface{}{
+						"age": 15,
+					},
+				},
+			},
+			expect: true,
+		},
 	}
 
 	for _, d := range data {
@@ -256,6 +272,36 @@ func Test_matchesKeyConstraints(t *testing.T) {
 			key:         "name",
 			constraints: nil,
 			expect:      false,
+		},
+		{
+			object: tp.M{
+				"age": 15,
+			},
+			key: "$or",
+			constraints: []interface{}{
+				map[string]interface{}{
+					"age": 20,
+				},
+				map[string]interface{}{
+					"age": 15,
+				},
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 25,
+			},
+			key: "$or",
+			constraints: []interface{}{
+				map[string]interface{}{
+					"age": 20,
+				},
+				map[string]interface{}{
+					"age": 15,
+				},
+			},
+			expect: false,
 		},
 		{
 			object:      tp.M{},

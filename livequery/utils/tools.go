@@ -160,13 +160,13 @@ func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool
 		// 如果 object[key] 为数组，只要一个符合条件即可
 		if objs, ok := object[key].([]interface{}); ok {
 			for _, obj := range objs {
-				if equalObject(obj, constraint) {
+				if equalObject(obj, constraints) {
 					return true
 				}
 			}
 			return false
 		}
-		return equalObject(object[key], constraint)
+		return equalObject(object[key], constraints)
 	}
 
 	// 处理 constraint 包含限制条件时的情况

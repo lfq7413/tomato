@@ -130,11 +130,304 @@ func Test_flattenOrQueries(t *testing.T) {
 
 func Test_MatchesQuery(t *testing.T) {
 	// TODO
-	// matchesKeyConstraints
 }
 
 func Test_matchesKeyConstraints(t *testing.T) {
-	// TODO
+	data := []struct {
+		object      tp.M
+		key         string
+		constraints interface{}
+		expect      bool
+	}{
+		{
+			object:      tp.M{},
+			key:         "name",
+			constraints: nil,
+			expect:      false,
+		},
+		{
+			object:      tp.M{},
+			key:         "$relatedTo",
+			constraints: 1024,
+			expect:      false,
+		},
+		{
+			object:      tp.M{},
+			key:         "name",
+			constraints: []interface{}{},
+			expect:      false,
+		},
+		{
+			object: tp.M{
+				"name": "joe",
+			},
+			key:         "name",
+			constraints: "joe",
+			expect:      true,
+		},
+		{
+			object: tp.M{
+				"name": []interface{}{"joe", "tom"},
+			},
+			key:         "name",
+			constraints: "joe",
+			expect:      true,
+		},
+		{
+			object: tp.M{
+				"user": "joe",
+			},
+			key: "user",
+			constraints: map[string]interface{}{
+				"__type": "Pointer",
+			},
+			expect: false,
+		},
+		{
+			object: tp.M{
+				"user": map[string]interface{}{
+					"__type":    "Pointer",
+					"className": "user",
+					"objectId":  "1024",
+				},
+			},
+			key: "user",
+			constraints: map[string]interface{}{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1024",
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"user": map[string]interface{}{
+					"__type":    "Pointer",
+					"className": "user",
+					"objectId":  "1024",
+				},
+			},
+			key: "user",
+			constraints: map[string]interface{}{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "2048",
+			},
+			expect: false,
+		},
+		{
+			object: tp.M{
+				"time": map[string]interface{}{
+					"__type": "Date",
+					"iso":    "2016-09-28T08:33:34.551Z",
+				},
+			},
+			key: "time",
+			constraints: map[string]interface{}{
+				"__type": "Date",
+				"iso":    "2016-09-28T08:33:34.551Z",
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"time": []interface{}{
+					map[string]interface{}{
+						"__type": "Date",
+						"iso":    "2016-09-28T08:33:34.551Z",
+					},
+					map[string]interface{}{
+						"__type": "Date",
+						"iso":    "2017-09-28T08:33:34.551Z",
+					},
+				},
+			},
+			key: "time",
+			constraints: map[string]interface{}{
+				"__type": "Date",
+				"iso":    "2016-09-28T08:33:34.551Z",
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$lt": 25,
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$lte": 20,
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$gt": 15,
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$gte": 20,
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$ne": 15,
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$in": []interface{}{15, 20, 25},
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$nin": []interface{}{15, 25},
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": []interface{}{15, 20, 25},
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$all": []interface{}{15, 25},
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "age",
+			constraints: map[string]interface{}{
+				"$exists": true,
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"age": 20,
+			},
+			key: "name",
+			constraints: map[string]interface{}{
+				"$exists": false,
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"name": "joe",
+			},
+			key: "name",
+			constraints: map[string]interface{}{
+				"$regex": "j*",
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"location": map[string]interface{}{
+					"longitude": 0.0,
+					"latitude":  0.0,
+				},
+			},
+			key: "location",
+			constraints: map[string]interface{}{
+				"$nearSphere": map[string]interface{}{
+					"longitude": 90.0,
+					"latitude":  0.0,
+				},
+				"$maxDistance": 2.0,
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"location": map[string]interface{}{
+					"longitude": 10.0,
+					"latitude":  10.0,
+				},
+			},
+			key: "location",
+			constraints: map[string]interface{}{
+				"$within": map[string]interface{}{
+					"$box": []interface{}{
+						map[string]interface{}{
+							"longitude": 0.0,
+							"latitude":  0.0,
+						},
+						map[string]interface{}{
+							"longitude": 20.0,
+							"latitude":  20.0,
+						},
+					},
+				},
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
+				"name": "joe",
+			},
+			key: "name",
+			constraints: map[string]interface{}{
+				"$select": 1024,
+			},
+			expect: false,
+		},
+		{
+			object: tp.M{
+				"name": "joe",
+			},
+			key: "name",
+			constraints: map[string]interface{}{
+				"$dontSelect": 1024,
+			},
+			expect: false,
+		},
+	}
+
+	for _, d := range data {
+		result := matchesKeyConstraints(d.object, d.key, d.constraints)
+		if reflect.DeepEqual(d.expect, result) == false {
+			t.Error("expect:", d.expect, "result:", result)
+		}
+	}
 }
 
 func Test_compareBox(t *testing.T) {

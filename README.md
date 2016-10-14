@@ -47,6 +47,32 @@ AllowClientClassCreation = true
     http://127.0.0.1:8080/v1/classes/GameScore
 ```
 
+## 启用 LiveQuery
+###### 在 tomato 中添加配置项
+```ini
+LiveQueryClasses = classA|classB
+PublisherType = Redis
+PublisherURL = 192.168.99.100:6379
+```
+###### 启动 LiveQuery
+```go
+func main() {
+    ...
+    args := map[string]string{}
+    args["pattern"] = "/livequery"
+    args["addr"] = ":8089"
+    args["logLevel"] = "VERBOSE"
+    args["serverURL"] = "http://127.0.0.1:8080/v1"
+    args["appId"] = "test"
+    args["clientKey"] = "test"
+    args["masterKey"] = "test"
+    args["subType"] = "Redis"
+    args["subURL"] = "192.168.99.100:6379"
+    go tomato.RunLiveQueryServer(args)
+    ...
+}
+```
+
 ## 功能
 
 ## 开发日志

@@ -63,6 +63,16 @@ func AfterDelete(className string, handler TriggerHandler) error {
 	return nil
 }
 
+// BeforeFind ...
+func BeforeFind(className string, handler TriggerHandler) error {
+	err := validateClassNameForTriggers(className)
+	if err != nil {
+		return err
+	}
+	AddTrigger(TypeBeforeFind, className, handler)
+	return nil
+}
+
 // RemoveHook ...
 func RemoveHook(category, name, triggerType string) {
 	Unregister(category, name, triggerType)

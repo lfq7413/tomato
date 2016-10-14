@@ -22,6 +22,16 @@ func Find(auth *Auth, className string, where, options types.M, clientSDK map[st
 	if err != nil {
 		return nil, err
 	}
+	w, o, err := maybeRunQueryTrigger(cloud.TypeBeforeFind, className, where, options, auth)
+	if err != nil {
+		return nil, err
+	}
+	if w != nil {
+		where = w
+	}
+	if o != nil {
+		options = o
+	}
 	query, err := NewQuery(auth, className, where, options, clientSDK)
 	if err != nil {
 		return nil, err

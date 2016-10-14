@@ -17,6 +17,8 @@ const (
 	TypeBeforeDelete = "beforeDelete"
 	// TypeAfterDelete 删除后回调
 	TypeAfterDelete = "afterDelete"
+	// TypeBeforeFind 查询前回调
+	TypeBeforeFind = "beforeFind"
 )
 
 // TriggerRequest ...
@@ -24,6 +26,7 @@ type TriggerRequest struct {
 	TriggerName    string
 	Object         types.M
 	Original       types.M
+	Query          types.M // beforeFind 时使用
 	Master         bool
 	User           types.M
 	InstallationID string
@@ -76,6 +79,7 @@ func init() {
 		TypeAfterSave:    map[string]TriggerHandler{},
 		TypeBeforeDelete: map[string]TriggerHandler{},
 		TypeAfterDelete:  map[string]TriggerHandler{},
+		TypeBeforeFind:   map[string]TriggerHandler{},
 	}
 	functions = map[string]FunctionHandler{}
 	validators = map[string]ValidatorHandler{}
@@ -217,6 +221,9 @@ func (t *TriggerResponse) Success(response interface{}) {
 	if t.Response != nil &&
 		reflect.DeepEqual(t.Response, t.Request.Object) == false &&
 		t.Request.TriggerName == TypeBeforeSave {
+		return
+	}
+	if t.Response != nil && t.Request.TriggerName == TypeBeforeFind {
 		return
 	}
 	t.Response = types.M{}

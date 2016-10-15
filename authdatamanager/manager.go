@@ -37,12 +37,6 @@ func (a anonymous) ValidateAuthData(authData types.M) error {
 	return nil
 }
 
-type facebook struct{}
-
-func (a facebook) ValidateAuthData(authData types.M) error {
-	return nil
-}
-
 // Provider ...
 type Provider interface {
 	ValidateAuthData(types.M) error

@@ -967,11 +967,12 @@ func Test_validateAuthData(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 	/***************************************************************/
 	initEnv()
+	config.TConfig.EnableAnonymousUsers = true
 	className = "_User"
 	query = nil
 	data = types.M{
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1001",
 			},
 		},
@@ -1986,6 +1987,7 @@ func Test_handleAuthData(t *testing.T) {
 	}
 	/***************************************************************/
 	initEnv()
+	config.TConfig.EnableAnonymousUsers = true
 	className = "_User"
 	schema = types.M{
 		"fields": types.M{},
@@ -1994,7 +1996,7 @@ func Test_handleAuthData(t *testing.T) {
 	object = types.M{
 		"objectId": "101",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1001",
 			},
 		},
@@ -2003,7 +2005,7 @@ func Test_handleAuthData(t *testing.T) {
 	object = types.M{
 		"objectId": "102",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1001",
 			},
 		},
@@ -2013,7 +2015,7 @@ func Test_handleAuthData(t *testing.T) {
 	query = nil
 	data = types.M{
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1001",
 			},
 		},
@@ -2028,6 +2030,7 @@ func Test_handleAuthData(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 	/***************************************************************/
 	initEnv()
+	config.TConfig.EnableAnonymousUsers = true
 	className = "_User"
 	schema = types.M{
 		"fields": types.M{},
@@ -2036,7 +2039,7 @@ func Test_handleAuthData(t *testing.T) {
 	object = types.M{
 		"objectId": "101",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1001",
 			},
 		},
@@ -2046,7 +2049,7 @@ func Test_handleAuthData(t *testing.T) {
 	query = nil
 	data = types.M{
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1002",
 			},
 		},
@@ -2058,14 +2061,15 @@ func Test_handleAuthData(t *testing.T) {
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
-	if reflect.DeepEqual("facebook", w.storage["authProvider"]) == false {
-		t.Error("expect:", "facebook", "result:", w.storage["authProvider"])
+	if reflect.DeepEqual("anonymous", w.storage["authProvider"]) == false {
+		t.Error("expect:", "anonymous", "result:", w.storage["authProvider"])
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/***************************************************************/
 	config.TConfig = &config.Config{
 		ServerURL: "http://www.g.cn",
 	}
+	config.TConfig.EnableAnonymousUsers = true
 	initEnv()
 	className = "_User"
 	schema = types.M{
@@ -2075,7 +2079,7 @@ func Test_handleAuthData(t *testing.T) {
 	object = types.M{
 		"objectId": "101",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1001",
 			},
 		},
@@ -2085,7 +2089,7 @@ func Test_handleAuthData(t *testing.T) {
 	query = nil
 	data = types.M{
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1001",
 			},
 		},
@@ -2100,7 +2104,7 @@ func Test_handleAuthData(t *testing.T) {
 	response = types.M{
 		"objectId": "101",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id": "1001",
 			},
 		},
@@ -2117,6 +2121,7 @@ func Test_handleAuthData(t *testing.T) {
 	config.TConfig = &config.Config{
 		ServerURL: "http://www.g.cn",
 	}
+	config.TConfig.EnableAnonymousUsers = true
 	initEnv()
 	className = "_User"
 	schema = types.M{
@@ -2126,7 +2131,7 @@ func Test_handleAuthData(t *testing.T) {
 	object = types.M{
 		"objectId": "101",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id":    "1001",
 				"token": "aaa",
 			},
@@ -2137,7 +2142,7 @@ func Test_handleAuthData(t *testing.T) {
 	query = nil
 	data = types.M{
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id":    "1001",
 				"token": "abc",
 			},
@@ -2153,7 +2158,7 @@ func Test_handleAuthData(t *testing.T) {
 	response = types.M{
 		"objectId": "101",
 		"authData": map[string]interface{}{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id":    "1001",
 				"token": "abc",
 			},
@@ -2170,7 +2175,7 @@ func Test_handleAuthData(t *testing.T) {
 	response = types.M{
 		"objectId": "101",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id":    "1001",
 				"token": "abc",
 			},
@@ -2184,6 +2189,7 @@ func Test_handleAuthData(t *testing.T) {
 	config.TConfig = &config.Config{
 		ServerURL: "http://www.g.cn",
 	}
+	config.TConfig.EnableAnonymousUsers = true
 	initEnv()
 	className = "_User"
 	schema = types.M{
@@ -2193,7 +2199,7 @@ func Test_handleAuthData(t *testing.T) {
 	object = types.M{
 		"objectId": "101",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id":    "1001",
 				"token": "aaa",
 			},
@@ -2204,7 +2210,7 @@ func Test_handleAuthData(t *testing.T) {
 	query = types.M{"objectId": "101"}
 	data = types.M{
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id":    "1001",
 				"token": "aaa",
 			},
@@ -2222,6 +2228,7 @@ func Test_handleAuthData(t *testing.T) {
 	config.TConfig = &config.Config{
 		ServerURL: "http://www.g.cn",
 	}
+	config.TConfig.EnableAnonymousUsers = true
 	initEnv()
 	className = "_User"
 	schema = types.M{
@@ -2231,7 +2238,7 @@ func Test_handleAuthData(t *testing.T) {
 	object = types.M{
 		"objectId": "101",
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id":    "1001",
 				"token": "aaa",
 			},
@@ -2242,7 +2249,7 @@ func Test_handleAuthData(t *testing.T) {
 	query = types.M{"objectId": "102"}
 	data = types.M{
 		"authData": types.M{
-			"facebook": types.M{
+			"anonymous": types.M{
 				"id":    "1001",
 				"token": "aaa",
 			},
@@ -2267,12 +2274,13 @@ func Test_handleAuthDataValidation(t *testing.T) {
 	var result error
 	var expect error
 	/***************************************************************/
+	config.TConfig.EnableAnonymousUsers = true
 	query = nil
 	data = types.M{}
 	originalData = nil
 	w, _ = NewWrite(Master(), "user", query, data, originalData, nil)
 	authData = types.M{
-		"facebook": types.M{
+		"anonymous": types.M{
 			"id": "1001",
 		},
 	}

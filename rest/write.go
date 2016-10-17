@@ -482,7 +482,7 @@ func (w *Write) validateAuthData() error {
 		// authData 中包含 id 时，才需要进行处理
 		for _, v := range authData {
 			providerAuthData := utils.M(v)
-			hasToken := (providerAuthData != nil && providerAuthData["id"] != nil)
+			hasToken := (providerAuthData != nil && utils.S(providerAuthData["id"]) != "")
 			canHandleAuthData = (canHandleAuthData && (hasToken || providerAuthData == nil))
 		}
 		if canHandleAuthData {

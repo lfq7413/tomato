@@ -18,6 +18,7 @@ func init() {
 		"google":         google{},
 		"instagram":      instagram{},
 		"janraincapture": janraincapture{},
+		"janrainengage":  janrainengage{},
 	}
 	options = map[string]types.M{
 		"facebook": types.M{
@@ -25,6 +26,9 @@ func init() {
 		},
 		"janraincapture": types.M{
 			"janrain_capture_host": "https://my-app.janraincapture.com",
+		},
+		"janrainengage": types.M{
+			"api_key": "example",
 		},
 	}
 }

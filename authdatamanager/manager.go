@@ -23,6 +23,7 @@ func init() {
 		"meetup":         meetup{},
 		"spotify":        spotify{},
 		"vkontakte":      vkontakte{},
+		"weibo":          weibo{},
 	}
 	options = map[string]types.M{
 		"facebook": types.M{

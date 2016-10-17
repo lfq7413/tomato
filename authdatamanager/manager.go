@@ -7,12 +7,18 @@ import (
 )
 
 var providers map[string]Provider
+var options map[string]types.M
 
 // TODO 在这里添加第三方登录支持
 func init() {
 	providers = map[string]Provider{
 		"anonymous": anonymous{},
 		"facebook":  facebook{},
+	}
+	options = map[string]types.M{
+		"facebook": types.M{
+			"appIds": []string{},
+		},
 	}
 }
 
@@ -28,16 +34,16 @@ func ValidateAuthData(provider string, authData types.M) error {
 		return errs.E(errs.UnsupportedService, "This authentication method is unsupported.")
 	}
 
-	return defaultProvider.ValidateAuthData(authData)
+	return defaultProvider.ValidateAuthData(authData, options[provider])
 }
 
 type anonymous struct{}
 
-func (a anonymous) ValidateAuthData(authData types.M) error {
+func (a anonymous) ValidateAuthData(authData types.M, option types.M) error {
 	return nil
 }
 
 // Provider ...
 type Provider interface {
-	ValidateAuthData(types.M) error
+	ValidateAuthData(types.M, types.M) error
 }

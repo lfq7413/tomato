@@ -8,7 +8,7 @@ import (
 
 type github struct{}
 
-func (a github) ValidateAuthData(authData types.M) error {
+func (a github) ValidateAuthData(authData types.M, options types.M) error {
 	host := "https://api.github.com/"
 	path := "user"
 	headers := map[string]string{

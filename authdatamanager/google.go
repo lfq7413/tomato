@@ -8,7 +8,7 @@ import (
 
 type google struct{}
 
-func (a google) ValidateAuthData(authData types.M) error {
+func (a google) ValidateAuthData(authData types.M, options types.M) error {
 	host := "https://www.googleapis.com/oauth2/v3/"
 	path := "tokeninfo?id_token=" + utils.S(authData["access_token"])
 	data, err := request(host+path, nil)

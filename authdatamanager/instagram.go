@@ -8,7 +8,7 @@ import (
 
 type instagram struct{}
 
-func (a instagram) ValidateAuthData(authData types.M) error {
+func (a instagram) ValidateAuthData(authData types.M, options types.M) error {
 	host := "https://api.instagram.com/v1/"
 	path := "users/self/?access_token=" + utils.S(authData["access_token"])
 	data, err := request(host+path, nil)

@@ -12,12 +12,19 @@ var options map[string]types.M
 // TODO 在这里添加第三方登录支持
 func init() {
 	providers = map[string]Provider{
-		"anonymous": anonymous{},
-		"facebook":  facebook{},
+		"anonymous":      anonymous{},
+		"facebook":       facebook{},
+		"github":         github{},
+		"google":         google{},
+		"instagram":      instagram{},
+		"janraincapture": janraincapture{},
 	}
 	options = map[string]types.M{
 		"facebook": types.M{
 			"appIds": []string{},
+		},
+		"janraincapture": types.M{
+			"janrain_capture_host": "https://my-app.janraincapture.com",
 		},
 	}
 }

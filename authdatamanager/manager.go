@@ -21,6 +21,7 @@ func init() {
 		"janrainengage":  janrainengage{},
 		"linkedin":       linkedin{},
 		"meetup":         meetup{},
+		"spotify":        spotify{},
 	}
 	options = map[string]types.M{
 		"facebook": types.M{
@@ -31,6 +32,9 @@ func init() {
 		},
 		"janrainengage": types.M{
 			"api_key": "example",
+		},
+		"spotify": types.M{
+			"appIds": []string{},
 		},
 	}
 }

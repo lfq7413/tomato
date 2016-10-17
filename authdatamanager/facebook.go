@@ -35,7 +35,7 @@ func (a facebook) ValidateAuthData(authData types.M, options types.M) error {
 	if err != nil {
 		return errs.E(errs.ObjectNotFound, "Failed to validate this access token with Facebook.")
 	}
-	if data["id"] == nil {
+	if data["id"] != nil {
 		id := utils.S(data["id"])
 		for _, v := range appIDs {
 			if id == v {

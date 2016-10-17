@@ -20,6 +20,7 @@ func init() {
 		"janraincapture": janraincapture{},
 		"janrainengage":  janrainengage{},
 		"linkedin":       linkedin{},
+		"meetup":         meetup{},
 	}
 	options = map[string]types.M{
 		"facebook": types.M{

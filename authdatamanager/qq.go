@@ -16,7 +16,7 @@ func (a qq) ValidateAuthData(authData types.M, options types.M) error {
 	if err != nil {
 		return errs.E(errs.ObjectNotFound, "Failed to validate this access token with QQ.")
 	}
-	if data["uid"] != nil && utils.S(data["uid"]) == utils.S(authData["id"]) {
+	if data["openid"] != nil && utils.S(data["openid"]) == utils.S(authData["id"]) {
 		return nil
 	}
 	return errs.E(errs.ObjectNotFound, "QQ auth is invalid for this user.")

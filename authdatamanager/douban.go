@@ -9,6 +9,7 @@ import (
 type douban struct{}
 
 func (a douban) ValidateAuthData(authData types.M, options types.M) error {
+	// 具体接口参考： https://developers.douban.com/wiki/?title=connect
 	host := "https://api.douban.com/v2/"
 	path := "user/~me"
 	headers := map[string]string{

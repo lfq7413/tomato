@@ -1,14 +1,24 @@
 package authdatamanager
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/astaxie/beego/utils"
 	"github.com/lfq7413/tomato/types"
 )
+
+const signatureMethod = "HMAC-SHA1"
+const version = "1.0"
 
 // OAuth ...
 type OAuth struct {
@@ -61,12 +71,17 @@ func (o *OAuth) Send(req *http.Request) (types.M, error) {
 }
 
 func (o *OAuth) buildRequest(method, path string, params, body map[string]string) (*http.Request, error) {
-	// TODO
 	if len(params) > 0 {
 		path = path + "?" + buildParameterString(params)
 	}
 
-	request, err := http.NewRequest(method, o.Host+path, nil)
+	var request *http.Request
+	var err error
+	if len(body) > 0 {
+		request, err = http.NewRequest(method, o.Host+path, strings.NewReader(buildParameterString(body)))
+	} else {
+		request, err = http.NewRequest(method, o.Host+path, nil)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +95,7 @@ func (o *OAuth) buildRequest(method, path string, params, body map[string]string
 		oauthParams["oauth_token"] = o.AuthToken
 	}
 
-	request = signRequest(request, oauthParams, o.ConsumerSecret, o.AuthTokenSecret)
+	request = signRequest(request, oauthParams, o.ConsumerSecret, o.AuthTokenSecret, request.URL.RequestURI(), params, body)
 
 	return request, nil
 }
@@ -101,12 +116,80 @@ func buildParameterString(obj map[string]string) string {
 	return strings.Join(result, "&")
 }
 
+func signRequest(req *http.Request, oauthParameters map[string]string, consumerSecret, authTokenSecret, url string, params, body map[string]string) *http.Request {
+	if oauthParameters == nil {
+		oauthParameters = map[string]string{}
+	}
+	if oauthParameters["oauth_nonce"] == "" {
+		oauthParameters["oauth_nonce"] = nonce()
+	}
+	if oauthParameters["oauth_timestamp"] == "" {
+		oauthParameters["oauth_timestamp"] = strconv.Itoa(int(time.Now().Unix()))
+	}
+	if oauthParameters["oauth_signature_method"] == "" {
+		oauthParameters["oauth_signature_method"] = signatureMethod
+	}
+	if oauthParameters["oauth_version"] == "" {
+		oauthParameters["oauth_version"] = version
+	}
+
+	signatureParams := map[string]string{}
+	for _, parameters := range []map[string]string{oauthParameters, params, body} {
+		for k, v := range parameters {
+			signatureParams[k] = v
+		}
+	}
+
+	parameterString := buildParameterString(signatureParams)
+	signatureString := buildSignatureString(req.Method, url, parameterString)
+	signatureKey := strings.Join([]string{encode(consumerSecret), encode(authTokenSecret)}, "&")
+	signature := signature(signatureString, signatureKey)
+
+	oauthParameters["oauth_signature"] = signature
+
+	keys := []string{}
+	for k := range oauthParameters {
+		keys = append(keys, k)
+	}
+	sort.Sort(sort.StringSlice(keys))
+	for i, k := range keys {
+		keys[i] = k + `="` + oauthParameters[k] + `"`
+	}
+	signature = strings.Join(keys, ", ")
+
+	req.Header.Set("Authorization", "OAuth "+signature)
+	if req.Method == "POST" {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+
+	return req
+}
+
+func buildSignatureString(method, url, parameters string) string {
+	l := []string{method, encode(url), parameters}
+	return strings.Join(l, "&")
+}
+
+func signature(text, key string) string {
+	k := []byte(key)
+	mac := hmac.New(sha1.New, k)
+	mac.Write([]byte(text))
+	src := mac.Sum(nil)
+
+	result := base64.StdEncoding.EncodeToString(src)
+	return encode(result)
+}
+
 func encode(str string) string {
-	// TODO
+	str = url.QueryEscape(str)
+	str = strings.Replace(str, `!`, "%21", -1)
+	str = strings.Replace(str, `'`, "%27", -1)
+	str = strings.Replace(str, `(`, "%28", -1)
+	str = strings.Replace(str, `)`, "%29", -1)
+	str = strings.Replace(str, `*`, "%2A", -1)
 	return str
 }
 
-func signRequest(req *http.Request, oauthParameters map[string]string, consumerSecret, authTokenSecret string) *http.Request {
-	// TODO
-	return req
+func nonce() string {
+	return string(utils.RandomCreateBytes(30))
 }

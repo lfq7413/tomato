@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego/utils"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 const signatureMethod = "HMAC-SHA1"
@@ -175,7 +175,6 @@ func signature(text, key string) string {
 	mac := hmac.New(sha1.New, k)
 	mac.Write([]byte(text))
 	src := mac.Sum(nil)
-
 	result := base64.StdEncoding.EncodeToString(src)
 	return encode(result)
 }
@@ -191,5 +190,5 @@ func encode(str string) string {
 }
 
 func nonce() string {
-	return string(utils.RandomCreateBytes(30))
+	return utils.CreateString(30)
 }

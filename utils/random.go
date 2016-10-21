@@ -22,3 +22,7 @@ func CreateFileName() string {
 	name = name[0:8] + "-" + name[8:12] + "-" + name[12:16] + "-" + name[16:20] + "-" + name[20:32]
 	return name
 }
+
+func CreateString(n int) string {
+	return string(utils.RandomCreateBytes(n))
+}

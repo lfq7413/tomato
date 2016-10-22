@@ -187,7 +187,16 @@ func Test_buildParameterString(t *testing.T) {
 		args args
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{
+				obj: map[string]string{
+					"b": "1",
+					"a": "2",
+				},
+			},
+			want: "a=2&b=1",
+		},
 	}
 	for _, tt := range tests {
 		if got := buildParameterString(tt.args.obj); got != tt.want {
@@ -206,16 +215,32 @@ func Test_signRequest(t *testing.T) {
 		params          map[string]string
 		body            map[string]string
 	}
+	req, _ := http.NewRequest("GET", "http://www.baidu.com", nil)
 	tests := []struct {
 		name string
 		args args
-		want *http.Request
+		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{
+				req: req,
+				oauthParameters: map[string]string{
+					"oauth_nonce":     "abc",
+					"oauth_timestamp": "1477136609",
+				},
+				consumerSecret:  "123",
+				authTokenSecret: "123",
+				url:             "http://www.baidu.com",
+				params:          nil,
+				body:            nil,
+			},
+			want: `OAuth oauth_nonce="abc", oauth_signature="VaySwdCc1dAibfofm6oWKwkYwms%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="1477136609", oauth_version="1.0"`,
+		},
 	}
 	for _, tt := range tests {
-		if got := signRequest(tt.args.req, tt.args.oauthParameters, tt.args.consumerSecret, tt.args.authTokenSecret, tt.args.url, tt.args.params, tt.args.body); !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. signRequest() = %v, want %v", tt.name, got, tt.want)
+		if got := signRequest(tt.args.req, tt.args.oauthParameters, tt.args.consumerSecret, tt.args.authTokenSecret, tt.args.url, tt.args.params, tt.args.body); !reflect.DeepEqual(got.Header.Get("Authorization"), tt.want) {
+			t.Errorf("%q. signRequest() = %v, want %v", tt.name, got.Header.Get("Authorization"), tt.want)
 		}
 	}
 }

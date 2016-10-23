@@ -30,6 +30,18 @@ type OAuth struct {
 	OAuthParams     map[string]string
 }
 
+// NewOAuth ...
+func NewOAuth(options types.M) *OAuth {
+	o := &OAuth{
+		ConsumerKey:     utils.S(options["consumer_key"]),
+		ConsumerSecret:  utils.S(options["consumer_secret"]),
+		AuthToken:       utils.S(options["auth_token"]),
+		AuthTokenSecret: utils.S(options["auth_token_secret"]),
+		Host:            utils.S(options["host"]),
+	}
+	return o
+}
+
 // Get ...
 func (o *OAuth) Get(path string, params map[string]string) (types.M, error) {
 	req, err := o.buildRequest("GET", path, params, nil)

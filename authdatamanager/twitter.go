@@ -10,7 +10,7 @@ type twitter struct{}
 
 func (a twitter) ValidateAuthData(authData types.M, options types.M) error {
 	client := NewOAuth(options)
-	client.Host = "api.twitter.com"
+	client.Host = "https://api.twitter.com"
 	client.AuthToken = utils.S(authData["access_token"])
 	client.AuthTokenSecret = utils.S(authData["auth_token_secret"])
 	data, err := client.Get("/1.1/account/verify_credentials.json", nil)

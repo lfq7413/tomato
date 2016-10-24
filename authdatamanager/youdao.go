@@ -9,6 +9,7 @@ import (
 type youdao struct{}
 
 func (a youdao) ValidateAuthData(authData types.M, options types.M) error {
+	// 具体接口参考：http://note.youdao.com/open/apidoc.html#_Toc304370863
 	client := NewOAuth(options)
 	client.Host = "http://note.youdao.com"
 	client.AuthToken = utils.S(authData["access_token"])

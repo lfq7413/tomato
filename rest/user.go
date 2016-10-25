@@ -144,7 +144,19 @@ func SendPasswordResetEmail(email string) error {
 func setPasswordResetToken(email string) types.M {
 	token := utils.CreateToken()
 	db := orm.TomatoDBController
-	where := types.M{"email": email}
+	where := types.M{
+		"$or": types.S{
+			types.M{
+				"email": email,
+			},
+			types.M{
+				"username": email,
+				"email": types.M{
+					"$exists": false,
+				},
+			},
+		},
+	}
 	update := types.M{
 		"_perishable_token": token,
 	}
@@ -166,7 +178,12 @@ func defaultResetPasswordEmail(options types.M) types.M {
 	text := "Hi,\n\n"
 	text += "You requested to reset your password for " + utils.S(options["appName"]) + "\n\n"
 	text += "Click here to reset it:\n" + utils.S(options["link"])
-	to := utils.S(user["email"])
+	var to string
+	if utils.S(user["email"]) != "" {
+		to = utils.S(user["email"])
+	} else {
+		to = utils.S(user["username"])
+	}
 	subject := "Password Reset for " + utils.S(options["appName"])
 	return types.M{
 		"text":    text,

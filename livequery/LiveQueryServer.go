@@ -226,7 +226,7 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 		var message t.M
 		err := json.Unmarshal([]byte(messageStr), &message)
 		if err != nil {
-			utils.TLog.Error("json.Unmarshal error")
+			utils.TLog.Error("unable to parse message", []byte(messageStr), err)
 			return
 		}
 		l.inflateParseObject(message)
@@ -261,6 +261,7 @@ func (l *liveQueryServer) OnMessage(ws *server.WebSocket, msg interface{}) {
 	if message, ok := msg.(string); ok {
 		err := json.Unmarshal([]byte(message), &request)
 		if err != nil {
+			utils.TLog.Error("unable to parse request", []byte(message), err)
 			return
 		}
 	} else {

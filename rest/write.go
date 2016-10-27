@@ -194,14 +194,9 @@ func (w *Write) handleInstallation() error {
 		return nil
 	}
 
-	if w.query == nil && w.data["deviceToken"] == nil && w.data["installationId"] == nil {
+	if w.query == nil && w.data["deviceToken"] == nil && w.data["installationId"] == nil && w.auth.InstallationID == "" {
 		// create 操作时，设备 id 不能为空
 		return errs.E(errs.MissingRequiredFieldError, "at least one ID field (deviceToken, installationId) must be specified in this operation")
-	}
-
-	if w.query == nil && w.data["deviceType"] == nil {
-		// create 操作时，设备类型不能为空
-		return errs.E(errs.MissingRequiredFieldError, "deviceType must be specified in this operation")
 	}
 
 	// 	如果 deviceToken 为 64 位，则认为是 iOS 设备
@@ -213,6 +208,15 @@ func (w *Write) handleInstallation() error {
 		w.data["installationId"] = strings.ToLower(utils.S(w.data["installationId"]))
 	}
 
+	// 如果 w.data["installationId"] 不存在，则使用 w.auth.InstallationID
+	var installationID string
+	if w.data["installationId"] != nil {
+		installationID = utils.S(w.data["installationId"])
+	} else {
+		installationID = w.auth.InstallationID
+	}
+	installationID = strings.ToLower(installationID)
+
 	var idMatch types.M
 	var objectIDMatch types.M
 	var installationIDMatch types.M
@@ -222,8 +226,8 @@ func (w *Write) handleInstallation() error {
 	if w.query != nil && w.query["objectId"] != nil {
 		orQueries = append(orQueries, types.M{"objectId": w.query["objectId"]})
 	}
-	if w.data["installationId"] != nil {
-		orQueries = append(orQueries, types.M{"installationId": w.data["installationId"]})
+	if installationID != "" {
+		orQueries = append(orQueries, types.M{"installationId": installationID})
 	}
 	if w.data["deviceToken"] != nil {
 		orQueries = append(orQueries, types.M{"deviceToken": w.data["deviceToken"]})
@@ -243,7 +247,7 @@ func (w *Write) handleInstallation() error {
 			if w.query != nil && w.query["objectId"] != nil && utils.S(result["objectId"]) == utils.S(w.query["objectId"]) {
 				objectIDMatch = result
 			}
-			if w.data["installationId"] != nil && utils.S(result["installationId"]) == utils.S(w.data["installationId"]) {
+			if installationID != "" && utils.S(result["installationId"]) == installationID {
 				installationIDMatch = result
 			}
 			if w.data["deviceToken"] != nil && utils.S(result["deviceToken"]) == utils.S(w.data["deviceToken"]) {
@@ -258,8 +262,8 @@ func (w *Write) handleInstallation() error {
 		if objectIDMatch == nil {
 			return errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}
-		if w.data["installationId"] != nil && objectIDMatch["installationId"] != nil &&
-			utils.S(w.data["installationId"]) != utils.S(objectIDMatch["installationId"]) {
+		if installationID != "" && objectIDMatch["installationId"] != nil &&
+			installationID != utils.S(objectIDMatch["installationId"]) {
 			// installationId 不能修改
 			return errs.E(errs.ChangedImmutableFieldError, "installationId may not be changed in this operation")
 		}
@@ -280,8 +284,13 @@ func (w *Write) handleInstallation() error {
 		idMatch = objectIDMatch
 	}
 
-	if w.data["installationId"] != nil && installationIDMatch != nil {
+	if installationID != "" && installationIDMatch != nil {
 		idMatch = installationIDMatch
+	}
+
+	if w.query == nil && w.data["deviceType"] == nil && idMatch == nil {
+		// create 操作时，设备类型不能为空
+		return errs.E(errs.MissingRequiredFieldError, "deviceType must be specified in this operation")
 	}
 
 	// 以下逻辑为：检测是否需要合并数据
@@ -293,7 +302,7 @@ func (w *Write) handleInstallation() error {
 			// 要更新的 deviceToken 不存在
 			objID = ""
 		} else if len(deviceTokenMatches) == 1 &&
-			(deviceTokenMatches[0]["installationId"] == nil || w.data["installationId"] == nil) {
+			(deviceTokenMatches[0]["installationId"] == nil || installationID == "") {
 			// 要更新的 deviceToken 只存在一个，并且 installationId 不是同时都有
 			// 则更新这条记录
 			objID = utils.S(deviceTokenMatches[0]["objectId"])
@@ -306,7 +315,7 @@ func (w *Write) handleInstallation() error {
 			// 清理多余的 deviceToken，保留对应 installationId 的那个
 			// 当前位置为 idMatch == nil ，所以不存在 installationId 对应的记录
 			installationID := types.M{
-				"$ne": w.data["installationId"],
+				"$ne": installationID,
 			}
 			delQuery := types.M{
 				"deviceToken":    w.data["deviceToken"],

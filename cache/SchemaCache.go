@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"sync"
+
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -13,6 +15,7 @@ const allKeys = "__ALL_KEYS"
 type SchemaCache struct {
 	ttl    int
 	prefix string
+	mu     sync.Mutex
 }
 
 // NewSchemaCache ...
@@ -39,7 +42,11 @@ func (s *SchemaCache) Put(key string, value interface{}) {
 			keys = map[string]bool{}
 		}
 	}
-	keys[key] = true
+	if _, ok := keys[key]; ok == false {
+		s.mu.Lock()
+		keys[key] = true
+		s.mu.Unlock()
+	}
 	put(s.prefix+allKeys, keys, int64(s.ttl))
 	put(key, value, int64(s.ttl))
 }

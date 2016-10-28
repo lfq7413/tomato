@@ -251,10 +251,6 @@ var FileTooLarge = 129
 // Error code indicating an error saving a file.
 var FileSaveError = 130
 
-// FileDeleteError ...
-// File could not be deleted.
-var FileDeleteError = 131
-
 // InvalidInstallationIDError ...
 // Invalid installation id.
 var InvalidInstallationIDError = 132
@@ -364,6 +360,10 @@ var UnsavedFileError = 151
 // InvalidPushTimeError ...
 // Error code indicating an invalid push time.
 var InvalidPushTimeError = 152
+
+// FileDeleteError ...
+// File could not be deleted.
+var FileDeleteError = 153
 
 // InefficientQueryError ...
 // An inefficient query was rejected by the server.

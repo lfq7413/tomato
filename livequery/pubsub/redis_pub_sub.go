@@ -1,13 +1,50 @@
 package pubsub
 
-import "github.com/garyburd/redigo/redis"
+import (
+	"time"
+
+	"github.com/garyburd/redigo/redis"
+)
 
 type redisPublisher struct {
-	c redis.Conn
+	address  string
+	password string
+	p        *redis.Pool
 }
 
 func (r *redisPublisher) Publish(channel, message string) {
-	r.c.Do("PUBLISH", channel, message)
+	r.do("PUBLISH", channel, message)
+}
+
+func (r *redisPublisher) connectInit() {
+	dialFunc := func() (c redis.Conn, err error) {
+		c, err = redis.Dial("tcp", r.address)
+		if err != nil {
+			return nil, err
+		}
+
+		if r.password != "" {
+			if _, err := c.Do("AUTH", r.password); err != nil {
+				c.Close()
+				return nil, err
+			}
+		}
+
+		return
+	}
+	// initialize a new pool
+	r.p = &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 180 * time.Second,
+		Dial:        dialFunc,
+	}
+}
+
+func (r *redisPublisher) do(commandName string, args ...interface{}) (reply interface{}, err error) {
+	c := r.p.Get()
+	defer c.Close()
+
+	return c.Do(commandName, args...)
 }
 
 type redisSubscriber struct {
@@ -41,19 +78,18 @@ func (r *redisSubscriber) receive() {
 }
 
 func createRedisPublisher(address, password string) *redisPublisher {
-	c, err := redis.Dial("tcp", address)
-	if err != nil {
-		panic(err)
+	m := &redisPublisher{
+		address:  address,
+		password: password,
 	}
-	if password != "" {
-		if _, err := c.Do("AUTH", password); err != nil {
-			c.Close()
-			panic(err)
-		}
+	m.connectInit()
+	c := m.p.Get()
+	defer c.Close()
+	if c.Err() != nil {
+		panic(c.Err())
 	}
-	return &redisPublisher{
-		c: c,
-	}
+
+	return m
 }
 
 func createRedisSubscriber(address, password string) *redisSubscriber {

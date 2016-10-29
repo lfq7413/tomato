@@ -9,7 +9,7 @@ import (
 
 func Test_redis(t *testing.T) {
 	var v interface{}
-	cache := newRedisMemoryCacheAdapter("192.168.99.100:6379")
+	cache := newRedisMemoryCacheAdapter("192.168.99.100:6379", "")
 	/*******************************************************************/
 	cache.put("k1", "hello", 0)
 	v = "hello"
@@ -70,5 +70,4 @@ func Test_redis(t *testing.T) {
 	if reflect.DeepEqual(v, cache.get("k3")) == false {
 		t.Error("get k3:", cache.get("k3"))
 	}
-	cache.close()
 }

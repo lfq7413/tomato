@@ -210,7 +210,7 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 	server.TomatoInfo["masterKey"] = args["masterKey"]
 
 	// 向 subscriber 订阅 afterSave 、 afterDelete 两个频道
-	l.subscriber = pubsub.CreateSubscriber(args["subType"], args["subURL"])
+	l.subscriber = pubsub.CreateSubscriber(args["subType"], args["subURL"], args["subConfig"])
 	l.subscriber.Subscribe("afterSave")
 	l.subscriber.Subscribe("afterDelete")
 

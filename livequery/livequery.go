@@ -21,14 +21,15 @@ func init() {
 	classeNames := strings.Split(config.TConfig.LiveQueryClasses, "|")
 	pubType := config.TConfig.PublisherType
 	pubURL := config.TConfig.PublisherURL
-	TLiveQuery = NewLiveQuery(classeNames, pubType, pubURL)
+	pubConfig := config.TConfig.PublisherConfig
+	TLiveQuery = NewLiveQuery(classeNames, pubType, pubURL, pubConfig)
 }
 
 // NewLiveQuery 初始化 LiveQuery
 // classNames 支持的类列表
 // pubType 发布者类型
 // pubURL 发布者的 URL
-func NewLiveQuery(classNames []string, pubType, pubURL string) *LiveQuery {
+func NewLiveQuery(classNames []string, pubType, pubURL, pubConfig string) *LiveQuery {
 	liveQuery := &LiveQuery{}
 	liveQuery.classNames = map[string]bool{}
 	if len(classNames) > 0 {
@@ -36,7 +37,7 @@ func NewLiveQuery(classNames []string, pubType, pubURL string) *LiveQuery {
 			liveQuery.classNames[n] = true
 		}
 	}
-	liveQuery.liveQueryPublisher = pubsub.NewCloudCodePublisher(pubType, pubURL)
+	liveQuery.liveQueryPublisher = pubsub.NewCloudCodePublisher(pubType, pubURL, pubConfig)
 
 	return liveQuery
 }

@@ -26,6 +26,7 @@ type Config struct {
 	LiveQueryClasses                 string
 	PublisherType                    string
 	PublisherURL                     string
+	PublisherConfig                  string
 	SessionLength                    int
 	RevokeSessionOnPasswordReset     bool
 	PreventLoginWithUnverifiedEmail  bool
@@ -40,6 +41,7 @@ type Config struct {
 	AccountLockoutDuration           int
 	CacheAdapter                     string
 	RedisAddress                     string
+	RedisPassword                    string
 }
 
 var (
@@ -92,6 +94,7 @@ func parseConfig() {
 	TConfig.LiveQueryClasses = beego.AppConfig.String("LiveQueryClasses")
 	TConfig.PublisherType = beego.AppConfig.String("PublisherType")
 	TConfig.PublisherURL = beego.AppConfig.String("PublisherURL")
+	TConfig.PublisherConfig = beego.AppConfig.String("PublisherConfig")
 
 	TConfig.SessionLength = beego.AppConfig.DefaultInt("SessionLength", 31536000)
 	TConfig.RevokeSessionOnPasswordReset = beego.AppConfig.DefaultBool("RevokeSessionOnPasswordReset", true)
@@ -110,6 +113,7 @@ func parseConfig() {
 
 	TConfig.CacheAdapter = beego.AppConfig.DefaultString("CacheAdapter", "InMemory")
 	TConfig.RedisAddress = beego.AppConfig.String("RedisAddress")
+	TConfig.RedisPassword = beego.AppConfig.String("RedisPassword")
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

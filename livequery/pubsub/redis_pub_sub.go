@@ -40,20 +40,32 @@ func (r *redisSubscriber) receive() {
 	}()
 }
 
-func createRedisPublisher(address string) *redisPublisher {
+func createRedisPublisher(address, password string) *redisPublisher {
 	c, err := redis.Dial("tcp", address)
 	if err != nil {
 		panic(err)
+	}
+	if password != "" {
+		if _, err := c.Do("AUTH", password); err != nil {
+			c.Close()
+			panic(err)
+		}
 	}
 	return &redisPublisher{
 		c: c,
 	}
 }
 
-func createRedisSubscriber(address string) *redisSubscriber {
+func createRedisSubscriber(address, password string) *redisSubscriber {
 	c, err := redis.Dial("tcp", address)
 	if err != nil {
 		panic(err)
+	}
+	if password != "" {
+		if _, err := c.Do("AUTH", password); err != nil {
+			c.Close()
+			panic(err)
+		}
 	}
 	r := &redisSubscriber{
 		psc:       redis.PubSubConn{Conn: c},

@@ -1,17 +1,17 @@
 package pubsub
 
 // CreatePublisher 创建发布者，当前支持 EventEmitter 、 Redis
-func CreatePublisher(pubType, pubURL string) Publisher {
+func CreatePublisher(pubType, pubURL, pubConfig string) Publisher {
 	if useRedis(pubType) {
-		return createRedisPublisher(pubURL)
+		return createRedisPublisher(pubURL, pubConfig)
 	}
 	return createEventEmitterPublisher()
 }
 
 // CreateSubscriber 创建订阅者，当前支持 EventEmitter 、 Redis
-func CreateSubscriber(subType, subURL string) Subscriber {
+func CreateSubscriber(subType, subURL, subConfig string) Subscriber {
 	if useRedis(subType) {
-		return createRedisSubscriber(subURL)
+		return createRedisSubscriber(subURL, subConfig)
 	}
 	return createEventEmitterSubscriber()
 }

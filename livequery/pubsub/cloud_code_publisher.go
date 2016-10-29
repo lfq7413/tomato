@@ -12,9 +12,9 @@ type CloudCodePublisher struct {
 }
 
 // NewCloudCodePublisher 创建云代码发布者，其中的 Publisher 当前仅支持实验性质的 EventEmitter
-func NewCloudCodePublisher(pubType, pubURL string) *CloudCodePublisher {
+func NewCloudCodePublisher(pubType, pubURL, pubConfig string) *CloudCodePublisher {
 	return &CloudCodePublisher{
-		publisher: CreatePublisher(pubType, pubURL),
+		publisher: CreatePublisher(pubType, pubURL, pubConfig),
 	}
 }
 

@@ -31,21 +31,21 @@ func NewSchemaCache(ttl int) *SchemaCache {
 
 // Put ...
 func (s *SchemaCache) Put(key string, value interface{}) {
-	var keys map[string]bool
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var keys map[string]interface{}
 	v := get(s.prefix + allKeys)
 	if v == nil {
-		keys = map[string]bool{}
+		keys = map[string]interface{}{}
 	} else {
-		if m, ok := v.(map[string]bool); ok {
+		if m, ok := v.(map[string]interface{}); ok {
 			keys = m
 		} else {
-			keys = map[string]bool{}
+			keys = map[string]interface{}{}
 		}
 	}
 	if _, ok := keys[key]; ok == false {
-		s.mu.Lock()
 		keys[key] = true
-		s.mu.Unlock()
 	}
 	put(s.prefix+allKeys, keys, int64(s.ttl))
 	put(key, value, int64(s.ttl))
@@ -59,6 +59,14 @@ func (s *SchemaCache) GetAllClasses() []types.M {
 	v := get(s.prefix + mainSchema)
 	if r, ok := v.([]types.M); ok {
 		return r
+	} else if r, ok := v.([]interface{}); ok {
+		res := []types.M{}
+		for _, m := range r {
+			if subv := utils.M(m); subv != nil {
+				res = append(res, subv)
+			}
+		}
+		return res
 	}
 	return []types.M{}
 }
@@ -90,12 +98,12 @@ func (s *SchemaCache) GetOneSchema(className string) types.M {
 
 // Clear ...
 func (s *SchemaCache) Clear() {
-	var keys map[string]bool
+	var keys map[string]interface{}
 	v := get(s.prefix + allKeys)
 	if v == nil {
 		return
 	}
-	if m, ok := v.(map[string]bool); ok {
+	if m, ok := v.(map[string]interface{}); ok {
 		keys = m
 	} else {
 		return

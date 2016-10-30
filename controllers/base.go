@@ -145,6 +145,16 @@ func (b *BaseController) Prepare() {
 		}
 	}
 
+	// 兼容 Android SDK ，查询参数保存在 body 中，并且值的类型均为 string
+	if b.Ctx.Input.Method() == "GET" {
+		for key, value := range b.JSONBody {
+			if str, ok := value.(string); ok {
+				b.Query[key] = str
+				delete(b.JSONBody, key)
+			}
+		}
+	}
+
 	if info.ClientVersion != "" {
 		info.ClientSDK = client.FromString(info.ClientVersion)
 	}

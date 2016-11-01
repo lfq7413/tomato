@@ -1206,6 +1206,31 @@ func Test_Find(t *testing.T) {
 	/*****************************************************/
 	className = "user"
 	schema = nil
+	query = types.M{}
+	options = types.M{
+		"keys": []string{"key"},
+	}
+	results, err = adapter.Find(className, schema, query, options)
+	expect = []types.M{
+		types.M{
+			"objectId": "01",
+			"key":      3,
+		},
+		types.M{
+			"objectId": "02",
+			"key":      1,
+		},
+		types.M{
+			"objectId": "03",
+			"key":      2,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, results) == false {
+		t.Error("expect:", expect, "result:", results, err)
+	}
+	/*****************************************************/
+	className = "user"
+	schema = nil
 	query = types.M{"key": 3}
 	options = types.M{}
 	results, err = adapter.Find(className, schema, query, options)

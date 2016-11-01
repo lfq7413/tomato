@@ -52,7 +52,7 @@ func (d *DBController) PurgeCollection(className string) error {
 
 // Find 从指定表中查询数据，查询到的数据放入 list 中
 // 如果查询的是 count ，结果也会放入 list，并且只有这一个元素
-// options 中的选项包括：skip、limit、sort、count、acl
+// options 中的选项包括：skip、limit、sort、keys、count、acl
 func (d *DBController) Find(className string, query, options types.M) (types.S, error) {
 	if options == nil {
 		options = types.M{}

@@ -241,6 +241,27 @@ func Test_rawFind(t *testing.T) {
 	mc.insertOne(docs)
 	docs = types.M{"_id": "003", "name": "tom", "age": 31}
 	mc.insertOne(docs)
+	query = types.M{}
+	options = types.M{
+		"keys": types.M{"name": 1},
+	}
+	result, err = mc.rawFind(query, options)
+	expect = []types.M{
+		types.M{"_id": "001", "name": "joe"},
+		types.M{"_id": "002", "name": "jack"},
+		types.M{"_id": "003", "name": "tom"},
+	}
+	if err != nil || result == nil || len(result) != 3 || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	mc.drop()
+	/********************************************************/
+	docs = types.M{"_id": "001", "name": "joe", "age": 25}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "002", "name": "jack", "age": 30}
+	mc.insertOne(docs)
+	docs = types.M{"_id": "003", "name": "tom", "age": 31}
+	mc.insertOne(docs)
 	docs = types.M{"_id": "004", "name": "ann", "age": 25}
 	mc.insertOne(docs)
 	query = types.M{

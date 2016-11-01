@@ -88,6 +88,9 @@ func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M
 			q = q.Limit(limit)
 		}
 	}
+	if options["keys"] != nil {
+		q = q.Select(options["keys"])
+	}
 	var result []types.M
 	err := q.All(&result)
 	return result, err

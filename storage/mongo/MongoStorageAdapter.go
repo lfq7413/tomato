@@ -320,6 +320,18 @@ func (m *MongoAdapter) Find(className string, schema, query, options types.M) ([
 			delete(options, "sort")
 		}
 	}
+	if _, ok := options["keys"]; ok {
+		if keys, ok := options["keys"].([]string); ok {
+			mongoKeys := types.M{}
+			for _, key := range keys {
+				mongoKey := m.transform.transformKey(className, key, schema)
+				mongoKeys[mongoKey] = 1
+			}
+			options["keys"] = mongoKeys
+		} else {
+			delete(options, "keys")
+		}
+	}
 
 	coll := m.adaptiveCollection(className)
 	results, err := coll.find(mongoWhere, options)

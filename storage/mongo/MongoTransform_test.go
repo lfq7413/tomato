@@ -92,6 +92,19 @@ func Test_transformKey(t *testing.T) {
 	if result != "_p_user" {
 		t.Error("transform:", fieldName, "error!", "result:", result)
 	}
+	/*************************************************/
+	schema = types.M{
+		"fields": types.M{
+			"user": types.M{
+				"type": "Pointer",
+			},
+		},
+	}
+	fieldName = "user"
+	result = tf.transformKey("", fieldName, schema)
+	if result != "_p_user" {
+		t.Error("transform:", fieldName, "error!", "result:", result)
+	}
 }
 
 func Test_transformKeyValueForUpdate(t *testing.T) {

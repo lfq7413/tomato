@@ -47,6 +47,8 @@ func (t *Transform) transformKey(className, fieldName string, schema types.M) st
 		if tp := utils.M(fields[fieldName]); tp != nil {
 			if utils.S(tp["__type"]) == "Pointer" {
 				fieldName = "_p_" + fieldName
+			} else if utils.S(tp["type"]) == "Pointer" {
+				fieldName = "_p_" + fieldName
 			}
 		}
 	}

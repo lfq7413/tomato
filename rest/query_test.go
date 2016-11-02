@@ -1937,6 +1937,58 @@ func Test_runFind(t *testing.T) {
 		"age":      3,
 	}
 	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "03",
+		"key":      "hello",
+		"age":      1,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	initEnv()
+	where = types.M{}
+	options = types.M{"keys": "age.id"}
+	className = "user"
+	q, _ = NewQuery(Master(), className, where, options, nil)
+	err = q.runFind()
+	expect = types.S{
+		types.M{
+			"objectId": "01",
+			"age":      2,
+		},
+		types.M{
+			"objectId": "02",
+			"age":      3,
+		},
+		types.M{
+			"objectId": "03",
+			"age":      1,
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
+		t.Error("expect:", expect, "result:", q.response["results"], err)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key": types.M{"type": "String"},
+			"age": types.M{"type": "Number"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "01",
+		"key":      "hello",
+		"age":      2,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "02",
+		"key":      "hello",
+		"age":      3,
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
 	initEnv()
 	where = types.M{}
 	options = types.M{}
@@ -2452,6 +2504,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
+		restOptions:       types.M{"keys": 1024},
 		findOptions:       types.M{},
 		response:          types.M{},
 		doCount:           false,
@@ -2475,6 +2528,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
+		restOptions:       types.M{"keys": "post"},
 		findOptions:       types.M{},
 		response:          types.M{},
 		doCount:           false,
@@ -2498,6 +2552,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
+		restOptions:       types.M{"keys": "post,user"},
 		findOptions:       types.M{},
 		response:          types.M{},
 		doCount:           false,
@@ -2521,6 +2576,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
+		restOptions:       types.M{"count": true},
 		findOptions:       types.M{},
 		response:          types.M{},
 		doCount:           true,
@@ -2544,6 +2600,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
+		restOptions:       types.M{"skip": 10},
 		findOptions:       types.M{"skip": 10},
 		response:          types.M{},
 		doCount:           false,
@@ -2567,6 +2624,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
+		restOptions:       types.M{"limit": 10},
 		findOptions:       types.M{"limit": 10},
 		response:          types.M{},
 		doCount:           false,
@@ -2590,6 +2648,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
+		restOptions:       types.M{"order": "post,-user"},
 		findOptions:       types.M{"sort": []string{"post", "-user"}},
 		response:          types.M{},
 		doCount:           false,
@@ -2613,6 +2672,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:        auth,
 		className:   "user",
 		Where:       types.M{},
+		restOptions: types.M{"include": "user.session,name.friend"},
 		findOptions: types.M{},
 		response:    types.M{},
 		doCount:     false,
@@ -2641,6 +2701,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
+		restOptions:       types.M{"redirectClassNameForKey": "post"},
 		findOptions:       types.M{},
 		response:          types.M{},
 		doCount:           false,
@@ -2683,6 +2744,15 @@ func Test_NewQuery(t *testing.T) {
 		auth:      auth,
 		className: "user",
 		Where:     types.M{},
+		restOptions: types.M{
+			"keys":                    "post,user",
+			"count":                   true,
+			"skip":                    10,
+			"limit":                   10,
+			"order":                   "post,-user",
+			"include":                 "user.session,name.friend",
+			"redirectClassNameForKey": "post",
+		},
 		findOptions: types.M{
 			"skip":  10,
 			"limit": 10,

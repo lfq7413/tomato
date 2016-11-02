@@ -17,6 +17,7 @@ type Query struct {
 	auth              *Auth
 	className         string
 	Where             types.M
+	restOptions       types.M
 	findOptions       types.M
 	response          types.M
 	doCount           bool
@@ -45,6 +46,7 @@ func NewQuery(
 		auth:              auth,
 		className:         className,
 		Where:             where,
+		restOptions:       options,
 		findOptions:       types.M{},
 		response:          types.M{},
 		doCount:           false,
@@ -511,6 +513,13 @@ func (q *Query) runFind() error {
 			}
 		}
 	}
+	if len(q.keys) > 0 {
+		keys := []string{}
+		for _, k := range q.keys {
+			keys = append(keys, strings.Split(k, ".")[0])
+		}
+		q.findOptions["keys"] = keys
+	}
 	response, err := orm.TomatoDBController.Find(q.className, q.Where, q.findOptions)
 	if err != nil {
 		return err
@@ -537,32 +546,15 @@ func (q *Query) runFind() error {
 	// 展开文件类型
 	files.ExpandFilesInObject(response)
 
-	// 取出需要的 key   （TODO：通过数据库直接取key）
-	results := types.S{}
-	if len(q.keys) > 0 && len(response) > 0 {
-		for _, v := range response {
-			obj := utils.M(v)
-			newObj := types.M{}
-			for _, s := range q.keys {
-				if obj[s] != nil {
-					newObj[s] = obj[s]
-				}
-			}
-			results = append(results, newObj)
-		}
-	} else {
-		results = append(results, response...)
-	}
-
 	if q.redirectClassName != "" {
-		for _, v := range results {
+		for _, v := range response {
 			if r := utils.M(v); r != nil {
 				r["className"] = q.redirectClassName
 			}
 		}
 	}
 
-	q.response["results"] = results
+	q.response["results"] = response
 	return nil
 }
 

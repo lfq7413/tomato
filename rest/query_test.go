@@ -2782,6 +2782,7 @@ func Test_includePath(t *testing.T) {
 	var auth *Auth
 	var response types.M
 	var path []string
+	var restOptions types.M
 	var err error
 	var expect types.M
 	/**********************************************************/
@@ -2825,7 +2826,7 @@ func Test_includePath(t *testing.T) {
 		},
 	}
 	path = []string{"post"}
-	err = includePath(auth, response, path)
+	err = includePath(auth, response, path, nil)
 	expect = types.M{
 		"results": types.S{
 			types.M{
@@ -2900,7 +2901,7 @@ func Test_includePath(t *testing.T) {
 		},
 	}
 	path = []string{"post"}
-	err = includePath(auth, response, path)
+	err = includePath(auth, response, path, nil)
 	expect = types.M{
 		"results": types.S{
 			types.M{
@@ -2974,7 +2975,7 @@ func Test_includePath(t *testing.T) {
 		},
 	}
 	path = []string{"post", "user"}
-	err = includePath(auth, response, path)
+	err = includePath(auth, response, path, nil)
 	expect = types.M{
 		"results": types.S{
 			types.M{
@@ -3062,7 +3063,7 @@ func Test_includePath(t *testing.T) {
 		},
 	}
 	path = []string{"user"}
-	err = includePath(auth, response, path)
+	err = includePath(auth, response, path, nil)
 	expect = types.M{
 		"results": types.S{
 			types.M{
@@ -3154,7 +3155,7 @@ func Test_includePath(t *testing.T) {
 		},
 	}
 	path = []string{"user"}
-	err = includePath(auth, response, path)
+	err = includePath(auth, response, path, nil)
 	expect = types.M{
 		"results": types.S{
 			types.M{
@@ -3173,6 +3174,176 @@ func Test_includePath(t *testing.T) {
 					"className": "_User",
 					"objectId":  "2002",
 					"username":  "jack",
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, response) == false {
+		t.Error("expect:", expect, "result:", response)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key":  types.M{"type": "String"},
+			"name": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "4001",
+		"key":      "hello",
+		"name":     "joe",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "4002",
+		"key":      "hello",
+		"name":     "jack",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	auth = Master()
+	response = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"id": "1",
+					"user": types.M{
+						"__type":    "Pointer",
+						"className": "user",
+						"objectId":  "4001",
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"id": "2",
+					"user": types.M{
+						"__type":    "Pointer",
+						"className": "user",
+						"objectId":  "4002",
+					},
+				},
+			},
+		},
+	}
+	path = []string{"post", "user"}
+	restOptions = types.M{"keys": "post.user.key"}
+	err = includePath(auth, response, path, restOptions)
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"id": "1",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "4001",
+						"key":       "hello",
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"id": "2",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "4002",
+						"key":       "hello",
+					},
+				},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, response) == false {
+		t.Error("expect:", expect, "result:", response)
+	}
+	orm.TomatoDBController.DeleteEverything()
+	/**********************************************************/
+	initEnv()
+	className = "user"
+	object = types.M{
+		"fields": types.M{
+			"key":  types.M{"type": "String"},
+			"name": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass(className, object)
+	object = types.M{
+		"objectId": "4001",
+		"key":      "hello",
+		"name":     "joe",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	object = types.M{
+		"objectId": "4002",
+		"key":      "hello",
+		"name":     "jack",
+	}
+	orm.Adapter.CreateObject(className, types.M{}, object)
+	auth = Master()
+	response = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"id": "1",
+					"user": types.M{
+						"__type":    "Pointer",
+						"className": "user",
+						"objectId":  "4001",
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"id": "2",
+					"user": types.M{
+						"__type":    "Pointer",
+						"className": "user",
+						"objectId":  "4002",
+					},
+				},
+			},
+		},
+	}
+	path = []string{"post", "user"}
+	restOptions = types.M{"keys": "post.user.key,post.user.name"}
+	err = includePath(auth, response, path, restOptions)
+	expect = types.M{
+		"results": types.S{
+			types.M{
+				"objectId": "1001",
+				"post": types.M{
+					"id": "1",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "4001",
+						"key":       "hello",
+						"name":      "joe",
+					},
+				},
+			},
+			types.M{
+				"objectId": "1002",
+				"post": types.M{
+					"id": "2",
+					"user": types.M{
+						"__type":    "Object",
+						"className": "user",
+						"objectId":  "4002",
+						"key":       "hello",
+						"name":      "jack",
+					},
 				},
 			},
 		},

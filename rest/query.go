@@ -585,7 +585,7 @@ func (q *Query) handleInclude() error {
 		return nil
 	}
 	// includePath 中会直接更新 q.response
-	err := includePath(q.auth, q.response, q.include[0])
+	err := includePath(q.auth, q.response, q.include[0], q.restOptions)
 	if err != nil {
 		return err
 	}
@@ -600,7 +600,10 @@ func (q *Query) handleInclude() error {
 
 // includePath 在 response 中搜索 path 路径中对应的节点，
 // 查询出该节点对应的对象，然后用对象替换该节点
-func includePath(auth *Auth, response types.M, path []string) error {
+func includePath(auth *Auth, response types.M, path []string, restOptions types.M) error {
+	if restOptions == nil {
+		restOptions = types.M{}
+	}
 	// 查找路径对应的所有节点
 	pointers := findPointers(response["results"], path)
 	if len(pointers) == 0 {
@@ -622,6 +625,44 @@ func includePath(auth *Auth, response types.M, path []string) error {
 
 	}
 
+	// example1:
+	// path:        []string{"user"},
+	// restOptions: M{"keys": "user.id"},
+	// ==>> M{"keys": "id"}
+	// example2:
+	// path:        []string{"user"},
+	// restOptions: M{"keys": "user.id,user.name"},
+	// ==>> M{"keys": "id,name"}
+	// example3:
+	// path:        []string{"user", "post"},
+	// restOptions: M{"keys": "user.id,user.name,user.post.id"},
+	// ==>> M{"keys": "id"}
+	includeRestOptions := types.M{}
+	if keyStr, ok := restOptions["keys"].(string); ok && keyStr != "" {
+		keys := strings.Split(keyStr, ",")
+		keySet := []string{}
+		for _, key := range keys {
+			keyPath := strings.Split(key, ".")
+			if len(path) >= len(keyPath) {
+				continue
+			}
+			m := true
+			i := 0
+			for i = 0; i < len(path); i++ {
+				if path[i] != keyPath[i] {
+					m = false
+					break
+				}
+			}
+			if m {
+				keySet = append(keySet, keyPath[i])
+			}
+		}
+		if len(keySet) > 0 {
+			includeRestOptions["keys"] = strings.Join(keySet, ",")
+		}
+	}
+
 	replace := types.M{}
 	for clsName, ids := range pointersHash {
 		// 获取所有 ids 对应的对象
@@ -631,7 +672,7 @@ func includePath(auth *Auth, response types.M, path []string) error {
 		where := types.M{
 			"objectId": objectID,
 		}
-		query, err := NewQuery(auth, clsName, where, types.M{}, nil)
+		query, err := NewQuery(auth, clsName, where, includeRestOptions, nil)
 		if err != nil {
 			return err
 		}

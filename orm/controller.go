@@ -72,14 +72,18 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 	}
 
 	var op string
-	if _, ok := query["objectId"].(string); ok {
-		if len(query) == 1 {
-			op = "get"
+	if v, ok := options["op"].(string); ok && v != "" {
+		op = v
+	} else {
+		if _, ok := query["objectId"].(string); ok {
+			if len(query) == 1 {
+				op = "get"
+			} else {
+				op = "find"
+			}
 		} else {
 			op = "find"
 		}
-	} else {
-		op = "find"
 	}
 
 	classExists := true

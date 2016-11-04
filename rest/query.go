@@ -137,13 +137,13 @@ func NewQuery(
 }
 
 // Execute 执行查询请求，返回的数据包含 results count 两个字段
-func (q *Query) Execute() (types.M, error) {
+func (q *Query) Execute(executeOptions ...types.M) (types.M, error) {
 
 	err := q.BuildRestWhere()
 	if err != nil {
 		return nil, err
 	}
-	err = q.runFind()
+	err = q.runFind(executeOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -499,7 +499,14 @@ func (q *Query) replaceNotInQuery() error {
 }
 
 // runFind 从数据库查找数据，并处理返回结果
-func (q *Query) runFind() error {
+func (q *Query) runFind(executeOptions ...types.M) error {
+	var options types.M
+	if len(executeOptions) > 0 {
+		options = executeOptions[0]
+	} else {
+		options = types.M{}
+	}
+
 	if q.findOptions["limit"] != nil {
 		if l, ok := q.findOptions["limit"].(float64); ok {
 			if l == 0 {
@@ -513,14 +520,23 @@ func (q *Query) runFind() error {
 			}
 		}
 	}
+
+	findOptions := types.M{}
+	for k, v := range q.findOptions {
+		findOptions[k] = v
+	}
+
 	if len(q.keys) > 0 {
 		keys := []string{}
 		for _, k := range q.keys {
 			keys = append(keys, strings.Split(k, ".")[0])
 		}
-		q.findOptions["keys"] = keys
+		findOptions["keys"] = keys
 	}
-	response, err := orm.TomatoDBController.Find(q.className, q.Where, q.findOptions)
+	if v, ok := options["op"].(string); ok && v != "" {
+		findOptions["op"] = v
+	}
+	response, err := orm.TomatoDBController.Find(q.className, q.Where, findOptions)
 	if err != nil {
 		return err
 	}
@@ -676,7 +692,7 @@ func includePath(auth *Auth, response types.M, path []string, restOptions types.
 		if err != nil {
 			return err
 		}
-		includeResponse, err := query.Execute()
+		includeResponse, err := query.Execute(types.M{"op": "get"})
 		if err != nil {
 			return err
 		}

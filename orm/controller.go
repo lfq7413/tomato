@@ -251,13 +251,13 @@ func (d *DBController) Destroy(className string, query types.M, options types.M)
 	return nil
 }
 
-var specialKeysForUpdate = []string{
-	"_hashed_password",
-	"_perishable_token",
-	"_email_verify_token",
-	"_email_verify_token_expires_at",
-	"_account_lockout_expires_at",
-	"_failed_login_count",
+var specialKeysForUpdate = map[string]bool{
+	"_hashed_password":               true,
+	"_perishable_token":              true,
+	"_email_verify_token":            true,
+	"_email_verify_token_expires_at": true,
+	"_account_lockout_expires_at":    true,
+	"_failed_login_count":            true,
 }
 
 // Update 更新对象
@@ -337,17 +337,8 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 			return nil, errs.E(errs.InvalidKeyName, "Invalid field name for update: "+fieldName)
 		}
 		fieldName = strings.Split(fieldName, ".")[0]
-		if fieldNameIsValid(fieldName) == false {
-			include := false
-			for _, k := range specialKeysForUpdate {
-				if fieldName == k {
-					include = true
-					break
-				}
-			}
-			if include == false {
-				return nil, errs.E(errs.InvalidKeyName, "Invalid field name for update: "+fieldName)
-			}
+		if fieldNameIsValid(fieldName) == false && specialKeysForUpdate[fieldName] == false {
+			return nil, errs.E(errs.InvalidKeyName, "Invalid field name for update: "+fieldName)
 		}
 
 		if updateOperation := utils.M(v); updateOperation != nil {
@@ -1329,16 +1320,16 @@ func addReadACL(query types.M, acl []string) types.M {
 	return newQuery
 }
 
-var specialQuerykeys = []string{
-	"$and",
-	"$or",
-	"_rperm",
-	"_wperm",
-	"_perishable_token",
-	"_email_verify_token",
-	"_email_verify_token_expires_at",
-	"_account_lockout_expires_at",
-	"_failed_login_count",
+var specialQuerykeys = map[string]bool{
+	"$and":                           true,
+	"$or":                            true,
+	"_rperm":                         true,
+	"_wperm":                         true,
+	"_perishable_token":              true,
+	"_email_verify_token":            true,
+	"_email_verify_token_expires_at": true,
+	"_account_lockout_expires_at":    true,
+	"_failed_login_count":            true,
 }
 
 func validateQuery(query types.M) error {
@@ -1398,18 +1389,12 @@ func validateQuery(query types.M) error {
 			}
 		}
 
-		include := false
-		for _, v := range specialQuerykeys {
-			if key == v {
-				include = true
-				break
-			}
+		if specialQuerykeys[key] == true {
+			continue
 		}
-		if include == false {
-			match, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_\.]*$`, key)
-			if match == false {
-				return errs.E(errs.InvalidKeyName, "Invalid key name: "+key)
-			}
+		match, _ := regexp.MatchString(`^[a-zA-Z][a-zA-Z0-9_\.]*$`, key)
+		if match == false {
+			return errs.E(errs.InvalidKeyName, "Invalid key name: "+key)
 		}
 	}
 

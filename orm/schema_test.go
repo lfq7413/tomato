@@ -752,7 +752,7 @@ func Test_validateSchemaData(t *testing.T) {
 	var className string
 	var fields types.M
 	var classLevelPermissions types.M
-	var existingFieldNames []string
+	var existingFieldNames map[string]bool
 	var err error
 	var expect error
 	/************************************************************/
@@ -784,7 +784,7 @@ func Test_validateSchemaData(t *testing.T) {
 		"key2": types.M{"type": "String"},
 	}
 	classLevelPermissions = nil
-	existingFieldNames = []string{"key"}
+	existingFieldNames = map[string]bool{"key": true}
 	err = schama.validateSchemaData(className, fields, classLevelPermissions, existingFieldNames)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
@@ -797,7 +797,7 @@ func Test_validateSchemaData(t *testing.T) {
 		"objectId": types.M{"type": "String"},
 	}
 	classLevelPermissions = nil
-	existingFieldNames = []string{"key"}
+	existingFieldNames = map[string]bool{"key": true}
 	err = schama.validateSchemaData(className, fields, classLevelPermissions, existingFieldNames)
 	expect = errs.E(errs.ChangedImmutableFieldError, "field objectId cannot be added")
 	if reflect.DeepEqual(expect, err) == false {
@@ -810,7 +810,7 @@ func Test_validateSchemaData(t *testing.T) {
 		"key2": types.M{"type": "Other"},
 	}
 	classLevelPermissions = nil
-	existingFieldNames = []string{"key"}
+	existingFieldNames = map[string]bool{"key": true}
 	err = schama.validateSchemaData(className, fields, classLevelPermissions, existingFieldNames)
 	expect = errs.E(errs.IncorrectType, "invalid field type: Other")
 	if reflect.DeepEqual(expect, err) == false {
@@ -823,7 +823,7 @@ func Test_validateSchemaData(t *testing.T) {
 		"key2": types.M{"type": "String"},
 	}
 	classLevelPermissions = nil
-	existingFieldNames = []string{"key"}
+	existingFieldNames = map[string]bool{"key": true}
 	err = schama.validateSchemaData(className, fields, classLevelPermissions, existingFieldNames)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
@@ -837,7 +837,7 @@ func Test_validateSchemaData(t *testing.T) {
 		"loc":  types.M{"type": "GeoPoint"},
 	}
 	classLevelPermissions = nil
-	existingFieldNames = []string{"key"}
+	existingFieldNames = map[string]bool{"key": true}
 	err = schama.validateSchemaData(className, fields, classLevelPermissions, existingFieldNames)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
@@ -852,7 +852,7 @@ func Test_validateSchemaData(t *testing.T) {
 		"loc2": types.M{"type": "GeoPoint"},
 	}
 	classLevelPermissions = nil
-	existingFieldNames = []string{"key"}
+	existingFieldNames = map[string]bool{"key": true}
 	err = schama.validateSchemaData(className, fields, classLevelPermissions, existingFieldNames)
 	expect = errs.E(errs.IncorrectType, "currently, only one GeoPoint field may exist in an object. Adding loc when loc2 already exists.")
 	expect2 := errs.E(errs.IncorrectType, "currently, only one GeoPoint field may exist in an object. Adding loc2 when loc already exists.")

@@ -192,9 +192,9 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	existingFields["_id"] = className
 	newSchema := buildMergedSchemaObject(existingFields, submittedFields)
 	delete(existingFields, "_id")
-	existingFieldNames := []string{}
+	existingFieldNames := map[string]bool{}
 	for k := range existingFields {
-		existingFieldNames = append(existingFieldNames, k)
+		existingFieldNames[k] = true
 	}
 	err = s.validateSchemaData(className, newSchema, classLevelPermissions, existingFieldNames)
 	if err != nil {
@@ -447,26 +447,19 @@ func (s *Schema) validateNewClass(className string, fields types.M, classLevelPe
 		return errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
 	}
 
-	return s.validateSchemaData(className, fields, classLevelPermissions, []string{})
+	return s.validateSchemaData(className, fields, classLevelPermissions, map[string]bool{})
 }
 
 // validateSchemaData 校验 Schema 数据
-func (s *Schema) validateSchemaData(className string, fields types.M, classLevelPermissions types.M, existingFieldNames []string) error {
+func (s *Schema) validateSchemaData(className string, fields types.M, classLevelPermissions types.M, existingFieldNames map[string]bool) error {
 	if fields == nil {
 		fields = types.M{}
 	}
 	if existingFieldNames == nil {
-		existingFieldNames = []string{}
+		existingFieldNames = map[string]bool{}
 	}
 	for fieldName, v := range fields {
-		exist := false
-		for _, k := range existingFieldNames {
-			if fieldName == k {
-				exist = true
-				break
-			}
-		}
-		if exist {
+		if existingFieldNames[fieldName] == true {
 			continue
 		}
 		if fieldNameIsValid(fieldName) == false {
@@ -889,15 +882,15 @@ func fieldNameIsValidForClass(fieldName string, className string) bool {
 	return true
 }
 
-var validNonRelationOrPointerTypes = []string{
-	"Number",
-	"String",
-	"Boolean",
-	"Date",
-	"Object",
-	"Array",
-	"GeoPoint",
-	"File",
+var validNonRelationOrPointerTypes = map[string]bool{
+	"Number":   true,
+	"String":   true,
+	"Boolean":  true,
+	"Date":     true,
+	"Object":   true,
+	"Array":    true,
+	"GeoPoint": true,
+	"File":     true,
 }
 
 // fieldTypeIsInvalid 检测字段类型是否合法
@@ -913,7 +906,7 @@ func fieldTypeIsInvalid(t types.M) error {
 		return invalidJSONError
 	}
 	targetClass := ""
-	if fieldType == "Pointer" || fieldType == "Relation" {
+	if map[string]bool{"Pointer": true, "Relation": true}[fieldType] == true {
 		if _, ok := t["targetClass"]; ok == false {
 			return errs.E(errs.MissingRequiredFieldError, "type "+fieldType+" needs a class name")
 		}
@@ -928,14 +921,7 @@ func fieldTypeIsInvalid(t types.M) error {
 		return nil
 	}
 
-	in := false
-	for _, v := range validNonRelationOrPointerTypes {
-		if fieldType == v {
-			in = true
-			break
-		}
-	}
-	if in == false {
+	if validNonRelationOrPointerTypes[fieldType] == false {
 		return errs.E(errs.IncorrectType, "invalid field type: "+fieldType)
 	}
 

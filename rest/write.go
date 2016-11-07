@@ -208,11 +208,12 @@ func (w *Write) handleInstallation() error {
 		w.data["installationId"] = strings.ToLower(utils.S(w.data["installationId"]))
 	}
 
-	// 如果 w.data["installationId"] 不存在，则使用 w.auth.InstallationID
+	// 如果 w.data["installationId"] 不存在并且不是 Master 权限，则使用 w.auth.InstallationID
 	var installationID string
 	if w.data["installationId"] != nil {
 		installationID = utils.S(w.data["installationId"])
-	} else {
+	}
+	if installationID == "" && w.auth.IsMaster == false {
 		installationID = w.auth.InstallationID
 	}
 	installationID = strings.ToLower(installationID)

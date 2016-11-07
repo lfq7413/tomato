@@ -263,8 +263,8 @@ func (w *Write) handleInstallation() error {
 		if objectIDMatch == nil {
 			return errs.E(errs.ObjectNotFound, "Object not found for update.")
 		}
-		if installationID != "" && objectIDMatch["installationId"] != nil &&
-			installationID != utils.S(objectIDMatch["installationId"]) {
+		if w.data["installationId"] != nil && objectIDMatch["installationId"] != nil &&
+			utils.S(w.data["installationId"]) != utils.S(objectIDMatch["installationId"]) {
 			// installationId 不能修改
 			return errs.E(errs.ChangedImmutableFieldError, "installationId may not be changed in this operation")
 		}

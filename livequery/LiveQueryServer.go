@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"sync"
 
+	"strings"
+
 	"github.com/lfq7413/tomato/livequery/pubsub"
 	"github.com/lfq7413/tomato/livequery/server"
 	"github.com/lfq7413/tomato/livequery/t"
@@ -620,6 +622,25 @@ func (l *liveQueryServer) matchesACL(acl t.M, client *server.Client, requestID i
 	isSubscriptionSessionTokenMatched := getReadAccess(acl, userID)
 	if isSubscriptionSessionTokenMatched {
 		return true
+	}
+
+	// 检测用户的角色是否符合 acl
+	aclHasRoles := false
+	for key := range acl {
+		if strings.HasPrefix(key, "role:") {
+			aclHasRoles = true
+			break
+		}
+	}
+	if aclHasRoles == false {
+		return false
+	}
+
+	roles := server.GetUserRoles(userID)
+	for _, role := range roles {
+		if getReadAccess(acl, role) {
+			return true
+		}
 	}
 
 	return false

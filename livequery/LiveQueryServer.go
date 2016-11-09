@@ -36,14 +36,14 @@ response
 Subscribe message:
 request
 {
-	op": "subscribe",
-	requestId": 1,
-	query": {
-		className": "Player",
-		where": {"name": "test"},
-		fields": ["name"] // Optional
+	"op": "subscribe",
+	"requestId": 1,
+	"query": {
+		"className": "Player",
+		"where": {"name": "test"},
+		"fields": ["name"] // Optional
 	},
-	sessionToken": "" // Optional
+	"sessionToken": "" // Optional
 }
 response
 {

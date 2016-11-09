@@ -93,7 +93,36 @@ func (s *SchemaCache) GetOneSchema(className string) types.M {
 		return nil
 	}
 	v := get(s.prefix + className)
-	return utils.M(v)
+	schema := utils.M(v)
+	if schema != nil {
+		return schema
+	}
+	// 从 mainSchema 中查找
+	cachedSchemas := []types.M{}
+	v = get(s.prefix + mainSchema)
+	if r, ok := v.([]types.M); ok {
+		cachedSchemas = r
+	} else if r, ok := v.([]interface{}); ok {
+		res := []types.M{}
+		for _, m := range r {
+			if subv := utils.M(m); subv != nil {
+				res = append(res, subv)
+			}
+		}
+		cachedSchemas = res
+	}
+
+	for _, s := range cachedSchemas {
+		if utils.S(s["className"]) == className {
+			schema = s
+			break
+		}
+	}
+
+	if schema != nil {
+		return schema
+	}
+	return nil
 }
 
 // Clear ...

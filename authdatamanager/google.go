@@ -28,7 +28,7 @@ func (a google) validateIDToken(id, token string) error {
 	if err != nil {
 		return errs.E(errs.ObjectNotFound, "Failed to validate this access token with Google.")
 	}
-	if data["sub"] != nil && utils.S(data["sub"]) == id {
+	if data != nil && (utils.S(data["sub"]) == id || utils.S(data["user_id"]) == id) {
 		return nil
 	}
 	return errs.E(errs.ObjectNotFound, "Google auth is invalid for this user.")
@@ -41,7 +41,7 @@ func (a google) validateAuthToken(id, token string) error {
 	if err != nil {
 		return errs.E(errs.ObjectNotFound, "Failed to validate this access token with Google.")
 	}
-	if data["user_id"] != nil && utils.S(data["user_id"]) == id {
+	if data != nil && (utils.S(data["sub"]) == id || utils.S(data["user_id"]) == id) {
 		return nil
 	}
 	return errs.E(errs.ObjectNotFound, "Google auth is invalid for this user.")

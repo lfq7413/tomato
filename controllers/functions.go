@@ -22,7 +22,7 @@ func (f *FunctionsController) HandleCloudFunction() {
 	theFunction := cloud.GetFunction(functionName)
 	theValidator := cloud.GetValidator(functionName)
 	if theFunction == nil {
-		f.HandleError(errs.E(errs.ScriptFailed, "Invalid function."), 0)
+		f.HandleError(errs.E(errs.ScriptFailed, "Invalid function: "+functionName), 0)
 		return
 	}
 

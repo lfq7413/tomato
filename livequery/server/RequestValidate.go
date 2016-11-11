@@ -17,6 +17,8 @@ func Validate(data t.M, op string) error {
 		return validateSubscribe(data)
 	case "unsubscribe":
 		return validateUnsubscribe(data)
+	case "update":
+		return validateUpdate(data)
 	default:
 		return errors.New("invalid op")
 	}
@@ -26,7 +28,7 @@ func Validate(data t.M, op string) error {
 func validateGeneral(data t.M) error {
 	if v, ok := data["op"]; ok {
 		if op, ok := v.(string); ok {
-			if op != "connect" && op != "subscribe" && op != "unsubscribe" {
+			if op != "connect" && op != "subscribe" && op != "unsubscribe" && op != "update" {
 				return errors.New("op is not in [connect, subscribe, unsubscribe]")
 			}
 			return nil
@@ -133,6 +135,11 @@ func validateUnsubscribe(data t.M) error {
 	}
 
 	return nil
+}
+
+// validateUpdate 校验 update 请求格式，可复用 validateSubscribe
+func validateUpdate(data t.M) error {
+	return validateSubscribe(data)
 }
 
 // validateQuery 校验 query 字段

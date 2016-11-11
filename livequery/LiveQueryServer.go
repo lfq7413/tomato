@@ -51,6 +51,24 @@ response
 	"requestId":1
 }
 
+Update message:
+request
+{
+	"op": "update",
+	"requestId": 1,
+	"query": {
+		"className": "Player",
+		"where": {"name": "test"},
+		"fields": ["name"] // Optional
+	},
+	"sessionToken": "" // Optional
+}
+response
+{
+	"op": "subscribed",
+	"requestId":1
+}
+
 Event message:
 Suppose you subscribe like this ->
 {
@@ -292,8 +310,10 @@ func (l *liveQueryServer) OnMessage(ws *server.WebSocket, msg interface{}) {
 		l.handleConnect(ws, request)
 	case "subscribe":
 		l.handleSubscribe(ws, request)
+	case "update":
+		l.handleUpdateSubscription(ws, request)
 	case "unsubscribe":
-		l.handleUnsubscribe(ws, request)
+		l.handleUnsubscribe(ws, request, true)
 	default:
 		server.PushError(ws, 3, "Get unknown operation", true)
 		utils.TLog.Error("Get unknown operation", op)
@@ -545,8 +565,15 @@ func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
 	utils.TLog.Verbose("Current client number:", len(l.clients))
 }
 
+// handleUpdateSubscription 处理客户端 update 操作
+func (l *liveQueryServer) handleUpdateSubscription(ws *server.WebSocket, request t.M) {
+	l.handleUnsubscribe(ws, request, false)
+	l.handleSubscribe(ws, request)
+}
+
 // handleUnsubscribe 处理客户端 Unsubscribe 操作
-func (l *liveQueryServer) handleUnsubscribe(ws *server.WebSocket, request t.M) {
+// notifyClient 默认为 true，即为通知客户端取消订阅行为
+func (l *liveQueryServer) handleUnsubscribe(ws *server.WebSocket, request t.M, notifyClient bool) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	if ws.ClientID == 0 {
@@ -585,6 +612,9 @@ func (l *liveQueryServer) handleUnsubscribe(ws *server.WebSocket, request t.M) {
 	// 如果当前类对应的 订阅对象列表 长度为 0 ，则删除往前类对应的列表
 	if len(classSubscriptions) == 0 {
 		delete(l.subscriptions, className)
+	}
+	if notifyClient == false {
+		return
 	}
 	// 退订成功
 	client.PushUnsubscribe(requestID, nil)

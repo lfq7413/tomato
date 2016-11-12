@@ -13,6 +13,8 @@ type redisCacheAdapter struct {
 	p        *redis.Pool
 }
 
+const defaultRedisTTL = 30
+
 func newRedisMemoryCacheAdapter(address, password string) *redisCacheAdapter {
 	m := &redisCacheAdapter{
 		address:  address,
@@ -69,9 +71,16 @@ func (m *redisCacheAdapter) get(key string) interface{} {
 	return value
 }
 
+// put ttl 的单位为秒，为 0 时表示使用默认的时长，为 -1 时表示永不过期
 func (m *redisCacheAdapter) put(key string, value interface{}, ttl int64) {
 	v, _ := json.Marshal(value)
-	m.do("SET", key, v)
+	if ttl == 0 {
+		m.do("SETEX", key, int64(defaultRedisTTL), v)
+	} else if ttl == -1 {
+		m.do("SET", key, v)
+	} else {
+		m.do("SETEX", key, ttl, v)
+	}
 }
 
 func (m *redisCacheAdapter) del(key string) {

@@ -19,13 +19,18 @@ type SchemaCache struct {
 }
 
 // NewSchemaCache ...
-func NewSchemaCache(ttl int) *SchemaCache {
+// singleCache 默认为 false
+func NewSchemaCache(ttl int, singleCache bool) *SchemaCache {
 	if adapter == nil {
 		adapter = newInMemoryCacheAdapter(5)
 	}
+	prefix := schemaCachePrefix
+	if singleCache == false {
+		prefix = prefix + utils.CreateToken()
+	}
 	return &SchemaCache{
 		ttl:    ttl,
-		prefix: schemaCachePrefix + utils.CreateToken(),
+		prefix: prefix,
 	}
 }
 

@@ -42,6 +42,7 @@ type Config struct {
 	CacheAdapter                     string
 	RedisAddress                     string
 	RedisPassword                    string
+	EnableSingleSchemaCache          bool
 }
 
 var (
@@ -114,6 +115,8 @@ func parseConfig() {
 	TConfig.CacheAdapter = beego.AppConfig.DefaultString("CacheAdapter", "InMemory")
 	TConfig.RedisAddress = beego.AppConfig.String("RedisAddress")
 	TConfig.RedisPassword = beego.AppConfig.String("RedisPassword")
+
+	TConfig.EnableSingleSchemaCache = beego.AppConfig.DefaultBool("EnableSingleSchemaCache", false)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

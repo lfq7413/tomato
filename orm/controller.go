@@ -27,7 +27,7 @@ var schemaPromise *Schema
 // init 初始化 Mongo 适配器
 func init() {
 	Adapter = mongo.NewMongoAdapter("tomato")
-	schemaCache = cache.NewSchemaCache(config.TConfig.SchemaCacheTTL)
+	schemaCache = cache.NewSchemaCache(config.TConfig.SchemaCacheTTL, config.TConfig.EnableSingleSchemaCache)
 	TomatoDBController = &DBController{}
 }
 
@@ -1621,6 +1621,6 @@ func flattenUpdateOperatorsForCreate(object types.M) error {
 // InitOrm 初始化 orm ，仅用于测试
 func InitOrm(a storage.Adapter) {
 	Adapter = a
-	schemaCache = cache.NewSchemaCache(5)
+	schemaCache = cache.NewSchemaCache(5, false)
 	TomatoDBController = &DBController{}
 }

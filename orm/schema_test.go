@@ -3294,7 +3294,7 @@ func getAdapter() *mongo.MongoAdapter {
 }
 
 func getSchemaCache() *cache.SchemaCache {
-	return cache.NewSchemaCache(5)
+	return cache.NewSchemaCache(5, false)
 }
 
 func newMongoDB(url string) *storage.Database {

@@ -5863,6 +5863,6 @@ func Test_flattenUpdateOperatorsForCreate(t *testing.T) {
 
 func initEnv() {
 	Adapter = getAdapter()
-	schemaCache = cache.NewSchemaCache(5)
+	schemaCache = cache.NewSchemaCache(5, false)
 	TomatoDBController = &DBController{}
 }

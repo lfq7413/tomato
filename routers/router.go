@@ -127,6 +127,11 @@ func init() {
 				&controllers.UpgradeSessionController{},
 			),
 		),
+		beego.NSNamespace("/health",
+			beego.NSInclude(
+				&controllers.HealthController{},
+			),
+		),
 	)
 	beego.AddNamespace(ns)
 }

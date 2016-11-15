@@ -10,6 +10,8 @@ import (
 	"qiniupkg.com/api.v7/kodocli"
 )
 
+// qiniuAdapter 七牛云存储
+// 参考文档： http://developer.qiniu.com/code/v7/sdk/go.html
 type qiniuAdapter struct {
 	bucket string
 	url    string

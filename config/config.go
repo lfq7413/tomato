@@ -43,6 +43,10 @@ type Config struct {
 	RedisAddress                     string
 	RedisPassword                    string
 	EnableSingleSchemaCache          bool
+	QiniuBucket                      string
+	QiniuDomain                      string
+	QiniuAccessKey                   string
+	QiniuSecretKey                   string
 }
 
 var (
@@ -87,7 +91,7 @@ func parseConfig() {
 	TConfig.AllowClientClassCreation = beego.AppConfig.DefaultBool("AllowClientClassCreation", false)
 	TConfig.EnableAnonymousUsers = beego.AppConfig.DefaultBool("EnableAnonymousUsers", true)
 	TConfig.VerifyUserEmails = beego.AppConfig.DefaultBool("VerifyUserEmails", false)
-	TConfig.FileAdapter = beego.AppConfig.DefaultString("FileAdapter", "disk")
+	TConfig.FileAdapter = beego.AppConfig.DefaultString("FileAdapter", "Disk")
 	TConfig.PushAdapter = beego.AppConfig.DefaultString("PushAdapter", "tomato")
 	TConfig.MailAdapter = beego.AppConfig.DefaultString("MailAdapter", "smtp")
 
@@ -117,6 +121,11 @@ func parseConfig() {
 	TConfig.RedisPassword = beego.AppConfig.String("RedisPassword")
 
 	TConfig.EnableSingleSchemaCache = beego.AppConfig.DefaultBool("EnableSingleSchemaCache", false)
+
+	TConfig.QiniuBucket = beego.AppConfig.String("QiniuBucket")
+	TConfig.QiniuDomain = beego.AppConfig.String("QiniuDomain")
+	TConfig.QiniuAccessKey = beego.AppConfig.String("QiniuAccessKey")
+	TConfig.QiniuSecretKey = beego.AppConfig.String("QiniuSecretKey")
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

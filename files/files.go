@@ -16,6 +16,8 @@ func init() {
 		adapter = newFileSystemAdapter(config.TConfig.AppID)
 	} else if a == "GridFS" {
 		adapter = newGridStoreAdapter()
+	} else if a == "Qiniu" {
+		adapter = newQiniuAdapter()
 	} else {
 		adapter = newFileSystemAdapter(config.TConfig.AppID)
 	}

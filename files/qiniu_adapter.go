@@ -88,6 +88,10 @@ func (q *qiniuAdapter) download(filename string) ([]byte, error) {
 	}
 	defer response.Body.Close()
 
+	if response.StatusCode != 200 {
+		return nil, errs.E(errs.FileReadError, "no such file or directory")
+	}
+
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, err

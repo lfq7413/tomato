@@ -47,6 +47,7 @@ type Config struct {
 	QiniuDomain                      string
 	QiniuAccessKey                   string
 	QiniuSecretKey                   string
+	FileDirectAccess                 bool
 }
 
 var (
@@ -126,6 +127,7 @@ func parseConfig() {
 	TConfig.QiniuDomain = beego.AppConfig.String("QiniuDomain")
 	TConfig.QiniuAccessKey = beego.AppConfig.String("QiniuAccessKey")
 	TConfig.QiniuSecretKey = beego.AppConfig.String("QiniuSecretKey")
+	TConfig.FileDirectAccess = beego.AppConfig.DefaultBool("FileDirectAccess", true)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

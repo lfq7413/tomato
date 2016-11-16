@@ -2,6 +2,9 @@ package files
 
 import (
 	"bytes"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
@@ -53,11 +56,14 @@ func (q *qiniuAdapter) deleteFile(filename string) error {
 }
 
 func (q *qiniuAdapter) getFileData(filename string) ([]byte, error) {
-	return nil, errs.E(errs.FileReadError, "no such file or directory")
+	return q.download(filename)
 }
 
 func (q *qiniuAdapter) getFileLocation(filename string) string {
-	return q.url + "/" + filename
+	if config.TConfig.FileDirectAccess {
+		return q.url + "/" + url.QueryEscape(filename)
+	}
+	return config.TConfig.ServerURL + "/files/" + config.TConfig.AppID + "/" + url.QueryEscape(filename)
 }
 
 func (q *qiniuAdapter) getFileStream(filename string) (FileStream, error) {
@@ -66,4 +72,26 @@ func (q *qiniuAdapter) getFileStream(filename string) (FileStream, error) {
 
 func (q *qiniuAdapter) getAdapterName() string {
 	return "qiniuAdapter"
+}
+
+func (q *qiniuAdapter) download(filename string) ([]byte, error) {
+	path := q.url + "/" + url.QueryEscape(filename)
+	request, err := http.NewRequest("GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	client := http.DefaultClient
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }

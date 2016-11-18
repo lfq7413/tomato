@@ -18,6 +18,8 @@ func init() {
 		adapter = newGridStoreAdapter()
 	} else if a == "Qiniu" {
 		adapter = newQiniuAdapter()
+	} else if a == "Sina" {
+		adapter = newSinaAdapter()
 	} else {
 		adapter = newFileSystemAdapter(config.TConfig.AppID)
 	}

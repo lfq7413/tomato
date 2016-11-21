@@ -2,8 +2,6 @@ package tencentcos
 
 import "testing"
 
-// a=200001&b=newbucket&k=AKIDUfLUEUigQiXqm7CVSspKJnuaiIKtxqAv&e=1470737000&t=1470736940&r=490258943&f=
-// a=200001&b=newbucket&k=AKIDUfLUEUigQiXqm7CVSspKJnuaiIKtxqAv&e=0&t=1470736940&r=490258943&f=/200001/newbucket/tencent_test.jpg
 func Test_sig(t *testing.T) {
 	s := sig{
 		appID:       "200001",

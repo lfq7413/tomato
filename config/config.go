@@ -52,6 +52,10 @@ type Config struct {
 	SinaDomain                       string
 	SinaAccessKey                    string
 	SinaSecretKey                    string
+	TencentBucket                    string
+	TencentAppID                     string
+	TencentSecretID                  string
+	TencentSecretKey                 string
 }
 
 var (
@@ -137,6 +141,11 @@ func parseConfig() {
 	TConfig.SinaDomain = beego.AppConfig.String("SinaDomain")
 	TConfig.SinaAccessKey = beego.AppConfig.String("SinaAccessKey")
 	TConfig.SinaSecretKey = beego.AppConfig.String("SinaSecretKey")
+
+	TConfig.TencentAppID = beego.AppConfig.String("TencentAppID")
+	TConfig.TencentBucket = beego.AppConfig.String("TencentBucket")
+	TConfig.TencentSecretID = beego.AppConfig.String("TencentSecretID")
+	TConfig.TencentSecretKey = beego.AppConfig.String("TencentSecretKey")
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

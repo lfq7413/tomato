@@ -20,6 +20,8 @@ func init() {
 		adapter = newQiniuAdapter()
 	} else if a == "Sina" {
 		adapter = newSinaAdapter()
+	} else if a == "Tencent" {
+		adapter = newTencentAdapter()
 	} else {
 		adapter = newFileSystemAdapter(config.TConfig.AppID)
 	}

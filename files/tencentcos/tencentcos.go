@@ -5,6 +5,8 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	"math/rand"
+	"time"
 )
 
 // COS ...
@@ -45,4 +47,20 @@ func getHash(sig, sk string) string {
 	signTmp := mac.Sum(nil)
 	sign := base64.StdEncoding.EncodeToString(append(signTmp, []byte(sig)...))
 	return sign
+}
+
+func getCurrentTime() string {
+	timeNow := time.Now().Unix()
+	return fmt.Sprintf("%d", timeNow)
+}
+
+func getExpiredTime() string {
+	timeNow := time.Now().Unix() + 60
+	return fmt.Sprintf("%d", timeNow)
+}
+
+func getRand() string {
+	rand.Seed(time.Now().UnixNano())
+	r := rand.Intn(9999999999)
+	return fmt.Sprintf("%d", r)
 }

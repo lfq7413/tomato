@@ -72,7 +72,7 @@ func (p *PublicController) ResetPassword() {
 	err := rest.UpdatePassword(username, token, newPassword)
 	if err == nil {
 		p.Ctx.Output.SetStatus(302)
-		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"/apps/password_reset_success")
+		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"/apps/password_reset_success?username="+username)
 	} else {
 		p.Ctx.Output.SetStatus(302)
 		location := config.TConfig.ServerURL + "/apps/choose_password"

@@ -19,6 +19,7 @@ type MongoAdapter struct {
 	collectionPrefix string
 	collectionList   []string
 	transform        *Transform
+	maxTimeMS        int // 单次查询最大时间，以毫秒为单位
 }
 
 // NewMongoAdapter ...
@@ -332,6 +333,9 @@ func (m *MongoAdapter) Find(className string, schema, query, options types.M) ([
 			delete(options, "keys")
 		}
 	}
+	if m.maxTimeMS != 0 {
+		options["maxTimeMS"] = m.maxTimeMS
+	}
 
 	coll := m.adaptiveCollection(className)
 	results, err := coll.find(mongoWhere, options)
@@ -352,7 +356,11 @@ func (m *MongoAdapter) Find(className string, schema, query, options types.M) ([
 // rawFind 仅用于测试
 func (m *MongoAdapter) rawFind(className string, query types.M) ([]types.M, error) {
 	coll := m.adaptiveCollection(className)
-	return coll.find(query, types.M{})
+	options := types.M{}
+	if m.maxTimeMS != 0 {
+		options["maxTimeMS"] = m.maxTimeMS
+	}
+	return coll.find(query, options)
 }
 
 // Count ...
@@ -363,7 +371,11 @@ func (m *MongoAdapter) Count(className string, schema, query types.M) (int, erro
 	if err != nil {
 		return 0, err
 	}
-	c := coll.count(mongoWhere, types.M{})
+	options := types.M{}
+	if m.maxTimeMS != 0 {
+		options["maxTimeMS"] = m.maxTimeMS
+	}
+	c := coll.count(mongoWhere, options)
 	return c, nil
 }
 

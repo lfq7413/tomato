@@ -3,6 +3,8 @@ package mongo
 import (
 	"strings"
 
+	"time"
+
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"gopkg.in/mgo.v2"
@@ -63,7 +65,7 @@ func (m *MongoCollection) find(query interface{}, options types.M) ([]types.M, e
 	return result, nil
 }
 
-// rawFind 执行原始查找操作，查找选项包括 sort、skip、limit
+// rawFind 执行原始查找操作，查找选项包括 sort、skip、limit、keys、maxTimeMS
 func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M, error) {
 	if options == nil {
 		options = types.M{}
@@ -91,12 +93,19 @@ func (m *MongoCollection) rawFind(query interface{}, options types.M) ([]types.M
 	if options["keys"] != nil {
 		q = q.Select(options["keys"])
 	}
+	if options["maxTimeMS"] != nil {
+		if limit, ok := options["maxTimeMS"].(float64); ok {
+			q = q.SetMaxTime(time.Duration(limit) * time.Millisecond)
+		} else if limit, ok := options["maxTimeMS"].(int); ok {
+			q = q.SetMaxTime(time.Duration(limit) * time.Millisecond)
+		}
+	}
 	var result []types.M
 	err := q.All(&result)
 	return result, err
 }
 
-// count 执行 count 操作
+// count 执行 count 操作，查找选项包括 sort、skip、limit、maxTimeMS
 func (m *MongoCollection) count(query interface{}, options types.M) int {
 	if options == nil {
 		options = types.M{}
@@ -110,11 +119,22 @@ func (m *MongoCollection) count(query interface{}, options types.M) int {
 	if options["skip"] != nil {
 		if skip, ok := options["skip"].(float64); ok {
 			q = q.Skip(int(skip))
+		} else if skip, ok := options["skip"].(int); ok {
+			q = q.Skip(skip)
 		}
 	}
 	if options["limit"] != nil {
 		if limit, ok := options["limit"].(float64); ok {
 			q = q.Limit(int(limit))
+		} else if limit, ok := options["limit"].(int); ok {
+			q = q.Limit(limit)
+		}
+	}
+	if options["maxTimeMS"] != nil {
+		if limit, ok := options["maxTimeMS"].(float64); ok {
+			q = q.SetMaxTime(time.Duration(limit) * time.Millisecond)
+		} else if limit, ok := options["maxTimeMS"].(int); ok {
+			q = q.SetMaxTime(time.Duration(limit) * time.Millisecond)
 		}
 	}
 	n, err := q.Count()

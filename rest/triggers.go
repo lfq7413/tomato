@@ -108,6 +108,22 @@ func maybeRunQueryTrigger(triggerType, className string, restWhere, restOptions 
 	return restWhere, restOptions, nil
 }
 
+func maybeRunAfterFindTrigger(triggerType, className string, objects types.S, auth *Auth) (types.S, error) {
+	trigger := cloud.GetTrigger(triggerType, className)
+	if trigger == nil {
+		return objects, nil
+	}
+	request := getRequest(triggerType, auth, nil, nil)
+	response := getResponse(request)
+	request.Objects = objects
+	trigger(request, response)
+
+	if response.Err != nil {
+		return nil, response.Err
+	}
+	return response.ResponseObjects, nil
+}
+
 func inflate(data, restObject types.M) types.M {
 	result := types.M{}
 	if data != nil {

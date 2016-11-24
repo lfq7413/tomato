@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/lfq7413/tomato/cloud"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
@@ -152,6 +153,10 @@ func (q *Query) Execute(executeOptions ...types.M) (types.M, error) {
 		return nil, err
 	}
 	err = q.handleInclude()
+	if err != nil {
+		return nil, err
+	}
+	err = q.runAfterFindTrigger()
 	if err != nil {
 		return nil, err
 	}
@@ -610,6 +615,28 @@ func (q *Query) handleInclude() error {
 		q.include = q.include[1:]
 		return q.handleInclude()
 	}
+
+	return nil
+}
+
+// runAfterFindTrigger 运行查询后的回调
+func (q *Query) runAfterFindTrigger() error {
+	if q.response == nil {
+		return nil
+	}
+	results := utils.A(q.response["results"])
+	hasAfterFindHook := cloud.TriggerExists(cloud.TypeAfterFind, q.className)
+	if hasAfterFindHook == false {
+		return nil
+	}
+	results, err := maybeRunAfterFindTrigger(cloud.TypeAfterFind, q.className, results, q.auth)
+	if err != nil {
+		return err
+	}
+	if results == nil {
+		results = types.S{}
+	}
+	q.response["results"] = results
 
 	return nil
 }

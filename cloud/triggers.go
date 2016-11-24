@@ -19,6 +19,8 @@ const (
 	TypeAfterDelete = "afterDelete"
 	// TypeBeforeFind 查询前回调
 	TypeBeforeFind = "beforeFind"
+	// TypeAfterFind 查询后回调
+	TypeAfterFind = "afterFind"
 )
 
 // TriggerRequest ...
@@ -27,6 +29,7 @@ type TriggerRequest struct {
 	Object         types.M
 	Original       types.M
 	Query          types.M // beforeFind 时使用
+	Objects        types.S // afterFind 时使用
 	Master         bool
 	User           types.M
 	InstallationID string
@@ -80,6 +83,7 @@ func init() {
 		TypeBeforeDelete: map[string]TriggerHandler{},
 		TypeAfterDelete:  map[string]TriggerHandler{},
 		TypeBeforeFind:   map[string]TriggerHandler{},
+		TypeAfterFind:    map[string]TriggerHandler{},
 	}
 	functions = map[string]FunctionHandler{}
 	validators = map[string]ValidatorHandler{}
@@ -210,13 +214,21 @@ func GetJobs() map[string]JobHandler {
 
 // TriggerResponse ...
 type TriggerResponse struct {
-	Request  TriggerRequest
-	Response types.M
-	Err      error
+	Request         TriggerRequest
+	Response        types.M
+	ResponseObjects types.S
+	Err             error
 }
 
 // Success ...
 func (t *TriggerResponse) Success(response interface{}) {
+	if t.Request.TriggerName == TypeAfterFind {
+		t.ResponseObjects = utils.A(response)
+		if t.ResponseObjects == nil {
+			t.ResponseObjects = t.Request.Objects
+		}
+		return
+	}
 	t.Response = utils.M(response)
 	if t.Response != nil &&
 		reflect.DeepEqual(t.Response, t.Request.Object) == false &&

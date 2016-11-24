@@ -73,6 +73,16 @@ func BeforeFind(className string, handler TriggerHandler) error {
 	return nil
 }
 
+// AfterFind ...
+func AfterFind(className string, handler TriggerHandler) error {
+	err := validateClassNameForTriggers(className)
+	if err != nil {
+		return err
+	}
+	AddTrigger(TypeAfterFind, className, handler)
+	return nil
+}
+
 // RemoveHook ...
 func RemoveHook(category, name, triggerType string) {
 	Unregister(category, name, triggerType)

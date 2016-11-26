@@ -160,6 +160,10 @@ func setPasswordResetToken(email string) types.M {
 	update := types.M{
 		"_perishable_token": token,
 	}
+	// 增加 token 过期时间
+	if config.TConfig.PasswordPolicy && config.TConfig.ResetTokenValidityDuration > 0 {
+		update["_perishable_token_expires_at"] = utils.TimetoString(config.GeneratePasswordResetTokenExpiresAt())
+	}
 	r, err := db.Update("_User", where, update, types.M{}, true)
 	if err != nil {
 		return nil
@@ -247,7 +251,25 @@ func CheckResetTokenValidity(username, token string) types.M {
 		return nil
 	}
 
-	return utils.M(results[0])
+	user := utils.M(results[0])
+	if user == nil {
+		return nil
+	}
+	// 校验 token 是否过期
+	if config.TConfig.PasswordPolicy && config.TConfig.ResetTokenValidityDuration > 0 {
+		expiresDate := utils.M(user["_perishable_token_expires_at"])
+		if expiresDate != nil && utils.S(expiresDate["__type"]) == "Date" && len(utils.S(expiresDate["iso"])) > 0 {
+			date, err := utils.StringtoTime(utils.S(expiresDate["iso"]))
+			if err != nil {
+				return nil
+			}
+			if date.UnixNano() < time.Now().UnixNano() {
+				return nil
+			}
+		}
+	}
+
+	return user
 }
 
 // UpdatePassword 更新指定用户的密码
@@ -266,7 +288,8 @@ func UpdatePassword(username, token, newPassword string) error {
 	db := orm.TomatoDBController
 	selector := types.M{"username": username}
 	update := types.M{
-		"_perishable_token": types.M{"__op": "Delete"},
+		"_perishable_token":            types.M{"__op": "Delete"},
+		"_perishable_token_expires_at": types.M{"__op": "Delete"},
 	}
 	_, err = db.Update("_User", selector, update, types.M{}, false)
 

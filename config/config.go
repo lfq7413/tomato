@@ -56,6 +56,10 @@ type Config struct {
 	TencentAppID                     string
 	TencentSecretID                  string
 	TencentSecretKey                 string
+	PasswordPolicy                   bool
+	ResetTokenValidityDuration       int
+	ValidatorPattern                 string
+	DoNotAllowUsername               bool
 }
 
 var (
@@ -146,6 +150,11 @@ func parseConfig() {
 	TConfig.TencentBucket = beego.AppConfig.String("TencentBucket")
 	TConfig.TencentSecretID = beego.AppConfig.String("TencentSecretID")
 	TConfig.TencentSecretKey = beego.AppConfig.String("TencentSecretKey")
+
+	TConfig.PasswordPolicy = beego.AppConfig.DefaultBool("PasswordPolicy", false)
+	TConfig.ResetTokenValidityDuration = beego.AppConfig.DefaultInt("ResetTokenValidityDuration", 0)
+	TConfig.ValidatorPattern = beego.AppConfig.String("ValidatorPattern")
+	TConfig.DoNotAllowUsername = beego.AppConfig.DefaultBool("DoNotAllowUsername", false)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间
@@ -162,5 +171,15 @@ func GenerateEmailVerifyTokenExpiresAt() time.Time {
 	}
 	expiresAt := time.Now().UTC()
 	expiresAt = expiresAt.Add(time.Duration(TConfig.EmailVerifyTokenValidityDuration) * time.Second)
+	return expiresAt
+}
+
+// GeneratePasswordResetTokenExpiresAt 获取 重置密码 验证 Token 过期时间
+func GeneratePasswordResetTokenExpiresAt() time.Time {
+	if TConfig.PasswordPolicy == false || TConfig.ResetTokenValidityDuration == 0 {
+		return time.Time{}
+	}
+	expiresAt := time.Now().UTC()
+	expiresAt = expiresAt.Add(time.Duration(TConfig.ResetTokenValidityDuration) * time.Second)
 	return expiresAt
 }

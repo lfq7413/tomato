@@ -741,6 +741,41 @@ func (w *Write) transformUser() error {
 	if w.data["password"] == nil {
 
 	} else {
+		// 检测密码是否符合设定的密码规则
+		if config.TConfig.PasswordPolicy {
+			policyError := "Password does not confirm to the Password Policy."
+			password := utils.S(w.data["password"])
+			// 检测密码是否符合设定的正则表达式
+			if config.TConfig.ValidatorPattern != "" {
+				b, _ := regexp.MatchString(config.TConfig.ValidatorPattern, password)
+				if b == false {
+					return errs.E(errs.ValidationError, policyError)
+				}
+			}
+			// 检测密码是否包含用户名
+			if config.TConfig.DoNotAllowUsername {
+				if username := utils.S(w.data["username"]); username != "" {
+					if strings.Index(password, username) >= 0 {
+						return errs.E(errs.ValidationError, policyError)
+					}
+				} else {
+					// username 不存在时，从数据库中取出再去检测
+					query := types.M{"objectId": w.objectID()}
+					results, err := orm.TomatoDBController.Find("_User", query, types.M{})
+					if err != nil {
+						return err
+					}
+					if len(results) != 1 {
+						return errs.E(errs.ValidationError, policyError)
+					}
+					result := utils.M(results[0])
+					if result == nil || strings.Index(password, utils.S(result["username"])) >= 0 {
+						return errs.E(errs.ValidationError, policyError)
+					}
+				}
+			}
+		}
+
 		if w.query != nil && w.auth.IsMaster == false {
 			// 如果是 update 请求时，标识出需要清理 Sessions ，并生成新的 Session
 			w.storage["clearSessions"] = true

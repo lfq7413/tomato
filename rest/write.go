@@ -741,7 +741,7 @@ func (w *Write) transformUser() error {
 	if w.data["password"] == nil {
 
 	} else {
-		// 检测密码是否符合设定的密码规则
+		// 检测密码是否符合设定的密码规则。 go 中的 regexp 不支持 backtracking ，无法使用 (?= 表达式
 		if config.TConfig.PasswordPolicy {
 			policyError := "Password does not confirm to the Password Policy."
 			password := utils.S(w.data["password"])

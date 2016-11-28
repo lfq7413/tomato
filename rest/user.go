@@ -238,9 +238,13 @@ func VerifyEmail(username, token string) bool {
 // CheckResetTokenValidity 检查要重置密码的用户与 token 是否存在
 func CheckResetTokenValidity(username, token string) types.M {
 	db := orm.TomatoDBController
+	// 校验 token 是否过期
 	where := types.M{
 		"username":          username,
 		"_perishable_token": token,
+		"_perishable_token_expires_at": types.M{
+			"$gt": utils.TimetoString(time.Now().UTC()),
+		},
 	}
 	option := types.M{"limit": 1}
 	results, err := db.Find("_User", where, option)
@@ -251,25 +255,7 @@ func CheckResetTokenValidity(username, token string) types.M {
 		return nil
 	}
 
-	user := utils.M(results[0])
-	if user == nil {
-		return nil
-	}
-	// 校验 token 是否过期
-	if config.TConfig.PasswordPolicy && config.TConfig.ResetTokenValidityDuration > 0 {
-		expiresDate := utils.M(user["_perishable_token_expires_at"])
-		if expiresDate != nil && utils.S(expiresDate["__type"]) == "Date" && len(utils.S(expiresDate["iso"])) > 0 {
-			date, err := utils.StringtoTime(utils.S(expiresDate["iso"]))
-			if err != nil {
-				return nil
-			}
-			if date.UnixNano() < time.Now().UnixNano() {
-				return nil
-			}
-		}
-	}
-
-	return user
+	return utils.M(results[0])
 }
 
 // UpdatePassword 更新指定用户的密码

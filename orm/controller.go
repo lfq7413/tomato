@@ -1332,6 +1332,7 @@ var specialQuerykeys = map[string]bool{
 	"_rperm":                         true,
 	"_wperm":                         true,
 	"_perishable_token":              true,
+	"_perishable_token_expires_at":   true,
 	"_email_verify_token":            true,
 	"_email_verify_token_expires_at": true,
 	"_account_lockout_expires_at":    true,

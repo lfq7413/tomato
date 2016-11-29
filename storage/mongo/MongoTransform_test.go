@@ -1498,6 +1498,10 @@ func Test_parseObjectToMongoObjectForCreate(t *testing.T) {
 		"createdAt":        tmpTimeStr,
 		"updatedAt":        tmpTimeStr,
 		"_hashed_password": "password",
+		"role": types.M{
+			"__type":    "Relation",
+			"className": "_Role",
+		},
 	}
 	schema = types.M{}
 	result, err = tf.parseObjectToMongoObjectForCreate(className, create, schema)
@@ -2152,6 +2156,10 @@ func Test_transformUpdate(t *testing.T) {
 			"objects": types.S{"one", "two"},
 		},
 		"age": 10,
+		"role": types.M{
+			"__type":    "Relation",
+			"className": "_Role",
+		},
 	}
 	parseFormatSchema = types.M{}
 	result, err = tf.transformUpdate(className, update, parseFormatSchema)

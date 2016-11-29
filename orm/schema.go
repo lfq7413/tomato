@@ -775,6 +775,13 @@ func getObjectType(obj interface{}) (types.M, error) {
 						"targetClass": object["className"],
 					}, nil
 				}
+			case "Relation":
+				if object["className"] != nil {
+					return types.M{
+						"type":        "Relation",
+						"targetClass": object["className"],
+					}, nil
+				}
 			case "File":
 				if object["name"] != nil {
 					return types.M{"type": "File"}, nil

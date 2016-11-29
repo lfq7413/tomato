@@ -809,6 +809,12 @@ func (t *Transform) parseObjectToMongoObjectForCreate(className string, create t
 
 	// 转换其他字段并添加
 	for k, v := range create {
+		if value := utils.M(v); value != nil {
+			if utils.S(value["__type"]) == "Relation" {
+				continue
+			}
+		}
+
 		key, value, err := t.parseObjectKeyValueToMongoObjectKeyValue(k, v, schema)
 		if err != nil {
 			return nil, err
@@ -1046,6 +1052,12 @@ func (t *Transform) transformUpdate(className string, update types.M, parseForma
 
 	// 转换 update 中的其他数据
 	for k, v := range update {
+		if value := utils.M(v); value != nil {
+			if utils.S(value["__type"]) == "Relation" {
+				continue
+			}
+		}
+
 		key, value, err := t.transformKeyValueForUpdate(className, k, v, parseFormatSchema)
 		if err != nil {
 			return nil, err

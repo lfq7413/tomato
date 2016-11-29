@@ -1797,6 +1797,19 @@ func Test_getObjectType(t *testing.T) {
 	}
 	/************************************************************/
 	object = types.M{
+		"__type":    "Relation",
+		"className": "abc",
+	}
+	result, err = getObjectType(object)
+	expect = types.M{
+		"type":        "Relation",
+		"targetClass": "abc",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
 		"__type": "File",
 		"name":   "abc",
 	}

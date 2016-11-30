@@ -2155,9 +2155,9 @@ func Test_Update(t *testing.T) {
 	skipSanitization = true
 	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
 	expect = types.M{
-		"_id":  "01",
-		"key":  "haha",
-		"key2": 20,
+		"objectId": "01",
+		"key":      "haha",
+		"key2":     20,
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)

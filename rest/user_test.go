@@ -374,7 +374,7 @@ func Test_setPasswordResetToken(t *testing.T) {
 	email = "abc@g.cn"
 	result = setPasswordResetToken(email)
 	expect = types.M{
-		"_id":      "1001",
+		"objectId": "1001",
 		"username": "joe",
 		"email":    "abc@g.cn",
 	}
@@ -582,6 +582,8 @@ func Test_CheckResetTokenValidity(t *testing.T) {
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/*********************************************************/
+	tmpTimeStr := utils.TimetoString(time.Now().UTC().Add(1 * time.Hour))
+	tmpTime, _ := utils.StringtoTime(tmpTimeStr)
 	initEnv()
 	schema = types.M{
 		"fields": types.M{
@@ -590,18 +592,20 @@ func Test_CheckResetTokenValidity(t *testing.T) {
 	}
 	orm.Adapter.CreateClass("_User", schema)
 	object = types.M{
-		"objectId":          "1001",
-		"username":          "joe",
-		"_perishable_token": "abc1001",
+		"objectId":                     "1001",
+		"username":                     "joe",
+		"_perishable_token":            "abc1001",
+		"_perishable_token_expires_at": tmpTimeStr,
 	}
 	orm.Adapter.CreateObject("_User", schema, object)
 	username = "joe"
 	token = "abc1001"
 	result = CheckResetTokenValidity(username, token)
 	expect = types.M{
-		"objectId":          "1001",
-		"username":          "joe",
-		"_perishable_token": "abc1001",
+		"objectId":                     "1001",
+		"username":                     "joe",
+		"_perishable_token":            "abc1001",
+		"_perishable_token_expires_at": tmpTime.Local(),
 	}
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)

@@ -966,10 +966,10 @@ func Test_FindOneAndUpdate(t *testing.T) {
 	}
 	result, err = adapter.FindOneAndUpdate(className, schema, query, update)
 	expect = types.M{
-		"_id":         "01",
-		"_updated_at": tmpTime.Local(),
-		"_created_at": tmpTime.Local(),
-		"key":         30,
+		"objectId":  "01",
+		"updatedAt": tmpTimeStr,
+		"createdAt": tmpTimeStr,
+		"key":       30,
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result, err)

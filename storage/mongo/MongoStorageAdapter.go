@@ -273,7 +273,12 @@ func (m *MongoAdapter) FindOneAndUpdate(className string, schema, query, update 
 		return nil, err
 	}
 	coll := m.adaptiveCollection(className)
-	return coll.findOneAndUpdate(mongoWhere, mongoUpdate), nil
+	object := coll.findOneAndUpdate(mongoWhere, mongoUpdate)
+	result, err := m.transform.mongoObjectToParseObject(className, object, schema)
+	if err != nil {
+		return nil, err
+	}
+	return utils.M(result), nil
 }
 
 // UpsertOneObject ...

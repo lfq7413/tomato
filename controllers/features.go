@@ -22,10 +22,10 @@ func (f *FeaturesController) HandleGet() {
 			"delete": true,
 		},
 		"hooks": types.M{
-			"create": false,
-			"read":   false,
-			"update": false,
-			"delete": false,
+			"create": true,
+			"read":   true,
+			"update": true,
+			"delete": true,
 		},
 		"cloudCode": types.M{
 			"jobs": true,

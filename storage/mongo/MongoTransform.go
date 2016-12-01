@@ -89,6 +89,9 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	case "_perishable_token_expires_at":
 		key = "_perishable_token_expires_at"
 		timeField = true
+	case "_password_changed_at":
+		key = "_password_changed_at"
+		timeField = true
 	case "_rperm", "_wperm":
 		return key, restValue, nil
 
@@ -241,6 +244,12 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 			return "_perishable_token_expires_at", t, nil
 		}
 		key = "_perishable_token_expires_at"
+
+	case "_password_changed_at":
+		if t, ok := valueAsDate(value); ok {
+			return "_password_changed_at", t, nil
+		}
+		key = "_password_changed_at"
 
 	case "_rperm", "_wperm", "_perishable_token", "_email_verify_token":
 		return key, value, nil
@@ -922,6 +931,21 @@ func (t *Transform) parseObjectKeyValueToMongoObjectKeyValue(restKey string, res
 		}
 		return "_perishable_token_expires_at", coercedToDate, nil
 
+	case "_password_changed_at":
+		transformedValue, err = t.transformTopLevelAtom(restValue)
+		if err != nil {
+			return "", nil, err
+		}
+		if v, ok := transformedValue.(string); ok {
+			coercedToDate, err = utils.StringtoTime(v)
+			if err != nil {
+				return "", nil, err
+			}
+		} else {
+			coercedToDate = transformedValue
+		}
+		return "_password_changed_at", coercedToDate, nil
+
 	case "_failed_login_count", "_rperm", "_wperm", "_email_verify_token", "_hashed_password", "_perishable_token":
 		return restKey, restValue, nil
 
@@ -1239,7 +1263,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 			case "_acl":
 
 			// 以下字段在 DB Controller 中决定是否删除
-			case "_email_verify_token", "_perishable_token", "_perishable_token_expires_at", "_tombstone", "_email_verify_token_expires_at", "_account_lockout_expires_at", "_failed_login_count":
+			case "_email_verify_token", "_perishable_token", "_perishable_token_expires_at", "_password_changed_at", "_tombstone", "_email_verify_token_expires_at", "_account_lockout_expires_at", "_failed_login_count":
 				restObject[key] = value
 
 			case "_session_token":

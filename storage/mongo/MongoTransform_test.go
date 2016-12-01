@@ -210,6 +210,16 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 		t.Error("expect:", expectValue, "get result:", resultValue)
 	}
 	/*************************************************/
+	restKey = "_password_changed_at"
+	restValue = tmpTimeStr
+	parseFormatSchema = types.M{}
+	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
+	expectKey = "_password_changed_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectValue, "get result:", resultValue)
+	}
+	/*************************************************/
 	restKey = "_rperm"
 	restValue = "r"
 	parseFormatSchema = types.M{}
@@ -437,6 +447,16 @@ func Test_transformQueryKeyValue(t *testing.T) {
 	schema = types.M{}
 	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
 	expectKey = "_perishable_token_expires_at"
+	expectValue = tmpTime
+	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
+	}
+	/*************************************************/
+	key = "_password_changed_at"
+	value = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.transformQueryKeyValue("", key, value, schema)
+	expectKey = "_password_changed_at"
 	expectValue = tmpTime
 	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue, err)
@@ -1697,6 +1717,26 @@ func Test_parseObjectKeyValueToMongoObjectKeyValue(t *testing.T) {
 		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
 	}
 	/*************************************************/
+	restKey = "_password_changed_at"
+	restValue = tmpTimeStr
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "_password_changed_at"
+	expectValue = tmpTime
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
+	restKey = "_password_changed_at"
+	restValue = tmpTime
+	schema = types.M{}
+	resultKey, resultValue, err = tf.parseObjectKeyValueToMongoObjectKeyValue(restKey, restValue, schema)
+	expectKey = "_password_changed_at"
+	expectValue = tmpTime
+	if err != nil || expectKey != resultKey || reflect.DeepEqual(expectValue, resultValue) == false {
+		t.Error("expect:", expectKey, expectValue, "get result:", resultKey, resultValue)
+	}
+	/*************************************************/
 	restKey = "_failed_login_count"
 	restValue = 3
 	schema = types.M{}
@@ -2406,6 +2446,7 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 		"_email_verify_token":            "abcd",
 		"_perishable_token":              "abcd",
 		"_perishable_token_expires_at":   "abcd",
+		"_password_changed_at":           "abcd",
 		"_tombstone":                     "abcd",
 		"_email_verify_token_expires_at": "abcd",
 		"_account_lockout_expires_at":    "abc",
@@ -2423,6 +2464,7 @@ func Test_mongoObjectToParseObject(t *testing.T) {
 		"_email_verify_token":            "abcd",
 		"_perishable_token":              "abcd",
 		"_perishable_token_expires_at":   "abcd",
+		"_password_changed_at":           "abcd",
 		"_tombstone":                     "abcd",
 		"_email_verify_token_expires_at": "abcd",
 		"_account_lockout_expires_at":    "abc",

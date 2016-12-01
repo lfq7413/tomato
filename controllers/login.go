@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/files"
@@ -76,6 +78,23 @@ func (l *LoginController) HandleLogIn() {
 	if correct == false {
 		l.HandleError(errs.E(errs.ObjectNotFound, "Invalid username/password."), 0)
 		return
+	}
+
+	// 检测密码是否过期
+	if config.TConfig.PasswordPolicy && config.TConfig.MaxPasswordAge > 0 {
+		if changedAt, ok := user["_password_changed_at"].(time.Time); ok {
+			// 密码过期时间戳存在，判断是否过期
+			expiresAt := changedAt.Add(time.Duration(config.TConfig.MaxPasswordAge) * 24 * time.Hour)
+			if expiresAt.UnixNano() < time.Now().UnixNano() {
+				l.HandleError(errs.E(errs.ObjectNotFound, "Your password has expired. Please reset your password."), 0)
+				return
+			}
+		} else {
+			// 在启用密码过期之前的数据，需要增加该字段
+			query := types.M{"username": user["username"]}
+			update := types.M{"_password_changed_at": utils.TimetoString(time.Now().UTC())}
+			orm.TomatoDBController.Update("_User", query, update, types.M{}, false)
+		}
 	}
 
 	token := "r:" + utils.CreateToken()

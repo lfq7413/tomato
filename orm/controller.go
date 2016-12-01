@@ -263,6 +263,7 @@ var specialKeysForUpdate = map[string]bool{
 	"_account_lockout_expires_at":    true,
 	"_failed_login_count":            true,
 	"_perishable_token_expires_at":   true,
+	"_password_changed_at":           true,
 }
 
 // Update 更新对象
@@ -1149,6 +1150,7 @@ func filterSensitiveData(isMaster bool, aclGroup []string, className string, obj
 	delete(object, "_email_verify_token_expires_at")
 	delete(object, "_failed_login_count")
 	delete(object, "_account_lockout_expires_at")
+	delete(object, "_password_changed_at")
 
 	// 当前用户返回所有信息
 	if aclGroup == nil {
@@ -1337,6 +1339,7 @@ var specialQuerykeys = map[string]bool{
 	"_email_verify_token_expires_at": true,
 	"_account_lockout_expires_at":    true,
 	"_failed_login_count":            true,
+	"_password_changed_at":           true,
 }
 
 func validateQuery(query types.M) error {

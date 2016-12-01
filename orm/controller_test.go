@@ -5149,6 +5149,7 @@ func Test_filterSensitiveData(t *testing.T) {
 		"_email_verify_token":            "abc",
 		"_perishable_token":              "abc",
 		"_perishable_token_expires_at":   "abc",
+		"_password_changed_at":           "abc",
 		"_tombstone":                     "abc",
 		"_email_verify_token_expires_at": "abc",
 		"_failed_login_count":            "abc",

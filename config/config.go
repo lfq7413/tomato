@@ -60,6 +60,7 @@ type Config struct {
 	ResetTokenValidityDuration       int
 	ValidatorPattern                 string
 	DoNotAllowUsername               bool
+	MaxPasswordAge                   int
 }
 
 var (
@@ -155,6 +156,7 @@ func parseConfig() {
 	TConfig.ResetTokenValidityDuration = beego.AppConfig.DefaultInt("ResetTokenValidityDuration", 0)
 	TConfig.ValidatorPattern = beego.AppConfig.String("ValidatorPattern")
 	TConfig.DoNotAllowUsername = beego.AppConfig.DefaultBool("DoNotAllowUsername", false)
+	TConfig.MaxPasswordAge = beego.AppConfig.DefaultInt("MaxPasswordAge", 0)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

@@ -743,7 +743,7 @@ func (w *Write) transformUser() error {
 	} else {
 		// 检测密码是否符合设定的密码规则。 go 中的 regexp 不支持 backtracking ，无法使用 (?= 表达式
 		if config.TConfig.PasswordPolicy {
-			policyError := "Password does not confirm to the Password Policy."
+			policyError := "Password does not meet the Password Policy requirements."
 			password := utils.S(w.data["password"])
 			// 检测密码是否符合设定的正则表达式
 			if config.TConfig.ValidatorPattern != "" {
@@ -899,6 +899,10 @@ func (w *Write) runDatabaseOperation() error {
 				w.data["ACL"] = acl
 			}
 		}
+		// 更新密码时，同时更新密码重置时间戳
+		if w.className == "_User" && w.data["_hashed_password"] != nil && config.TConfig.PasswordPolicy && config.TConfig.MaxPasswordAge > 0 {
+			w.data["_password_changed_at"] = utils.TimetoString(time.Now().UTC())
+		}
 		// 执行更新
 		response, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions, false)
 		if err != nil {
@@ -913,7 +917,7 @@ func (w *Write) runDatabaseOperation() error {
 			"response": response,
 		}
 	} else {
-		// 给新用户设置默认 ACL
+		// 给新用户设置默认 ACL ，密码过期时间戳
 		// TODO 为了用户信息安全性，应该禁止其他用户读取
 		if w.className == "_User" {
 			readwrite := types.M{
@@ -931,6 +935,10 @@ func (w *Write) runDatabaseOperation() error {
 			objectID := utils.S(w.data["objectId"])
 			acl[objectID] = readwrite
 			w.data["ACL"] = acl
+
+			if config.TConfig.PasswordPolicy && config.TConfig.MaxPasswordAge > 0 {
+				w.data["_password_changed_at"] = utils.TimetoString(time.Now().UTC())
+			}
 		}
 
 		// 创建对象

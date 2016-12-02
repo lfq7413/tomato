@@ -1,29 +1,44 @@
 package errs
 
 import (
-	"encoding/json"
-	"errors"
+	"reflect"
 	"strconv"
 
 	"github.com/lfq7413/tomato/types"
 )
 
+type tomatoError struct {
+	code int
+	msg  string
+}
+
+func (e *tomatoError) Error() string {
+	return `{"code": ` + strconv.Itoa(e.code) + `,"error": "` + e.msg + `"}`
+}
+
 // E 组装 json 格式错误信息：
 // {"code": 105,"error": "invalid field name: bl!ng"}
 func E(code int, msg string) error {
-	text := `{"code": ` + strconv.Itoa(code) + `,"error": "` + msg + `"}`
-	return errors.New(text)
+	return &tomatoError{
+		code: code,
+		msg:  msg,
+	}
 }
 
 // ErrorToMap 把 error 转换为 types.M 格式，准备返回给客户端
 func ErrorToMap(e error) types.M {
-	var result types.M
-	errMsg := e.Error()
-	err := json.Unmarshal([]byte(errMsg), &result)
-	if err != nil {
-		result = types.M{"code": OtherCause, "error": e.Error()}
+	t := reflect.TypeOf(e)
+	if t.String() == "*errs.tomatoError" {
+		v := reflect.ValueOf(e)
+		return types.M{
+			"code":  int(v.Elem().Field(0).Int()),
+			"error": v.Elem().Field(1).String(),
+		}
 	}
-	return result
+	return types.M{
+		"code":  OtherCause,
+		"error": e.Error(),
+	}
 }
 
 // ErrorMessageToMap 把错误转换为 types.M 格式，准备返回给客户端
@@ -33,32 +48,22 @@ func ErrorMessageToMap(code int, msg string) types.M {
 
 // GetErrorCode 获取 error 中的 code
 func GetErrorCode(e error) int {
-	var result types.M
-	errMsg := e.Error()
-	err := json.Unmarshal([]byte(errMsg), &result)
-	if err != nil {
-		return 0
-	}
-	if c, ok := result["code"].(float64); ok {
-		return int(c)
-	} else if c, ok := result["code"].(int); ok {
-		return c
+	t := reflect.TypeOf(e)
+	if t.String() == "*errs.tomatoError" {
+		v := reflect.ValueOf(e)
+		return int(v.Elem().Field(0).Int())
 	}
 	return 0
 }
 
 // GetErrorMessage 获取 error 中的 Message
 func GetErrorMessage(e error) string {
-	var result types.M
-	errMsg := e.Error()
-	err := json.Unmarshal([]byte(errMsg), &result)
-	if err != nil {
-		return errMsg
+	t := reflect.TypeOf(e)
+	if t.String() == "*errs.tomatoError" {
+		v := reflect.ValueOf(e)
+		return v.Elem().Field(1).String()
 	}
-	if msg, ok := result["error"].(string); ok {
-		return msg
-	}
-	return errMsg
+	return e.Error()
 }
 
 // OtherCause ...

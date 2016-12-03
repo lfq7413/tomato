@@ -204,7 +204,7 @@ func Test_Delete(t *testing.T) {
 	className = "_User"
 	auth = Nobody()
 	objectID = "01"
-	err = Delete(auth, className, objectID, nil)
+	err = Delete(auth, className, objectID)
 	expect = errs.E(errs.SessionMissing, "insufficient auth to delete user")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -226,7 +226,7 @@ func Test_Delete(t *testing.T) {
 	orm.Adapter.CreateObject(className, schema, object)
 	auth = Master()
 	objectID = "01"
-	err = Delete(auth, className, objectID, nil)
+	err = Delete(auth, className, objectID)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -248,7 +248,7 @@ func Test_Delete(t *testing.T) {
 	orm.Adapter.CreateObject(className, schema, object)
 	auth = Master()
 	objectID = "02"
-	err = Delete(auth, className, objectID, nil)
+	err = Delete(auth, className, objectID)
 	expect = errs.E(errs.ObjectNotFound, "Object not found.")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -271,7 +271,7 @@ func Test_Delete(t *testing.T) {
 	cloud.AfterDelete(className, func(cloud.TriggerRequest, cloud.Response) {})
 	auth = Master()
 	objectID = "01"
-	err = Delete(auth, className, objectID, nil)
+	err = Delete(auth, className, objectID)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -294,7 +294,7 @@ func Test_Delete(t *testing.T) {
 	cloud.AfterDelete(className, func(cloud.TriggerRequest, cloud.Response) {})
 	auth = Master()
 	objectID = "02"
-	err = Delete(auth, className, objectID, nil)
+	err = Delete(auth, className, objectID)
 	expect = errs.E(errs.ObjectNotFound, "Object not found for delete.")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)

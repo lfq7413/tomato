@@ -56,7 +56,7 @@ func Get(auth *Auth, className, objectID string, options types.M, clientSDK map[
 }
 
 // Delete 删除指定对象
-func Delete(auth *Auth, className, objectID string, clientSDK map[string]string) error {
+func Delete(auth *Auth, className, objectID string) error {
 
 	if className == "_User" && auth.CouldUpdateUserID(objectID) == false {
 		return errs.E(errs.SessionMissing, "insufficient auth to delete user")
@@ -73,7 +73,7 @@ func Delete(auth *Auth, className, objectID string, clientSDK map[string]string)
 		cloud.TriggerExists(cloud.TypeAfterDelete, className) ||
 		(livequery.TLiveQuery != nil && livequery.TLiveQuery.HasLiveQuery(className)) ||
 		className == "_Session" {
-		response, err := Find(auth, className, types.M{"objectId": objectID}, types.M{}, clientSDK)
+		response, err := Find(auth, className, types.M{"objectId": objectID}, types.M{}, nil)
 		if err != nil || utils.HasResults(response) == false {
 			return errs.E(errs.ObjectNotFound, "Object not found for delete.")
 		}
@@ -86,7 +86,7 @@ func Delete(auth *Auth, className, objectID string, clientSDK map[string]string)
 		inflatedObject["className"] = className
 	}
 
-	destroy := NewDestroy(auth, className, types.M{"objectId": objectID}, inflatedObject, clientSDK)
+	destroy := NewDestroy(auth, className, types.M{"objectId": objectID}, inflatedObject)
 
 	return destroy.Execute()
 }

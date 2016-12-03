@@ -36,7 +36,7 @@ func Test_Destroy(t *testing.T) {
 	className = "user"
 	query = types.M{"objectId": "1001"}
 	originalData = types.M{"username": "joe"}
-	d = NewDestroy(auth, className, query, originalData, nil)
+	d = NewDestroy(auth, className, query, originalData)
 	err = d.Execute()
 	if err != nil {
 		t.Error("expect:", nil, "result:", err)
@@ -70,7 +70,7 @@ func Test_Destroy(t *testing.T) {
 	className = "user"
 	query = types.M{"objectId": "1001"}
 	originalData = types.M{"username": "joe"}
-	d = NewDestroy(auth, className, query, originalData, nil)
+	d = NewDestroy(auth, className, query, originalData)
 	err = d.Execute()
 	if err != nil {
 		t.Error("expect:", nil, "result:", err)
@@ -109,7 +109,7 @@ func Test_Destroy(t *testing.T) {
 	className = "user"
 	query = types.M{"objectId": "1003"}
 	originalData = types.M{"username": "joe"}
-	d = NewDestroy(auth, className, query, originalData, nil)
+	d = NewDestroy(auth, className, query, originalData)
 	err = d.Execute()
 	expectErr = errs.E(errs.ObjectNotFound, "Object not found.")
 	if err == nil || reflect.DeepEqual(expectErr, err) == false {

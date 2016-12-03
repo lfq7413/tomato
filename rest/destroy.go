@@ -15,7 +15,6 @@ type Destroy struct {
 	className    string
 	query        types.M
 	originalData types.M
-	clientSDK    map[string]string
 }
 
 // NewDestroy 组装 Destroy
@@ -24,14 +23,12 @@ func NewDestroy(
 	className string,
 	query types.M,
 	originalData types.M,
-	clientSDK map[string]string,
 ) *Destroy {
 	destroy := &Destroy{
 		auth:         auth,
 		className:    className,
 		query:        query,
 		originalData: originalData,
-		clientSDK:    clientSDK,
 	}
 	return destroy
 }

@@ -269,7 +269,7 @@ func (c *ClassesController) HandleDelete() {
 		c.ObjectID = c.Ctx.Input.Param(":objectId")
 	}
 
-	err := rest.Delete(c.Auth, c.ClassName, c.ObjectID, c.Info.ClientSDK)
+	err := rest.Delete(c.Auth, c.ClassName, c.ObjectID)
 	if err != nil {
 		c.HandleError(err, 0)
 		return

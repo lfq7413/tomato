@@ -27,7 +27,7 @@ func (l *LogoutController) HandleLogOut() {
 		if utils.HasResults(records) {
 			results := utils.A(records["results"])
 			obj := utils.M(results[0])
-			err := rest.Delete(rest.Master(), "_Session", utils.S(obj["objectId"]), l.Info.ClientSDK)
+			err := rest.Delete(rest.Master(), "_Session", utils.S(obj["objectId"]))
 			if err != nil {
 				l.HandleError(err, 0)
 				return

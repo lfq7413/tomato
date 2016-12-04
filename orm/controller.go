@@ -720,40 +720,6 @@ func (d *DBController) canAddField(schema *Schema, className string, object type
 	return nil
 }
 
-// keysForQuery 从查询条件中查找字段名
-// 暂未使用
-func keysForQuery(query types.M) []string {
-	answer := []string{}
-	if query == nil {
-		return answer
-	}
-
-	var s interface{}
-	if query["$and"] != nil {
-		s = query["$and"]
-	} else {
-		s = query["$or"]
-	}
-
-	if s != nil {
-		sublist := utils.A(s)
-		if sublist == nil {
-			return answer
-		}
-		for _, v := range sublist {
-			subquery := utils.M(v)
-			answer = append(answer, keysForQuery(subquery)...)
-		}
-		return answer
-	}
-
-	for k := range query {
-		answer = append(answer, k)
-	}
-
-	return answer
-}
-
 // reduceRelationKeys 处理查询条件中的 $relatedTo
 // query 格式如下
 // {

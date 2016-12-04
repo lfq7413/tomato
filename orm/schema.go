@@ -225,7 +225,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	// 校验并插入字段
 	for _, fieldName := range insertedFields {
 		fieldType := utils.M(submittedFields[fieldName])
-		err := s.enforceFieldExists(className, fieldName, fieldType, false)
+		err := s.enforceFieldExists(className, fieldName, fieldType)
 		if err != nil {
 			return nil, err
 		}
@@ -333,7 +333,7 @@ func (s *Schema) validateObject(className string, object, query types.M) error {
 			continue
 		}
 		// 添加字段
-		err = s.enforceFieldExists(className, fieldName, expected, false)
+		err = s.enforceFieldExists(className, fieldName, expected)
 		if err != nil {
 			return err
 		}
@@ -529,7 +529,7 @@ func (s *Schema) validateRequiredColumns(className string, object, query types.M
 }
 
 // enforceFieldExists 校验并插入字段，freeze 为 true 时不进行修改
-func (s *Schema) enforceFieldExists(className, fieldName string, fieldtype types.M, freeze bool) error {
+func (s *Schema) enforceFieldExists(className, fieldName string, fieldtype types.M) error {
 	if strings.Index(fieldName, ".") > 0 {
 		fieldName = strings.Split(fieldName, ".")[0]
 		fieldtype = types.M{
@@ -798,10 +798,10 @@ func getObjectType(obj interface{}) (types.M, error) {
 				if object["base64"] != nil {
 					return types.M{"type": "Bytes"}, nil
 				}
-			default:
-				// 无效的类型
-				return nil, errs.E(errs.IncorrectType, "This is not a valid "+t)
 			}
+			// 当 __type 的值不在以上 6 种类型之中时，为无效类型
+			// 当 __type 的值在以上 6 种类型之中，但是不符合详细规则时，为无效的类型
+			return nil, errs.E(errs.IncorrectType, "This is not a valid "+t)
 		}
 		if object["$ne"] != nil {
 			return getObjectType(object["$ne"])

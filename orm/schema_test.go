@@ -960,7 +960,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	fieldtype = types.M{
 		"type": "String",
 	}
-	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	err = schama.enforceFieldExists(className, fieldName, fieldtype)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -979,7 +979,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	fieldtype = types.M{
 		"type": "String",
 	}
-	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	err = schama.enforceFieldExists(className, fieldName, fieldtype)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -998,7 +998,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	fieldtype = types.M{
 		"type": "String",
 	}
-	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	err = schama.enforceFieldExists(className, fieldName, fieldtype)
 	expect = errs.E(errs.InvalidKeyName, "Invalid field name: "+fieldName)
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -1015,7 +1015,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	className = "post"
 	fieldName = "key2"
 	fieldtype = nil
-	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	err = schama.enforceFieldExists(className, fieldName, fieldtype)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -1032,7 +1032,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	className = "post"
 	fieldName = "key2"
 	fieldtype = types.M{}
-	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	err = schama.enforceFieldExists(className, fieldName, fieldtype)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -1051,7 +1051,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	fieldtype = types.M{
 		"type": "Number",
 	}
-	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	err = schama.enforceFieldExists(className, fieldName, fieldtype)
 	expect = errs.E(errs.IncorrectType, "schema mismatch for post.key1; expected String but got Number")
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -1070,7 +1070,7 @@ func Test_enforceFieldExists(t *testing.T) {
 	fieldtype = types.M{
 		"type": "String",
 	}
-	err = schama.enforceFieldExists(className, fieldName, fieldtype, true)
+	err = schama.enforceFieldExists(className, fieldName, fieldtype)
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
@@ -1855,6 +1855,15 @@ func Test_getObjectType(t *testing.T) {
 	}
 	result, err = getObjectType(object)
 	expect = errs.E(errs.IncorrectType, "This is not a valid Other")
+	if err == nil || reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/************************************************************/
+	object = types.M{
+		"__type": "Pointer",
+	}
+	result, err = getObjectType(object)
+	expect = errs.E(errs.IncorrectType, "This is not a valid Pointer")
 	if err == nil || reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", result, err)
 	}

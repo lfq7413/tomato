@@ -167,9 +167,9 @@ func signRequest(req *http.Request, oauthParameters map[string]string, consumerS
 	for i, k := range keys {
 		keys[i] = k + `="` + oauthParameters[k] + `"`
 	}
-	signature = strings.Join(keys, ", ")
+	authHeader := strings.Join(keys, ", ")
 
-	req.Header.Set("Authorization", "OAuth "+signature)
+	req.Header.Set("Authorization", "OAuth "+authHeader)
 	if req.Method == "POST" {
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	}

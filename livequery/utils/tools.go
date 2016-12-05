@@ -143,30 +143,27 @@ func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool
 	}
 	if objectType != "" {
 		if objectType == "Pointer" {
-			var o map[string]interface{}
-			if v, ok := object[key].(map[string]interface{}); ok {
-				o = v
-			}
-			if o == nil {
-				return false
-			}
-			class1 := constraint["className"]
-			class2 := o["className"]
-			id1 := constraint["objectId"]
-			id2 := o["objectId"]
-			return equalObject(class1, class2) && equalObject(id1, id2)
+			return equalObjectsGeneric(object[key], constraints, func(obj, cmp interface{}) bool {
+				var o map[string]interface{}
+				var c map[string]interface{}
+				if v, ok := obj.(map[string]interface{}); ok {
+					o = v
+				}
+				if v, ok := cmp.(map[string]interface{}); ok {
+					c = v
+				}
+				if o == nil || c == nil {
+					return false
+				}
+				class1 := c["className"]
+				class2 := o["className"]
+				id1 := c["objectId"]
+				id2 := o["objectId"]
+				return equalObject(class1, class2) && equalObject(id1, id2)
+			})
 		}
 
-		// 如果 object[key] 为数组，只要一个符合条件即可
-		if objs, ok := object[key].([]interface{}); ok {
-			for _, obj := range objs {
-				if equalObject(obj, constraints) {
-					return true
-				}
-			}
-			return false
-		}
-		return equalObject(object[key], constraints)
+		return equalObjectsGeneric(object[key], constraints, equalObject)
 	}
 
 	// 处理 constraint 包含限制条件时的情况
@@ -238,6 +235,19 @@ func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool
 	}
 
 	return true
+}
+
+func equalObjectsGeneric(object, compareTo interface{}, eqlFn func(obj, cmp interface{}) bool) bool {
+	// 如果 object 为数组，只要一个符合条件即可
+	if objs, ok := object.([]interface{}); ok {
+		for _, obj := range objs {
+			if eqlFn(obj, compareTo) {
+				return true
+			}
+		}
+		return false
+	}
+	return eqlFn(object, compareTo)
 }
 
 // compareBox 校验一点是否在指定区域内

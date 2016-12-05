@@ -375,6 +375,29 @@ func Test_matchesKeyConstraints(t *testing.T) {
 		},
 		{
 			object: tp.M{
+				"user": []interface{}{
+					map[string]interface{}{
+						"__type":    "Pointer",
+						"className": "user",
+						"objectId":  "1024",
+					},
+					map[string]interface{}{
+						"__type":    "Pointer",
+						"className": "user",
+						"objectId":  "2048",
+					},
+				},
+			},
+			key: "user",
+			constraints: map[string]interface{}{
+				"__type":    "Pointer",
+				"className": "user",
+				"objectId":  "1024",
+			},
+			expect: true,
+		},
+		{
+			object: tp.M{
 				"time": map[string]interface{}{
 					"__type": "Date",
 					"iso":    "2016-09-28T08:33:34.551Z",

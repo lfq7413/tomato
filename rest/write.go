@@ -903,6 +903,8 @@ func (w *Write) runDatabaseOperation() error {
 		if w.className == "_User" && w.data["_hashed_password"] != nil && config.TConfig.PasswordPolicy && config.TConfig.MaxPasswordAge > 0 {
 			w.data["_password_changed_at"] = utils.TimetoString(time.Now().UTC())
 		}
+		// 更新时忽略 createdAt 字段
+		delete(w.data, "createdAt")
 		// 执行更新
 		response, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions, false)
 		if err != nil {

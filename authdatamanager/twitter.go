@@ -19,7 +19,7 @@ func (a twitter) ValidateAuthData(authData types.M, options types.M) error {
 	if err != nil {
 		return errs.E(errs.ObjectNotFound, "Failed to validate this access token with Twitter.")
 	}
-	if data["id"] != nil && utils.S(data["id"]) == utils.S(authData["id"]) {
+	if data["id_str"] != nil && utils.S(data["id_str"]) == utils.S(authData["id"]) {
 		return nil
 	}
 	return errs.E(errs.ObjectNotFound, "Twitter auth is invalid for this user.")

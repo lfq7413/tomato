@@ -3,6 +3,7 @@ package pubsub
 import (
 	"encoding/json"
 
+	"github.com/lfq7413/tomato/livequery/server"
 	"github.com/lfq7413/tomato/livequery/t"
 )
 
@@ -20,12 +21,12 @@ func NewCloudCodePublisher(pubType, pubURL, pubConfig string) *CloudCodePublishe
 
 // OnCloudCodeAfterSave 对象保存时调用，request 中包含修改前与修改后的数据
 func (c *CloudCodePublisher) OnCloudCodeAfterSave(request t.M) {
-	c.onCloudCodeMessage("afterSave", request)
+	c.onCloudCodeMessage(server.TomatoInfo["appId"]+"afterSave", request)
 }
 
 // OnCloudCodeAfterDelete 对象删除时调用，request 中包含要删除的数据
 func (c *CloudCodePublisher) OnCloudCodeAfterDelete(request t.M) {
-	c.onCloudCodeMessage("afterDelete", request)
+	c.onCloudCodeMessage(server.TomatoInfo["appId"]+"afterDelete", request)
 }
 
 // onCloudCodeMessage 向发送者发送通知消息

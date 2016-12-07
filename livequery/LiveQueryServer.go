@@ -231,8 +231,8 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 
 	// 向 subscriber 订阅 afterSave 、 afterDelete 两个频道
 	l.subscriber = pubsub.CreateSubscriber(args["subType"], args["subURL"], args["subConfig"])
-	l.subscriber.Subscribe("afterSave")
-	l.subscriber.Subscribe("afterDelete")
+	l.subscriber.Subscribe(server.TomatoInfo["appId"] + "afterSave")
+	l.subscriber.Subscribe(server.TomatoInfo["appId"] + "afterDelete")
 
 	// 设置从 subscriber 接收到消息时的处理函数
 	var h pubsub.HandlerType
@@ -250,9 +250,9 @@ func (l *liveQueryServer) initServer(args map[string]string) {
 			return
 		}
 		l.inflateParseObject(message)
-		if channel == "afterSave" {
+		if channel == server.TomatoInfo["appId"]+"afterSave" {
 			l.onAfterSave(message)
-		} else if channel == "afterDelete" {
+		} else if channel == server.TomatoInfo["appId"]+"afterDelete" {
 			l.onAfterDelete(message)
 		} else {
 			utils.TLog.Error("Get message", message, "from unknown channel", channel)

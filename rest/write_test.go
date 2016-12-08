@@ -267,6 +267,16 @@ func Test_handleInstallation(t *testing.T) {
 		t.Error("expect:", expectErr, "result:", err)
 	}
 	/***************************************************************/
+	query = types.M{"objectId": "123"}
+	data = types.M{}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_Installation", query, data, originalData, nil)
+	err = w.handleInstallation()
+	expectErr = nil
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
 	query = nil
 	data = types.M{"deviceToken": "abc"}
 	originalData = nil

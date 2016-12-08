@@ -218,6 +218,11 @@ func (w *Write) handleInstallation() error {
 	}
 	installationID = strings.ToLower(installationID)
 
+	// 不处理设备数据为空的情况
+	if w.query != nil && w.data["deviceToken"] == nil && installationID == "" && w.data["deviceType"] == nil {
+		return nil
+	}
+
 	var idMatch types.M
 	var objectIDMatch types.M
 	var installationIDMatch types.M

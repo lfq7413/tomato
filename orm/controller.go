@@ -264,6 +264,7 @@ var specialKeysForUpdate = map[string]bool{
 	"_failed_login_count":            true,
 	"_perishable_token_expires_at":   true,
 	"_password_changed_at":           true,
+	"_password_history":              true,
 }
 
 // Update 更新对象

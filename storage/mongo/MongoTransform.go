@@ -1263,7 +1263,7 @@ func (t *Transform) mongoObjectToParseObject(className string, mongoObject inter
 			case "_acl":
 
 			// 以下字段在 DB Controller 中决定是否删除
-			case "_email_verify_token", "_perishable_token", "_perishable_token_expires_at", "_password_changed_at", "_tombstone", "_email_verify_token_expires_at", "_account_lockout_expires_at", "_failed_login_count":
+			case "_email_verify_token", "_perishable_token", "_perishable_token_expires_at", "_password_changed_at", "_tombstone", "_email_verify_token_expires_at", "_account_lockout_expires_at", "_failed_login_count", "_password_history":
 				restObject[key] = value
 
 			case "_session_token":

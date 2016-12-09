@@ -61,6 +61,7 @@ type Config struct {
 	ValidatorPattern                 string
 	DoNotAllowUsername               bool
 	MaxPasswordAge                   int
+	MaxPasswordHistory               int
 }
 
 var (
@@ -157,6 +158,7 @@ func parseConfig() {
 	TConfig.ValidatorPattern = beego.AppConfig.String("ValidatorPattern")
 	TConfig.DoNotAllowUsername = beego.AppConfig.DefaultBool("DoNotAllowUsername", false)
 	TConfig.MaxPasswordAge = beego.AppConfig.DefaultInt("MaxPasswordAge", 0)
+	TConfig.MaxPasswordHistory = beego.AppConfig.DefaultInt("MaxPasswordHistory", 0)
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

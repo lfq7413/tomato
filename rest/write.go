@@ -856,6 +856,36 @@ func (w *Write) transformUser() error {
 	return nil
 }
 
+// validateUserName 处理用户名，检测用户名是否唯一
+func (w *Write) validateUserName() error {
+	if w.data["username"] == nil {
+		// 如果是 create 请求，则生成随机 ID
+		if w.query == nil {
+			w.data["username"] = utils.CreateObjectID()
+			w.responseShouldHaveUsername = true
+		}
+		return nil
+	}
+	objectID := types.M{
+		"$ne": w.objectID(),
+	}
+	where := types.M{
+		"username": w.data["username"],
+		"objectId": objectID,
+	}
+	option := types.M{
+		"limit": 1,
+	}
+	results, err := orm.TomatoDBController.Find(w.className, where, option)
+	if err != nil {
+		return err
+	}
+	if len(results) > 0 {
+		return errs.E(errs.UsernameTaken, "Account already exists for this username")
+	}
+	return nil
+}
+
 // expandFilesForExistingObjects 展开文件对象
 func (w *Write) expandFilesForExistingObjects() error {
 	if w.response != nil && w.response["response"] != nil {

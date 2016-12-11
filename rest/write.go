@@ -886,6 +886,46 @@ func (w *Write) validateUserName() error {
 	return nil
 }
 
+// validateEmail 处理 email ，检测合法性、检测是否唯一
+func (w *Write) validateEmail() error {
+	if w.data["email"] == nil {
+		return nil
+	}
+
+	if p := utils.M(w.data["email"]); p != nil {
+		if utils.S(p["__op"]) == "Delete" {
+			return nil
+		}
+	}
+
+	if utils.IsEmail(utils.S(w.data["email"])) == false {
+		return errs.E(errs.InvalidEmailAddress, "Email address format is invalid.")
+	}
+	objectID := types.M{
+		"$ne": w.objectID(),
+	}
+	where := types.M{
+		"email":    w.data["email"],
+		"objectId": objectID,
+	}
+	option := types.M{
+		"limit": 1,
+	}
+	results, err := orm.TomatoDBController.Find(w.className, where, option)
+	if err != nil {
+		return err
+	}
+	if len(results) > 0 {
+		return errs.E(errs.EmailTaken, "Account already exists for this email address")
+	}
+
+	// 更新 email ，需要发送验证邮件
+	w.storage["sendVerificationEmail"] = true
+	SetEmailVerifyToken(w.data)
+
+	return nil
+}
+
 // expandFilesForExistingObjects 展开文件对象
 func (w *Write) expandFilesForExistingObjects() error {
 	if w.response != nil && w.response["response"] != nil {

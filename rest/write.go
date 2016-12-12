@@ -926,6 +926,50 @@ func (w *Write) validateEmail() error {
 	return nil
 }
 
+// validatePasswordPolicy 校验密码合法性
+func (w *Write) validatePasswordPolicy() error {
+	if config.TConfig.PasswordPolicy == false {
+		return nil
+	}
+	return w.validatePasswordRequirements()
+}
+
+// validatePasswordRequirements 检测密码是否符合设定的密码规则。 go 中的 regexp 不支持 backtracking ，无法使用 (?= 表达式
+func (w *Write) validatePasswordRequirements() error {
+	policyError := "Password does not meet the Password Policy requirements."
+	password := utils.S(w.data["password"])
+	// 检测密码是否符合设定的正则表达式
+	if config.TConfig.ValidatorPattern != "" {
+		b, _ := regexp.MatchString(config.TConfig.ValidatorPattern, password)
+		if b == false {
+			return errs.E(errs.ValidationError, policyError)
+		}
+	}
+	// 检测密码是否包含用户名
+	if config.TConfig.DoNotAllowUsername {
+		if username := utils.S(w.data["username"]); username != "" {
+			if strings.Index(password, username) >= 0 {
+				return errs.E(errs.ValidationError, policyError)
+			}
+		} else {
+			// username 不存在时，从数据库中取出再去检测
+			query := types.M{"objectId": w.objectID()}
+			results, err := orm.TomatoDBController.Find("_User", query, types.M{})
+			if err != nil {
+				return err
+			}
+			if len(results) != 1 {
+				return errs.E(errs.ValidationError, policyError)
+			}
+			result := utils.M(results[0])
+			if result == nil || strings.Index(password, utils.S(result["username"])) >= 0 {
+				return errs.E(errs.ValidationError, policyError)
+			}
+		}
+	}
+	return nil
+}
+
 // expandFilesForExistingObjects 展开文件对象
 func (w *Write) expandFilesForExistingObjects() error {
 	if w.response != nil && w.response["response"] != nil {

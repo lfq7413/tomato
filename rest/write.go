@@ -987,6 +987,34 @@ func (w *Write) runDatabaseOperation() error {
 		}
 		// 更新时忽略 createdAt 字段
 		delete(w.data, "createdAt")
+		// 密码历史功能开启时，保存当前密码到历史中
+		if w.className == "_User" && w.data["_hashed_password"] != nil && config.TConfig.PasswordPolicy && config.TConfig.MaxPasswordHistory > 0 {
+			query := types.M{
+				"objectId": w.objectID(),
+			}
+			options := types.M{
+				"keys": []string{"_password_history", "_hashed_password"},
+			}
+			results, err := orm.TomatoDBController.Find("_User", query, options)
+			if err != nil {
+				return err
+			}
+			if len(results) != 1 {
+				return errs.E(errs.ObjectNotFound, "User not found for update.")
+			}
+			user := utils.M(results[0])
+			oldPasswords := []interface{}{}
+			if h, ok := user["_password_history"].([]interface{}); ok {
+				oldPasswords = getLastItems(h, config.TConfig.MaxPasswordHistory-2)
+			}
+			// _password_history 中保存的密码加上 _hashed_password 密码的数量等于 MaxPasswordHistory
+			// 因此当 MaxPasswordHistory = 1 时，只在 _hashed_password 中保存密码
+			// 当 MaxPasswordHistory > 1 时，才在 _password_history 中保存历史密码
+			if config.TConfig.MaxPasswordHistory > 1 {
+				oldPasswords = append(oldPasswords, user["password"])
+			}
+			w.data["_password_history"] = oldPasswords
+		}
 		// 执行更新
 		response, err := orm.TomatoDBController.Update(w.className, w.query, w.data, w.RunOptions, false)
 		if err != nil {
@@ -1311,7 +1339,7 @@ func getLastItems(items []interface{}, n int) []interface{} {
 	if items == nil {
 		return items
 	}
-	if n == 0 {
+	if n <= 0 {
 		return []interface{}{}
 	}
 	l := len(items)

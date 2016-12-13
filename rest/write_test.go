@@ -2815,6 +2815,14 @@ func Test_getLastItems(t *testing.T) {
 			want: []interface{}{},
 		},
 		{
+			name: "2",
+			fields: fields{
+				items: []interface{}{"abc"},
+				n:     -1,
+			},
+			want: []interface{}{},
+		},
+		{
 			name: "3",
 			fields: fields{
 				items: []interface{}{"abc", "def"},

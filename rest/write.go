@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"strconv"
+
 	"github.com/lfq7413/tomato/authdatamanager"
 	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/client"
@@ -743,42 +745,11 @@ func (w *Write) transformUser() error {
 
 	// 处理密码，计算 sha256
 	// TODO 后续需要加盐提高安全性
-	if w.data["password"] == nil {
-
-	} else {
-		// 检测密码是否符合设定的密码规则。 go 中的 regexp 不支持 backtracking ，无法使用 (?= 表达式
-		if config.TConfig.PasswordPolicy {
-			policyError := "Password does not meet the Password Policy requirements."
-			password := utils.S(w.data["password"])
-			// 检测密码是否符合设定的正则表达式
-			if config.TConfig.ValidatorPattern != "" {
-				b, _ := regexp.MatchString(config.TConfig.ValidatorPattern, password)
-				if b == false {
-					return errs.E(errs.ValidationError, policyError)
-				}
-			}
-			// 检测密码是否包含用户名
-			if config.TConfig.DoNotAllowUsername {
-				if username := utils.S(w.data["username"]); username != "" {
-					if strings.Index(password, username) >= 0 {
-						return errs.E(errs.ValidationError, policyError)
-					}
-				} else {
-					// username 不存在时，从数据库中取出再去检测
-					query := types.M{"objectId": w.objectID()}
-					results, err := orm.TomatoDBController.Find("_User", query, types.M{})
-					if err != nil {
-						return err
-					}
-					if len(results) != 1 {
-						return errs.E(errs.ValidationError, policyError)
-					}
-					result := utils.M(results[0])
-					if result == nil || strings.Index(password, utils.S(result["username"])) >= 0 {
-						return errs.E(errs.ValidationError, policyError)
-					}
-				}
-			}
+	if w.data["password"] != nil {
+		// 检测密码
+		err := w.validatePasswordPolicy()
+		if err != nil {
+			return err
 		}
 
 		if w.query != nil && w.auth.IsMaster == false {
@@ -791,67 +762,16 @@ func (w *Write) transformUser() error {
 	}
 
 	// 处理用户名，检测用户名是否唯一
-	if w.data["username"] == nil {
-		// 如果是 create 请求，则生成随机 ID
-		if w.query == nil {
-			w.data["username"] = utils.CreateObjectID()
-			w.responseShouldHaveUsername = true
-		}
-	} else {
-		objectID := types.M{
-			"$ne": w.objectID(),
-		}
-		where := types.M{
-			"username": w.data["username"],
-			"objectId": objectID,
-		}
-		option := types.M{
-			"limit": 1,
-		}
-		results, err := orm.TomatoDBController.Find(w.className, where, option)
-		if err != nil {
-			return err
-		}
-		if len(results) > 0 {
-			return errs.E(errs.UsernameTaken, "Account already exists for this username")
-		}
-	}
-
-	// 处理 email ，检测合法性、检测是否唯一
-	if w.data["email"] == nil {
-		return nil
-	}
-
-	if p := utils.M(w.data["email"]); p != nil {
-		if utils.S(p["__op"]) == "Delete" {
-			return nil
-		}
-	}
-
-	if utils.IsEmail(utils.S(w.data["email"])) == false {
-		return errs.E(errs.InvalidEmailAddress, "Email address format is invalid.")
-	}
-	objectID := types.M{
-		"$ne": w.objectID(),
-	}
-	where := types.M{
-		"email":    w.data["email"],
-		"objectId": objectID,
-	}
-	option := types.M{
-		"limit": 1,
-	}
-	results, err := orm.TomatoDBController.Find(w.className, where, option)
+	err := w.validateUserName()
 	if err != nil {
 		return err
 	}
-	if len(results) > 0 {
-		return errs.E(errs.EmailTaken, "Account already exists for this email address")
-	}
 
-	// 更新 email ，需要发送验证邮件
-	w.storage["sendVerificationEmail"] = true
-	SetEmailVerifyToken(w.data)
+	// 处理 email ，检测合法性、检测是否唯一
+	err = w.validateEmail()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -931,7 +851,11 @@ func (w *Write) validatePasswordPolicy() error {
 	if config.TConfig.PasswordPolicy == false {
 		return nil
 	}
-	return w.validatePasswordRequirements()
+	err := w.validatePasswordRequirements()
+	if err != nil {
+		return err
+	}
+	return w.validatePasswordHistory()
 }
 
 // validatePasswordRequirements 检测密码是否符合设定的密码规则。 go 中的 regexp 不支持 backtracking ，无法使用 (?= 表达式
@@ -967,6 +891,45 @@ func (w *Write) validatePasswordRequirements() error {
 			}
 		}
 	}
+	return nil
+}
+
+// validatePasswordHistory 校验密码历史
+func (w *Write) validatePasswordHistory() error {
+	if w.query == nil || config.TConfig.MaxPasswordHistory == 0 {
+		return nil
+	}
+	query := types.M{
+		"objectId": w.objectID(),
+	}
+	options := types.M{
+		"keys": []string{"_password_history", "_hashed_password"},
+	}
+	results, err := orm.TomatoDBController.Find("_User", query, options)
+	if err != nil {
+		return err
+	}
+	if len(results) != 1 {
+		return errs.E(errs.ObjectNotFound, "User not found for update.")
+	}
+	user := utils.M(results[0])
+	oldPasswords := []string{}
+	if h, ok := user["_password_history"].([]interface{}); ok {
+		history := getLastItems(h, config.TConfig.MaxPasswordHistory-1)
+		for _, pw := range history {
+			if s, ok := pw.(string); ok {
+				oldPasswords = append(oldPasswords, s)
+			}
+		}
+	}
+	oldPasswords = append(oldPasswords, utils.S(user["password"]))
+	newPassword := utils.S(w.data["password"])
+	for _, hash := range oldPasswords {
+		if utils.Compare(newPassword, hash) {
+			return errs.E(errs.ValidationError, "New password should not be the same as last "+strconv.Itoa(config.TConfig.MaxPasswordHistory)+" passwords.")
+		}
+	}
+
 	return nil
 }
 
@@ -1341,4 +1304,19 @@ func (w *Write) updateResponseWithData(response, data types.M) types.M {
 	}
 
 	return response
+}
+
+// getLastItems 获取最后 n 个元素
+func getLastItems(items []interface{}, n int) []interface{} {
+	if items == nil {
+		return items
+	}
+	if n == 0 {
+		return []interface{}{}
+	}
+	l := len(items)
+	if l < n {
+		return items
+	}
+	return items[(l - n):]
 }

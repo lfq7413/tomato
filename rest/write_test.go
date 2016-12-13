@@ -1262,6 +1262,7 @@ func Test_transformUser(t *testing.T) {
 	var originalData types.M
 	var expect types.M
 	var err, expectErr error
+	policyError := "Password does not meet the Password Policy requirements."
 	/***************************************************************/
 	query = nil
 	data = types.M{}
@@ -1308,6 +1309,132 @@ func Test_transformUser(t *testing.T) {
 	if reflect.DeepEqual(expect, w.data) == false {
 		t.Error("expect:", expect, "result:", w.data)
 	}
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	config.TConfig.PasswordPolicy = true
+	config.TConfig.DoNotAllowUsername = true
+	query = nil
+	data = types.M{
+		"username": "joe",
+		"password": "joe123456",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1001"
+	err = w.transformUser()
+	expectErr = errs.E(errs.ValidationError, policyError)
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	config.TConfig.DoNotAllowUsername = false
+	config.TConfig.PasswordPolicy = false
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	config.TConfig.PasswordPolicy = true
+	config.TConfig.DoNotAllowUsername = true
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId": "1002",
+		"username": "joe",
+	}
+	orm.Adapter.CreateObject("_User", schema, object)
+	query = types.M{"objectId": "1002"}
+	data = types.M{
+		"password": "joe123456",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1002"
+	err = w.transformUser()
+	expectErr = errs.E(errs.ValidationError, policyError)
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	config.TConfig.DoNotAllowUsername = false
+	config.TConfig.PasswordPolicy = false
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	config.TConfig.PasswordPolicy = true
+	config.TConfig.MaxPasswordHistory = 3
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId":         "1002",
+		"username":         "joe",
+		"_hashed_password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+		"_password_history": []interface{}{
+			"b3a8e0e1f9ab1bfe3a36f231f676f78bb30a519d2b21e6c530c0eee8ebb4a5d0",
+			"35a9e381b1a27567549b5f8a6f783c167ebf809f1c4d6a9e367240484d8ce281",
+		},
+	}
+	err = orm.Adapter.CreateObject("_User", schema, object)
+	query = types.M{"objectId": "1002"}
+	data = types.M{
+		"password": "123456",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1002"
+	err = w.transformUser()
+	expect = types.M{
+		"objectId":         "1002",
+		"_hashed_password": utils.Hash("123456"),
+	}
+	if err != nil || reflect.DeepEqual(expect, w.data) == false {
+		t.Error("expect:", expect, "result:", w.data, "err:", err)
+	}
+	config.TConfig.MaxPasswordHistory = 0
+	config.TConfig.PasswordPolicy = false
+	orm.TomatoDBController.DeleteEverything()
+	/***************************************************************/
+	initEnv()
+	config.TConfig.PasswordPolicy = true
+	config.TConfig.MaxPasswordHistory = 3
+	schema = types.M{
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
+	}
+	orm.Adapter.CreateClass("_User", schema)
+	object = types.M{
+		"objectId":         "1002",
+		"username":         "joe",
+		"_hashed_password": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+		"_password_history": []interface{}{
+			"b3a8e0e1f9ab1bfe3a36f231f676f78bb30a519d2b21e6c530c0eee8ebb4a5d0",
+			"35a9e381b1a27567549b5f8a6f783c167ebf809f1c4d6a9e367240484d8ce281",
+		},
+	}
+	err = orm.Adapter.CreateObject("_User", schema, object)
+	query = types.M{"objectId": "1002"}
+	data = types.M{
+		"password": "123",
+	}
+	originalData = nil
+	w, _ = NewWrite(Master(), "_User", query, data, originalData, nil)
+	w.data["objectId"] = "1002"
+	err = w.transformUser()
+	expectErr = errs.E(errs.ValidationError, "New password should not be the same as last 3 passwords.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	config.TConfig.MaxPasswordHistory = 0
+	config.TConfig.PasswordPolicy = false
 	orm.TomatoDBController.DeleteEverything()
 	/***************************************************************/
 	initEnv()
@@ -2658,5 +2785,64 @@ func Test_updateResponseWithData(t *testing.T) {
 	}
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
+	}
+}
+
+func Test_getLastItems(t *testing.T) {
+	type fields struct {
+		items []interface{}
+		n     int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   []interface{}
+	}{
+		{
+			name: "1",
+			fields: fields{
+				items: nil,
+				n:     0,
+			},
+			want: nil,
+		},
+		{
+			name: "2",
+			fields: fields{
+				items: []interface{}{"abc"},
+				n:     0,
+			},
+			want: []interface{}{},
+		},
+		{
+			name: "3",
+			fields: fields{
+				items: []interface{}{"abc", "def"},
+				n:     3,
+			},
+			want: []interface{}{"abc", "def"},
+		},
+		{
+			name: "4",
+			fields: fields{
+				items: []interface{}{"abc", "def", "hij"},
+				n:     3,
+			},
+			want: []interface{}{"abc", "def", "hij"},
+		},
+		{
+			name: "5",
+			fields: fields{
+				items: []interface{}{"abc", "def", "hij", "klm"},
+				n:     3,
+			},
+			want: []interface{}{"def", "hij", "klm"},
+		},
+	}
+	for _, tt := range tests {
+		w := getLastItems(tt.fields.items, tt.fields.n)
+		if reflect.DeepEqual(w, tt.want) == false {
+			t.Errorf("%q. getLastItems() result = %v, want %v", tt.name, w, tt.want)
+		}
 	}
 }

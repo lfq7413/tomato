@@ -18,7 +18,11 @@ var handler WebSocketHandler
 // RunWebSocketServer ...
 func RunWebSocketServer(pattern, addr string, h WebSocketHandler) {
 	handler = h
-	http.Handle(pattern, websocket.Handler(httpHandler))
+	http.Handle(pattern, http.HandlerFunc(
+		func(w http.ResponseWriter, req *http.Request) {
+			s := websocket.Server{Handler: websocket.Handler(httpHandler)}
+			s.ServeHTTP(w, req)
+		}))
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())

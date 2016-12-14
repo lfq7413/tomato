@@ -104,6 +104,9 @@ func maybeRunQueryTrigger(triggerType, className string, restWhere, restOptions 
 	if include := response.Response["include"]; include != nil {
 		restOptions["include"] = include
 	}
+	if keys := response.Response["keys"]; keys != nil {
+		restOptions["keys"] = keys
+	}
 
 	return restWhere, restOptions, nil
 }

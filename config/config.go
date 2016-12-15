@@ -3,6 +3,8 @@ package config
 import (
 	"time"
 
+	"log"
+
 	"github.com/astaxie/beego"
 )
 
@@ -91,6 +93,7 @@ func init() {
 	}
 
 	parseConfig()
+	validate()
 }
 
 func parseConfig() {
@@ -159,6 +162,30 @@ func parseConfig() {
 	TConfig.DoNotAllowUsername = beego.AppConfig.DefaultBool("DoNotAllowUsername", false)
 	TConfig.MaxPasswordAge = beego.AppConfig.DefaultInt("MaxPasswordAge", 0)
 	TConfig.MaxPasswordHistory = beego.AppConfig.DefaultInt("MaxPasswordHistory", 0)
+}
+
+// validate 校验用户参数合法性
+func validate() {
+	validateAppInfo()
+}
+
+// validateAppInfo 校验应用相关参数
+func validateAppInfo() {
+	if TConfig.AppName == "" {
+		log.Fatalln("AppName is required")
+	}
+	if TConfig.ServerURL == "" {
+		log.Fatalln("ServerURL is required")
+	}
+	if TConfig.AppID == "" {
+		log.Fatalln("AppID is required")
+	}
+	if TConfig.MasterKey == "" {
+		log.Fatalln("MasterKey is required")
+	}
+	if TConfig.ClientKey == "" && TConfig.JavascriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
+		log.Fatalln("ClientKey or JavascriptKey or DotNetKey or RestAPIKey is required")
+	}
 }
 
 // GenerateSessionExpiresAt 获取 Session 过期时间

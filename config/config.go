@@ -166,11 +166,12 @@ func parseConfig() {
 
 // validate 校验用户参数合法性
 func validate() {
-	validateAppInfo()
+	validateApplicationConfiguration()
+	validateFileConfiguration()
 }
 
-// validateAppInfo 校验应用相关参数
-func validateAppInfo() {
+// validateApplicationConfiguration 校验应用相关参数
+func validateApplicationConfiguration() {
 	if TConfig.AppName == "" {
 		log.Fatalln("AppName is required")
 	}
@@ -185,6 +186,30 @@ func validateAppInfo() {
 	}
 	if TConfig.ClientKey == "" && TConfig.JavascriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
 		log.Fatalln("ClientKey or JavascriptKey or DotNetKey or RestAPIKey is required")
+	}
+}
+
+// validateFileConfiguration 校验文件存储相关参数
+func validateFileConfiguration() {
+	adapter := TConfig.FileAdapter
+	switch adapter {
+	case "", "Disk":
+	case "GridFS":
+	// TODO 校验 MongoDB 配置
+	case "Qiniu":
+		if TConfig.QiniuDomain == "" && TConfig.QiniuBucket == "" && TConfig.QiniuAccessKey == "" && TConfig.QiniuSecretKey == "" {
+			log.Fatalln("QiniuDomain, QiniuBucket, QiniuAccessKey, QiniuSecretKey is required")
+		}
+	case "Sina":
+		if TConfig.SinaDomain == "" && TConfig.SinaBucket == "" && TConfig.SinaAccessKey == "" && TConfig.SinaSecretKey == "" {
+			log.Fatalln("SinaDomain, SinaBucket, SinaAccessKey, SinaSecretKey is required")
+		}
+	case "Tencent":
+		if TConfig.TencentAppID == "" && TConfig.TencentBucket == "" && TConfig.TencentSecretID == "" && TConfig.TencentSecretKey == "" {
+			log.Fatalln("TencentAppID, TencentBucket, TencentSecretID, TencentSecretKey is required")
+		}
+	default:
+		log.Fatalln("Unsupported FileAdapter")
 	}
 }
 

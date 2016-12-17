@@ -168,6 +168,8 @@ func parseConfig() {
 func validate() {
 	validateApplicationConfiguration()
 	validateFileConfiguration()
+	validatePushConfiguration()
+	validateMailConfiguration()
 }
 
 // validateApplicationConfiguration 校验应用相关参数
@@ -210,6 +212,30 @@ func validateFileConfiguration() {
 		}
 	default:
 		log.Fatalln("Unsupported FileAdapter")
+	}
+}
+
+// validatePushConfiguration 校验推送相关参数
+func validatePushConfiguration() {
+	// TODO
+}
+
+// validateMailConfiguration 校验发送邮箱相关参数
+func validateMailConfiguration() {
+	adapter := TConfig.MailAdapter
+	switch adapter {
+	case "", "smtp":
+		if TConfig.SMTPServer == "" {
+			log.Fatalln("SMTPServer is required")
+		}
+		if TConfig.MailUsername == "" {
+			log.Fatalln("MailUsername is required")
+		}
+		if TConfig.MailPassword == "" {
+			log.Fatalln("MailPassword is required")
+		}
+	default:
+		log.Fatalln("Unsupported MailAdapter")
 	}
 }
 

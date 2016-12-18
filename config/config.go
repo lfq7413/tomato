@@ -170,6 +170,7 @@ func validate() {
 	validateFileConfiguration()
 	validatePushConfiguration()
 	validateMailConfiguration()
+	validateLiveQueryConfiguration()
 }
 
 // validateApplicationConfiguration 校验应用相关参数
@@ -236,6 +237,20 @@ func validateMailConfiguration() {
 		}
 	default:
 		log.Fatalln("Unsupported MailAdapter")
+	}
+}
+
+// validateLiveQueryConfiguration 校验 LiveQuery 相关参数
+func validateLiveQueryConfiguration() {
+	t := TConfig.PublisherType
+	switch t {
+	case "": // 默认为 EventEmitter
+	case "Redis":
+		if TConfig.PublisherURL == "" {
+			log.Fatalln("Redis PublisherURL is required")
+		}
+	default:
+		log.Fatalln("Unsupported LiveQuery PublisherType")
 	}
 }
 

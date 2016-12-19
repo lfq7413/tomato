@@ -171,6 +171,7 @@ func validate() {
 	validatePushConfiguration()
 	validateMailConfiguration()
 	validateLiveQueryConfiguration()
+	validateSessionConfiguration()
 }
 
 // validateApplicationConfiguration 校验应用相关参数
@@ -251,6 +252,13 @@ func validateLiveQueryConfiguration() {
 		}
 	default:
 		log.Fatalln("Unsupported LiveQuery PublisherType")
+	}
+}
+
+// validateSessionConfiguration 校验 Session 有效期
+func validateSessionConfiguration() {
+	if TConfig.SessionLength <= 0 {
+		log.Fatalln("Session length must be a value greater than 0")
 	}
 }
 

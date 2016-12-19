@@ -29,7 +29,7 @@ func Test_SetEmailVerifyToken(t *testing.T) {
 	}
 	config.TConfig = &config.Config{
 		VerifyUserEmails:                 false,
-		EmailVerifyTokenValidityDuration: -1,
+		EmailVerifyTokenValidityDuration: 0,
 	}
 	SetEmailVerifyToken(user)
 	expect = types.M{
@@ -44,7 +44,7 @@ func Test_SetEmailVerifyToken(t *testing.T) {
 	}
 	config.TConfig = &config.Config{
 		VerifyUserEmails:                 true,
-		EmailVerifyTokenValidityDuration: -1,
+		EmailVerifyTokenValidityDuration: 0,
 	}
 	SetEmailVerifyToken(user)
 	expect = types.M{

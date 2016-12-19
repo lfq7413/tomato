@@ -88,7 +88,7 @@ func init() {
 		SessionLength:                    31536000,
 		RevokeSessionOnPasswordReset:     true,
 		PreventLoginWithUnverifiedEmail:  false,
-		EmailVerifyTokenValidityDuration: -1,
+		EmailVerifyTokenValidityDuration: 0,
 		SchemaCacheTTL:                   5,
 	}
 
@@ -122,7 +122,7 @@ func parseConfig() {
 	TConfig.SessionLength = beego.AppConfig.DefaultInt("SessionLength", 31536000)
 	TConfig.RevokeSessionOnPasswordReset = beego.AppConfig.DefaultBool("RevokeSessionOnPasswordReset", true)
 	TConfig.PreventLoginWithUnverifiedEmail = beego.AppConfig.DefaultBool("PreventLoginWithUnverifiedEmail", false)
-	TConfig.EmailVerifyTokenValidityDuration = beego.AppConfig.DefaultInt("EmailVerifyTokenValidityDuration", -1)
+	TConfig.EmailVerifyTokenValidityDuration = beego.AppConfig.DefaultInt("EmailVerifyTokenValidityDuration", 0)
 	TConfig.SchemaCacheTTL = beego.AppConfig.DefaultInt("SchemaCacheTTL", 5)
 
 	TConfig.SMTPServer = beego.AppConfig.String("SMTPServer")
@@ -224,6 +224,9 @@ func validatePushConfiguration() {
 
 // validateMailConfiguration 校验发送邮箱相关参数
 func validateMailConfiguration() {
+	if TConfig.VerifyUserEmails == false {
+		return
+	}
 	adapter := TConfig.MailAdapter
 	switch adapter {
 	case "", "smtp":
@@ -238,6 +241,9 @@ func validateMailConfiguration() {
 		}
 	default:
 		log.Fatalln("Unsupported MailAdapter")
+	}
+	if TConfig.EmailVerifyTokenValidityDuration < 0 {
+		log.Fatalln("Email verify token validity duration must be a value greater than 0")
 	}
 }
 
@@ -271,7 +277,7 @@ func GenerateSessionExpiresAt() time.Time {
 
 // GenerateEmailVerifyTokenExpiresAt 获取 Email 验证 Token 过期时间
 func GenerateEmailVerifyTokenExpiresAt() time.Time {
-	if TConfig.VerifyUserEmails == false || TConfig.EmailVerifyTokenValidityDuration == -1 {
+	if TConfig.VerifyUserEmails == false || TConfig.EmailVerifyTokenValidityDuration <= 0 {
 		return time.Time{}
 	}
 	expiresAt := time.Now().UTC()

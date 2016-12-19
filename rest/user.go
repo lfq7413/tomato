@@ -38,7 +38,7 @@ func SetEmailVerifyToken(user types.M) {
 		user["_email_verify_token"] = utils.CreateToken()
 		user["emailVerified"] = false
 
-		if config.TConfig.EmailVerifyTokenValidityDuration != -1 {
+		if config.TConfig.EmailVerifyTokenValidityDuration > 0 {
 			user["_email_verify_token_expires_at"] = utils.TimetoString(config.GenerateEmailVerifyTokenExpiresAt())
 		}
 	}

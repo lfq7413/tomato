@@ -73,23 +73,7 @@ var (
 
 func init() {
 	TConfig = &Config{
-		AppName:                          "",
-		ServerURL:                        "http://127.0.0.1:8080/v1",
-		DatabaseURI:                      "192.168.99.100:27017/test",
-		AppID:                            "",
-		MasterKey:                        "",
-		ClientKey:                        "",
-		AllowClientClassCreation:         false,
-		EnableAnonymousUsers:             true,
-		VerifyUserEmails:                 false,
-		FileAdapter:                      "disk",
-		PushAdapter:                      "tomato",
-		MailAdapter:                      "smtp",
-		SessionLength:                    31536000,
-		RevokeSessionOnPasswordReset:     true,
-		PreventLoginWithUnverifiedEmail:  false,
-		EmailVerifyTokenValidityDuration: 0,
-		SchemaCacheTTL:                   5,
+		DatabaseURI: "192.168.99.100:27017/test",
 	}
 
 	parseConfig()
@@ -97,12 +81,12 @@ func init() {
 }
 
 func parseConfig() {
-	TConfig.AppName = beego.AppConfig.String("appname")
-	TConfig.ServerURL = beego.AppConfig.String("ServerURL")
+	TConfig.AppName = beego.AppConfig.DefaultString("appname", "DefaultAppName")
+	TConfig.ServerURL = beego.AppConfig.DefaultString("ServerURL", "DefaultServerURL")
 	TConfig.DatabaseURI = beego.AppConfig.String("DatabaseURI")
-	TConfig.AppID = beego.AppConfig.String("AppID")
-	TConfig.MasterKey = beego.AppConfig.String("MasterKey")
-	TConfig.ClientKey = beego.AppConfig.String("ClientKey")
+	TConfig.AppID = beego.AppConfig.DefaultString("AppID", "DefaultAppID")
+	TConfig.MasterKey = beego.AppConfig.DefaultString("MasterKey", "DefaultMasterKey")
+	TConfig.ClientKey = beego.AppConfig.DefaultString("ClientKey", "DefaultClientKey")
 	TConfig.JavascriptKey = beego.AppConfig.String("JavascriptKey")
 	TConfig.DotNetKey = beego.AppConfig.String("DotNetKey")
 	TConfig.RestAPIKey = beego.AppConfig.String("RestAPIKey")
@@ -176,19 +160,19 @@ func validate() {
 
 // validateApplicationConfiguration 校验应用相关参数
 func validateApplicationConfiguration() {
-	if TConfig.AppName == "" {
+	if TConfig.AppName == "DefaultAppName" {
 		log.Fatalln("AppName is required")
 	}
-	if TConfig.ServerURL == "" {
+	if TConfig.ServerURL == "DefaultServerURL" {
 		log.Fatalln("ServerURL is required")
 	}
-	if TConfig.AppID == "" {
+	if TConfig.AppID == "DefaultAppID" {
 		log.Fatalln("AppID is required")
 	}
-	if TConfig.MasterKey == "" {
+	if TConfig.MasterKey == "DefaultMasterKey" {
 		log.Fatalln("MasterKey is required")
 	}
-	if TConfig.ClientKey == "" && TConfig.JavascriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
+	if TConfig.ClientKey == "DefaultClientKey" && TConfig.JavascriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
 		log.Fatalln("ClientKey or JavascriptKey or DotNetKey or RestAPIKey is required")
 	}
 }

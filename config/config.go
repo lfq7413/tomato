@@ -77,16 +77,15 @@ func init() {
 	}
 
 	parseConfig()
-	validate()
 }
 
 func parseConfig() {
-	TConfig.AppName = beego.AppConfig.DefaultString("appname", "DefaultAppName")
-	TConfig.ServerURL = beego.AppConfig.DefaultString("ServerURL", "DefaultServerURL")
+	TConfig.AppName = beego.AppConfig.String("appname")
+	TConfig.ServerURL = beego.AppConfig.String("ServerURL")
 	TConfig.DatabaseURI = beego.AppConfig.String("DatabaseURI")
-	TConfig.AppID = beego.AppConfig.DefaultString("AppID", "DefaultAppID")
-	TConfig.MasterKey = beego.AppConfig.DefaultString("MasterKey", "DefaultMasterKey")
-	TConfig.ClientKey = beego.AppConfig.DefaultString("ClientKey", "DefaultClientKey")
+	TConfig.AppID = beego.AppConfig.String("AppID")
+	TConfig.MasterKey = beego.AppConfig.String("MasterKey")
+	TConfig.ClientKey = beego.AppConfig.String("ClientKey")
 	TConfig.JavascriptKey = beego.AppConfig.String("JavascriptKey")
 	TConfig.DotNetKey = beego.AppConfig.String("DotNetKey")
 	TConfig.RestAPIKey = beego.AppConfig.String("RestAPIKey")
@@ -115,8 +114,8 @@ func parseConfig() {
 	TConfig.WebhookKey = beego.AppConfig.String("WebhookKey")
 
 	TConfig.EnableAccountLockout = beego.AppConfig.DefaultBool("EnableAccountLockout", false)
-	TConfig.AccountLockoutThreshold = beego.AppConfig.DefaultInt("AccountLockoutThreshold", 0)
-	TConfig.AccountLockoutDuration = beego.AppConfig.DefaultInt("AccountLockoutDuration", 0)
+	TConfig.AccountLockoutThreshold = beego.AppConfig.DefaultInt("AccountLockoutThreshold", 10)
+	TConfig.AccountLockoutDuration = beego.AppConfig.DefaultInt("AccountLockoutDuration", 3)
 
 	TConfig.CacheAdapter = beego.AppConfig.DefaultString("CacheAdapter", "InMemory")
 	TConfig.RedisAddress = beego.AppConfig.String("RedisAddress")
@@ -148,31 +147,32 @@ func parseConfig() {
 	TConfig.MaxPasswordHistory = beego.AppConfig.DefaultInt("MaxPasswordHistory", 0)
 }
 
-// validate 校验用户参数合法性
-func validate() {
+// Validate 校验用户参数合法性
+func Validate() {
 	validateApplicationConfiguration()
 	validateFileConfiguration()
 	validatePushConfiguration()
 	validateMailConfiguration()
 	validateLiveQueryConfiguration()
 	validateSessionConfiguration()
+	validateAccountLockoutPolicy()
 }
 
 // validateApplicationConfiguration 校验应用相关参数
 func validateApplicationConfiguration() {
-	if TConfig.AppName == "DefaultAppName" {
+	if TConfig.AppName == "" {
 		log.Fatalln("AppName is required")
 	}
-	if TConfig.ServerURL == "DefaultServerURL" {
+	if TConfig.ServerURL == "" {
 		log.Fatalln("ServerURL is required")
 	}
-	if TConfig.AppID == "DefaultAppID" {
+	if TConfig.AppID == "" {
 		log.Fatalln("AppID is required")
 	}
-	if TConfig.MasterKey == "DefaultMasterKey" {
+	if TConfig.MasterKey == "" {
 		log.Fatalln("MasterKey is required")
 	}
-	if TConfig.ClientKey == "DefaultClientKey" && TConfig.JavascriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
+	if TConfig.ClientKey == "" && TConfig.JavascriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
 		log.Fatalln("ClientKey or JavascriptKey or DotNetKey or RestAPIKey is required")
 	}
 }
@@ -249,6 +249,19 @@ func validateLiveQueryConfiguration() {
 func validateSessionConfiguration() {
 	if TConfig.SessionLength <= 0 {
 		log.Fatalln("Session length must be a value greater than 0")
+	}
+}
+
+// validateAccountLockoutPolicy 校验账户锁定规则
+func validateAccountLockoutPolicy() {
+	if TConfig.EnableAccountLockout == false {
+		return
+	}
+	if TConfig.AccountLockoutDuration < 1 || TConfig.AccountLockoutDuration > 99999 {
+		log.Fatalln("Account lockout duration should be greater than 0 and less than 100000")
+	}
+	if TConfig.AccountLockoutThreshold < 1 || TConfig.AccountLockoutThreshold > 999 {
+		log.Fatalln("Account lockout threshold should be an integer greater than 0 and less than 1000")
 	}
 }
 

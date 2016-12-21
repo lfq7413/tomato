@@ -3,6 +3,7 @@ package tomato
 import (
 	"strings"
 
+	"github.com/lfq7413/tomato/config"
 	_ "github.com/lfq7413/tomato/routers"
 
 	"github.com/astaxie/beego"
@@ -16,6 +17,8 @@ import (
 
 // Run ...
 func Run() {
+
+	config.Validate()
 
 	defer storage.CloseDB()
 

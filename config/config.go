@@ -5,6 +5,8 @@ import (
 
 	"log"
 
+	"regexp"
+
 	"github.com/astaxie/beego"
 )
 
@@ -156,6 +158,7 @@ func Validate() {
 	validateLiveQueryConfiguration()
 	validateSessionConfiguration()
 	validateAccountLockoutPolicy()
+	validatePasswordPolicy()
 }
 
 // validateApplicationConfiguration 校验应用相关参数
@@ -262,6 +265,28 @@ func validateAccountLockoutPolicy() {
 	}
 	if TConfig.AccountLockoutThreshold < 1 || TConfig.AccountLockoutThreshold > 999 {
 		log.Fatalln("Account lockout threshold should be an integer greater than 0 and less than 1000")
+	}
+}
+
+// validatePasswordPolicy 校验密码规则
+func validatePasswordPolicy() {
+	if TConfig.PasswordPolicy == false {
+		return
+	}
+	if TConfig.ResetTokenValidityDuration < 0 {
+		log.Fatalln("ResetTokenValidityDuration must be a positive number")
+	}
+	if TConfig.ValidatorPattern != "" {
+		_, err := regexp.Compile(TConfig.ValidatorPattern)
+		if err != nil {
+			log.Fatalln("ValidatorPattern must be a RegExp")
+		}
+	}
+	if TConfig.MaxPasswordAge < 0 {
+		log.Fatalln("MaxPasswordAge must be a positive number")
+	}
+	if TConfig.MaxPasswordHistory < 0 || TConfig.MaxPasswordHistory > 20 {
+		log.Fatalln("MaxPasswordHistory must be an integer ranging 0 - 20")
 	}
 }
 

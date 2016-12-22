@@ -18,11 +18,11 @@ type LiveQuery struct {
 var TLiveQuery *LiveQuery
 
 func init() {
-	classeNames := strings.Split(config.TConfig.LiveQueryClasses, "|")
+	classNames := strings.Split(config.TConfig.LiveQueryClasses, "|")
 	pubType := config.TConfig.PublisherType
 	pubURL := config.TConfig.PublisherURL
 	pubConfig := config.TConfig.PublisherConfig
-	TLiveQuery = NewLiveQuery(classeNames, pubType, pubURL, pubConfig)
+	TLiveQuery = NewLiveQuery(classNames, pubType, pubURL, pubConfig)
 }
 
 // NewLiveQuery 初始化 LiveQuery

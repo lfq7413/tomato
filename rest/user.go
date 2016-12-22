@@ -214,7 +214,7 @@ func VerifyEmail(username, token string) bool {
 		},
 	}
 
-	if config.TConfig.EmailVerifyTokenValidityDuration != -1 {
+	if config.TConfig.EmailVerifyTokenValidityDuration > 0 {
 		query["emailVerified"] = false
 		query["_email_verify_token_expires_at"] = types.M{
 			"$gt": utils.TimetoString(time.Now().UTC()),

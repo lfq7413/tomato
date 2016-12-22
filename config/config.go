@@ -12,60 +12,60 @@ import (
 
 // Config ...
 type Config struct {
-	AppName                          string
-	ServerURL                        string
-	DatabaseURI                      string
-	AppID                            string
-	MasterKey                        string
-	ClientKey                        string
-	JavascriptKey                    string
-	DotNetKey                        string
-	RestAPIKey                       string
-	AllowClientClassCreation         bool
-	EnableAnonymousUsers             bool
-	VerifyUserEmails                 bool
-	FileAdapter                      string
-	PushAdapter                      string
-	MailAdapter                      string
-	LiveQueryClasses                 string
-	PublisherType                    string
-	PublisherURL                     string
-	PublisherConfig                  string
-	SessionLength                    int
-	RevokeSessionOnPasswordReset     bool
-	PreventLoginWithUnverifiedEmail  bool
-	EmailVerifyTokenValidityDuration int
-	SchemaCacheTTL                   int
-	SMTPServer                       string
-	MailUsername                     string
-	MailPassword                     string
-	WebhookKey                       string
-	EnableAccountLockout             bool
-	AccountLockoutThreshold          int
-	AccountLockoutDuration           int
-	CacheAdapter                     string
-	RedisAddress                     string
-	RedisPassword                    string
-	EnableSingleSchemaCache          bool
-	QiniuBucket                      string
-	QiniuDomain                      string
-	QiniuAccessKey                   string
-	QiniuSecretKey                   string
-	FileDirectAccess                 bool
-	SinaBucket                       string
-	SinaDomain                       string
-	SinaAccessKey                    string
-	SinaSecretKey                    string
-	TencentBucket                    string
-	TencentAppID                     string
-	TencentSecretID                  string
-	TencentSecretKey                 string
-	PasswordPolicy                   bool
-	ResetTokenValidityDuration       int
-	ValidatorPattern                 string
-	DoNotAllowUsername               bool
-	MaxPasswordAge                   int
-	MaxPasswordHistory               int
+	AppName                          string // 应用名称，必填
+	ServerURL                        string // 服务对外地址，必填
+	DatabaseURI                      string // MongoDB 数据库地址
+	AppID                            string // 必填
+	MasterKey                        string // 必填
+	ClientKey                        string // 选填
+	JavascriptKey                    string // 选填
+	DotNetKey                        string // 选填
+	RestAPIKey                       string // 选填
+	AllowClientClassCreation         bool   // 是否允许客户端操作不存在的 class ，默认为 fasle 不允许操作
+	EnableAnonymousUsers             bool   // 是否支持匿名用户，默认为 true 支持匿名用户
+	VerifyUserEmails                 bool   // 是否需要验证用户的 Email ，默认为 false 不需要验证
+	EmailVerifyTokenValidityDuration int    // 邮箱验证 Token 有效期，单位为秒，取值大于等于 0 ，默认为 0 表示不设置 Token 有效期
+	MailAdapter                      string // 邮件发送模块，仅在 VerifyUserEmails=true 时需要配置，可选： smtp ，默认为 smtp
+	SMTPServer                       string // SMTP 邮箱服务器地址，仅在 MailAdapter=smtp 时需要配置
+	MailUsername                     string // SMTP 用户名，仅在 MailAdapter=smtp 时需要配置
+	MailPassword                     string // SMTP 密码，仅在 MailAdapter=smtp 时需要配置
+	FileAdapter                      string // 文件存储模块，可选： Disk、GridFS、Qiniu、Sina、Tencent， 默认为 Disk 本地磁盘存储
+	FileDirectAccess                 bool   // 是否允许直接访问文件地址，默认为 true 允许直接访问而不是通过 tomato 中转
+	QiniuBucket                      string // 七牛云存储 Bucket ，仅在 FileAdapter=Qiniu 时需要配置
+	QiniuDomain                      string // 七牛云存储 Domain ，仅在 FileAdapter=Qiniu 时需要配置
+	QiniuAccessKey                   string // 七牛云存储 AccessKey ，仅在 FileAdapter=Qiniu 时需要配置
+	QiniuSecretKey                   string // 七牛云存储 SecretKey ，仅在 FileAdapter=Qiniu 时需要配置
+	SinaBucket                       string // 新浪云存储 Bucket ，仅在 FileAdapter=Sina 时需要配置
+	SinaDomain                       string // 新浪云存储 Domain ，仅在 FileAdapter=Sina 时需要配置
+	SinaAccessKey                    string // 新浪云存储 AccessKey ，仅在 FileAdapter=Sina 时需要配置
+	SinaSecretKey                    string // 新浪云存储 SecretKey ，仅在 FileAdapter=Sina 时需要配置
+	TencentBucket                    string // 腾讯云存储 Bucket ，仅在 FileAdapter=Tencent 时需要配置
+	TencentAppID                     string // 腾讯云存储 AppID ，仅在 FileAdapter=Tencent 时需要配置
+	TencentSecretID                  string // 腾讯云存储 SecretID ，仅在 FileAdapter=Tencent 时需要配置
+	TencentSecretKey                 string // 腾讯云存储 SecretKey ，仅在 FileAdapter=Tencent 时需要配置
+	PushAdapter                      string // 推送模块
+	LiveQueryClasses                 string // LiveQuery 支持的 classe ，多个 class 使用 | 隔开，如： classeA|classeB|classeC
+	PublisherType                    string // 发布者类型，可选：Redis ，默认使用自带的 EventEmitter
+	PublisherURL                     string // 发布者地址， PublisherType=Redis 时必填
+	PublisherConfig                  string // 发布者配置信息， PublisherType=Redis 时为 Redis 密码，选填
+	SessionLength                    int    // Session 有效期，单位为秒，取值大于 0 ，默认为 31536000 秒，即 1 年
+	RevokeSessionOnPasswordReset     bool   // 密码重置后是否清除 Session ，默认为 true 清除 Session
+	PreventLoginWithUnverifiedEmail  bool   // 是否阻止未验证邮箱的用户登录，默认为 false 不阻止
+	CacheAdapter                     string // 缓存模块，可选： InMemory、Redis、Null， 默认为 InMemory 使用内存做缓存模块
+	RedisAddress                     string // Redis 地址， CacheAdapter=Redis 时必填
+	RedisPassword                    string // Redis 密码，选填
+	SchemaCacheTTL                   int    // Schema 缓存有效期，单位为秒。取值： -1 表示永不过期，0 表示使用 CacheAdapter 自身的有效期，或者大于 0 ，默认为 5 秒
+	EnableSingleSchemaCache          bool   // 是否允许缓存唯一一份 SchemaCache ，默认为 false 不允许
+	WebhookKey                       string // 用于云代码鉴权
+	EnableAccountLockout             bool   // 是否启用账户锁定规则，默认为 false 不启用
+	AccountLockoutThreshold          int    // 锁定账户需要的登录失败次数，取值范围： 1-999 ，默认为 3 次
+	AccountLockoutDuration           int    // 锁定账户时长，单位为分钟，取值范围： 1-99999 ，默认为 10 分钟
+	PasswordPolicy                   bool   // 是否启用密码规则，默认为 false 不启用
+	ResetTokenValidityDuration       int    // 密码重置验证 Token 有效期，单位为秒，取值大于等于 0 ，默认为 0 表示不设置 Token 有效期
+	ValidatorPattern                 string // 校验密码规则的正则表达式
+	DoNotAllowUsername               bool   // 是否启用密码中不允许包含用户名，默认为 false 不启用，密码中可包含用户名
+	MaxPasswordAge                   int    // 密码的最长使用时间，单位为天，取值大于等于 0 ，默认为 0 表示不设置最长使用时间
+	MaxPasswordHistory               int    // 最大密码历史个数，修改的密码不能与密码历史重复，取值范围： 0-20 ，默认为 0 表示不设置密码历史
 }
 
 var (
@@ -116,8 +116,8 @@ func parseConfig() {
 	TConfig.WebhookKey = beego.AppConfig.String("WebhookKey")
 
 	TConfig.EnableAccountLockout = beego.AppConfig.DefaultBool("EnableAccountLockout", false)
-	TConfig.AccountLockoutThreshold = beego.AppConfig.DefaultInt("AccountLockoutThreshold", 10)
-	TConfig.AccountLockoutDuration = beego.AppConfig.DefaultInt("AccountLockoutDuration", 3)
+	TConfig.AccountLockoutThreshold = beego.AppConfig.DefaultInt("AccountLockoutThreshold", 3)
+	TConfig.AccountLockoutDuration = beego.AppConfig.DefaultInt("AccountLockoutDuration", 10)
 
 	TConfig.CacheAdapter = beego.AppConfig.DefaultString("CacheAdapter", "InMemory")
 	TConfig.RedisAddress = beego.AppConfig.String("RedisAddress")
@@ -159,6 +159,7 @@ func Validate() {
 	validateSessionConfiguration()
 	validateAccountLockoutPolicy()
 	validatePasswordPolicy()
+	validateCacheConfiguration()
 }
 
 // validateApplicationConfiguration 校验应用相关参数
@@ -287,6 +288,23 @@ func validatePasswordPolicy() {
 	}
 	if TConfig.MaxPasswordHistory < 0 || TConfig.MaxPasswordHistory > 20 {
 		log.Fatalln("MaxPasswordHistory must be an integer ranging 0 - 20")
+	}
+}
+
+// validateCacheConfiguration 校验缓存相关参数
+func validateCacheConfiguration() {
+	adapter := TConfig.CacheAdapter
+	switch adapter {
+	case "", "InMemory", "Null":
+	case "Redis":
+		if TConfig.RedisAddress == "" {
+			log.Fatalln("RedisAddress is required")
+		}
+	default:
+		log.Fatalln("Unsupported CacheAdapter")
+	}
+	if TConfig.SchemaCacheTTL < -1 {
+		log.Fatalln("SchemaCacheTTL should be -1 or 0 or an integer greater than 0")
 	}
 }
 

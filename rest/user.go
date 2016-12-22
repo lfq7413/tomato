@@ -242,9 +242,11 @@ func CheckResetTokenValidity(username, token string) types.M {
 	where := types.M{
 		"username":          username,
 		"_perishable_token": token,
-		"_perishable_token_expires_at": types.M{
+	}
+	if config.TConfig.PasswordPolicy && config.TConfig.ResetTokenValidityDuration > 0 {
+		where["_perishable_token_expires_at"] = types.M{
 			"$gt": utils.TimetoString(time.Now().UTC()),
-		},
+		}
 	}
 	option := types.M{"limit": 1}
 	results, err := db.Find("_User", where, option)

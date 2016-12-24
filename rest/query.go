@@ -945,3 +945,16 @@ func transformNotInQuery(notInQueryObject types.M, className string, results []t
 	}
 	notInQueryObject["$nin"] = nin
 }
+
+// cleanResultOfSensitiveUserInfo 清除用户数据中的敏感字段
+func cleanResultOfSensitiveUserInfo(result types.M, auth *Auth) {
+	delete(result, "password")
+
+	if auth.IsMaster || (auth.User != nil && utils.S(auth.User["objectId"]) == utils.S(result["objectId"])) {
+		return
+	}
+
+	for _, field := range config.TConfig.UserSensitiveFields {
+		delete(result, field)
+	}
+}

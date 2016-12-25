@@ -545,21 +545,12 @@ func (q *Query) runFind(executeOptions ...types.M) error {
 	if err != nil {
 		return err
 	}
-	// 从 _User 表中删除密码字段
+	// 从 _User 表中删除敏感字段
 	if q.className == "_User" {
 		for _, v := range response {
 			if user := utils.M(v); user != nil {
-				delete(user, "password")
-				if authData := utils.M(user["authData"]); authData != nil {
-					for provider, v := range authData {
-						if v == nil {
-							delete(authData, provider)
-						}
-					}
-					if len(authData) == 0 {
-						delete(user, "authData")
-					}
-				}
+				cleanResultOfSensitiveUserInfo(user, q.auth)
+				cleanResultAuthData(user)
 			}
 		}
 	}
@@ -956,5 +947,19 @@ func cleanResultOfSensitiveUserInfo(result types.M, auth *Auth) {
 
 	for _, field := range config.TConfig.UserSensitiveFields {
 		delete(result, field)
+	}
+}
+
+// cleanResultAuthData 清理 AuthData
+func cleanResultAuthData(result types.M) {
+	if authData := utils.M(result["authData"]); authData != nil {
+		for provider, v := range authData {
+			if v == nil {
+				delete(authData, provider)
+			}
+		}
+		if len(authData) == 0 {
+			delete(result, "authData")
+		}
 	}
 }

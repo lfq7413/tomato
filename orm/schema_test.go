@@ -639,6 +639,63 @@ func Test_validatePermission(t *testing.T) {
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get": types.M{"requiresAuthentication": true},
+		},
+	}
+	className = "post"
+	aclGroup = []string{}
+	operation = "get"
+	err = schama.validatePermission(className, aclGroup, operation)
+	expect = errs.E(errs.ObjectNotFound, "Permission denied, user needs to be authenticated.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get": types.M{"requiresAuthentication": true},
+		},
+	}
+	className = "post"
+	aclGroup = []string{"*"}
+	operation = "get"
+	err = schama.validatePermission(className, aclGroup, operation)
+	expect = errs.E(errs.ObjectNotFound, "Permission denied, user needs to be authenticated.")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get": types.M{"requiresAuthentication": true},
+		},
+	}
+	className = "post"
+	aclGroup = []string{"role:abc"}
+	operation = "get"
+	err = schama.validatePermission(className, aclGroup, operation)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	schama.perms = types.M{
+		"post": types.M{
+			"get":            types.M{"role:1024": true, "requiresAuthentication": true},
+			"readUserFields": types.S{"key"},
+		},
+	}
+	className = "post"
+	aclGroup = []string{"role:abc"}
+	operation = "get"
+	err = schama.validatePermission(className, aclGroup, operation)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
 }
 
 func Test_EnforceClassExists(t *testing.T) {
@@ -2639,6 +2696,13 @@ func Test_verifyPermissionKey(t *testing.T) {
 	key = "@mail"
 	err = verifyPermissionKey(key)
 	expect = errs.E(errs.InvalidJSON, key+" is not a valid key for class level permissions")
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	key = "requiresAuthentication"
+	err = verifyPermissionKey(key)
+	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
 	}

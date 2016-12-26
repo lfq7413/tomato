@@ -393,6 +393,21 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	s.permsMutex.Lock()
 	defer s.permsMutex.Unlock()
 	classPerms := utils.M(s.perms[className])
+	perms := utils.M(classPerms[operation])
+
+	// 如果仅限认证用户访问，则需要确保存在 acl
+	if perms != nil && perms["requiresAuthentication"] != nil {
+		// 仅有 * (public) 不允许访问
+		if aclGroup == nil || len(aclGroup) == 0 {
+			return errs.E(errs.ObjectNotFound, "Permission denied, user needs to be authenticated.")
+		} else if len(aclGroup) == 1 && aclGroup[0] == "*" {
+			return errs.E(errs.ObjectNotFound, "Permission denied, user needs to be authenticated.")
+		}
+		// 当前类权限中仅有 requiresAuthentication 时，允许访问
+		if len(perms) == 1 {
+			return nil
+		}
+	}
 
 	var permissionField string
 	if operation == "get" || operation == "find" {
@@ -1012,7 +1027,9 @@ var roleRegex = `^role:.*`
 // * permission
 var publicRegex = `^\*$`
 
-var permissionKeyRegex = []string{userIDRegex, roleRegex, publicRegex}
+var requireAuthenticationRegex = `^requiresAuthentication$`
+
+var permissionKeyRegex = []string{userIDRegex, roleRegex, publicRegex, requireAuthenticationRegex}
 
 // verifyPermissionKey 校验 CLP 中各种操作包含的角色名是否合法
 // 可以是24位的用户 ID，可以是角色名 role:abc ,可以是公共权限 *

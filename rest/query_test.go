@@ -2569,6 +2569,54 @@ func Test_NewQuery(t *testing.T) {
 	auth = Master()
 	className = "user"
 	where = nil
+	options = types.M{"keys": "post.id,user"}
+	clientSDK = nil
+	result, err = NewQuery(auth, className, where, options, clientSDK)
+	expect = &Query{
+		auth:              auth,
+		className:         "user",
+		Where:             types.M{},
+		restOptions:       types.M{"keys": "post.id,user", "include": "post"},
+		findOptions:       types.M{},
+		response:          types.M{},
+		doCount:           false,
+		include:           [][]string{[]string{"post"}},
+		keys:              []string{"post.id", "user", "objectId", "createdAt", "updatedAt"},
+		redirectKey:       "",
+		redirectClassName: "",
+		clientSDK:         nil,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/**********************************************************/
+	auth = Master()
+	className = "user"
+	where = nil
+	options = types.M{"keys": "post.id,user", "include": "name"}
+	clientSDK = nil
+	result, err = NewQuery(auth, className, where, options, clientSDK)
+	expect = &Query{
+		auth:              auth,
+		className:         "user",
+		Where:             types.M{},
+		restOptions:       types.M{"keys": "post.id,user", "include": "name,post"},
+		findOptions:       types.M{},
+		response:          types.M{},
+		doCount:           false,
+		include:           [][]string{[]string{"name"}, []string{"post"}},
+		keys:              []string{"post.id", "user", "objectId", "createdAt", "updatedAt"},
+		redirectKey:       "",
+		redirectClassName: "",
+		clientSDK:         nil,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/**********************************************************/
+	auth = Master()
+	className = "user"
+	where = nil
 	options = types.M{"count": true}
 	clientSDK = nil
 	result, err = NewQuery(auth, className, where, options, clientSDK)
@@ -2673,6 +2721,35 @@ func Test_NewQuery(t *testing.T) {
 		className:   "user",
 		Where:       types.M{},
 		restOptions: types.M{"include": "user.session,name.friend"},
+		findOptions: types.M{},
+		response:    types.M{},
+		doCount:     false,
+		include: [][]string{
+			[]string{"name"},
+			[]string{"name", "friend"},
+			[]string{"user"},
+			[]string{"user", "session"},
+		},
+		keys:              []string{},
+		redirectKey:       "",
+		redirectClassName: "",
+		clientSDK:         nil,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	/**********************************************************/
+	auth = Master()
+	className = "user"
+	where = nil
+	options = types.M{"include": "name,user.session,name.friend"}
+	clientSDK = nil
+	result, err = NewQuery(auth, className, where, options, clientSDK)
+	expect = &Query{
+		auth:        auth,
+		className:   "user",
+		Where:       types.M{},
+		restOptions: types.M{"include": "name,user.session,name.friend"},
 		findOptions: types.M{},
 		response:    types.M{},
 		doCount:     false,

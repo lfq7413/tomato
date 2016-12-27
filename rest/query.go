@@ -29,6 +29,8 @@ type Query struct {
 	clientSDK         map[string]string
 }
 
+var alwaysSelectedKeys = []string{"objectId", "createdAt", "updatedAt"}
+
 // NewQuery 组装查询对象
 func NewQuery(
 	auth *Auth,
@@ -82,12 +84,34 @@ func NewQuery(
 		}
 	}
 
+	// 当 keys 包含 n 级时，在 include 中自动加入 n-1 级
+	if k, ok := options["keys"]; ok {
+		if s, ok := k.(string); ok {
+			keys := []string{}
+			for _, key := range strings.Split(s, ",") {
+				if len(strings.Split(key, ".")) > 1 {
+					key = key[:strings.LastIndex(key, ".")]
+					keys = append(keys, key)
+				}
+			}
+			keysForInclude := strings.Join(keys, ",")
+
+			if keysForInclude != "" {
+				if include := utils.S(options["include"]); include == "" {
+					options["include"] = keysForInclude
+				} else {
+					options["include"] = include + "," + keysForInclude
+				}
+			}
+		}
+	}
+
 	for k, v := range options {
 		switch k {
 		case "keys":
 			if s, ok := v.(string); ok {
 				query.keys = strings.Split(s, ",")
-				query.keys = append(query.keys, "objectId", "createdAt", "updatedAt")
+				query.keys = append(query.keys, alwaysSelectedKeys...)
 			}
 		case "count":
 			query.doCount = true
@@ -112,15 +136,19 @@ func NewQuery(
 		case "include":
 			if s, ok := v.(string); ok { // v = "user.session,name.friend"
 				paths := strings.Split(s, ",") // paths = ["user.session","name.friend"]
-				pathSet := []string{}
+				pathSet := map[string]bool{}
 				for _, path := range paths {
 					parts := strings.Split(path, ".") // parts = ["user","session"]
 					for lenght := 1; lenght <= len(parts); lenght++ {
-						pathSet = append(pathSet, strings.Join(parts[0:lenght], "."))
-					} // pathSet = ["user","user.session"]
-				} // pathSet = ["user","user.session","name","name.friend"]
-				sort.Strings(pathSet) // pathSet = ["name","name.friend","user","user.session"]
-				for _, set := range pathSet {
+						pathSet[strings.Join(parts[0:lenght], ".")] = true
+					} // pathSet = {"user":true,"user.session":true}
+				} // pathSet = {"user":true,"user.session":true,"name":true,"name.friend":true}
+				pathArray := []string{}
+				for k := range pathSet {
+					pathArray = append(pathArray, k)
+				}
+				sort.Strings(pathArray) // pathArray = ["name","name.friend","user","user.session"]
+				for _, set := range pathArray {
 					query.include = append(query.include, strings.Split(set, "."))
 				} // query.include = [["name"],["name","friend"],["user"],["user","seeeion"]]
 			}

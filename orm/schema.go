@@ -670,7 +670,9 @@ func (s *Schema) reloadData(options types.M) {
 			"fields":                types.M{},
 			"classLevelPermissions": types.M{},
 		}
-		s.data[className] = injectDefaultSchema(sch)
+		schema := injectDefaultSchema(sch)
+		s.data[className] = schema["fields"]
+		s.perms[className] = schema["classLevelPermissions"]
 	}
 	s.dataMutex.Unlock()
 
@@ -729,7 +731,11 @@ func (s *Schema) GetOneSchema(className string, allowVolatileClasses bool, optio
 				s.dataMutex.Lock()
 				defer s.dataMutex.Unlock()
 				if s.data != nil && utils.M(s.data[className]) != nil {
-					return utils.M(s.data[className]), nil
+					return types.M{
+						"className":             className,
+						"fields":                s.data[className],
+						"classLevelPermissions": s.perms[className],
+					}, nil
 				}
 				return types.M{}, nil
 			}

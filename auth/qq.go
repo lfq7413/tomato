@@ -1,4 +1,4 @@
-package authdatamanager
+package auth
 
 import (
 	"github.com/lfq7413/tomato/errs"

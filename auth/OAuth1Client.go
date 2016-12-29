@@ -1,4 +1,4 @@
-package authdatamanager
+package auth
 
 import (
 	"crypto/hmac"

@@ -8,7 +8,7 @@ import (
 
 	"strconv"
 
-	"github.com/lfq7413/tomato/authdatamanager"
+	am "github.com/lfq7413/tomato/auth"
 	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/client"
 	"github.com/lfq7413/tomato/cloud"
@@ -597,7 +597,7 @@ func (w *Write) handleAuthDataValidation(authData types.M) error {
 		if v == nil {
 			continue
 		}
-		err := authdatamanager.ValidateAuthData(k, utils.M(v))
+		err := am.ValidateAuthData(k, utils.M(v))
 		if err != nil {
 			// 验证出现问题
 			return err

@@ -756,6 +756,14 @@ func Test_transformConstraint(t *testing.T) {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
+	constraint = types.M{"$in": types.S{1, types.S{2, 3}, 4, types.S{5, 6}}}
+	inArray = false
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{"$in": types.S{1, 2, 3, 4, 5, 6}}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
 	constraint = types.M{"$in": types.S{types.M{"key": "value"}}}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)

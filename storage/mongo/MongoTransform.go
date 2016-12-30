@@ -361,6 +361,23 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 		return cannotTransform(), nil
 	}
 
+	var transformFunction func(atom interface{}) (interface{}, error)
+	if inArray {
+		transformFunction = t.transformInteriorAtom
+	} else {
+		transformFunction = t.transformTopLevelAtom
+	}
+	var transformer = func(atom interface{}) (interface{}, error) {
+		result, err := transformFunction(atom)
+		if err != nil {
+			return nil, err
+		}
+		if result == cannotTransform() {
+			return nil, errs.E(errs.InvalidJSON, "bad atom")
+		}
+		return result, nil
+	}
+
 	// keys is the constraints in reverse alphabetical order.
 	// This is a hack so that:
 	//   $regex is handled before $options
@@ -378,19 +395,9 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 		// 转换 小于、大于、存在、等于、不等于 操作符
 		case "$lt", "$lte", "$gt", "$gte", "$exists", "$ne", "$eq":
 			var err error
-			if inArray {
-				answer[key], err = t.transformInteriorAtom(object[key])
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				answer[key], err = t.transformTopLevelAtom(object[key])
-				if err != nil {
-					return nil, err
-				}
-			}
-			if answer[key] == cannotTransform() {
-				return nil, errs.E(errs.InvalidJSON, "bad atom")
+			answer[key], err = transformer(object[key])
+			if err != nil {
+				return nil, err
 			}
 
 		// 转换 包含、不包含 操作符
@@ -402,23 +409,21 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 			}
 			answerArr := types.S{}
 			for _, value := range arr {
-				var result interface{}
-				var err error
-				if inArray {
-					result, err = t.transformInteriorAtom(value)
-					if err != nil {
-						return nil, err
+				if values := utils.A(value); values != nil {
+					for _, v := range values {
+						result, err := transformer(v)
+						if err != nil {
+							return nil, err
+						}
+						answerArr = append(answerArr, result)
 					}
 				} else {
-					result, err = t.transformTopLevelAtom(value)
+					result, err := transformer(value)
 					if err != nil {
 						return nil, err
 					}
+					answerArr = append(answerArr, result)
 				}
-				if result == cannotTransform() {
-					return nil, errs.E(errs.InvalidJSON, "bad atom")
-				}
-				answerArr = append(answerArr, result)
 			}
 			answer[key] = answerArr
 

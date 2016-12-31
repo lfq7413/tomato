@@ -4,6 +4,12 @@ import "github.com/lfq7413/tomato/types"
 
 const postgresSchemaCollectionName = "_SCHEMA"
 
+const postgresRelationDoesNotExistError = "42P01"
+const postgresDuplicateRelationError = "42P07"
+const postgresDuplicateColumnError = "42701"
+const postgresUniqueIndexViolationError = "23505"
+const postgresTransactionAbortedError = "25P02"
+
 // PostgresAdapter postgres 数据库适配器
 type PostgresAdapter struct {
 	collectionPrefix string
@@ -106,4 +112,101 @@ func (p *PostgresAdapter) EnsureUniqueness(className string, schema types.M, fie
 // PerformInitialization ...
 func (p *PostgresAdapter) PerformInitialization(options types.M) error {
 	return nil
+}
+
+var parseToPosgresComparator = map[string]string{
+	"$gt":  ">",
+	"$lt":  "<",
+	"$gte": ">=",
+	"$lte": "<=",
+}
+
+func parseTypeToPostgresType(t types.M) (string, error) {
+	// TODO
+	return "", nil
+}
+
+func toPostgresValue(value interface{}) interface{} {
+	// TODO
+	return nil
+}
+
+func transformValue(value interface{}) interface{} {
+	// TODO
+	return nil
+}
+
+var emptyCLPS = types.M{
+	"find":     types.M{},
+	"get":      types.M{},
+	"create":   types.M{},
+	"update":   types.M{},
+	"delete":   types.M{},
+	"addField": types.M{},
+}
+
+var defaultCLPS = types.M{
+	"find":     types.M{"*": true},
+	"get":      types.M{"*": true},
+	"create":   types.M{"*": true},
+	"update":   types.M{"*": true},
+	"delete":   types.M{"*": true},
+	"addField": types.M{"*": true},
+}
+
+func toParseSchema(schema types.M) types.M {
+	// TODO
+	return nil
+}
+
+func toPostgresSchema(schema types.M) types.M {
+	// TODO
+	return nil
+}
+
+func handleDotFields(object types.M) types.M {
+	// TODO
+	return nil
+}
+
+func validateKeys(object interface{}) error {
+	// TODO
+	return nil
+}
+
+func joinTablesForSchema(schema types.M) []string {
+	// TODO
+	return nil
+}
+
+func buildWhereClause(schema, query types.M, index int) (types.M, error) {
+	// TODO
+	// toPostgresSchema
+	// removeWhiteSpace
+	// processRegexPattern
+	// toPostgresValue
+	// transformValue
+	return nil, nil
+}
+
+func removeWhiteSpace(s string) string {
+	// TODO
+	return ""
+}
+
+func processRegexPattern(s string) string {
+	// TODO
+	// literalizeRegexPart
+	return ""
+}
+
+func createLiteralRegex(s string) string {
+	// TODO
+	return ""
+}
+
+func literalizeRegexPart(s string) string {
+	// TODO
+	// createLiteralRegex
+	return ""
 }

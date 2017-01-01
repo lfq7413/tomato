@@ -1,6 +1,10 @@
 package postgres
 
-import "github.com/lfq7413/tomato/types"
+import (
+	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
+)
 
 const postgresSchemaCollectionName = "_SCHEMA"
 
@@ -122,8 +126,37 @@ var parseToPosgresComparator = map[string]string{
 }
 
 func parseTypeToPostgresType(t types.M) (string, error) {
-	// TODO
-	return "", nil
+	if t == nil {
+		return "", nil
+	}
+	tp := utils.S(t["type"])
+	switch tp {
+	case "String":
+		return "text", nil
+	case "Date":
+		return "timestamp with time zone", nil
+	case "Object":
+		return "jsonb", nil
+	case "File":
+		return "text", nil
+	case "Boolean":
+		return "boolean", nil
+	case "Pointer":
+		return "char(10)", nil
+	case "Number":
+		return "double precision", nil
+	case "GeoPoint":
+		return "point", nil
+	case "Array":
+		if contents := utils.M(t["contents"]); contents != nil {
+			if utils.S(contents["type"]) == "String" {
+				return "text[]", nil
+			}
+		}
+		return "jsonb", nil
+	default:
+		return "", errs.E(errs.IncorrectType, "no type for "+tp+" yet")
+	}
 }
 
 func toPostgresValue(value interface{}) interface{} {

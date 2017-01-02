@@ -160,13 +160,24 @@ func parseTypeToPostgresType(t types.M) (string, error) {
 }
 
 func toPostgresValue(value interface{}) interface{} {
-	// TODO
-	return nil
+	if v := utils.M(value); v != nil {
+		if utils.S(v["__type"]) == "Date" {
+			return v["iso"]
+		}
+		if utils.S(v["__type"]) == "File" {
+			return v["name"]
+		}
+	}
+	return value
 }
 
 func transformValue(value interface{}) interface{} {
-	// TODO
-	return nil
+	if v := utils.M(value); v != nil {
+		if utils.S(v["__type"]) == "Pointer" {
+			return v["objectId"]
+		}
+	}
+	return value
 }
 
 var emptyCLPS = types.M{
@@ -217,8 +228,6 @@ func buildWhereClause(schema, query types.M, index int) (types.M, error) {
 	// toPostgresSchema
 	// removeWhiteSpace
 	// processRegexPattern
-	// toPostgresValue
-	// transformValue
 	return nil, nil
 }
 

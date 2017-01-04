@@ -199,8 +199,43 @@ var defaultCLPS = types.M{
 }
 
 func toParseSchema(schema types.M) types.M {
-	// TODO
-	return nil
+	if schema == nil {
+		return nil
+	}
+
+	var fields types.M
+	if fields = utils.M(schema["fields"]); fields == nil {
+		fields = types.M{}
+	}
+
+	if utils.S(schema["className"]) == "_User" {
+		if _, ok := fields["_hashed_password"]; ok {
+			delete(fields, "_hashed_password")
+		}
+	}
+
+	if _, ok := fields["_wperm"]; ok {
+		delete(fields, "_wperm")
+	}
+	if _, ok := fields["_rperm"]; ok {
+		delete(fields, "_rperm")
+	}
+
+	var clps types.M
+	clps = utils.CopyMap(defaultCLPS)
+	if classLevelPermissions := utils.M(schema["classLevelPermissions"]); classLevelPermissions != nil {
+		// clps = utils.CopyMap(emptyCLPS)
+		// 不存在的 action 默认为公共权限
+		for k, v := range classLevelPermissions {
+			clps[k] = v
+		}
+	}
+
+	return types.M{
+		"className":             schema["className"],
+		"fields":                fields,
+		"classLevelPermissions": clps,
+	}
 }
 
 func toPostgresSchema(schema types.M) types.M {

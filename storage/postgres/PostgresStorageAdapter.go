@@ -239,8 +239,32 @@ func toParseSchema(schema types.M) types.M {
 }
 
 func toPostgresSchema(schema types.M) types.M {
-	// TODO
-	return nil
+	if schema == nil {
+		return nil
+	}
+
+	var fields types.M
+	if fields = utils.M(schema["fields"]); fields == nil {
+		fields = types.M{}
+	}
+
+	fields["_wperm"] = types.M{
+		"type":     "Array",
+		"contents": types.M{"type": "String"},
+	}
+	fields["_rperm"] = types.M{
+		"type":     "Array",
+		"contents": types.M{"type": "String"},
+	}
+
+	if utils.S(schema["className"]) == "_User" {
+		fields["_hashed_password"] = types.M{"type": "String"}
+		fields["_password_history"] = types.M{"type": "Array"}
+	}
+
+	schema["fields"] = fields
+
+	return schema
 }
 
 func handleDotFields(object types.M) types.M {
@@ -260,7 +284,6 @@ func joinTablesForSchema(schema types.M) []string {
 
 func buildWhereClause(schema, query types.M, index int) (types.M, error) {
 	// TODO
-	// toPostgresSchema
 	// removeWhiteSpace
 	// processRegexPattern
 	return nil, nil

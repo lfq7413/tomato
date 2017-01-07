@@ -225,3 +225,155 @@ func Test_transformValue(t *testing.T) {
 		}
 	}
 }
+
+func Test_toParseSchema(t *testing.T) {
+	type args struct {
+		schema types.M
+	}
+	tests := []struct {
+		name string
+		args args
+		want types.M
+	}{
+		{
+			name: "1",
+			args: args{
+				schema: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "2",
+			args: args{
+				schema: types.M{
+					"className": "post",
+				},
+			},
+			want: types.M{
+				"className": "post",
+				"fields":    types.M{},
+				"classLevelPermissions": types.M{
+					"find":     types.M{"*": true},
+					"get":      types.M{"*": true},
+					"create":   types.M{"*": true},
+					"update":   types.M{"*": true},
+					"delete":   types.M{"*": true},
+					"addField": types.M{"*": true},
+				},
+			},
+		},
+		{
+			name: "3",
+			args: args{
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"title": types.M{"type": "String"},
+						"auth":  types.M{"type": "String"},
+					},
+				},
+			},
+			want: types.M{
+				"className": "post",
+				"fields": types.M{
+					"title": types.M{"type": "String"},
+					"auth":  types.M{"type": "String"},
+				},
+				"classLevelPermissions": types.M{
+					"find":     types.M{"*": true},
+					"get":      types.M{"*": true},
+					"create":   types.M{"*": true},
+					"update":   types.M{"*": true},
+					"delete":   types.M{"*": true},
+					"addField": types.M{"*": true},
+				},
+			},
+		},
+		{
+			name: "4",
+			args: args{
+				schema: types.M{
+					"className": "_User",
+					"fields": types.M{
+						"name":             types.M{"type": "String"},
+						"_hashed_password": types.M{"type": "String"},
+					},
+				},
+			},
+			want: types.M{
+				"className": "_User",
+				"fields": types.M{
+					"name": types.M{"type": "String"},
+				},
+				"classLevelPermissions": types.M{
+					"find":     types.M{"*": true},
+					"get":      types.M{"*": true},
+					"create":   types.M{"*": true},
+					"update":   types.M{"*": true},
+					"delete":   types.M{"*": true},
+					"addField": types.M{"*": true},
+				},
+			},
+		},
+		{
+			name: "5",
+			args: args{
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"title":  types.M{"type": "String"},
+						"_wperm": types.M{"type": "Array"},
+						"_rperm": types.M{"type": "Array"},
+					},
+				},
+			},
+			want: types.M{
+				"className": "post",
+				"fields": types.M{
+					"title": types.M{"type": "String"},
+				},
+				"classLevelPermissions": types.M{
+					"find":     types.M{"*": true},
+					"get":      types.M{"*": true},
+					"create":   types.M{"*": true},
+					"update":   types.M{"*": true},
+					"delete":   types.M{"*": true},
+					"addField": types.M{"*": true},
+				},
+			},
+		},
+		{
+			name: "6",
+			args: args{
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"title": types.M{"type": "String"},
+					},
+					"classLevelPermissions": types.M{
+						"addField": types.M{},
+					},
+				},
+			},
+			want: types.M{
+				"className": "post",
+				"fields": types.M{
+					"title": types.M{"type": "String"},
+				},
+				"classLevelPermissions": types.M{
+					"find":     types.M{"*": true},
+					"get":      types.M{"*": true},
+					"create":   types.M{"*": true},
+					"update":   types.M{"*": true},
+					"delete":   types.M{"*": true},
+					"addField": types.M{},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		if got := toParseSchema(tt.args.schema); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. toParseSchema() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

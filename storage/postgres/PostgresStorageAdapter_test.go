@@ -377,3 +377,75 @@ func Test_toParseSchema(t *testing.T) {
 		}
 	}
 }
+
+func Test_toPostgresSchema(t *testing.T) {
+	type args struct {
+		schema types.M
+	}
+	tests := []struct {
+		name string
+		args args
+		want types.M
+	}{
+		{
+			name: "1",
+			args: args{
+				schema: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "2",
+			args: args{
+				schema: types.M{
+					"className": "post",
+				},
+			},
+			want: types.M{
+				"className": "post",
+				"fields": types.M{
+					"_wperm": types.M{
+						"type":     "Array",
+						"contents": types.M{"type": "String"},
+					},
+					"_rperm": types.M{
+						"type":     "Array",
+						"contents": types.M{"type": "String"},
+					},
+				},
+			},
+		},
+		{
+			name: "3",
+			args: args{
+				schema: types.M{
+					"className": "_User",
+					"fields": types.M{
+						"name": types.M{"type": "String"},
+					},
+				},
+			},
+			want: types.M{
+				"className": "_User",
+				"fields": types.M{
+					"name": types.M{"type": "String"},
+					"_wperm": types.M{
+						"type":     "Array",
+						"contents": types.M{"type": "String"},
+					},
+					"_rperm": types.M{
+						"type":     "Array",
+						"contents": types.M{"type": "String"},
+					},
+					"_hashed_password":  types.M{"type": "String"},
+					"_password_history": types.M{"type": "Array"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		if got := toPostgresSchema(tt.args.schema); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. toPostgresSchema() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

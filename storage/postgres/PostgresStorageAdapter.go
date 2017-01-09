@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"strings"
+
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -268,8 +270,36 @@ func toPostgresSchema(schema types.M) types.M {
 }
 
 func handleDotFields(object types.M) types.M {
-	// TODO
-	return nil
+	for fieldName := range object {
+		if strings.Index(fieldName, ".") == -1 {
+			continue
+		}
+		components := strings.Split(fieldName, ".")
+
+		value := object[fieldName]
+		if v := utils.M(value); v != nil {
+			if utils.S(v["__op"]) == "Delete" {
+				value = nil
+			}
+		}
+
+		currentObj := object
+		for i, next := range components {
+			if i == (len(components) - 1) {
+				currentObj[next] = value
+				break
+			}
+			obj := currentObj[next]
+			if obj == nil {
+				obj = types.M{}
+				currentObj[next] = obj
+			}
+			currentObj = utils.M(currentObj[next])
+		}
+
+		delete(object, fieldName)
+	}
+	return object
 }
 
 func validateKeys(object interface{}) error {

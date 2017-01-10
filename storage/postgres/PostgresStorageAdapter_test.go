@@ -449,3 +449,87 @@ func Test_toPostgresSchema(t *testing.T) {
 		}
 	}
 }
+
+func Test_handleDotFields(t *testing.T) {
+	type args struct {
+		object types.M
+	}
+	tests := []struct {
+		name string
+		args args
+		want types.M
+	}{
+		{
+			name: "1",
+			args: args{
+				object: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "2",
+			args: args{
+				object: types.M{
+					"key": "hello",
+				},
+			},
+			want: types.M{
+				"key": "hello",
+			},
+		},
+		{
+			name: "3",
+			args: args{
+				object: types.M{
+					"key.sub": "hello",
+					"key2":    "world",
+				},
+			},
+			want: types.M{
+				"key": types.M{
+					"sub": "hello",
+				},
+				"key2": "world",
+			},
+		},
+		{
+			name: "4",
+			args: args{
+				object: types.M{
+					"key.sub.sub": "hello",
+					"key2":        "world",
+				},
+			},
+			want: types.M{
+				"key": types.M{
+					"sub": types.M{
+						"sub": "hello",
+					},
+				},
+				"key2": "world",
+			},
+		},
+		{
+			name: "5",
+			args: args{
+				object: types.M{
+					"key.sub": types.M{
+						"__op": "Delete",
+					},
+					"key2": "world",
+				},
+			},
+			want: types.M{
+				"key": types.M{
+					"sub": nil,
+				},
+				"key2": "world",
+			},
+		},
+	}
+	for _, tt := range tests {
+		if got := handleDotFields(tt.args.object); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. handleDotFields() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

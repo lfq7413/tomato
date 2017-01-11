@@ -303,7 +303,18 @@ func handleDotFields(object types.M) types.M {
 }
 
 func validateKeys(object interface{}) error {
-	// TODO
+	if obj := utils.M(object); obj != nil {
+		for key, value := range obj {
+			err := validateKeys(value)
+			if err != nil {
+				return err
+			}
+
+			if strings.Contains(key, "$") || strings.Contains(key, ".") {
+				return errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters")
+			}
+		}
+	}
 	return nil
 }
 

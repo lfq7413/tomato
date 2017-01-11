@@ -319,8 +319,20 @@ func validateKeys(object interface{}) error {
 }
 
 func joinTablesForSchema(schema types.M) []string {
-	// TODO
-	return nil
+	list := []string{}
+	if schema != nil {
+		if fields := utils.M(schema["fields"]); fields != nil {
+			className := utils.S(schema["className"])
+			for field, v := range fields {
+				if tp := utils.M(v); tp != nil {
+					if utils.S(tp["type"]) == "Relation" {
+						list = append(list, "_Join:"+field+":"+className)
+					}
+				}
+			}
+		}
+	}
+	return list
 }
 
 func buildWhereClause(schema, query types.M, index int) (types.M, error) {

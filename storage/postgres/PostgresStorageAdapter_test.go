@@ -533,3 +533,73 @@ func Test_handleDotFields(t *testing.T) {
 		}
 	}
 }
+
+func Test_validateKeys(t *testing.T) {
+	type args struct {
+		object interface{}
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		{
+			name:    "1",
+			args:    args{object: nil},
+			wantErr: nil,
+		},
+		{
+			name: "2",
+			args: args{object: types.M{
+				"key": "hello",
+			}},
+			wantErr: nil,
+		},
+		{
+			name: "3",
+			args: args{object: types.M{
+				"key.sub": "hello",
+			}},
+			wantErr: errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters"),
+		},
+		{
+			name: "4",
+			args: args{object: types.M{
+				"key$sub": "hello",
+			}},
+			wantErr: errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters"),
+		},
+		{
+			name: "5",
+			args: args{object: types.M{
+				"key": types.M{
+					"sub": "hello",
+				},
+			}},
+			wantErr: nil,
+		},
+		{
+			name: "6",
+			args: args{object: types.M{
+				"key": types.M{
+					"sub.key": "hello",
+				},
+			}},
+			wantErr: errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters"),
+		},
+		{
+			name: "7",
+			args: args{object: types.M{
+				"key": types.M{
+					"sub$key": "hello",
+				},
+			}},
+			wantErr: errs.E(errs.InvalidNestedKey, "Nested keys should not contain the '$' or '.' characters"),
+		},
+	}
+	for _, tt := range tests {
+		if err := validateKeys(tt.args.object); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. validateKeys() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+}

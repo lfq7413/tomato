@@ -603,3 +603,51 @@ func Test_validateKeys(t *testing.T) {
 		}
 	}
 }
+
+func Test_joinTablesForSchema(t *testing.T) {
+	type args struct {
+		schema types.M
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "1",
+			args: args{schema: nil},
+			want: []string{},
+		},
+		{
+			name: "2",
+			args: args{schema: types.M{"className": "post"}},
+			want: []string{},
+		},
+		{
+			name: "3",
+			args: args{schema: types.M{
+				"className": "post",
+				"fields": types.M{
+					"name": types.M{"type": "String"},
+				},
+			}},
+			want: []string{},
+		},
+		{
+			name: "4",
+			args: args{schema: types.M{
+				"className": "post",
+				"fields": types.M{
+					"name": types.M{"type": "String"},
+					"user": types.M{"type": "Relation"},
+				},
+			}},
+			want: []string{"_Join:user:post"},
+		},
+	}
+	for _, tt := range tests {
+		if got := joinTablesForSchema(tt.args.schema); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. joinTablesForSchema() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

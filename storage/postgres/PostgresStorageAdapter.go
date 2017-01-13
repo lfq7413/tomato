@@ -3,6 +3,8 @@ package postgres
 import (
 	"strings"
 
+	"regexp"
+
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -354,12 +356,20 @@ func processRegexPattern(s string) string {
 }
 
 func createLiteralRegex(s string) string {
-	// TODO
-	return ""
+	chars := strings.Split(s, "")
+	for i, c := range chars {
+		if m, _ := regexp.MatchString(`[0-9a-zA-Z]`, c); m == false {
+			if c == `'` {
+				chars[i] = `''`
+			} else {
+				chars[i] = `\\` + c
+			}
+		}
+	}
+	return strings.Join(chars, "")
 }
 
 func literalizeRegexPart(s string) string {
 	// TODO
-	// createLiteralRegex
 	return ""
 }

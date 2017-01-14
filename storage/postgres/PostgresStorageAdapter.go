@@ -351,7 +351,6 @@ func removeWhiteSpace(s string) string {
 
 func processRegexPattern(s string) string {
 	// TODO
-	// literalizeRegexPart
 	return ""
 }
 
@@ -370,6 +369,40 @@ func createLiteralRegex(s string) string {
 }
 
 func literalizeRegexPart(s string) string {
-	// TODO
-	return ""
+	// go 不支持 (?!) 语法，需要进行等价替换
+	// /\\Q((?!\\E).*)\\E$/
+	// /\\Q(\\[^E\n\r].*|[^\\\n\r].*|.??)\\E$/
+	matcher1 := regexp.MustCompile(`\\Q(\\[^E\n\r].*|[^\\\n\r].*|.??)\\E$`)
+	result1 := matcher1.FindStringSubmatch(s)
+	if len(result1) > 1 {
+		index := strings.Index(s, result1[0])
+		prefix := s[:index]
+		remaining := result1[1]
+		return literalizeRegexPart(prefix) + createLiteralRegex(remaining)
+	}
+
+	// /\\Q((?!\\E).*)$/
+	// /\\Q(\\[^E\n\r].*|[^\\\n\r].*|.??)$/
+	matcher2 := regexp.MustCompile(`\\Q(\\[^E\n\r].*|[^\\\n\r].*|.??)$`)
+	result2 := matcher2.FindStringSubmatch(s)
+	if len(result2) > 1 {
+		index := strings.Index(s, result2[0])
+		prefix := s[:index]
+		remaining := result2[1]
+		return literalizeRegexPart(prefix) + createLiteralRegex(remaining)
+	}
+
+	re := regexp.MustCompile(`([^\\])(\\E)`)
+	s = re.ReplaceAllString(s, "$1")
+	re = regexp.MustCompile(`([^\\])(\\Q)`)
+	s = re.ReplaceAllString(s, "$1")
+	re = regexp.MustCompile(`^\\E`)
+	s = re.ReplaceAllString(s, "")
+	re = regexp.MustCompile(`^\\Q`)
+	s = re.ReplaceAllString(s, "")
+	re = regexp.MustCompile(`([^'])'`)
+	s = re.ReplaceAllString(s, "$1''")
+	re = regexp.MustCompile(`^'([^'])`)
+	s = re.ReplaceAllString(s, "''$1")
+	return s
 }

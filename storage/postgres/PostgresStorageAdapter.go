@@ -340,7 +340,6 @@ func joinTablesForSchema(schema types.M) []string {
 func buildWhereClause(schema, query types.M, index int) (types.M, error) {
 	// TODO
 	// removeWhiteSpace
-	// processRegexPattern
 	return nil, nil
 }
 
@@ -350,8 +349,12 @@ func removeWhiteSpace(s string) string {
 }
 
 func processRegexPattern(s string) string {
-	// TODO
-	return ""
+	if strings.HasPrefix(s, "^") {
+		return "^" + literalizeRegexPart(s[1:])
+	} else if strings.HasSuffix(s, "$") {
+		return literalizeRegexPart(s[:len(s)-1]) + "$"
+	}
+	return literalizeRegexPart(s)
 }
 
 func createLiteralRegex(s string) string {

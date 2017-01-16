@@ -652,6 +652,43 @@ func Test_joinTablesForSchema(t *testing.T) {
 	}
 }
 
+func Test_processRegexPattern(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "1",
+			args: args{s: ""},
+			want: "",
+		},
+		{
+			name: "2",
+			args: args{s: `^abc\Qedf$^\E`},
+			want: `^abcedf\$\^`,
+		},
+		{
+			name: "3",
+			args: args{s: `abc\Qedf$^\E$`},
+			want: `abcedf\$\^$`,
+		},
+		{
+			name: "4",
+			args: args{s: `abc\Qedf$^\E`},
+			want: `abcedf\$\^`,
+		},
+	}
+	for _, tt := range tests {
+		if got := processRegexPattern(tt.args.s); got != tt.want {
+			t.Errorf("%q. processRegexPattern() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func Test_createLiteralRegex(t *testing.T) {
 	type args struct {
 		s string

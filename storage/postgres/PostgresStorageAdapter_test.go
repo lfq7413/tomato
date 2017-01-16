@@ -693,3 +693,105 @@ func Test_createLiteralRegex(t *testing.T) {
 		}
 	}
 }
+
+func Test_literalizeRegexPart(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "1",
+			args: args{s: ""},
+			want: "",
+		},
+		{
+			name: "2",
+			args: args{s: `\Q\E`},
+			want: "",
+		},
+		{
+			name: "3",
+			args: args{s: `\Qabc\E`},
+			want: "abc",
+		},
+		{
+			name: "4",
+			args: args{s: `\Q\abc\E`},
+			want: `\\abc`,
+		},
+		{
+			name: "5",
+			args: args{s: `abc\Qabc\E`},
+			want: "abcabc",
+		},
+		{
+			name: "6",
+			args: args{s: `\Q`},
+			want: "",
+		},
+		{
+			name: "7",
+			args: args{s: `\Qabc`},
+			want: "abc",
+		},
+		{
+			name: "8",
+			args: args{s: `\Q\abc`},
+			want: `\\abc`,
+		},
+		{
+			name: "9",
+			args: args{s: `abc\Qabc`},
+			want: "abcabc",
+		},
+		{
+			name: "10",
+			args: args{s: `abc\Q\Eabc\E`},
+			want: "abcabc",
+		},
+		{
+			name: "11",
+			args: args{s: `abc\Q\Eabc\E`},
+			want: "abcabc",
+		},
+		{
+			name: "12",
+			args: args{s: `\Eabc\Q\Eabc\E`},
+			want: "abcabc",
+		},
+		{
+			name: "13",
+			args: args{s: `\Q\Eabc\E`},
+			want: "abc",
+		},
+		{
+			name: "14",
+			args: args{s: `'abc'`},
+			want: "''abc''",
+		},
+		{
+			name: "15",
+			args: args{s: `abc`},
+			want: "abc",
+		},
+		{
+			name: "16",
+			args: args{s: `\Q'abc'\E`},
+			want: "''abc''",
+		},
+		{
+			name: "17",
+			args: args{s: `\Q$^*\E`},
+			want: `\$\^\*`,
+		},
+	}
+	for _, tt := range tests {
+		if got := literalizeRegexPart(tt.args.s); got != tt.want {
+			t.Errorf("%q. literalizeRegexPart() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

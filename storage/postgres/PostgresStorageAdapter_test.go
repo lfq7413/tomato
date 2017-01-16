@@ -651,3 +651,45 @@ func Test_joinTablesForSchema(t *testing.T) {
 		}
 	}
 }
+
+func Test_createLiteralRegex(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "1",
+			args: args{s: ""},
+			want: "",
+		},
+		{
+			name: "2",
+			args: args{s: "a"},
+			want: "a",
+		},
+		{
+			name: "3",
+			args: args{s: "abcDEF123"},
+			want: "abcDEF123",
+		},
+		{
+			name: "4",
+			args: args{s: "abc'edf'"},
+			want: "abc''edf''",
+		},
+		{
+			name: "5",
+			args: args{s: "abc^$"},
+			want: `abc\^\$`,
+		},
+	}
+	for _, tt := range tests {
+		if got := createLiteralRegex(tt.args.s); got != tt.want {
+			t.Errorf("%q. createLiteralRegex() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

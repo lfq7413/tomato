@@ -364,7 +364,7 @@ func createLiteralRegex(s string) string {
 			if c == `'` {
 				chars[i] = `''`
 			} else {
-				chars[i] = `\\` + c
+				chars[i] = `\` + c
 			}
 		}
 	}

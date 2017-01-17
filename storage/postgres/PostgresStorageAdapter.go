@@ -339,13 +339,25 @@ func joinTablesForSchema(schema types.M) []string {
 
 func buildWhereClause(schema, query types.M, index int) (types.M, error) {
 	// TODO
-	// removeWhiteSpace
 	return nil, nil
 }
 
 func removeWhiteSpace(s string) string {
-	// TODO
-	return ""
+	if strings.HasSuffix(s, "\n") == false {
+		s = s + "\n"
+	}
+
+	re := regexp.MustCompile(`(?im)([^\\])#.*\n`)
+	s = re.ReplaceAllString(s, "$1")
+	re = regexp.MustCompile(`(?im)^#.*\n`)
+	s = re.ReplaceAllString(s, "")
+	re = regexp.MustCompile(`(?im)([^\\])\s+`)
+	s = re.ReplaceAllString(s, "$1")
+	re = regexp.MustCompile(`^\s+`)
+	s = re.ReplaceAllString(s, "")
+	s = strings.TrimSpace(s)
+
+	return s
 }
 
 func processRegexPattern(s string) string {

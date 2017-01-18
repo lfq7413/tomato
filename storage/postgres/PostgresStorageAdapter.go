@@ -347,10 +347,10 @@ func removeWhiteSpace(s string) string {
 		s = s + "\n"
 	}
 
-	re := regexp.MustCompile(`(?im)([^\\])#.*\n`)
-	s = re.ReplaceAllString(s, "$1")
-	re = regexp.MustCompile(`(?im)^#.*\n`)
+	re := regexp.MustCompile(`(?im)^#.*\n`)
 	s = re.ReplaceAllString(s, "")
+	re = regexp.MustCompile(`(?im)([^\\])#.*\n`)
+	s = re.ReplaceAllString(s, "$1")
 	re = regexp.MustCompile(`(?im)([^\\])\s+`)
 	s = re.ReplaceAllString(s, "$1")
 	re = regexp.MustCompile(`^\s+`)

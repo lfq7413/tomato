@@ -652,6 +652,53 @@ func Test_joinTablesForSchema(t *testing.T) {
 	}
 }
 
+func Test_removeWhiteSpace(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "1",
+			args: args{s: ""},
+			want: "",
+		},
+		{
+			name: "2",
+			args: args{s: "abc#abc\ndef#def\n"},
+			want: "abcdef",
+		},
+		{
+			name: "3",
+			args: args{s: "#abc\n#def\n"},
+			want: "",
+		},
+		{
+			name: "4",
+			args: args{s: "abc   def"},
+			want: "abcdef",
+		},
+		{
+			name: "5",
+			args: args{s: "   abc"},
+			want: "abc",
+		},
+		{
+			name: "6",
+			args: args{s: "abc#def\n#ghi\n  jkl  mno   "},
+			want: "abcjklmno",
+		},
+	}
+	for _, tt := range tests {
+		if got := removeWhiteSpace(tt.args.s); got != tt.want {
+			t.Errorf("%q. removeWhiteSpace() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func Test_processRegexPattern(t *testing.T) {
 	type args struct {
 		s string

@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 
 	"regexp"
@@ -337,9 +339,104 @@ func joinTablesForSchema(schema types.M) []string {
 	return list
 }
 
-func buildWhereClause(schema, query types.M, index int) (types.M, error) {
+type whereClause struct {
+	pattern string
+	values  []interface{}
+	sorts   []string
+}
+
+func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 	// TODO
-	return nil, nil
+	patterns := []string{}
+	values := []interface{}{}
+	sorts := []string{}
+
+	schema = toPostgresSchema(schema)
+	fields := utils.M(schema["fields"])
+	for fieldName, fieldValue := range query {
+		// isArrayField := false
+		// if fields != nil {
+		// 	if tp := utils.M(fields[fieldName]); tp != nil {
+		// 		if utils.S(tp["type"]) == "Array" {
+		// 			isArrayField = true
+		// 		}
+		// 	}
+		// }
+		initialPatternsLength := len(patterns)
+
+		if fields[fieldName] == nil {
+			if v := utils.M(fieldValue); v != nil {
+				if b, ok := v["$exists"].(bool); ok && b == false {
+					continue
+				}
+			}
+		}
+
+		if strings.Contains(fieldName, ".") {
+			components := strings.Split(fieldName, ".")
+			for index, cmpt := range components {
+				if index == 0 {
+					components[index] = `"` + cmpt + `"`
+				} else {
+					components[index] = `'` + cmpt + `'`
+				}
+			}
+			name := strings.Join(components[:len(components)-1], "->")
+			name = name + "->>" + components[len(components)-1]
+			patterns = append(patterns, fmt.Sprintf(`%s = '%v'`, name, fieldValue))
+		} else if _, ok := fieldValue.(string); ok {
+			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
+			values = append(values, fieldName, fieldValue)
+			index = index + 2
+		} else if _, ok := fieldValue.(bool); ok {
+			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
+			values = append(values, fieldName, fieldValue)
+			index = index + 2
+		} else if _, ok := fieldValue.(float64); ok {
+			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
+			values = append(values, fieldName, fieldValue)
+			index = index + 2
+		} else if _, ok := fieldValue.(int); ok {
+			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
+			values = append(values, fieldName, fieldValue)
+			index = index + 2
+		} else if fieldName == "$or" || fieldName == "$and" {
+			clauses := []string{}
+			clauseValues := []interface{}{}
+			if array := utils.A(fieldValue); array != nil {
+				for _, v := range array {
+					if subQuery := utils.M(v); subQuery != nil {
+						clause, err := buildWhereClause(schema, subQuery, index)
+						if err != nil {
+							return nil, err
+						}
+						if len(clause.pattern) > 0 {
+							clauses = append(clauses, clause.pattern)
+							clauseValues = append(clauseValues, clause.values...)
+							index = index + len(clause.values)
+						}
+					}
+				}
+			}
+			var orOrAnd string
+			if fieldName == "$or" {
+				orOrAnd = " OR "
+			} else {
+				orOrAnd = " AND "
+			}
+			patterns = append(patterns, fmt.Sprintf(`(%s)`, strings.Join(clauses, orOrAnd)))
+			values = append(values, clauseValues...)
+		}
+
+		if initialPatternsLength == len(patterns) {
+			s, _ := json.Marshal(fieldValue)
+			return nil, errs.E(errs.OperationForbidden, "Postgres doesn't support this query type yet "+string(s))
+		}
+	}
+	for i, v := range values {
+		values[i] = transformValue(v)
+	}
+	return &whereClause{strings.Join(patterns, " AND "), values, sorts}, nil
 }
 
 func removeWhiteSpace(s string) string {

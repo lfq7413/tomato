@@ -352,7 +352,13 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 	sorts := []string{}
 
 	schema = toPostgresSchema(schema)
+	if schema == nil {
+		schema = types.M{}
+	}
 	fields := utils.M(schema["fields"])
+	if fields == nil {
+		fields = types.M{}
+	}
 	for fieldName, fieldValue := range query {
 		// isArrayField := false
 		// if fields != nil {

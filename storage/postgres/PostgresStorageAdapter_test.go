@@ -652,6 +652,59 @@ func Test_joinTablesForSchema(t *testing.T) {
 	}
 }
 
+func Test_buildWhereClause(t *testing.T) {
+	type args struct {
+		schema types.M
+		query  types.M
+		index  int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *whereClause
+		wantErr error
+	}{
+		{
+			name: "1",
+			args: args{
+				schema: nil,
+				query:  nil,
+				index:  1,
+			},
+			want: &whereClause{
+				pattern: "",
+				values:  []interface{}{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "2",
+			args: args{
+				schema: types.M{},
+				query:  types.M{},
+				index:  1,
+			},
+			want: &whereClause{
+				pattern: "",
+				values:  []interface{}{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		got, err := buildWhereClause(tt.args.schema, tt.args.query, tt.args.index)
+		if !reflect.DeepEqual(err, tt.wantErr) {
+			t.Errorf("%q. buildWhereClause() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if !reflect.DeepEqual(*got, *tt.want) {
+			t.Errorf("%q. buildWhereClause() = %v, want %v", tt.name, *got, *tt.want)
+		}
+	}
+}
+
 func Test_removeWhiteSpace(t *testing.T) {
 	type args struct {
 		s string

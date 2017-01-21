@@ -692,6 +692,54 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "3",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": types.M{"$exists": false},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: "",
+				values:  []interface{}{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "4",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key.sub": "hello",
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key"->>'sub' = 'hello'`,
+				values:  []interface{}{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "5",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key.subkey.sub": "hello",
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key"->'subkey'->>'sub' = 'hello'`,
+				values:  []interface{}{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		got, err := buildWhereClause(tt.args.schema, tt.args.query, tt.args.index)

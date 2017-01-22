@@ -673,7 +673,7 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			want: &whereClause{
 				pattern: "",
-				values:  []interface{}{},
+				values:  types.S{},
 				sorts:   []string{},
 			},
 			wantErr: nil,
@@ -687,7 +687,7 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			want: &whereClause{
 				pattern: "",
-				values:  []interface{}{},
+				values:  types.S{},
 				sorts:   []string{},
 			},
 			wantErr: nil,
@@ -703,7 +703,7 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			want: &whereClause{
 				pattern: "",
-				values:  []interface{}{},
+				values:  types.S{},
 				sorts:   []string{},
 			},
 			wantErr: nil,
@@ -719,7 +719,7 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			want: &whereClause{
 				pattern: `"key"->>'sub' = 'hello'`,
-				values:  []interface{}{},
+				values:  types.S{},
 				sorts:   []string{},
 			},
 			wantErr: nil,
@@ -735,7 +735,109 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			want: &whereClause{
 				pattern: `"key"->'subkey'->>'sub' = 'hello'`,
-				values:  []interface{}{},
+				values:  types.S{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "6",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": "hello",
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name = $2`,
+				values:  types.S{"key", "hello"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "7",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": true,
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name = $2`,
+				values:  types.S{"key", true},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "8",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": 10.24,
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name = $2`,
+				values:  types.S{"key", 10.24},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "9",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": 1024,
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name = $2`,
+				values:  types.S{"key", 1024},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "10",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"$or": types.S{
+						types.M{"key": 10},
+						types.M{"key": 20},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `($1:name = $2 OR $3:name = $4)`,
+				values:  types.S{"key", 10, "key", 20},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "11",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"$and": types.S{
+						types.M{"key": 10},
+						types.M{"key": 20},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `($1:name = $2 AND $3:name = $4)`,
+				values:  types.S{"key", 10, "key", 20},
 				sorts:   []string{},
 			},
 			wantErr: nil,

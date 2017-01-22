@@ -341,14 +341,14 @@ func joinTablesForSchema(schema types.M) []string {
 
 type whereClause struct {
 	pattern string
-	values  []interface{}
+	values  types.S
 	sorts   []string
 }
 
 func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 	// TODO
 	patterns := []string{}
-	values := []interface{}{}
+	values := types.S{}
 	sorts := []string{}
 
 	schema = toPostgresSchema(schema)
@@ -408,7 +408,7 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 			index = index + 2
 		} else if fieldName == "$or" || fieldName == "$and" {
 			clauses := []string{}
-			clauseValues := []interface{}{}
+			clauseValues := types.S{}
 			if array := utils.A(fieldValue); array != nil {
 				for _, v := range array {
 					if subQuery := utils.M(v); subQuery != nil {

@@ -360,14 +360,14 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 		fields = types.M{}
 	}
 	for fieldName, fieldValue := range query {
-		// isArrayField := false
-		// if fields != nil {
-		// 	if tp := utils.M(fields[fieldName]); tp != nil {
-		// 		if utils.S(tp["type"]) == "Array" {
-		// 			isArrayField = true
-		// 		}
-		// 	}
-		// }
+		isArrayField := false
+		if fields != nil {
+			if tp := utils.M(fields[fieldName]); tp != nil {
+				if utils.S(tp["type"]) == "Array" {
+					isArrayField = true
+				}
+			}
+		}
 		initialPatternsLength := len(patterns)
 
 		if fields[fieldName] == nil {
@@ -432,6 +432,32 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 			}
 			patterns = append(patterns, fmt.Sprintf(`(%s)`, strings.Join(clauses, orOrAnd)))
 			values = append(values, clauseValues...)
+		}
+
+		if value := utils.M(fieldValue); value != nil {
+
+			if v, ok := value["$ne"]; ok {
+				if isArrayField {
+					j, _ := json.Marshal([]interface{}{v})
+					value["$ne"] = string(j)
+					patterns = append(patterns, fmt.Sprintf(`NOT array_contains($%d:name, $%d)`, index, index+1))
+				} else {
+					if v == nil {
+						patterns = append(patterns, fmt.Sprintf(`$%d:name <> $%d`, index, index+1))
+					} else {
+						patterns = append(patterns, fmt.Sprintf(`($%d:name <> $%d OR $%d:name IS NULL)`, index, index+1, index))
+					}
+				}
+
+				values = append(values, fieldName, value["$ne"])
+				index = index + 2
+			}
+
+			if v, ok := value["$eq"]; ok {
+				patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
+				values = append(values, fieldName, v)
+				index = index + 2
+			}
 		}
 
 		if initialPatternsLength == len(patterns) {

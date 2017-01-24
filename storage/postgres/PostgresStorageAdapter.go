@@ -346,7 +346,6 @@ type whereClause struct {
 }
 
 func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
-	// TODO
 	patterns := []string{}
 	values := types.S{}
 	sorts := []string{}
@@ -458,6 +457,8 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				values = append(values, fieldName, v)
 				index = index + 2
 			}
+
+			// TODO ...
 		}
 
 		if initialPatternsLength == len(patterns) {

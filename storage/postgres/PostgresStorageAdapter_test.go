@@ -842,6 +842,83 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "12",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$ne": "hello",
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `NOT array_contains($1:name, $2)`,
+				values:  types.S{"key", `["hello"]`},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "13",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": types.M{
+						"$ne": nil,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name <> $2`,
+				values:  types.S{"key", nil},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "14",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": types.M{
+						"$ne": "hello",
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `($1:name <> $2 OR $1:name IS NULL)`,
+				values:  types.S{"key", "hello"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "15",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": types.M{
+						"$eq": "hello",
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name = $2`,
+				values:  types.S{"key", "hello"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		// TODO ...
 	}
 	for _, tt := range tests {
 		got, err := buildWhereClause(tt.args.schema, tt.args.query, tt.args.index)

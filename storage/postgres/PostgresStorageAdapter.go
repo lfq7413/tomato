@@ -458,6 +458,45 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				index = index + 2
 			}
 
+			inArray := utils.A(value["$in"])
+			// ninArray := utils.A(value["$nin"])
+			// isInOrNin := (inArray != nil) || (ninArray != nil)
+			isTypeString := false
+			if tp := utils.M(fields[fieldName]); tp != nil {
+				if contents := utils.M(tp["contents"]); contents != nil {
+					if utils.S(contents["type"]) == "String" {
+						isTypeString = true
+					}
+				}
+			}
+			if inArray != nil && isArrayField && isTypeString {
+				inPatterns := []string{}
+				allowNull := false
+				values = append(values, fieldName)
+
+				for listIndex, listElem := range inArray {
+					if listElem == nil {
+						allowNull = true
+					} else {
+						values = append(values, listElem)
+						i := 0
+						if allowNull {
+							i = index + 1 + listIndex - 1
+						} else {
+							i = index + 1 + listIndex
+						}
+						inPatterns = append(inPatterns, fmt.Sprintf("$%d", i))
+					}
+				}
+
+				if allowNull {
+					patterns = append(patterns, fmt.Sprintf(`($%d:name IS NULL OR $%d:name && ARRAY[%s])`, index, index, strings.Join(inPatterns, ",")))
+				} else {
+					patterns = append(patterns, fmt.Sprintf(`($%d:name && ARRAY[%s])`, index, strings.Join(inPatterns, ",")))
+				}
+				index = index + 1 + len(inPatterns)
+			}
+
 			// TODO ...
 		}
 

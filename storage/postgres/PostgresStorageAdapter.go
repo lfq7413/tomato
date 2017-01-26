@@ -459,8 +459,8 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 			}
 
 			inArray := utils.A(value["$in"])
-			// ninArray := utils.A(value["$nin"])
-			// isInOrNin := (inArray != nil) || (ninArray != nil)
+			ninArray := utils.A(value["$nin"])
+			isInOrNin := (inArray != nil) || (ninArray != nil)
 			isTypeString := false
 			if tp := utils.M(fields[fieldName]); tp != nil {
 				if contents := utils.M(tp["contents"]); contents != nil {
@@ -495,6 +495,40 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 					patterns = append(patterns, fmt.Sprintf(`($%d:name && ARRAY[%s])`, index, strings.Join(inPatterns, ",")))
 				}
 				index = index + 1 + len(inPatterns)
+			} else if isInOrNin {
+				createConstraint := func(baseArray types.S, notIn bool) {
+					if len(baseArray) > 0 {
+						not := ""
+						if notIn {
+							not = " NOT "
+						}
+						if isArrayField {
+							patterns = append(patterns, fmt.Sprintf("%s  array_contains($%d:name, $%d)", not, index, index+1))
+							j, _ := json.Marshal(baseArray)
+							values = append(values, string(j))
+							index = index + 2
+						} else {
+							inPatterns := []string{}
+							values = append(values, fieldName)
+							for listIndex, listElem := range baseArray {
+								values = append(values, listElem)
+								inPatterns = append(inPatterns, fmt.Sprintf("$%d", index+1+listIndex))
+							}
+							patterns = append(patterns, fmt.Sprintf("$%d:name %s IN (%s)", index, not, strings.Join(inPatterns, ",")))
+							index = index + 1 + len(inPatterns)
+						}
+					} else if !notIn {
+						values = append(values, fieldName)
+						patterns = append(patterns, fmt.Sprintf("$%d:name IS NULL", index))
+						index = index + 1
+					}
+				}
+				if inArray != nil {
+					createConstraint(inArray, false)
+				}
+				if ninArray != nil {
+					createConstraint(ninArray, true)
+				}
 			}
 
 			// TODO ...

@@ -918,6 +918,60 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "16",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "Array",
+							"contents": types.M{
+								"type": "String",
+							},
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$in": types.S{"hello", "world"},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `($1:name && ARRAY[$2,$3])`,
+				values:  types.S{"key", "hello", "world"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "17",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "Array",
+							"contents": types.M{
+								"type": "String",
+							},
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$in": types.S{"hello", nil, "world"},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `($1:name IS NULL OR $1:name && ARRAY[$2,$3])`,
+				values:  types.S{"key", "hello", "world"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
 		// TODO ...
 	}
 	for _, tt := range tests {

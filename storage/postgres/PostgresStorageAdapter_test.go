@@ -972,6 +972,126 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "18",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "Array",
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$in": types.S{"hello", "world"},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: ` array_contains($1:name, $2)`,
+				values:  types.S{"key", `["hello","world"]`},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "19",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "String",
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$in": types.S{"hello", "world"},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name  IN ($2,$3)`,
+				values:  types.S{"key", "hello", "world"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "20",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "String",
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$in": types.S{},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name IS NULL`,
+				values:  types.S{"key"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "21",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "Array",
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$nin": types.S{"hello", "world"},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: ` NOT  array_contains($1:name, $2)`,
+				values:  types.S{"key", `["hello","world"]`},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "22",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "String",
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$nin": types.S{"hello", "world"},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name  NOT  IN ($2,$3)`,
+				values:  types.S{"key", "hello", "world"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
 		// TODO ...
 	}
 	for _, tt := range tests {

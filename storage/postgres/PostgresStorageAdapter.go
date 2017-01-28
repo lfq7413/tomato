@@ -503,9 +503,9 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 							not = " NOT "
 						}
 						if isArrayField {
-							patterns = append(patterns, fmt.Sprintf("%s  array_contains($%d:name, $%d)", not, index, index+1))
+							patterns = append(patterns, fmt.Sprintf("%s array_contains($%d:name, $%d)", not, index, index+1))
 							j, _ := json.Marshal(baseArray)
-							values = append(values, string(j))
+							values = append(values, fieldName, string(j))
 							index = index + 2
 						} else {
 							inPatterns := []string{}

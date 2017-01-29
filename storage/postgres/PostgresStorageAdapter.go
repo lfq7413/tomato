@@ -531,6 +531,24 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				}
 			}
 
+			allArray := utils.A(value["$all"])
+			if allArray != nil && isArrayField {
+				patterns = append(patterns, fmt.Sprintf("array_contains_all($%d:name, $%d::jsonb)", index, index+1))
+				j, _ := json.Marshal(allArray)
+				values = append(values, fieldName, string(j))
+				index = index + 2
+			}
+
+			if b, ok := value["$exists"].(bool); ok {
+				if b {
+					patterns = append(patterns, fmt.Sprintf("$%d:name IS NOT NULL", index))
+				} else {
+					patterns = append(patterns, fmt.Sprintf("$%d:name IS NULL", index))
+				}
+				values = append(values, fieldName)
+				index = index + 1
+			}
+
 			// TODO ...
 		}
 

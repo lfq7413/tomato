@@ -549,6 +549,18 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				index = index + 1
 			}
 
+			if point := utils.M(value["$nearSphere"]); point != nil {
+				var distance float64
+				if v, ok := value["$maxDistance"].(float64); ok {
+					distance = v
+				}
+				distanceInKM := distance * 6371 * 1
+				patterns = append(patterns, fmt.Sprintf("ST_distance_sphere($%d:name::geometry, POINT($%d, $%d)::geometry) <= $%d", index, index+1, index+2, index+3))
+				sorts = append(sorts, fmt.Sprintf("ST_distance_sphere($%d:name::geometry, POINT($%d, $%d)::geometry) ASC", index, index+1, index+2))
+				values = append(values, fieldName, point["longitude"], point["latitude"], distanceInKM)
+				index = index + 4
+			}
+
 			// TODO ...
 		}
 

@@ -1092,6 +1092,98 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "23",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "Array",
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$all": types.S{"hello", "world"},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `array_contains_all($1:name, $2::jsonb)`,
+				values:  types.S{"key", `["hello","world"]`},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "24",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$exists": true,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name IS NOT NULL`,
+				values:  types.S{"key"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "25",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "String",
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$exists": false,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name IS NULL`,
+				values:  types.S{"key"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "26",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$nearSphere": types.M{
+							"longitude": 10.0,
+							"latitude":  10.0,
+						},
+						"$maxDistance": 1.0,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `ST_distance_sphere($1:name::geometry, POINT($2, $3)::geometry) <= $4`,
+				values:  types.S{"key", 10.0, 10.0, 6371000.0},
+				sorts:   []string{`ST_distance_sphere($1:name::geometry, POINT($2, $3)::geometry) ASC`},
+			},
+			wantErr: nil,
+		},
 		// TODO ...
 	}
 	for _, tt := range tests {

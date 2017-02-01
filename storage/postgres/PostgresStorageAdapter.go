@@ -561,6 +561,23 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				index = index + 4
 			}
 
+			if within := utils.M(value["$within"]); within != nil {
+				if box := utils.A(within["$box"]); len(box) == 2 {
+					box1 := utils.M(box[0])
+					box2 := utils.M(box[1])
+					if box1 != nil && box2 != nil {
+						left := box1["longitude"]
+						bottom := box1["latitude"]
+						right := box2["longitude"]
+						top := box2["latitude"]
+
+						patterns = append(patterns, fmt.Sprintf("$%d:name::point <@ $%d::box", index, index+1))
+						values = append(values, fieldName, fmt.Sprintf("((%v, %v), (%v, %v))", left, bottom, right, top))
+						index = index + 2
+					}
+				}
+			}
+
 			// TODO ...
 		}
 

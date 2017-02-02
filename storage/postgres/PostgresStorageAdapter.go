@@ -578,6 +578,25 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				}
 			}
 
+			if regex := utils.S(value["$regex"]); regex != "" {
+				operator := "~"
+				opts := utils.S(value["$options"])
+				if opts != "" {
+					if strings.Contains(opts, "i") {
+						operator = "~*"
+					}
+					if strings.Contains(opts, "x") {
+						regex = removeWhiteSpace(regex)
+					}
+				}
+
+				regex = processRegexPattern(regex)
+
+				patterns = append(patterns, fmt.Sprintf(`$%d:name %s '$%d:raw'`, index, operator, index+1))
+				values = append(values, fieldName, regex)
+				index = index + 2
+			}
+
 			// TODO ...
 		}
 

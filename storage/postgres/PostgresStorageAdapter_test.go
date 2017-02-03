@@ -1184,6 +1184,99 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "27",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$within": types.M{
+							"$box": types.S{
+								types.M{
+									"longitude": 10.0,
+									"latitude":  20.0,
+								},
+								types.M{
+									"longitude": 20.0,
+									"latitude":  10.0,
+								},
+							},
+						},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name::point <@ $2::box`,
+				values:  types.S{"key", "((10, 20), (20, 10))"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "28",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$regex": `abc`,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name ~ '$2:raw'`,
+				values:  types.S{"key", "abc"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "29",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$regex":   `abc`,
+						"$options": "i",
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name ~* '$2:raw'`,
+				values:  types.S{"key", "abc"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "30",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$regex":   `abc efg`,
+						"$options": "x",
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name ~ '$2:raw'`,
+				values:  types.S{"key", "abcefg"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
 		// TODO ...
 	}
 	for _, tt := range tests {

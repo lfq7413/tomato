@@ -437,7 +437,7 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 
 			if v, ok := value["$ne"]; ok {
 				if isArrayField {
-					j, _ := json.Marshal([]interface{}{v})
+					j, _ := json.Marshal(types.S{v})
 					value["$ne"] = string(j)
 					patterns = append(patterns, fmt.Sprintf(`NOT array_contains($%d:name, $%d)`, index, index+1))
 				} else {
@@ -594,6 +594,25 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 
 				patterns = append(patterns, fmt.Sprintf(`$%d:name %s '$%d:raw'`, index, operator, index+1))
 				values = append(values, fieldName, regex)
+				index = index + 2
+			}
+
+			if utils.S(value["__type"]) == "Pointer" {
+				if isArrayField {
+					patterns = append(patterns, fmt.Sprintf(`array_contains($%d:name, $%d)`, index, index+1))
+					j, _ := json.Marshal(types.S{value})
+					values = append(values, fieldName, string(j))
+					index = index + 2
+				} else {
+					patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
+					values = append(values, fieldName, value["objectId"])
+					index = index + 2
+				}
+			}
+
+			if utils.S(value["__type"]) == "Date" {
+				patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
+				values = append(values, fieldName, value["iso"])
 				index = index + 2
 			}
 

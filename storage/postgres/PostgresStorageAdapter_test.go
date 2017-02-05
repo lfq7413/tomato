@@ -1277,6 +1277,73 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "31",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{
+							"type": "Array",
+						},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"__type":   "Pointer",
+						"objectId": "1024",
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `array_contains($1:name, $2)`,
+				values:  types.S{"key", `[{"__type":"Pointer","objectId":"1024"}]`},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "32",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"__type":   "Pointer",
+						"objectId": "hello",
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name = $2`,
+				values:  types.S{"key", "hello"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "33",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"__type": "Date",
+						"iso":    "2017-01-02T15:04:05.000Z",
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name = $2`,
+				values:  types.S{"key", "2017-01-02T15:04:05.000Z"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
 		// TODO ...
 	}
 	for _, tt := range tests {

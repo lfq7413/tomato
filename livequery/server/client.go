@@ -119,5 +119,5 @@ func (c *Client) toObjectWithFields(object t.M, fields []string) t.M {
 		}
 	}
 
-	return nil
+	return limitedObject
 }

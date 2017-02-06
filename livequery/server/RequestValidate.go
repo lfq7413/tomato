@@ -164,9 +164,14 @@ func validateQuery(data t.M) error {
 
 	// fields 字段可选
 	if v, ok := data["fields"]; ok {
-		if fields, ok := v.([]string); ok {
+		if fields, ok := v.([]interface{}); ok {
 			if len(fields) < 1 {
 				return errors.New("minItems is not 1")
+			}
+			for _, field := range fields {
+				if _, ok := field.(string); ok == false {
+					return errors.New("fields is not []string")
+				}
 			}
 		} else {
 			return errors.New("fields is not []string")

@@ -548,7 +548,12 @@ func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
 		Subscription: subscription,
 	}
 	if fields, ok := query["fields"]; ok {
-		subscriptionInfo.Fields = fields.([]string)
+		fieldsArray := []string{}
+		// query["fields"] 已经过校验，确定格式为 []string ，无需再次校验
+		for _, fld := range fields.([]interface{}) {
+			fieldsArray = append(fieldsArray, fld.(string))
+		}
+		subscriptionInfo.Fields = fieldsArray
 	}
 	if sessionToken, ok := request["sessionToken"]; ok {
 		subscriptionInfo.SessionToken = sessionToken.(string)

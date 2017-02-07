@@ -616,6 +616,14 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				index = index + 2
 			}
 
+			for cmp, pgComparator := range parseToPosgresComparator {
+				if v, ok := value[cmp]; ok {
+					patterns = append(patterns, fmt.Sprintf(`$%d:name %s $%d`, index, pgComparator, index+1))
+					values = append(values, fieldName, toPostgresValue(v))
+					index = index + 2
+				}
+			}
+
 			// TODO ...
 		}
 

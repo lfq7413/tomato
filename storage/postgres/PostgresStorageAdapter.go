@@ -623,8 +623,6 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 					index = index + 2
 				}
 			}
-
-			// TODO ...
 		}
 
 		if initialPatternsLength == len(patterns) {

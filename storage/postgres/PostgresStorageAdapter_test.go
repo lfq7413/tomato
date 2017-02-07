@@ -1344,7 +1344,100 @@ func Test_buildWhereClause(t *testing.T) {
 			},
 			wantErr: nil,
 		},
-		// TODO ...
+		{
+			name: "34",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$gt": 1024,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name > $2`,
+				values:  types.S{"key", 1024},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "35",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$lt": 1024,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name < $2`,
+				values:  types.S{"key", 1024},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "36",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$gte": 1024,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name >= $2`,
+				values:  types.S{"key", 1024},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "37",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$lte": 1024,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `$1:name <= $2`,
+				values:  types.S{"key", 1024},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "38",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.S{"hello"},
+				},
+				index: 1,
+			},
+			want:    nil,
+			wantErr: errs.E(errs.OperationForbidden, `Postgres doesn't support this query type yet ["hello"]`),
+		},
 	}
 	for _, tt := range tests {
 		got, err := buildWhereClause(tt.args.schema, tt.args.query, tt.args.index)
@@ -1352,8 +1445,8 @@ func Test_buildWhereClause(t *testing.T) {
 			t.Errorf("%q. buildWhereClause() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			continue
 		}
-		if !reflect.DeepEqual(*got, *tt.want) {
-			t.Errorf("%q. buildWhereClause() = %v, want %v", tt.name, *got, *tt.want)
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. buildWhereClause() = %v, want %v", tt.name, got, tt.want)
 		}
 	}
 }

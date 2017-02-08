@@ -8,6 +8,9 @@ import (
 
 // Validate 校验客户端发送的请求是否合法
 func Validate(data t.M, op string) error {
+	if data == nil {
+		data = t.M{}
+	}
 	switch op {
 	case "general":
 		return validateGeneral(data)
@@ -29,7 +32,7 @@ func validateGeneral(data t.M) error {
 	if v, ok := data["op"]; ok {
 		if op, ok := v.(string); ok {
 			if op != "connect" && op != "subscribe" && op != "unsubscribe" && op != "update" {
-				return errors.New("op is not in [connect, subscribe, unsubscribe]")
+				return errors.New("op is not in [connect, subscribe, unsubscribe, update]")
 			}
 			return nil
 		}
@@ -45,9 +48,6 @@ func validateConnect(data t.M) error {
 			return errors.New("applicationId is not string")
 		}
 	}
-	// else {
-	// 	return errors.New("need applicationId")
-	// }
 
 	if v, ok := data["masterKey"]; ok {
 		if _, ok := v.(string); ok == false {

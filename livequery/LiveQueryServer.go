@@ -396,7 +396,7 @@ func (l *liveQueryServer) onAfterDelete(message t.M) {
 					continue
 				}
 				// 向 client 发送删除的对象
-				client.PushDelete(requestID, deletedParseObject)
+				client.PushDelete(requestID, deletedParseObject, nil)
 			}
 		}
 	}
@@ -467,17 +467,17 @@ func (l *liveQueryServer) onAfterSave(message t.M) {
 
 				if isOriginalMatched && isCurrentMatched {
 					// 原对象与新对象均符合条件，则为 Update
-					client.PushUpdate(requestID, currentParseObject)
+					client.PushUpdate(requestID, currentParseObject, originalParseObject)
 				} else if isOriginalMatched && !isCurrentMatched {
 					// 原对象符合条件，但是新对象不符合，则为 Leave
-					client.PushLeave(requestID, currentParseObject)
+					client.PushLeave(requestID, currentParseObject, originalParseObject)
 				} else if !isOriginalMatched && isCurrentMatched {
 					if originalParseObject != nil {
 						// 原对象不符合条件，但是新对象符合，则为 Enter
-						client.PushEnter(requestID, currentParseObject)
+						client.PushEnter(requestID, currentParseObject, originalParseObject)
 					} else {
 						// 原对象不存在，同时新对象符合条件，则为 Create
-						client.PushCreate(requestID, currentParseObject)
+						client.PushCreate(requestID, currentParseObject, originalParseObject)
 					}
 				} else {
 					continue
@@ -504,7 +504,7 @@ func (l *liveQueryServer) handleConnect(ws *server.WebSocket, request t.M) {
 	l.clients[ws.ClientID] = client
 	l.mutex.Unlock()
 	utils.TLog.Log("Create new client:", ws.ClientID)
-	client.PushConnect(0, nil)
+	client.PushConnect(0, nil, nil)
 }
 
 // handleSubscribe 处理客户端 Subscribe 操作
@@ -564,7 +564,7 @@ func (l *liveQueryServer) handleSubscribe(ws *server.WebSocket, request t.M) {
 	// 更新订阅对象，添加使用该对象的 ClientID 与 requestID
 	subscription.AddClientSubscription(ws.ClientID, requestID)
 	// 订阅成功
-	client.PushSubscribe(requestID, nil)
+	client.PushSubscribe(requestID, nil, nil)
 
 	utils.TLog.Verbose("Create client", ws.ClientID, "new subscription:", requestID)
 	utils.TLog.Verbose("Current client number:", len(l.clients))
@@ -622,7 +622,7 @@ func (l *liveQueryServer) handleUnsubscribe(ws *server.WebSocket, request t.M, n
 		return
 	}
 	// 退订成功
-	client.PushUnsubscribe(requestID, nil)
+	client.PushUnsubscribe(requestID, nil, nil)
 }
 
 // matchesSubscription 检测对象是否符合订阅条件

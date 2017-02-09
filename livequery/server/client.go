@@ -3,6 +3,8 @@ package server
 import (
 	"encoding/json"
 
+	"reflect"
+
 	"github.com/lfq7413/tomato/livequery/t"
 )
 
@@ -15,14 +17,14 @@ type Client struct {
 	id                int
 	ws                *WebSocket
 	SubscriptionInfos map[int]*SubscriptionInfo
-	PushConnect       func(int, t.M)
-	PushSubscribe     func(int, t.M)
-	PushUnsubscribe   func(int, t.M)
-	PushCreate        func(int, t.M)
-	PushEnter         func(int, t.M)
-	PushUpdate        func(int, t.M)
-	PushDelete        func(int, t.M)
-	PushLeave         func(int, t.M)
+	PushConnect       func(int, t.M, t.M)
+	PushSubscribe     func(int, t.M, t.M)
+	PushUnsubscribe   func(int, t.M, t.M)
+	PushCreate        func(int, t.M, t.M)
+	PushEnter         func(int, t.M, t.M)
+	PushUpdate        func(int, t.M, t.M)
+	PushDelete        func(int, t.M, t.M)
+	PushLeave         func(int, t.M, t.M)
 }
 
 // NewClient ...
@@ -78,8 +80,8 @@ func (c *Client) DeleteSubscriptionInfo(requestID int) {
 }
 
 // pushEvent 发送消息
-func (c *Client) pushEvent(eventType string) func(int, t.M) {
-	return func(subscriptionId int, object t.M) {
+func (c *Client) pushEvent(eventType string) func(int, t.M, t.M) {
+	return func(subscriptionId int, object, originalObject t.M) {
 		response := t.M{
 			"op":       eventType,
 			"clientId": c.id,
@@ -91,6 +93,10 @@ func (c *Client) pushEvent(eventType string) func(int, t.M) {
 			fields := []string{}
 			if info, ok := c.SubscriptionInfos[subscriptionId]; ok {
 				fields = info.Fields
+			}
+			if eventType != "delete" {
+				// 仅在更新与创建时去转换操作符
+				transformUpdateOperators(object, originalObject)
 			}
 			response["object"] = c.toObjectWithFields(object, fields)
 		}
@@ -120,4 +126,109 @@ func (c *Client) toObjectWithFields(object t.M, fields []string) t.M {
 	}
 
 	return limitedObject
+}
+
+// transformUpdateOperators 把更新操作符转换为更新之后的值
+func transformUpdateOperators(object, originalObject t.M) {
+	if object == nil {
+		return
+	}
+	if originalObject == nil {
+		originalObject = t.M{}
+	}
+
+	for key, v := range object {
+		if value, ok := v.(map[string]interface{}); ok && value != nil {
+			var op string
+			if s, ok := value["__op"].(string); ok && s != "" {
+				op = s
+			} else {
+				continue
+			}
+			switch op {
+			case "Increment":
+				var amount float64
+				if a, ok := value["amount"].(float64); ok {
+					amount = a
+				} else if a, ok := value["amount"].(int); ok {
+					amount = float64(a)
+				}
+				if a, ok := originalObject[key].(float64); ok {
+					amount = a + amount
+				} else if a, ok := originalObject[key].(int); ok {
+					amount = float64(a) + amount
+				}
+				object[key] = amount
+			case "Add":
+				objects := []interface{}{}
+				if objs, ok := value["objects"].([]interface{}); ok && objs != nil {
+					objects = objs
+				}
+				if objs, ok := originalObject[key].([]interface{}); ok && objs != nil {
+					objects = append(objs, objects...)
+				}
+				object[key] = objects
+			case "AddUnique":
+				objects := []interface{}{}
+				if objs, ok := value["objects"].([]interface{}); ok && objs != nil {
+					objects = objs
+				}
+				if objs, ok := originalObject[key].([]interface{}); ok && objs != nil {
+					for _, obj := range objects {
+						isUnique := true
+						for _, obj2 := range objs {
+							if reflect.DeepEqual(obj, obj2) {
+								isUnique = false
+								break
+							}
+						}
+						if isUnique {
+							objs = append(objs, obj)
+						}
+					}
+					objects = objs
+				}
+				object[key] = objects
+			case "Remove":
+				objects := []interface{}{}
+				if objs, ok := value["objects"].([]interface{}); ok && objs != nil {
+					objects = objs
+				}
+				removeObjs := []interface{}{}
+				if objs, ok := originalObject[key].([]interface{}); ok && objs != nil {
+					for _, obj := range objs {
+						canRemove := false
+						for _, obj2 := range objects {
+							if reflect.DeepEqual(obj, obj2) {
+								canRemove = true
+								break
+							}
+						}
+						if canRemove == false {
+							removeObjs = append(removeObjs, obj)
+						}
+					}
+				}
+				object[key] = removeObjs
+			case "Delete":
+				delete(object, key)
+			case "AddRelation", "RemoveRelation":
+				tp := map[string]interface{}{"__type": "Relation"}
+				objects := []interface{}{}
+				if objs, ok := value["objects"].([]interface{}); ok && objs != nil {
+					objects = objs
+				}
+				for _, obj := range objects {
+					if o, ok := obj.(map[string]interface{}); ok && o != nil {
+						if className, ok := o["className"].(string); ok && className != "" {
+							tp["className"] = className
+							break
+						}
+					}
+				}
+				object[key] = tp
+			}
+		}
+	}
+
 }

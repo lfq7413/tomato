@@ -34,93 +34,131 @@ func NewPostgresAdapter(collectionPrefix string) *PostgresAdapter {
 	}
 }
 
+// ensureSchemaCollectionExists ...
+func (p *PostgresAdapter) ensureSchemaCollectionExists() error {
+	// TODO
+	return nil
+}
+
 // ClassExists ...
 func (p *PostgresAdapter) ClassExists(name string) bool {
+	// TODO
 	return false
 }
 
 // SetClassLevelPermissions ...
 func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.M) error {
+	// TODO
+	// ensureSchemaCollectionExists
 	return nil
 }
 
 // CreateClass ...
 func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M, error) {
+	// TODO
+	// createTable
 	return nil, nil
+}
+
+// createTable ...
+func (p *PostgresAdapter) createTable(className string, schema types.M) error {
+	// TODO
+	// ensureSchemaCollectionExists
+	return nil
 }
 
 // AddFieldIfNotExists ...
 func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, fieldType types.M) error {
+	// TODO
 	return nil
 }
 
 // DeleteClass ...
 func (p *PostgresAdapter) DeleteClass(className string) (types.M, error) {
+	// TODO
 	return nil, nil
 }
 
 // DeleteAllClasses ...
 func (p *PostgresAdapter) DeleteAllClasses() error {
+	// TODO
 	return nil
 }
 
 // DeleteFields ...
 func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNames []string) error {
+	// TODO
 	return nil
 }
 
 // CreateObject ...
 func (p *PostgresAdapter) CreateObject(className string, schema, object types.M) error {
+	// TODO
 	return nil
 }
 
 // GetAllClasses ...
 func (p *PostgresAdapter) GetAllClasses() ([]types.M, error) {
+	// TODO
+	// ensureSchemaCollectionExists
 	return nil, nil
 }
 
 // GetClass ...
 func (p *PostgresAdapter) GetClass(className string) (types.M, error) {
+	// TODO
 	return nil, nil
 }
 
 // DeleteObjectsByQuery ...
 func (p *PostgresAdapter) DeleteObjectsByQuery(className string, schema, query types.M) error {
+	// TODO
 	return nil
 }
 
 // Find ...
 func (p *PostgresAdapter) Find(className string, schema, query, options types.M) ([]types.M, error) {
+	// TODO
 	return nil, nil
 }
 
 // Count ...
 func (p *PostgresAdapter) Count(className string, schema, query types.M) (int, error) {
+	// TODO
 	return 0, nil
 }
 
 // UpdateObjectsByQuery ...
 func (p *PostgresAdapter) UpdateObjectsByQuery(className string, schema, query, update types.M) error {
+	// TODO
 	return nil
 }
 
 // FindOneAndUpdate ...
 func (p *PostgresAdapter) FindOneAndUpdate(className string, schema, query, update types.M) (types.M, error) {
+	// TODO
+	// UpdateObjectsByQuery
 	return nil, nil
 }
 
 // UpsertOneObject ...
 func (p *PostgresAdapter) UpsertOneObject(className string, schema, query, update types.M) error {
+	// TODO
+	// createObject
+	// FindOneAndUpdate
 	return nil
 }
 
 // EnsureUniqueness ...
 func (p *PostgresAdapter) EnsureUniqueness(className string, schema types.M, fieldNames []string) error {
+	// TODO
 	return nil
 }
 
 // PerformInitialization ...
 func (p *PostgresAdapter) PerformInitialization(options types.M) error {
+	// TODO
+	// createTable
 	return nil
 }
 

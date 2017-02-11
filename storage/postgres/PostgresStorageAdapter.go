@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
+	"github.com/lib/pq"
 )
 
 const postgresSchemaCollectionName = "_SCHEMA"
@@ -24,19 +26,34 @@ const postgresTransactionAbortedError = "25P02"
 type PostgresAdapter struct {
 	collectionPrefix string
 	collectionList   []string
+	db               *sql.DB
 }
 
 // NewPostgresAdapter ...
-func NewPostgresAdapter(collectionPrefix string) *PostgresAdapter {
+func NewPostgresAdapter(collectionPrefix string, db *sql.DB) *PostgresAdapter {
 	return &PostgresAdapter{
 		collectionPrefix: collectionPrefix,
 		collectionList:   []string{},
+		db:               db,
 	}
 }
 
-// ensureSchemaCollectionExists ...
+// ensureSchemaCollectionExists 确保 _SCHEMA 表存在，不存在则创建表
 func (p *PostgresAdapter) ensureSchemaCollectionExists() error {
-	// TODO
+	stmt, err := p.db.Prepare(`CREATE TABLE IF NOT EXISTS "` + p.collectionPrefix + `_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )`)
+	if err != nil {
+		return err
+	}
+	_, err = stmt.Exec()
+	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			if e.Code == postgresDuplicateRelationError || e.Code == postgresUniqueIndexViolationError {
+				return nil
+			}
+		} else {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -49,7 +66,6 @@ func (p *PostgresAdapter) ClassExists(name string) bool {
 // SetClassLevelPermissions ...
 func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.M) error {
 	// TODO
-	// ensureSchemaCollectionExists
 	return nil
 }
 
@@ -63,7 +79,6 @@ func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M
 // createTable ...
 func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 	// TODO
-	// ensureSchemaCollectionExists
 	return nil
 }
 
@@ -100,7 +115,6 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 // GetAllClasses ...
 func (p *PostgresAdapter) GetAllClasses() ([]types.M, error) {
 	// TODO
-	// ensureSchemaCollectionExists
 	return nil, nil
 }
 

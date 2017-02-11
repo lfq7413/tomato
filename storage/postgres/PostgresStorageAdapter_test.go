@@ -1,8 +1,11 @@
 package postgres
 
 import (
+	"log"
 	"reflect"
 	"testing"
+
+	"database/sql"
 
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
@@ -1677,4 +1680,44 @@ func Test_literalizeRegexPart(t *testing.T) {
 			t.Errorf("%q. literalizeRegexPart() = %v, want %v", tt.name, got, tt.want)
 		}
 	}
+}
+
+func openDB() *sql.DB {
+	db, err := sql.Open("postgres", "postgres://postgres:123456@192.168.99.100:5432/postgres?sslmode=disable")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return db
+}
+
+func TestPostgresAdapter_ensureSchemaCollectionExists(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	tests := []struct {
+		name       string
+		wantErr    error
+		initialize func()
+		clean      func()
+	}{
+		{
+			name:       "1",
+			wantErr:    nil,
+			initialize: func() {},
+			clean: func() {
+				stmt, err := db.Prepare(`DROP TABLE "_SCHEMA"`)
+				if err != nil {
+					log.Fatal(err)
+				}
+				stmt.Exec()
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize()
+		if err := p.ensureSchemaCollectionExists(); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.ensureSchemaCollectionExists() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		tt.clean()
+	}
+	db.Close()
 }

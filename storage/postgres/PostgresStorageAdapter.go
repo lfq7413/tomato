@@ -40,11 +40,7 @@ func NewPostgresAdapter(collectionPrefix string, db *sql.DB) *PostgresAdapter {
 
 // ensureSchemaCollectionExists 确保 _SCHEMA 表存在，不存在则创建表
 func (p *PostgresAdapter) ensureSchemaCollectionExists() error {
-	stmt, err := p.db.Prepare(`CREATE TABLE IF NOT EXISTS "` + p.collectionPrefix + `_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )`)
-	if err != nil {
-		return err
-	}
-	_, err = stmt.Exec()
+	_, err := p.db.Exec(`CREATE TABLE IF NOT EXISTS "` + p.collectionPrefix + `_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )`)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == postgresDuplicateRelationError || e.Code == postgresUniqueIndexViolationError {
@@ -57,10 +53,16 @@ func (p *PostgresAdapter) ensureSchemaCollectionExists() error {
 	return nil
 }
 
-// ClassExists ...
+// ClassExists 检测数据库中是否存在指定类
 func (p *PostgresAdapter) ClassExists(name string) bool {
-	// TODO
-	return false
+	var result bool
+	err := p.db.QueryRow(`SELECT EXISTS (SELECT 1 FROM   information_schema.tables WHERE table_name = $1)`,
+		p.collectionPrefix+name).
+		Scan(&result)
+	if err != nil {
+		return false
+	}
+	return result
 }
 
 // SetClassLevelPermissions ...

@@ -1,11 +1,10 @@
 package postgres
 
 import (
+	"database/sql"
 	"log"
 	"reflect"
 	"testing"
-
-	"database/sql"
 
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/types"
@@ -1704,11 +1703,7 @@ func TestPostgresAdapter_ensureSchemaCollectionExists(t *testing.T) {
 			wantErr:    nil,
 			initialize: func() {},
 			clean: func() {
-				stmt, err := db.Prepare(`DROP TABLE "_SCHEMA"`)
-				if err != nil {
-					log.Fatal(err)
-				}
-				stmt.Exec()
+				db.Exec(`DROP TABLE "_SCHEMA"`)
 			},
 		},
 	}
@@ -1717,7 +1712,52 @@ func TestPostgresAdapter_ensureSchemaCollectionExists(t *testing.T) {
 		if err := p.ensureSchemaCollectionExists(); reflect.DeepEqual(err, tt.wantErr) == false {
 			t.Errorf("%q. PostgresAdapter.ensureSchemaCollectionExists() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
+		if p.ClassExists(p.collectionPrefix+"_SCHEMA") == false {
+			t.Errorf("%q. PostgresAdapter.ensureSchemaCollectionExists() _SCHEMA is not Exists", tt.name)
+		}
 		tt.clean()
+	}
+	db.Close()
+}
+
+func TestPostgresAdapter_ClassExists(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       bool
+		initialize func(string)
+		clean      func(string)
+	}{
+		{
+			name:       "1",
+			args:       args{name: "post"},
+			want:       false,
+			initialize: func(name string) {},
+			clean:      func(name string) {},
+		},
+		{
+			name: "2",
+			args: args{name: "post"},
+			want: true,
+			initialize: func(name string) {
+				db.Exec(`CREATE TABLE IF NOT EXISTS "` + name + `" ( "title" varChar(120) )`)
+			},
+			clean: func(name string) {
+				db.Exec(`DROP TABLE "` + name + `"`)
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize(tt.args.name)
+		if got := p.ClassExists(tt.args.name); got != tt.want {
+			t.Errorf("%q. PostgresAdapter.ClassExists() = %v, want %v", tt.name, got, tt.want)
+		}
+		tt.clean(tt.args.name)
 	}
 	db.Close()
 }

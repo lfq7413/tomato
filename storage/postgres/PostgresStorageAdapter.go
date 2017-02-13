@@ -44,6 +44,7 @@ func (p *PostgresAdapter) ensureSchemaCollectionExists() error {
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == postgresDuplicateRelationError || e.Code == postgresUniqueIndexViolationError {
+				// _SCHEMA 表已经存在，已经由其他请求创建，忽略错误
 				return nil
 			}
 		} else {
@@ -74,13 +75,96 @@ func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.
 // CreateClass ...
 func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M, error) {
 	// TODO
-	// createTable
 	return nil, nil
 }
 
-// createTable ...
+// createTable 仅创建表，不加入 schema 中
 func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 	// TODO
+	if schema == nil {
+		schema = types.M{}
+	}
+	valuesArray := types.S{}
+	patternsArray := []string{}
+	var fields types.M
+	if f := utils.M(schema["fields"]); f != nil {
+		fields = f
+	}
+
+	if className == "_User" {
+		fields["_email_verify_token_expires_at"] = types.M{"type": "Date"}
+		fields["_email_verify_token"] = types.M{"type": "String"}
+		fields["_account_lockout_expires_at"] = types.M{"type": "Date"}
+		fields["_failed_login_count"] = types.M{"type": "Number"}
+		fields["_perishable_token"] = types.M{"type": "String"}
+		fields["_perishable_token_expires_at"] = types.M{"type": "Date"}
+		fields["_password_changed_at"] = types.M{"type": "Date"}
+		fields["_password_history"] = types.M{"type": "Array"}
+	}
+
+	index := 2
+	relations := []string{}
+
+	for fieldName, t := range fields {
+		parseType := utils.M(t)
+		if parseType == nil {
+			parseType = types.M{}
+		}
+
+		if utils.S(parseType["type"]) == "Relation" {
+			relations = append(relations, fieldName)
+			continue
+		}
+
+		if fieldName == "_rperm" || fieldName == "_wperm" {
+			parseType["contents"] = types.M{"type": "String"}
+		}
+
+		valuesArray = append(valuesArray, fieldName)
+		postgresType, err := parseTypeToPostgresType(parseType)
+		if err != nil {
+			return err
+		}
+		valuesArray = append(valuesArray, postgresType)
+
+		patternsArray = append(patternsArray, fmt.Sprintf(`$%d:name $%d:raw`, index, index+1))
+		if fieldName == "objectId" {
+			patternsArray = append(patternsArray, fmt.Sprintf(`PRIMARY KEY ($%d:name)`, index))
+		}
+
+		index = index + 2
+	}
+
+	qs := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS $1:name (%s)`, strings.Join(patternsArray, ","))
+	values := types.S{}
+	values = append(values, p.collectionPrefix+className)
+	values = append(values, valuesArray...)
+
+	err := p.ensureSchemaCollectionExists()
+	if err != nil {
+		return err
+	}
+
+	_, err = p.db.Exec(qs, values...)
+	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			if e.Code == postgresDuplicateRelationError {
+				// 表已经存在，已经由其他请求创建，忽略错误
+			}
+		} else {
+			return err
+		}
+	}
+
+	// 创建 relation 表
+	for _, fieldName := range relations {
+		name := fmt.Sprintf(`%s_Join:%s:%s`, p.collectionPrefix, fieldName, className)
+		_, err = p.db.Exec(fmt.Sprintf(`CREATE TABLE IF NOT EXISTS $<%s:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )`, name))
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -174,7 +258,6 @@ func (p *PostgresAdapter) EnsureUniqueness(className string, schema types.M, fie
 // PerformInitialization ...
 func (p *PostgresAdapter) PerformInitialization(options types.M) error {
 	// TODO
-	// createTable
 	return nil
 }
 

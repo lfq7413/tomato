@@ -80,7 +80,6 @@ func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M
 
 // createTable 仅创建表，不加入 schema 中
 func (p *PostgresAdapter) createTable(className string, schema types.M) error {
-	// TODO
 	if schema == nil {
 		schema = types.M{}
 	}
@@ -102,7 +101,6 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 		fields["_password_history"] = types.M{"type": "Array"}
 	}
 
-	index := 2
 	relations := []string{}
 
 	for fieldName, t := range fields {
@@ -127,29 +125,29 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 		}
 		valuesArray = append(valuesArray, postgresType)
 
-		patternsArray = append(patternsArray, fmt.Sprintf(`$%d:name $%d:raw`, index, index+1))
+		patternsArray = append(patternsArray, `"%s" %s`)
 		if fieldName == "objectId" {
-			patternsArray = append(patternsArray, fmt.Sprintf(`PRIMARY KEY ($%d:name)`, index))
+			valuesArray = append(valuesArray, fieldName)
+			patternsArray = append(patternsArray, `PRIMARY KEY ("%s")`)
 		}
-
-		index = index + 2
 	}
 
-	qs := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS $1:name (%s)`, strings.Join(patternsArray, ","))
-	values := types.S{}
-	values = append(values, p.collectionPrefix+className)
-	values = append(values, valuesArray...)
+	qs := `CREATE TABLE IF NOT EXISTS "%s" (` + strings.Join(patternsArray, ",") + `)`
+	values := append(types.S{p.collectionPrefix + className}, valuesArray...)
+	qs = fmt.Sprintf(qs, values...)
 
 	err := p.ensureSchemaCollectionExists()
 	if err != nil {
 		return err
 	}
 
-	_, err = p.db.Exec(qs, values...)
+	_, err = p.db.Exec(qs)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == postgresDuplicateRelationError {
 				// 表已经存在，已经由其他请求创建，忽略错误
+			} else {
+				return err
 			}
 		} else {
 			return err
@@ -159,7 +157,7 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 	// 创建 relation 表
 	for _, fieldName := range relations {
 		name := fmt.Sprintf(`%s_Join:%s:%s`, p.collectionPrefix, fieldName, className)
-		_, err = p.db.Exec(fmt.Sprintf(`CREATE TABLE IF NOT EXISTS $<%s:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )`, name))
+		_, err = p.db.Exec(fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )`, name))
 		if err != nil {
 			return err
 		}
@@ -285,7 +283,7 @@ func parseTypeToPostgresType(t types.M) (string, error) {
 	case "Boolean":
 		return "boolean", nil
 	case "Pointer":
-		return "char(10)", nil
+		return "char(24)", nil
 	case "Number":
 		return "double precision", nil
 	case "GeoPoint":

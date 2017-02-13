@@ -59,7 +59,7 @@ func Test_parseTypeToPostgresType(t *testing.T) {
 		{
 			name:    "7",
 			args:    args{t: types.M{"type": "Pointer"}},
-			want:    "char(10)",
+			want:    "char(24)",
 			wantErr: nil,
 		},
 		{
@@ -1760,4 +1760,129 @@ func TestPostgresAdapter_ClassExists(t *testing.T) {
 		tt.clean(tt.args.name)
 	}
 	db.Close()
+}
+
+func TestPostgresAdapter_createTable(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	clean := func(name string) {
+		db.Exec(`DROP TABLE "` + name + `"`)
+		db.Exec(`DROP TABLE "_SCHEMA"`)
+	}
+	type args struct {
+		className string
+		schema    types.M
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    error
+		initialize func(string)
+		clean      func(string)
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				schema:    nil,
+			},
+			wantErr:    nil,
+			initialize: func(name string) {},
+			clean:      clean,
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"fields": types.M{
+						"title": types.M{"type": "String"},
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: func(name string) {},
+			clean:      clean,
+		},
+		{
+			name: "3",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"fields": types.M{
+						"title":    types.M{"type": "String"},
+						"objectId": types.M{"type": "String"},
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: func(name string) {},
+			clean:      clean,
+		},
+		{
+			name: "4",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"fields": types.M{
+						"title":    types.M{"type": "String"},
+						"objectId": types.M{"type": "String"},
+						"user":     types.M{"type": "Relation"},
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: func(name string) {},
+			clean: func(name string) {
+				db.Exec(`DROP TABLE "` + name + `"`)
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+				db.Exec(`DROP TABLE "_Join:user:post"`)
+			},
+		},
+		{
+			name: "5",
+			args: args{
+				className: "_User",
+				schema: types.M{
+					"fields": types.M{
+						"objectId": types.M{"type": "String"},
+						"name":     types.M{"type": "String"},
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: func(name string) {},
+			clean:      clean,
+		},
+		{
+			name: "6",
+			args: args{
+				className: "TypeClass",
+				schema: types.M{
+					"fields": types.M{
+						"StringKey":      types.M{"type": "String"},
+						"DateKey":        types.M{"type": "Date"},
+						"ObjectKey":      types.M{"type": "Object"},
+						"FileKey":        types.M{"type": "File"},
+						"BooleanKey":     types.M{"type": "Boolean"},
+						"PointerKey":     types.M{"type": "Pointer"},
+						"NumberKey":      types.M{"type": "Number"},
+						"GeoPointKey":    types.M{"type": "GeoPoint"},
+						"ArrayKey":       types.M{"type": "Array"},
+						"StringArrayKey": types.M{"type": "Array", "contents": types.M{"type": "String"}},
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: func(name string) {},
+			clean:      clean,
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize(tt.args.className)
+		if err := p.createTable(tt.args.className, tt.args.schema); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.createTable() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		tt.clean(tt.args.className)
+	}
 }

@@ -72,13 +72,17 @@ func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.
 
 // CreateClass 创建类
 func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M, error) {
-	// TODO
-	err := p.createTable(className, schema)
+	b, err := json.Marshal(schema)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = p.db.Exec(`INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($1, $2, $3)`, className, schema, true)
+	err = p.createTable(className, schema)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.db.Exec(`INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($1, $2, $3)`, className, string(b), true)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == postgresUniqueIndexViolationError {

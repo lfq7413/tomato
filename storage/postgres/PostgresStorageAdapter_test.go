@@ -1886,3 +1886,107 @@ func TestPostgresAdapter_createTable(t *testing.T) {
 		tt.clean(tt.args.className)
 	}
 }
+
+func TestPostgresAdapter_CreateClass(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	clean := func(name string) {
+		db.Exec(`DROP TABLE "` + name + `"`)
+		db.Exec(`DROP TABLE "_SCHEMA"`)
+	}
+	type args struct {
+		className string
+		schema    types.M
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       types.M
+		wantErr    error
+		initialize func(string, types.M)
+		clean      func(string)
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				schema:    types.M{"className": "post"},
+			},
+			want: types.M{
+				"className": "post",
+				"fields":    types.M{},
+				"classLevelPermissions": types.M{
+					"find":     types.M{"*": true},
+					"get":      types.M{"*": true},
+					"create":   types.M{"*": true},
+					"update":   types.M{"*": true},
+					"delete":   types.M{"*": true},
+					"addField": types.M{"*": true},
+				},
+			},
+			wantErr: nil,
+			clean:   clean,
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"title": types.M{"type": "String"},
+					},
+				},
+			},
+			want: types.M{
+				"className": "post",
+				"fields": types.M{
+					"title": types.M{"type": "String"},
+				},
+				"classLevelPermissions": types.M{
+					"find":     types.M{"*": true},
+					"get":      types.M{"*": true},
+					"create":   types.M{"*": true},
+					"update":   types.M{"*": true},
+					"delete":   types.M{"*": true},
+					"addField": types.M{"*": true},
+				},
+			},
+			wantErr: nil,
+			clean:   clean,
+		},
+		{
+			name: "3",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"title": types.M{"type": "String"},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: errs.E(errs.DuplicateValue, "Class post already exists."),
+			initialize: func(name string, schema types.M) {
+				p.CreateClass(name, schema)
+			},
+			clean: clean,
+		},
+	}
+	for _, tt := range tests {
+		if tt.initialize != nil {
+			tt.initialize(tt.args.className, tt.args.schema)
+		}
+		got, err := p.CreateClass(tt.args.className, tt.args.schema)
+		if reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.CreateClass() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			tt.clean(tt.args.className)
+			continue
+		}
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. PostgresAdapter.CreateClass() = %v, want %v", tt.name, got, tt.want)
+		}
+		tt.clean(tt.args.className)
+	}
+}

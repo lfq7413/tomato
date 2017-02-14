@@ -40,7 +40,7 @@ func NewPostgresAdapter(collectionPrefix string, db *sql.DB) *PostgresAdapter {
 
 // ensureSchemaCollectionExists 确保 _SCHEMA 表存在，不存在则创建表
 func (p *PostgresAdapter) ensureSchemaCollectionExists() error {
-	_, err := p.db.Exec(`CREATE TABLE IF NOT EXISTS "` + p.collectionPrefix + `_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )`)
+	_, err := p.db.Exec(`CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )`)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == postgresDuplicateRelationError || e.Code == postgresUniqueIndexViolationError {
@@ -57,9 +57,7 @@ func (p *PostgresAdapter) ensureSchemaCollectionExists() error {
 // ClassExists 检测数据库中是否存在指定类
 func (p *PostgresAdapter) ClassExists(name string) bool {
 	var result bool
-	err := p.db.QueryRow(`SELECT EXISTS (SELECT 1 FROM   information_schema.tables WHERE table_name = $1)`,
-		p.collectionPrefix+name).
-		Scan(&result)
+	err := p.db.QueryRow(`SELECT EXISTS (SELECT 1 FROM   information_schema.tables WHERE table_name = $1)`, name).Scan(&result)
 	if err != nil {
 		return false
 	}
@@ -72,10 +70,25 @@ func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.
 	return nil
 }
 
-// CreateClass ...
+// CreateClass 创建类
 func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M, error) {
 	// TODO
-	return nil, nil
+	err := p.createTable(className, schema)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.db.Exec(`INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($1, $2, $3)`, className, schema, true)
+	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			if e.Code == postgresUniqueIndexViolationError {
+				return nil, errs.E(errs.DuplicateValue, "Class "+className+" already exists.")
+			}
+		}
+		return nil, err
+	}
+
+	return toParseSchema(schema), nil
 }
 
 // createTable 仅创建表，不加入 schema 中
@@ -133,7 +146,7 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 	}
 
 	qs := `CREATE TABLE IF NOT EXISTS "%s" (` + strings.Join(patternsArray, ",") + `)`
-	values := append(types.S{p.collectionPrefix + className}, valuesArray...)
+	values := append(types.S{className}, valuesArray...)
 	qs = fmt.Sprintf(qs, values...)
 
 	err := p.ensureSchemaCollectionExists()
@@ -156,7 +169,7 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 
 	// 创建 relation 表
 	for _, fieldName := range relations {
-		name := fmt.Sprintf(`%s_Join:%s:%s`, p.collectionPrefix, fieldName, className)
+		name := fmt.Sprintf(`_Join:%s:%s`, fieldName, className)
 		_, err = p.db.Exec(fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )`, name))
 		if err != nil {
 			return err

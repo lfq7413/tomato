@@ -1712,7 +1712,7 @@ func TestPostgresAdapter_ensureSchemaCollectionExists(t *testing.T) {
 		if err := p.ensureSchemaCollectionExists(); reflect.DeepEqual(err, tt.wantErr) == false {
 			t.Errorf("%q. PostgresAdapter.ensureSchemaCollectionExists() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
-		if p.ClassExists(p.collectionPrefix+"_SCHEMA") == false {
+		if p.ClassExists("_SCHEMA") == false {
 			t.Errorf("%q. PostgresAdapter.ensureSchemaCollectionExists() _SCHEMA is not Exists", tt.name)
 		}
 		tt.clean()

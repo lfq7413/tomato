@@ -1,38 +1,36 @@
 package errs
 
 import (
-	"reflect"
 	"strconv"
 
 	"github.com/lfq7413/tomato/types"
 )
 
-type tomatoError struct {
-	code int
-	msg  string
+// TomatoError ...
+type TomatoError struct {
+	Code    int
+	Message string
 }
 
-func (e *tomatoError) Error() string {
-	return `{"code": ` + strconv.Itoa(e.code) + `,"error": "` + e.msg + `"}`
+func (e *TomatoError) Error() string {
+	return `{"code": ` + strconv.Itoa(e.Code) + `,"error": "` + e.Message + `"}`
 }
 
 // E 组装 json 格式错误信息：
 // {"code": 105,"error": "invalid field name: bl!ng"}
 func E(code int, msg string) error {
-	return &tomatoError{
-		code: code,
-		msg:  msg,
+	return &TomatoError{
+		Code:    code,
+		Message: msg,
 	}
 }
 
 // ErrorToMap 把 error 转换为 types.M 格式，准备返回给客户端
 func ErrorToMap(e error) types.M {
-	t := reflect.TypeOf(e)
-	if t.String() == "*errs.tomatoError" {
-		v := reflect.ValueOf(e)
+	if v, ok := e.(*TomatoError); ok {
 		return types.M{
-			"code":  int(v.Elem().Field(0).Int()),
-			"error": v.Elem().Field(1).String(),
+			"code":  v.Code,
+			"error": v.Message,
 		}
 	}
 	return types.M{
@@ -48,20 +46,16 @@ func ErrorMessageToMap(code int, msg string) types.M {
 
 // GetErrorCode 获取 error 中的 code
 func GetErrorCode(e error) int {
-	t := reflect.TypeOf(e)
-	if t.String() == "*errs.tomatoError" {
-		v := reflect.ValueOf(e)
-		return int(v.Elem().Field(0).Int())
+	if v, ok := e.(*TomatoError); ok {
+		return v.Code
 	}
 	return 0
 }
 
 // GetErrorMessage 获取 error 中的 Message
 func GetErrorMessage(e error) string {
-	t := reflect.TypeOf(e)
-	if t.String() == "*errs.tomatoError" {
-		v := reflect.ValueOf(e)
-		return v.Elem().Field(1).String()
+	if v, ok := e.(*TomatoError); ok {
+		return v.Message
 	}
 	return e.Error()
 }

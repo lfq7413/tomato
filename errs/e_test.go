@@ -73,7 +73,7 @@ func TestGetErrorCode(t *testing.T) {
 			want: 20,
 		},
 		{
-			name: "GetErrorCode 1",
+			name: "GetErrorCode 2",
 			args: args{errors.New("hello")},
 			want: 0,
 		},
@@ -100,7 +100,7 @@ func TestGetErrorMessage(t *testing.T) {
 			want: "hello",
 		},
 		{
-			name: "GetErrorCode 1",
+			name: "GetErrorCode 2",
 			args: args{errors.New("hello")},
 			want: "hello",
 		},

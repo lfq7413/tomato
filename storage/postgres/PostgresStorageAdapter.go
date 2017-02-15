@@ -67,6 +67,7 @@ func (p *PostgresAdapter) ClassExists(name string) bool {
 // SetClassLevelPermissions ...
 func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.M) error {
 	// TODO
+	// jsonObjectSetKey
 	return nil
 }
 
@@ -228,24 +229,33 @@ func (p *PostgresAdapter) GetClass(className string) (types.M, error) {
 // DeleteObjectsByQuery ...
 func (p *PostgresAdapter) DeleteObjectsByQuery(className string, schema, query types.M) error {
 	// TODO
+	// buildWhereClause
 	return nil
 }
 
 // Find ...
 func (p *PostgresAdapter) Find(className string, schema, query, options types.M) ([]types.M, error) {
 	// TODO
+	// buildWhereClause
 	return nil, nil
 }
 
 // Count ...
 func (p *PostgresAdapter) Count(className string, schema, query types.M) (int, error) {
 	// TODO
+	// buildWhereClause
 	return 0, nil
 }
 
 // UpdateObjectsByQuery ...
 func (p *PostgresAdapter) UpdateObjectsByQuery(className string, schema, query, update types.M) error {
 	// TODO
+	// buildWhereClause
+	// jsonObjectSetKey
+	// arrayAdd
+	// arrayAddUnique
+	// arrayRemove
+
 	return nil
 }
 
@@ -272,7 +282,59 @@ func (p *PostgresAdapter) EnsureUniqueness(className string, schema types.M, fie
 
 // PerformInitialization ...
 func (p *PostgresAdapter) PerformInitialization(options types.M) error {
-	// TODO
+	if options == nil {
+		options = types.M{}
+	}
+
+	if volatileClassesSchemas, ok := options["VolatileClassesSchemas"].([]types.M); ok {
+		for _, schema := range volatileClassesSchemas {
+			err := p.createTable(utils.S(schema["className"]), schema)
+			if err != nil {
+				if e, ok := err.(*pq.Error); ok {
+					if e.Code != postgresDuplicateRelationError {
+						return err
+					}
+				} else if e, ok := err.(*errs.TomatoError); ok {
+					if e.Code != errs.InvalidClassName {
+						return err
+					}
+				} else {
+					return err
+				}
+			}
+		}
+	}
+
+	_, err := p.db.Exec(jsonObjectSetKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = p.db.Exec(arrayAdd)
+	if err != nil {
+		return err
+	}
+
+	_, err = p.db.Exec(arrayAddUnique)
+	if err != nil {
+		return err
+	}
+
+	_, err = p.db.Exec(arrayRemove)
+	if err != nil {
+		return err
+	}
+
+	_, err = p.db.Exec(arrayContainsAll)
+	if err != nil {
+		return err
+	}
+
+	_, err = p.db.Exec(arrayContains)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -498,6 +560,8 @@ type whereClause struct {
 }
 
 func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
+	// arrayContainsAll
+	// arrayContains
 	patterns := []string{}
 	values := types.S{}
 	sorts := []string{}
@@ -867,3 +931,82 @@ func literalizeRegexPart(s string) string {
 	s = re.ReplaceAllString(s, "''$1")
 	return s
 }
+
+// Function to set a key on a nested JSON document
+const jsonObjectSetKey = `CREATE OR REPLACE FUNCTION "json_object_set_key"(
+  "json"          jsonb,
+  "key_to_set"    TEXT,
+  "value_to_set"  anyelement
+)
+  RETURNS jsonb 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$
+SELECT concat('{', string_agg(to_json("key") || ':' || "value", ','), '}')::jsonb
+  FROM (SELECT *
+          FROM jsonb_each("json")
+         WHERE "key" <> "key_to_set"
+         UNION ALL
+        SELECT "key_to_set", to_json("value_to_set")::jsonb) AS "fields"
+$function$`
+
+const arrayAdd = `CREATE OR REPLACE FUNCTION "array_add"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS jsonb 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT array_to_json(ARRAY(SELECT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements("array")) ||  ARRAY(SELECT jsonb_array_elements("values")))))::jsonb;
+$function$`
+
+const arrayAddUnique = `CREATE OR REPLACE FUNCTION "array_add_unique"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS jsonb 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT array_to_json(ARRAY(SELECT DISTINCT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements("array")) ||  ARRAY(SELECT DISTINCT jsonb_array_elements("values")))))::jsonb;
+$function$`
+
+const arrayRemove = `CREATE OR REPLACE FUNCTION "array_remove"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS jsonb 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT array_to_json(ARRAY(SELECT * FROM jsonb_array_elements("array") as elt WHERE elt NOT IN (SELECT * FROM (SELECT jsonb_array_elements("values")) AS sub)))::jsonb;
+$function$`
+
+const arrayContainsAll = `CREATE OR REPLACE FUNCTION "array_contains_all"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS boolean 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT RES.CNT = jsonb_array_length("values") FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements("array") as elt WHERE elt IN (SELECT jsonb_array_elements("values"))) as RES ;
+$function$`
+
+const arrayContains = `CREATE OR REPLACE FUNCTION "array_contains"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS boolean 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT RES.CNT >= 1 FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements("array") as elt WHERE elt IN (SELECT jsonb_array_elements("values"))) as RES ;
+$function$`

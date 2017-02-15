@@ -1990,3 +1990,54 @@ func TestPostgresAdapter_CreateClass(t *testing.T) {
 		tt.clean(tt.args.className)
 	}
 }
+
+func TestPostgresAdapter_PerformInitialization(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	type args struct {
+		options types.M
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+		clean   func()
+	}{
+		{
+			name:    "1",
+			args:    args{options: nil},
+			wantErr: nil,
+			clean:   func() {},
+		},
+		{
+			name: "2",
+			args: args{
+				options: types.M{
+					"VolatileClassesSchemas": []types.M{
+						types.M{
+							"className": "_Hooks",
+							"fields": types.M{
+								"functionName": types.M{"type": "String"},
+								"className":    types.M{"type": "String"},
+								"triggerName":  types.M{"type": "String"},
+								"url":          types.M{"type": "String"},
+							},
+							"classLevelPermissions": types.M{},
+						},
+					},
+				},
+			},
+			wantErr: nil,
+			clean: func() {
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+				db.Exec(`DROP TABLE "_Hooks"`)
+			},
+		},
+	}
+	for _, tt := range tests {
+		if err := p.PerformInitialization(tt.args.options); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.PerformInitialization() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		tt.clean()
+	}
+}

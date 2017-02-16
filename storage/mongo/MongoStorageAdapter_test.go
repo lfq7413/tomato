@@ -8,7 +8,6 @@ import (
 	"gopkg.in/mgo.v2"
 
 	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -1623,20 +1622,5 @@ func Test_mongoSchemaFromFieldsAndClassNameAndCLP(t *testing.T) {
 }
 
 func getAdapter() *MongoAdapter {
-	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
-	return NewMongoAdapter("tomato")
-}
-
-func newMongoDB(url string) *storage.Database {
-	session, err := mgo.Dial(url)
-	if err != nil {
-		panic(err)
-	}
-	session.SetMode(mgo.Monotonic, true)
-	database := session.DB("")
-	db := &storage.Database{
-		MongoSession:  session,
-		MongoDatabase: database,
-	}
-	return db
+	return NewMongoAdapter("tomato", openDB())
 }

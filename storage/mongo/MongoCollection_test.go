@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/lfq7413/tomato/errs"
+	"github.com/lfq7413/tomato/test"
 	"github.com/lfq7413/tomato/types"
 
 	"gopkg.in/mgo.v2"
@@ -1131,10 +1132,5 @@ func Test_ensureSparseUniqueIndexInBackground(t *testing.T) {
 }
 
 func openDB() *mgo.Database {
-	session, err := mgo.Dial("192.168.99.100:27017/test")
-	if err != nil {
-		panic(err)
-	}
-	session.SetMode(mgo.Monotonic, true)
-	return session.DB("")
+	return test.OpenMongoDBForTest()
 }

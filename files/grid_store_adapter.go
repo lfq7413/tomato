@@ -15,7 +15,7 @@ type gridStoreAdapter struct {
 
 func newGridStoreAdapter() *gridStoreAdapter {
 	g := &gridStoreAdapter{}
-	g.gfs = storage.TomatoDB.MongoDatabase.GridFS("fs")
+	g.gfs = storage.OpenMongoDB().GridFS("fs")
 	return g
 }
 

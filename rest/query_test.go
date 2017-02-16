@@ -4,14 +4,13 @@ import (
 	"reflect"
 	"testing"
 
-	"gopkg.in/mgo.v2"
-
 	"github.com/lfq7413/tomato/cache"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/storage/mongo"
+	"github.com/lfq7413/tomato/test"
 	"github.com/lfq7413/tomato/types"
 )
 
@@ -4365,21 +4364,6 @@ func initEnv() {
 	orm.InitOrm(getAdapter())
 }
 
-func getAdapter() *mongo.MongoAdapter {
-	storage.TomatoDB = newMongoDB("192.168.99.100:27017/test")
-	return mongo.NewMongoAdapter("tomato")
-}
-
-func newMongoDB(url string) *storage.Database {
-	session, err := mgo.Dial(url)
-	if err != nil {
-		panic(err)
-	}
-	session.SetMode(mgo.Monotonic, true)
-	database := session.DB("")
-	db := &storage.Database{
-		MongoSession:  session,
-		MongoDatabase: database,
-	}
-	return db
+func getAdapter() storage.Adapter {
+	return mongo.NewMongoAdapter("tomato", test.OpenMongoDBForTest())
 }

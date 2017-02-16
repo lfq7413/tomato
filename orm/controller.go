@@ -26,7 +26,7 @@ var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
-	Adapter = mongo.NewMongoAdapter("tomato")
+	Adapter = mongo.NewMongoAdapter("tomato", storage.OpenMongoDB())
 	schemaCache = cache.NewSchemaCache(config.TConfig.SchemaCacheTTL, config.TConfig.EnableSingleSchemaCache)
 	TomatoDBController = &DBController{}
 }

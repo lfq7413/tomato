@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/lfq7413/tomato/errs"
-	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 
@@ -18,22 +17,24 @@ const mongoSchemaCollectionName = "_SCHEMA"
 type MongoAdapter struct {
 	collectionPrefix string
 	collectionList   []string
+	db               *mgo.Database
 	transform        *Transform
 	maxTimeMS        int // 单次查询最大时间，以毫秒为单位
 }
 
 // NewMongoAdapter ...
-func NewMongoAdapter(collectionPrefix string) *MongoAdapter {
+func NewMongoAdapter(collectionPrefix string, db *mgo.Database) *MongoAdapter {
 	return &MongoAdapter{
 		collectionPrefix: collectionPrefix,
 		collectionList:   []string{},
+		db:               db,
 		transform:        NewTransform(),
 	}
 }
 
 // collection 获取指定表的操作对象
 func (m *MongoAdapter) collection(name string) *mgo.Collection {
-	return storage.TomatoDB.MongoDatabase.C(name)
+	return m.db.C(name)
 }
 
 // adaptiveCollection 组装 mongo 表操作对象
@@ -212,7 +213,7 @@ func (m *MongoAdapter) GetAllClasses() ([]types.M, error) {
 
 // getCollectionNames 获取数据库中当前已经存在的表名
 func (m *MongoAdapter) getCollectionNames() []string {
-	names, err := storage.TomatoDB.MongoDatabase.CollectionNames()
+	names, err := m.db.CollectionNames()
 	if err == nil && names != nil {
 		n := []string{}
 		for _, v := range names {

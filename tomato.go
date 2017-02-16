@@ -12,15 +12,12 @@ import (
 	"github.com/lfq7413/tomato/controllers"
 	"github.com/lfq7413/tomato/livequery"
 	"github.com/lfq7413/tomato/orm"
-	"github.com/lfq7413/tomato/storage"
 )
 
 // Run ...
 func Run() {
 
 	config.Validate()
-
-	defer storage.CloseDB()
 
 	// 创建必要的索引
 	orm.TomatoDBController.PerformInitialization()

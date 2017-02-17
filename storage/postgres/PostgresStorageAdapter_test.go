@@ -2041,3 +2041,55 @@ func TestPostgresAdapter_PerformInitialization(t *testing.T) {
 		tt.clean()
 	}
 }
+
+func TestPostgresAdapter_SetClassLevelPermissions(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	type args struct {
+		className string
+		CLPs      types.M
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    error
+		initialize func()
+		clean      func()
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				CLPs:      types.M{"find": types.M{"*": true}},
+			},
+			wantErr: nil,
+			initialize: func() {
+				p.CreateClass("post", types.M{"className": "post", "fields": types.M{"title": types.M{"type": "String"}}})
+			},
+			clean: func() {
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+				db.Exec(`DROP TABLE "post"`)
+			},
+		},
+		{
+			name: "2",
+			args: args{
+				className: "user",
+				CLPs:      types.M{"find": types.M{"*": true}},
+			},
+			wantErr:    nil,
+			initialize: func() {},
+			clean: func() {
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+			},
+		},
+	}
+	p.PerformInitialization(nil)
+	for _, tt := range tests {
+		tt.initialize()
+		if err := p.SetClassLevelPermissions(tt.args.className, tt.args.CLPs); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.SetClassLevelPermissions() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		tt.clean()
+	}
+}

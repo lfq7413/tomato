@@ -66,8 +66,24 @@ func (p *PostgresAdapter) ClassExists(name string) bool {
 
 // SetClassLevelPermissions ...
 func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.M) error {
-	// TODO
-	// jsonObjectSetKey
+	err := p.ensureSchemaCollectionExists()
+	if err != nil {
+		return err
+	}
+	if CLPs == nil {
+		CLPs = types.M{}
+	}
+	b, err := json.Marshal(CLPs)
+	if err != nil {
+		return err
+	}
+
+	qs := `UPDATE "_SCHEMA" SET "schema" = json_object_set_key("schema", $1::text, $2::jsonb) WHERE "className"=$3 `
+	_, err = p.db.Exec(qs, "classLevelPermissions", string(b), className)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

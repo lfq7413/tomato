@@ -64,7 +64,7 @@ func (p *PostgresAdapter) ClassExists(name string) bool {
 	return result
 }
 
-// SetClassLevelPermissions ...
+// SetClassLevelPermissions 设置类级别权限
 func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.M) error {
 	err := p.ensureSchemaCollectionExists()
 	if err != nil {
@@ -203,6 +203,75 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 // AddFieldIfNotExists ...
 func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, fieldType types.M) error {
 	// TODO
+	if fieldType == nil {
+		fieldType = types.M{}
+	}
+
+	if utils.S(fieldType["type"]) != "Relation" {
+		tp, err := parseTypeToPostgresType(fieldType)
+		if err != nil {
+			return err
+		}
+		qs := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, className, fieldName, tp)
+		_, err = p.db.Exec(qs)
+		if err != nil {
+			if e, ok := err.(*pq.Error); ok {
+				if e.Code == postgresRelationDoesNotExistError {
+					// TODO 添加默认字段
+					_, ce := p.CreateClass(className, types.M{"fields": types.M{fieldName: fieldType}})
+					if ce != nil {
+						return ce
+					}
+				} else if e.Code == postgresDuplicateColumnError {
+					// Column 已经存在，由其他请求创建
+				} else {
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+	} else {
+		name := fmt.Sprintf(`_Join:%s:%s`, fieldName, className)
+		qs := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )`, name)
+		_, err := p.db.Exec(qs)
+		if err != nil {
+			return err
+		}
+	}
+
+	qs := `SELECT "schema" FROM "_SCHEMA" WHERE "className" = $1`
+	rows, err := p.db.Query(qs, className)
+	if err != nil {
+		return err
+	}
+	if rows.Next() {
+		var sch types.M
+		err := rows.Scan(&sch)
+		if err != nil {
+			return err
+		}
+		if sch == nil {
+			sch = types.M{}
+		}
+		var fields types.M
+		if v := utils.M(sch["fields"]); v != nil {
+			fields = v
+		} else {
+			fields = types.M{}
+		}
+		if _, ok := fields[fieldName]; ok {
+			return errs.E(errs.OtherCause, "Attempted to add a field that already exists")
+		}
+		fields[fieldName] = fieldType
+		sch["fields"] = fields
+		qs := `UPDATE "_SCHEMA" SET "schema"=$1 WHERE "className"=$2`
+		_, err = p.db.Exec(qs, sch, className)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

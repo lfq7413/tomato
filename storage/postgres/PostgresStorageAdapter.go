@@ -247,7 +247,12 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 	}
 	if rows.Next() {
 		var sch types.M
-		err := rows.Scan(&sch)
+		var v []byte
+		err := rows.Scan(&v)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(v, &sch)
 		if err != nil {
 			return err
 		}
@@ -261,12 +266,15 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 			fields = types.M{}
 		}
 		if _, ok := fields[fieldName]; ok {
-			return errs.E(errs.OtherCause, "Attempted to add a field that already exists")
+			// 当表不存在时，会进行新建表，所以也会走到这里，不再处理错误
+			// Attempted to add a field that already exists
+			return nil
 		}
 		fields[fieldName] = fieldType
 		sch["fields"] = fields
+		b, err := json.Marshal(sch)
 		qs := `UPDATE "_SCHEMA" SET "schema"=$1 WHERE "className"=$2`
-		_, err = p.db.Exec(qs, sch, className)
+		_, err = p.db.Exec(qs, b, className)
 		if err != nil {
 			return err
 		}

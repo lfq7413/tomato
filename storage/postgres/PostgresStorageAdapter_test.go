@@ -2093,3 +2093,91 @@ func TestPostgresAdapter_SetClassLevelPermissions(t *testing.T) {
 		tt.clean()
 	}
 }
+
+func TestPostgresAdapter_AddFieldIfNotExists(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	type args struct {
+		className string
+		fieldName string
+		fieldType types.M
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    error
+		initialize func()
+		clean      func()
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				fieldName: "title",
+				fieldType: types.M{"type": "String"},
+			},
+			wantErr:    nil,
+			initialize: func() {},
+			clean: func() {
+				db.Exec(`DROP TABLE "post"`)
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+			},
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				fieldName: "title",
+				fieldType: types.M{"type": "String"},
+			},
+			wantErr: nil,
+			initialize: func() {
+				p.CreateClass("post", types.M{"fields": types.M{"title": types.M{"type": "String"}}})
+			},
+			clean: func() {
+				db.Exec(`DROP TABLE "post"`)
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+			},
+		},
+		{
+			name: "3",
+			args: args{
+				className: "post",
+				fieldName: "title",
+				fieldType: types.M{"type": "String"},
+			},
+			wantErr: nil,
+			initialize: func() {
+				p.CreateClass("post", types.M{"fields": types.M{"id": types.M{"type": "String"}}})
+			},
+			clean: func() {
+				db.Exec(`DROP TABLE "post"`)
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+			},
+		},
+		{
+			name: "4",
+			args: args{
+				className: "post",
+				fieldName: "user",
+				fieldType: types.M{"type": "Relation"},
+			},
+			wantErr: nil,
+			initialize: func() {
+				p.CreateClass("post", types.M{"fields": types.M{"id": types.M{"type": "String"}}})
+			},
+			clean: func() {
+				db.Exec(`DROP TABLE "post"`)
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+				db.Exec(`DROP TABLE "_Join:user:post"`)
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize()
+		if err := p.AddFieldIfNotExists(tt.args.className, tt.args.fieldName, tt.args.fieldType); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.AddFieldIfNotExists() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		tt.clean()
+	}
+}

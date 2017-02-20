@@ -200,9 +200,8 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 	return nil
 }
 
-// AddFieldIfNotExists ...
+// AddFieldIfNotExists 添加字段定义
 func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, fieldType types.M) error {
-	// TODO
 	if fieldType == nil {
 		fieldType = types.M{}
 	}
@@ -283,10 +282,22 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 	return nil
 }
 
-// DeleteClass ...
+// DeleteClass 删除指定表
 func (p *PostgresAdapter) DeleteClass(className string) (types.M, error) {
 	// TODO
-	return nil, nil
+	qs := fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, className)
+	_, err := p.db.Exec(qs)
+	if err != nil {
+		return nil, err
+	}
+
+	qs = `DELETE FROM "_SCHEMA" WHERE "className"=$1`
+	_, err = p.db.Exec(qs, className)
+	if err != nil {
+		return nil, err
+	}
+
+	return types.M{}, nil
 }
 
 // DeleteAllClasses ...

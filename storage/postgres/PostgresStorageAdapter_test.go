@@ -2234,3 +2234,53 @@ func TestPostgresAdapter_DeleteClass(t *testing.T) {
 		tt.clean()
 	}
 }
+
+func TestPostgresAdapter_DeleteAllClasses(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	tests := []struct {
+		name       string
+		wantErr    error
+		initialize func()
+		clean      func()
+	}{
+		{
+			name:       "1",
+			wantErr:    nil,
+			initialize: func() {},
+			clean:      func() {},
+		},
+		{
+			name:    "2",
+			wantErr: nil,
+			initialize: func() {
+				p.ensureSchemaCollectionExists()
+			},
+			clean: func() {},
+		},
+		{
+			name:    "3",
+			wantErr: nil,
+			initialize: func() {
+				p.CreateClass("post", types.M{})
+			},
+			clean: func() {},
+		},
+		{
+			name:    "4",
+			wantErr: nil,
+			initialize: func() {
+				p.CreateClass("post", types.M{"className": "post", "fields": types.M{"title": types.M{"type": "String"}}})
+				p.CreateClass("user", types.M{"className": "user", "fields": types.M{"role": types.M{"type": "Relation"}}})
+			},
+			clean: func() {},
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize()
+		if err := p.DeleteAllClasses(); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.DeleteAllClasses() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		tt.clean()
+	}
+}

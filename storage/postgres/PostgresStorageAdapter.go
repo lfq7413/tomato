@@ -301,8 +301,7 @@ func (p *PostgresAdapter) DeleteClass(className string) (types.M, error) {
 
 // DeleteAllClasses 删除所有表，仅用于测试
 func (p *PostgresAdapter) DeleteAllClasses() error {
-	// TODO
-	qs := `SELECT "className" "schema" FROM "_SCHEMA"`
+	qs := `SELECT "className","schema" FROM "_SCHEMA"`
 	rows, err := p.db.Query(qs)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok && e.Code == postgresRelationDoesNotExistError {

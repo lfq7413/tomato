@@ -284,7 +284,6 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 
 // DeleteClass 删除指定表
 func (p *PostgresAdapter) DeleteClass(className string) (types.M, error) {
-	// TODO
 	qs := fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, className)
 	_, err := p.db.Exec(qs)
 	if err != nil {
@@ -300,9 +299,52 @@ func (p *PostgresAdapter) DeleteClass(className string) (types.M, error) {
 	return types.M{}, nil
 }
 
-// DeleteAllClasses ...
+// DeleteAllClasses 删除所有表，仅用于测试
 func (p *PostgresAdapter) DeleteAllClasses() error {
 	// TODO
+	qs := `SELECT "className" "schema" FROM "_SCHEMA"`
+	rows, err := p.db.Query(qs)
+	if err != nil {
+		if e, ok := err.(*pq.Error); ok && e.Code == postgresRelationDoesNotExistError {
+			// _SCHEMA 不存在，则不删除
+			return nil
+		}
+		return err
+	}
+
+	classNames := []string{}
+	schemas := []types.M{}
+
+	for rows.Next() {
+		var clsName string
+		var sch types.M
+		var v []byte
+		err := rows.Scan(&clsName, &v)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(v, &sch)
+		if err != nil {
+			return err
+		}
+		classNames = append(classNames, clsName)
+		schemas = append(schemas, sch)
+	}
+
+	joins := []string{}
+	for _, sch := range schemas {
+		joins = append(joins, joinTablesForSchema(sch)...)
+	}
+
+	classes := []string{"_SCHEMA", "_PushStatus", "_JobStatus", "_Hooks", "_GlobalConfig"}
+	classes = append(classes, classNames...)
+	classes = append(classes, joins...)
+
+	for _, name := range classes {
+		qs = fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, name)
+		p.db.Exec(qs)
+	}
+
 	return nil
 }
 

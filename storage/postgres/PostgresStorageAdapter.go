@@ -349,7 +349,6 @@ func (p *PostgresAdapter) DeleteAllClasses() error {
 
 // DeleteFields 删除字段
 func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNames []string) error {
-	// TODO
 	if schema == nil {
 		schema = types.M{}
 	}

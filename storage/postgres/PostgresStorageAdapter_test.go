@@ -2284,3 +2284,84 @@ func TestPostgresAdapter_DeleteAllClasses(t *testing.T) {
 		tt.clean()
 	}
 }
+
+func TestPostgresAdapter_DeleteFields(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	initialize := func(className string, schema types.M) {
+		p.CreateClass(className, schema)
+	}
+	clean := func() {
+		db.Exec(`DROP TABLE "post"`)
+		db.Exec(`DROP TABLE "_SCHEMA"`)
+	}
+	type args struct {
+		className  string
+		schema     types.M
+		fieldNames []string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    error
+		initialize func(className string, schema types.M)
+		clean      func()
+	}{
+		{
+			name: "1",
+			args: args{
+				className:  "post",
+				schema:     types.M{},
+				fieldNames: []string{},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"fields": types.M{
+						"title":   types.M{"type": "String"},
+						"content": types.M{"type": "String"},
+					},
+				},
+				fieldNames: []string{"content"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"title":   types.M{"type": "String"},
+						"content": types.M{"type": "String"},
+						"user":    types.M{"type": "Relation"},
+					},
+				},
+				fieldNames: []string{"content", "user"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean: func() {
+				db.Exec(`DROP TABLE "post"`)
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+				db.Exec(`DROP TABLE "_Join:user:post"`)
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize(tt.args.className, tt.args.schema)
+		if err := p.DeleteFields(tt.args.className, tt.args.schema, tt.args.fieldNames); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.DeleteFields() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		tt.clean()
+	}
+}

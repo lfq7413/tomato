@@ -347,9 +347,55 @@ func (p *PostgresAdapter) DeleteAllClasses() error {
 	return nil
 }
 
-// DeleteFields ...
+// DeleteFields 删除字段
 func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNames []string) error {
 	// TODO
+	if schema == nil {
+		schema = types.M{}
+	}
+
+	fields := utils.M(schema["fields"])
+	if fields == nil {
+		fields = types.M{}
+	}
+	fldNames := types.S{}
+	for _, fieldName := range fieldNames {
+		field := utils.M(fields[fieldName])
+		if field != nil && utils.S(field["type"]) == "Relation" {
+			// 不处理 Relation 类型字段
+		} else {
+			fldNames = append(fldNames, fieldName)
+		}
+		delete(fields, fieldName)
+	}
+	schema["fields"] = fields
+
+	values := append(types.S{className}, fldNames...)
+	columnArray := []string{}
+	for _ = range fldNames {
+		columnArray = append(columnArray, `"%s"`)
+	}
+	columns := strings.Join(columnArray, ",")
+
+	b, err := json.Marshal(schema)
+	if err != nil {
+		return err
+	}
+	qs := `UPDATE "_SCHEMA" SET "schema"=$1 WHERE "className"=$2`
+	_, err = p.db.Exec(qs, b, className)
+	if err != nil {
+		return err
+	}
+
+	if len(values) > 1 {
+		qs = fmt.Sprintf(`ALTER TABLE "%%s" DROP COLUMN %s`, columns)
+		qs = fmt.Sprintf(qs, values...)
+		_, err = p.db.Exec(qs)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

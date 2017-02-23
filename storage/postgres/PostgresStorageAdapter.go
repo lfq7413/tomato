@@ -407,7 +407,35 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 // GetAllClasses ...
 func (p *PostgresAdapter) GetAllClasses() ([]types.M, error) {
 	// TODO
-	return nil, nil
+	err := p.ensureSchemaCollectionExists()
+	if err != nil {
+		return nil, err
+	}
+	qs := `SELECT "className","schema" FROM "_SCHEMA"`
+	rows, err := p.db.Query(qs)
+	if err != nil {
+		return nil, err
+	}
+
+	schemas := []types.M{}
+
+	for rows.Next() {
+		var clsName string
+		var sch types.M
+		var v []byte
+		err := rows.Scan(&clsName, &v)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(v, &sch)
+		if err != nil {
+			return nil, err
+		}
+		sch["className"] = clsName
+		schemas = append(schemas, toParseSchema(sch))
+	}
+
+	return schemas, nil
 }
 
 // GetClass ...

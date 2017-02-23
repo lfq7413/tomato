@@ -2365,3 +2365,76 @@ func TestPostgresAdapter_DeleteFields(t *testing.T) {
 		tt.clean()
 	}
 }
+
+func TestPostgresAdapter_GetAllClasses(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	tests := []struct {
+		name       string
+		want       []types.M
+		wantErr    error
+		initialize func()
+		clean      func()
+	}{
+		{
+			name:       "1",
+			want:       []types.M{},
+			wantErr:    nil,
+			initialize: func() {},
+			clean: func() {
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+			},
+		},
+		{
+			name: "2",
+			want: []types.M{
+				types.M{
+					"className": "post",
+					"fields":    types.M{"title": map[string]interface{}{"type": "String"}},
+					"classLevelPermissions": types.M{
+						"find":     types.M{"*": true},
+						"get":      types.M{"*": true},
+						"create":   types.M{"*": true},
+						"update":   types.M{"*": true},
+						"delete":   types.M{"*": true},
+						"addField": types.M{"*": true},
+					},
+				},
+				types.M{
+					"className": "user",
+					"fields":    types.M{"name": map[string]interface{}{"type": "String"}},
+					"classLevelPermissions": types.M{
+						"find":     types.M{"*": true},
+						"get":      types.M{"*": true},
+						"create":   types.M{"*": true},
+						"update":   types.M{"*": true},
+						"delete":   types.M{"*": true},
+						"addField": types.M{"*": true},
+					},
+				},
+			},
+			wantErr: nil,
+			initialize: func() {
+				p.CreateClass("post", types.M{"className": "post", "fields": types.M{"title": types.M{"type": "String"}}})
+				p.CreateClass("user", types.M{"className": "user", "fields": types.M{"name": types.M{"type": "String"}}})
+			},
+			clean: func() {
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+				db.Exec(`DROP TABLE "post"`)
+				db.Exec(`DROP TABLE "user"`)
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize()
+		got, err := p.GetAllClasses()
+		if reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.GetAllClasses() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. PostgresAdapter.GetAllClasses() = %v, want %v", tt.name, got, tt.want)
+		}
+		tt.clean()
+	}
+}

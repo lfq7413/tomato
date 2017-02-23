@@ -406,7 +406,6 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 
 // GetAllClasses ...
 func (p *PostgresAdapter) GetAllClasses() ([]types.M, error) {
-	// TODO
 	err := p.ensureSchemaCollectionExists()
 	if err != nil {
 		return nil, err

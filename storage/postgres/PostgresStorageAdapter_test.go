@@ -2438,3 +2438,68 @@ func TestPostgresAdapter_GetAllClasses(t *testing.T) {
 		tt.clean()
 	}
 }
+
+func TestPostgresAdapter_GetClass(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	type args struct {
+		className string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       types.M
+		wantErr    error
+		initialize func()
+		clean      func()
+	}{
+		{
+			name:    "1",
+			args:    args{className: "post"},
+			want:    types.M{},
+			wantErr: nil,
+			initialize: func() {
+				p.ensureSchemaCollectionExists()
+			},
+			clean: func() {
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+			},
+		},
+		{
+			name: "2",
+			args: args{className: "post"},
+			want: types.M{
+				"className": "post",
+				"fields":    types.M{"title": map[string]interface{}{"type": "String"}},
+				"classLevelPermissions": types.M{
+					"find":     types.M{"*": true},
+					"get":      types.M{"*": true},
+					"create":   types.M{"*": true},
+					"update":   types.M{"*": true},
+					"delete":   types.M{"*": true},
+					"addField": types.M{"*": true},
+				},
+			},
+			wantErr: nil,
+			initialize: func() {
+				p.CreateClass("post", types.M{"className": "post", "fields": types.M{"title": types.M{"type": "String"}}})
+			},
+			clean: func() {
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+				db.Exec(`DROP TABLE "post"`)
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize()
+		got, err := p.GetClass(tt.args.className)
+		if reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.GetClass() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. PostgresAdapter.GetClass() = %v, want %v", tt.name, got, tt.want)
+		}
+		tt.clean()
+	}
+}

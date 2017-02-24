@@ -439,7 +439,6 @@ func (p *PostgresAdapter) GetAllClasses() ([]types.M, error) {
 
 // GetClass ...
 func (p *PostgresAdapter) GetClass(className string) (types.M, error) {
-	// TODO
 	qs := `SELECT "schema" FROM "_SCHEMA" WHERE "className"=$1`
 	rows, err := p.db.Query(qs, className)
 	if err != nil {

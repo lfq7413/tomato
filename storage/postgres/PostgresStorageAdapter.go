@@ -440,7 +440,28 @@ func (p *PostgresAdapter) GetAllClasses() ([]types.M, error) {
 // GetClass ...
 func (p *PostgresAdapter) GetClass(className string) (types.M, error) {
 	// TODO
-	return nil, nil
+	qs := `SELECT "schema" FROM "_SCHEMA" WHERE "className"=$1`
+	rows, err := p.db.Query(qs, className)
+	if err != nil {
+		return nil, err
+	}
+
+	schema := types.M{}
+	if rows.Next() {
+		var v []byte
+		err = rows.Scan(&v)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(v, &schema)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		return schema, nil
+	}
+
+	return toParseSchema(schema), nil
 }
 
 // DeleteObjectsByQuery ...

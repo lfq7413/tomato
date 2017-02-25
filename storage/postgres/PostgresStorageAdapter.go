@@ -398,9 +398,35 @@ func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNa
 	return nil
 }
 
-// CreateObject ...
+// CreateObject 创建对象
 func (p *PostgresAdapter) CreateObject(className string, schema, object types.M) error {
-	// TODO
+	columnsArray := types.S{}
+	schema = toPostgresSchema(schema)
+	object = handleDotFields(object)
+
+	err := validateKeys(object)
+	if err != nil {
+		return err
+	}
+
+	for fieldName := range object {
+		re := regexp.MustCompile(`^_auth_data_([a-zA-Z0-9_]+)$`)
+		authDataMatch := re.FindStringSubmatch(fieldName)
+		if authDataMatch != nil && len(authDataMatch) == 2 {
+			provider := authDataMatch[1]
+			authData := utils.M(object["authData"])
+			if authData == nil {
+				authData = types.M{}
+			}
+			authData[provider] = object[fieldName]
+			delete(object, fieldName)
+			fieldName = "authData"
+			object["authData"] = authData
+		}
+		columnsArray = append(columnsArray, fieldName)
+		// TODO
+	}
+
 	return nil
 }
 

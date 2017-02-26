@@ -401,6 +401,7 @@ func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNa
 // CreateObject 创建对象
 func (p *PostgresAdapter) CreateObject(className string, schema, object types.M) error {
 	columnsArray := types.S{}
+	valuesArray := types.S{}
 	schema = toPostgresSchema(schema)
 	object = handleDotFields(object)
 
@@ -424,6 +425,39 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 			object["authData"] = authData
 		}
 		columnsArray = append(columnsArray, fieldName)
+
+		fields := utils.M(schema["fields"])
+		if fields == nil {
+			fields = types.M{}
+		}
+		if fields[fieldName] == nil && className == "_User" {
+			if fieldName == "_email_verify_token" ||
+				fieldName == "_failed_login_count" ||
+				fieldName == "_perishable_token" ||
+				fieldName == "_password_history" {
+				valuesArray = append(valuesArray, object[fieldName])
+			}
+
+			if fieldName == "_email_verify_token_expires_at" {
+				if v := utils.M(object[fieldName]); v != nil && utils.S(v["iso"]) != "" {
+					valuesArray = append(valuesArray, v["iso"])
+				} else {
+					valuesArray = append(valuesArray, nil)
+				}
+			}
+
+			if fieldName == "_account_lockout_expires_at" ||
+				fieldName == "_perishable_token_expires_at" ||
+				fieldName == "_password_changed_at" {
+				if v := utils.M(object[fieldName]); v != nil && utils.S(v["iso"]) != "" {
+					valuesArray = append(valuesArray, v["iso"])
+				} else {
+					valuesArray = append(valuesArray, nil)
+				}
+			}
+
+			continue
+		}
 		// TODO
 	}
 

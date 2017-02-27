@@ -402,6 +402,7 @@ func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNa
 func (p *PostgresAdapter) CreateObject(className string, schema, object types.M) error {
 	columnsArray := types.S{}
 	valuesArray := types.S{}
+	geoPoints := types.M{}
 	schema = toPostgresSchema(schema)
 	object = handleDotFields(object)
 
@@ -457,6 +458,48 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 			}
 
 			continue
+		}
+
+		tp := utils.M(fields[fieldName])
+		if tp == nil {
+			tp = types.M{}
+		}
+		switch utils.S(tp["type"]) {
+		case "Date":
+			if v := utils.M(object[fieldName]); v != nil && utils.S(v["iso"]) != "" {
+				valuesArray = append(valuesArray, v["iso"])
+			} else {
+				valuesArray = append(valuesArray, nil)
+			}
+		case "Pointer":
+			if v := utils.M(object[fieldName]); v != nil && utils.S(v["objectId"]) != "" {
+				valuesArray = append(valuesArray, v["objectId"])
+			} else {
+				valuesArray = append(valuesArray, "")
+			}
+		case "Array":
+			if fieldName == "_rperm" || fieldName == "_wperm" {
+				valuesArray = append(valuesArray, object[fieldName])
+			} else {
+				b, err := json.Marshal(object[fieldName])
+				if err != nil {
+					return err
+				}
+				valuesArray = append(valuesArray, b)
+			}
+		case "Object", "String", "Number", "Boolean":
+			valuesArray = append(valuesArray, object[fieldName])
+		case "File":
+			if v := utils.M(object[fieldName]); v != nil && utils.S(v["name"]) != "" {
+				valuesArray = append(valuesArray, v["name"])
+			} else {
+				valuesArray = append(valuesArray, "")
+			}
+		case "GeoPoint":
+			geoPoints[fieldName] = object[fieldName]
+			columnsArray = columnsArray[:len(columnsArray)-1]
+		default:
+			return errs.E(errs.OtherCause, "Type "+utils.S(tp["type"])+" not supported yet")
 		}
 		// TODO
 	}

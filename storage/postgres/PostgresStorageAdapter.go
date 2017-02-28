@@ -400,7 +400,7 @@ func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNa
 
 // CreateObject 创建对象
 func (p *PostgresAdapter) CreateObject(className string, schema, object types.M) error {
-	columnsArray := types.S{}
+	columnsArray := []string{}
 	valuesArray := types.S{}
 	geoPoints := types.M{}
 	schema = toPostgresSchema(schema)
@@ -501,7 +501,64 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 		default:
 			return errs.E(errs.OtherCause, "Type "+utils.S(tp["type"])+" not supported yet")
 		}
-		// TODO
+
+	}
+
+	for key := range geoPoints {
+		columnsArray = append(columnsArray, key)
+	}
+
+	initialValues := []string{}
+	for index := range valuesArray {
+		termination := ""
+		fieldName := columnsArray[index]
+		if fieldName == "_rperm" || fieldName == "_wperm" {
+			termination = "::text[]"
+		} else {
+			fields := utils.M(schema["fields"])
+			if fields == nil {
+				fields = types.M{}
+			}
+			tp := utils.M(fields[fieldName])
+			if tp == nil {
+				tp = types.M{}
+			}
+			if utils.S(tp["type"]) == "Array" {
+				termination = "::jsonb"
+			}
+		}
+		initialValues = append(initialValues, fmt.Sprintf(`$%d%s`, index+1, termination))
+	}
+
+	geoPointsInjects := []string{}
+	for _, v := range geoPoints {
+		value := utils.M(v)
+		if value == nil {
+			value = types.M{}
+		}
+		valuesArray = append(valuesArray, value["longitude"], value["latitude"])
+		l := len(valuesArray)
+		geoPointsInjects = append(geoPointsInjects, fmt.Sprintf(`POINT($%d, $%d)`, l-1, l))
+	}
+
+	columnsPatternArray := []string{}
+	for _, key := range columnsArray {
+		columnsPatternArray = append(columnsPatternArray, fmt.Sprintf(`"%s"`, key))
+	}
+	columnsPattern := strings.Join(columnsPatternArray, ",")
+
+	initialValues = append(initialValues, geoPointsInjects...)
+	valuesPattern := strings.Join(initialValues, ",")
+
+	qs := fmt.Sprintf(`INSERT INTO "%s" (%s) VALUES (%s)`, className, columnsPattern, valuesPattern)
+	_, err = p.db.Exec(qs, valuesArray...)
+	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			if e.Code == postgresUniqueIndexViolationError {
+				return errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")
+			}
+		}
+		return err
 	}
 
 	return nil

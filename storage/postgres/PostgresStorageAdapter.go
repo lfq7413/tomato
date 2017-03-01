@@ -403,6 +403,12 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 	columnsArray := []string{}
 	valuesArray := types.S{}
 	geoPoints := types.M{}
+	if schema == nil {
+		schema = types.M{}
+	}
+	if object == nil {
+		object = types.M{}
+	}
 	schema = toPostgresSchema(schema)
 	object = handleDotFields(object)
 
@@ -434,20 +440,20 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 		if fields[fieldName] == nil && className == "_User" {
 			if fieldName == "_email_verify_token" ||
 				fieldName == "_failed_login_count" ||
-				fieldName == "_perishable_token" ||
-				fieldName == "_password_history" {
+				fieldName == "_perishable_token" {
 				valuesArray = append(valuesArray, object[fieldName])
 			}
 
-			if fieldName == "_email_verify_token_expires_at" {
-				if v := utils.M(object[fieldName]); v != nil && utils.S(v["iso"]) != "" {
-					valuesArray = append(valuesArray, v["iso"])
-				} else {
-					valuesArray = append(valuesArray, nil)
+			if fieldName == "_password_history" {
+				b, err := json.Marshal(object[fieldName])
+				if err != nil {
+					return err
 				}
+				valuesArray = append(valuesArray, b)
 			}
 
-			if fieldName == "_account_lockout_expires_at" ||
+			if fieldName == "_email_verify_token_expires_at" ||
+				fieldName == "_account_lockout_expires_at" ||
 				fieldName == "_perishable_token_expires_at" ||
 				fieldName == "_password_changed_at" {
 				if v := utils.M(object[fieldName]); v != nil && utils.S(v["iso"]) != "" {
@@ -478,16 +484,25 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 				valuesArray = append(valuesArray, "")
 			}
 		case "Array":
+			b, err := json.Marshal(object[fieldName])
+			if err != nil {
+				return err
+			}
 			if fieldName == "_rperm" || fieldName == "_wperm" {
-				valuesArray = append(valuesArray, object[fieldName])
+				s := string(b)
+				s = strings.Replace(s, "[", "{", -1)
+				s = strings.Replace(s, "]", "}", -1)
+				valuesArray = append(valuesArray, s)
 			} else {
-				b, err := json.Marshal(object[fieldName])
-				if err != nil {
-					return err
-				}
 				valuesArray = append(valuesArray, b)
 			}
-		case "Object", "String", "Number", "Boolean":
+		case "Object":
+			b, err := json.Marshal(object[fieldName])
+			if err != nil {
+				return err
+			}
+			valuesArray = append(valuesArray, b)
+		case "String", "Number", "Boolean":
 			valuesArray = append(valuesArray, object[fieldName])
 		case "File":
 			if v := utils.M(object[fieldName]); v != nil && utils.S(v["name"]) != "" {

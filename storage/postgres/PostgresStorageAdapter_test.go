@@ -2503,3 +2503,303 @@ func TestPostgresAdapter_GetClass(t *testing.T) {
 		tt.clean()
 	}
 }
+
+func TestPostgresAdapter_CreateObject(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	clean := func(className string) {
+		db.Exec(`DROP TABLE "` + className + `"`)
+		db.Exec(`DROP TABLE "_SCHEMA"`)
+	}
+	type args struct {
+		className string
+		schema    types.M
+		object    types.M
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    error
+		initialize func(className string, schema types.M)
+		clean      func(className string)
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key1": types.M{"type": "String"},
+					},
+				},
+				object: types.M{
+					"key1": "hello",
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"authData": types.M{"type": "Object"},
+					},
+				},
+				object: types.M{
+					"_auth_data_facebook": types.M{"id": "1024"},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "3",
+			args: args{
+				className: "_User",
+				schema: types.M{
+					"className": "_User",
+					"fields":    types.M{},
+				},
+				object: types.M{
+					"_email_verify_token": "abc",
+					"_failed_login_count": 10,
+					"_perishable_token":   "abc",
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "4",
+			args: args{
+				className: "_User",
+				schema: types.M{
+					"className": "_User",
+					"fields":    types.M{},
+				},
+				object: types.M{
+					"_password_history": types.S{"hello", "world"},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "5",
+			args: args{
+				className: "_User",
+				schema: types.M{
+					"className": "_User",
+					"fields":    types.M{},
+				},
+				object: types.M{
+					"_email_verify_token_expires_at": types.M{"type": "Date", "iso": "2017-03-01T09:10:10.000Z"},
+					"_account_lockout_expires_at":    types.M{"type": "Date", "iso": "2017-03-01T09:10:10.000Z"},
+					"_perishable_token_expires_at":   types.M{"type": "Date", "iso": "2017-03-01T09:10:10.000Z"},
+					"_password_changed_at":           types.M{"type": "Date", "iso": "2017-03-01T09:10:10.000Z"},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "6",
+			args: args{
+				className: "_User",
+				schema: types.M{
+					"className": "_User",
+					"fields":    types.M{},
+				},
+				object: types.M{
+					"_email_verify_token_expires_at": types.M{"type": "Date", "iso": ""},
+					"_account_lockout_expires_at":    types.M{"type": "Date", "iso": ""},
+					"_perishable_token_expires_at":   types.M{"type": "Date", "iso": ""},
+					"_password_changed_at":           types.M{"type": "Date", "iso": ""},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "7",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key1": types.M{"type": "Date"},
+						"key2": types.M{"type": "Pointer", "targetClass": "user"},
+					},
+				},
+				object: types.M{
+					"key1": types.M{"type": "Date", "iso": "2017-03-01T09:10:10.000Z"},
+					"key2": types.M{"type": "Pointer", "className": "user", "objectId": "1024"},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "8",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key1": types.M{"type": "Array"},
+						"key2": types.M{"type": "Object"},
+					},
+				},
+				object: types.M{
+					"key1": types.S{"hello", "world"},
+					"key2": types.M{"key": "hello"},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "9",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key1": types.M{"type": "String"},
+						"key2": types.M{"type": "Number"},
+						"key3": types.M{"type": "Boolean"},
+					},
+				},
+				object: types.M{
+					"key1": "hello",
+					"key2": 1024,
+					"key3": true,
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "10",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key1": types.M{"type": "File"},
+					},
+				},
+				object: types.M{
+					"key1": types.M{"type": "File", "name": "icon.png"},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "11",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key1": types.M{"type": "GeoPoint"},
+					},
+				},
+				object: types.M{
+					"key1": types.M{"longitude": 10.0, "latitude": 10.0},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "12",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"_rperm": types.M{"type": "Array"},
+						"_wperm": types.M{"type": "Array"},
+					},
+				},
+				object: types.M{
+					"_rperm": types.S{"*", "role:1024", "1024"},
+					"_wperm": types.S{"role:1024", "1024"},
+				},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
+		{
+			name: "13",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"objectId": types.M{"type": "String"},
+					},
+				},
+				object: types.M{
+					"objectId": "1024",
+				},
+			},
+			wantErr: errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided"),
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+				p.CreateObject(className, schema, types.M{"objectId": "1024"})
+			},
+			clean: clean,
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize(tt.args.className, tt.args.schema)
+		if err := p.CreateObject(tt.args.className, tt.args.schema, tt.args.object); reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.CreateObject() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+		tt.clean(tt.args.className)
+	}
+}

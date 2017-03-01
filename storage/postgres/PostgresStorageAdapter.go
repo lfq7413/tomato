@@ -489,13 +489,16 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 				return err
 			}
 			if fieldName == "_rperm" || fieldName == "_wperm" {
-				s := string(b)
-				s = strings.Replace(s, "[", "{", -1)
-				s = strings.Replace(s, "]", "}", -1)
-				valuesArray = append(valuesArray, s)
-			} else {
-				valuesArray = append(valuesArray, b)
+				// '[' => '{'
+				if b[0] == 91 {
+					b[0] = 123
+				}
+				// ']' => '}'
+				if len(b) > 0 && b[len(b)-1] == 93 {
+					b[len(b)-1] = 125
+				}
 			}
+			valuesArray = append(valuesArray, b)
 		case "Object":
 			b, err := json.Marshal(object[fieldName])
 			if err != nil {

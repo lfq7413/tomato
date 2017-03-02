@@ -1017,9 +1017,18 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 					components[index] = `'` + cmpt + `'`
 				}
 			}
-			name := strings.Join(components[:len(components)-1], "->")
-			name = name + "->>" + components[len(components)-1]
-			patterns = append(patterns, fmt.Sprintf(`%s = '%v'`, name, fieldValue))
+			name := strings.Join(components, "->")
+			var value interface{}
+			if _, ok := fieldValue.(string); ok {
+				value = fieldValue
+			} else {
+				b, err := json.Marshal(fieldValue)
+				if err != nil {
+					return nil, err
+				}
+				value = string(b)
+			}
+			patterns = append(patterns, fmt.Sprintf(`%s = '%v'`, name, value))
 		} else if _, ok := fieldValue.(string); ok {
 			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
 			values = append(values, fieldName, fieldValue)

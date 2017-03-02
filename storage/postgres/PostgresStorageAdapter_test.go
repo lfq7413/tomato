@@ -720,7 +720,71 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `"key"->>'sub' = 'hello'`,
+				pattern: `"key"->'sub' = 'hello'`,
+				values:  types.S{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "4.1",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key.sub": true,
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key"->'sub' = 'true'`,
+				values:  types.S{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "4.2",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key.sub": 1024,
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key"->'sub' = '1024'`,
+				values:  types.S{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "4.3",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key.sub": types.M{"key": "hello"},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key"->'sub' = '{"key":"hello"}'`,
+				values:  types.S{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "4.4",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key.sub": types.S{"hello", "world"},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key"->'sub' = '["hello","world"]'`,
 				values:  types.S{},
 				sorts:   []string{},
 			},
@@ -736,7 +800,7 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `"key"->'subkey'->>'sub' = 'hello'`,
+				pattern: `"key"->'subkey'->'sub' = 'hello'`,
 				values:  types.S{},
 				sorts:   []string{},
 			},

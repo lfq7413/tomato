@@ -1169,20 +1169,18 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 
 			allArray := utils.A(value["$all"])
 			if allArray != nil && isArrayField {
-				patterns = append(patterns, fmt.Sprintf("array_contains_all($%d:name, $%d::jsonb)", index, index+1))
+				patterns = append(patterns, fmt.Sprintf(`array_contains_all("%s", $%d::jsonb)`, fieldName, index))
 				j, _ := json.Marshal(allArray)
-				values = append(values, fieldName, string(j))
-				index = index + 2
+				values = append(values, string(j))
+				index = index + 1
 			}
 
 			if b, ok := value["$exists"].(bool); ok {
 				if b {
-					patterns = append(patterns, fmt.Sprintf("$%d:name IS NOT NULL", index))
+					patterns = append(patterns, fmt.Sprintf(`"%s" IS NOT NULL`, fieldName))
 				} else {
-					patterns = append(patterns, fmt.Sprintf("$%d:name IS NULL", index))
+					patterns = append(patterns, fmt.Sprintf(`"%s" IS NULL`, fieldName))
 				}
-				values = append(values, fieldName)
-				index = index + 1
 			}
 
 			if point := utils.M(value["$nearSphere"]); point != nil {
@@ -1191,10 +1189,10 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 					distance = v
 				}
 				distanceInKM := distance * 6371 * 1000
-				patterns = append(patterns, fmt.Sprintf("ST_distance_sphere($%d:name::geometry, POINT($%d, $%d)::geometry) <= $%d", index, index+1, index+2, index+3))
-				sorts = append(sorts, fmt.Sprintf("ST_distance_sphere($%d:name::geometry, POINT($%d, $%d)::geometry) ASC", index, index+1, index+2))
-				values = append(values, fieldName, point["longitude"], point["latitude"], distanceInKM)
-				index = index + 4
+				patterns = append(patterns, fmt.Sprintf(`ST_distance_sphere("%s"::geometry, POINT($%d, $%d)::geometry) <= $%d`, fieldName, index, index+1, index+2))
+				sorts = append(sorts, fmt.Sprintf(`ST_distance_sphere("%s"::geometry, POINT($%d, $%d)::geometry) ASC`, fieldName, index, index+1))
+				values = append(values, point["longitude"], point["latitude"], distanceInKM)
+				index = index + 3
 			}
 
 			if within := utils.M(value["$within"]); within != nil {
@@ -1207,9 +1205,9 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 						right := box2["longitude"]
 						top := box2["latitude"]
 
-						patterns = append(patterns, fmt.Sprintf("$%d:name::point <@ $%d::box", index, index+1))
-						values = append(values, fieldName, fmt.Sprintf("((%v, %v), (%v, %v))", left, bottom, right, top))
-						index = index + 2
+						patterns = append(patterns, fmt.Sprintf(`"%s"::point <@ $%d::box`, fieldName, index))
+						values = append(values, fmt.Sprintf("((%v, %v), (%v, %v))", left, bottom, right, top))
+						index = index + 1
 					}
 				}
 			}
@@ -1228,9 +1226,7 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 
 				regex = processRegexPattern(regex)
 
-				patterns = append(patterns, fmt.Sprintf(`$%d:name %s '$%d:raw'`, index, operator, index+1))
-				values = append(values, fieldName, regex)
-				index = index + 2
+				patterns = append(patterns, fmt.Sprintf(`"%s" %s '%s'`, fieldName, operator, regex))
 			}
 
 			if utils.S(value["__type"]) == "Pointer" {

@@ -1079,23 +1079,23 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				if isArrayField {
 					j, _ := json.Marshal(types.S{v})
 					value["$ne"] = string(j)
-					patterns = append(patterns, fmt.Sprintf(`NOT array_contains($%d:name, $%d)`, index, index+1))
+					patterns = append(patterns, fmt.Sprintf(`NOT array_contains("%s", $%d)`, fieldName, index))
 				} else {
 					if v == nil {
-						patterns = append(patterns, fmt.Sprintf(`$%d:name <> $%d`, index, index+1))
+						patterns = append(patterns, fmt.Sprintf(`"%s" <> $%d`, fieldName, index))
 					} else {
-						patterns = append(patterns, fmt.Sprintf(`($%d:name <> $%d OR $%d:name IS NULL)`, index, index+1, index))
+						patterns = append(patterns, fmt.Sprintf(`("%s" <> $%d OR "%s" IS NULL)`, fieldName, index, fieldName))
 					}
 				}
 
-				values = append(values, fieldName, value["$ne"])
-				index = index + 2
+				values = append(values, value["$ne"])
+				index = index + 1
 			}
 
 			if v, ok := value["$eq"]; ok {
-				patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
-				values = append(values, fieldName, v)
-				index = index + 2
+				patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+				values = append(values, v)
+				index = index + 1
 			}
 
 			inArray := utils.A(value["$in"])

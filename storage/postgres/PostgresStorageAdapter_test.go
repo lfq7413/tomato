@@ -924,8 +924,8 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `NOT array_contains($1:name, $2)`,
-				values:  types.S{"key", `["hello"]`},
+				pattern: `NOT array_contains("key", $1)`,
+				values:  types.S{`["hello"]`},
 				sorts:   []string{},
 			},
 			wantErr: nil,
@@ -942,8 +942,8 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `$1:name <> $2`,
-				values:  types.S{"key", nil},
+				pattern: `"key" <> $1`,
+				values:  types.S{nil},
 				sorts:   []string{},
 			},
 			wantErr: nil,
@@ -960,8 +960,8 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `($1:name <> $2 OR $1:name IS NULL)`,
-				values:  types.S{"key", "hello"},
+				pattern: `("key" <> $1 OR "key" IS NULL)`,
+				values:  types.S{"hello"},
 				sorts:   []string{},
 			},
 			wantErr: nil,
@@ -978,8 +978,8 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `$1:name = $2`,
-				values:  types.S{"key", "hello"},
+				pattern: `"key" = $1`,
+				values:  types.S{"hello"},
 				sorts:   []string{},
 			},
 			wantErr: nil,

@@ -1030,21 +1030,21 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 			}
 			patterns = append(patterns, fmt.Sprintf(`%s = '%v'`, name, value))
 		} else if _, ok := fieldValue.(string); ok {
-			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
-			values = append(values, fieldName, fieldValue)
-			index = index + 2
+			patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+			values = append(values, fieldValue)
+			index = index + 1
 		} else if _, ok := fieldValue.(bool); ok {
-			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
-			values = append(values, fieldName, fieldValue)
-			index = index + 2
+			patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+			values = append(values, fieldValue)
+			index = index + 1
 		} else if _, ok := fieldValue.(float64); ok {
-			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
-			values = append(values, fieldName, fieldValue)
-			index = index + 2
+			patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+			values = append(values, fieldValue)
+			index = index + 1
 		} else if _, ok := fieldValue.(int); ok {
-			patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
-			values = append(values, fieldName, fieldValue)
-			index = index + 2
+			patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+			values = append(values, fieldValue)
+			index = index + 1
 		} else if fieldName == "$or" || fieldName == "$and" {
 			clauses := []string{}
 			clauseValues := types.S{}

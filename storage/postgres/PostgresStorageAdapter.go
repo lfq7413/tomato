@@ -1112,7 +1112,6 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 			if inArray != nil && isArrayField && isTypeString {
 				inPatterns := []string{}
 				allowNull := false
-				values = append(values, fieldName)
 
 				for listIndex, listElem := range inArray {
 					if listElem == nil {
@@ -1121,20 +1120,20 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 						values = append(values, listElem)
 						i := 0
 						if allowNull {
-							i = index + 1 + listIndex - 1
+							i = index + listIndex - 1
 						} else {
-							i = index + 1 + listIndex
+							i = index + listIndex
 						}
 						inPatterns = append(inPatterns, fmt.Sprintf("$%d", i))
 					}
 				}
 
 				if allowNull {
-					patterns = append(patterns, fmt.Sprintf(`($%d:name IS NULL OR $%d:name && ARRAY[%s])`, index, index, strings.Join(inPatterns, ",")))
+					patterns = append(patterns, fmt.Sprintf(`("%s" IS NULL OR "%s" && ARRAY[%s])`, fieldName, fieldName, strings.Join(inPatterns, ",")))
 				} else {
-					patterns = append(patterns, fmt.Sprintf(`($%d:name && ARRAY[%s])`, index, strings.Join(inPatterns, ",")))
+					patterns = append(patterns, fmt.Sprintf(`("%s" && ARRAY[%s])`, fieldName, strings.Join(inPatterns, ",")))
 				}
-				index = index + 1 + len(inPatterns)
+				index = index + len(inPatterns)
 			} else if isInOrNin {
 				createConstraint := func(baseArray types.S, notIn bool) {
 					if len(baseArray) > 0 {
@@ -1143,24 +1142,21 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 							not = " NOT "
 						}
 						if isArrayField {
-							patterns = append(patterns, fmt.Sprintf("%s array_contains($%d:name, $%d)", not, index, index+1))
+							patterns = append(patterns, fmt.Sprintf(`%s array_contains("%s", $%d)`, not, fieldName, index))
 							j, _ := json.Marshal(baseArray)
-							values = append(values, fieldName, string(j))
-							index = index + 2
+							values = append(values, string(j))
+							index = index + 1
 						} else {
 							inPatterns := []string{}
-							values = append(values, fieldName)
 							for listIndex, listElem := range baseArray {
 								values = append(values, listElem)
-								inPatterns = append(inPatterns, fmt.Sprintf("$%d", index+1+listIndex))
+								inPatterns = append(inPatterns, fmt.Sprintf("$%d", index+listIndex))
 							}
-							patterns = append(patterns, fmt.Sprintf("$%d:name %s IN (%s)", index, not, strings.Join(inPatterns, ",")))
-							index = index + 1 + len(inPatterns)
+							patterns = append(patterns, fmt.Sprintf(`"%s" %s IN (%s)`, fieldName, not, strings.Join(inPatterns, ",")))
+							index = index + len(inPatterns)
 						}
 					} else if !notIn {
-						values = append(values, fieldName)
-						patterns = append(patterns, fmt.Sprintf("$%d:name IS NULL", index))
-						index = index + 1
+						patterns = append(patterns, fmt.Sprintf(`"%s" IS NULL`, fieldName))
 					}
 				}
 				if inArray != nil {

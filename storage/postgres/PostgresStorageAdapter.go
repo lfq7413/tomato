@@ -1231,28 +1231,28 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 
 			if utils.S(value["__type"]) == "Pointer" {
 				if isArrayField {
-					patterns = append(patterns, fmt.Sprintf(`array_contains($%d:name, $%d)`, index, index+1))
+					patterns = append(patterns, fmt.Sprintf(`array_contains("%s", $%d)`, fieldName, index))
 					j, _ := json.Marshal(types.S{value})
-					values = append(values, fieldName, string(j))
-					index = index + 2
+					values = append(values, string(j))
+					index = index + 1
 				} else {
-					patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
-					values = append(values, fieldName, value["objectId"])
-					index = index + 2
+					patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+					values = append(values, value["objectId"])
+					index = index + 1
 				}
 			}
 
 			if utils.S(value["__type"]) == "Date" {
-				patterns = append(patterns, fmt.Sprintf(`$%d:name = $%d`, index, index+1))
-				values = append(values, fieldName, value["iso"])
-				index = index + 2
+				patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+				values = append(values, value["iso"])
+				index = index + 1
 			}
 
 			for cmp, pgComparator := range parseToPosgresComparator {
 				if v, ok := value[cmp]; ok {
-					patterns = append(patterns, fmt.Sprintf(`$%d:name %s $%d`, index, pgComparator, index+1))
-					values = append(values, fieldName, toPostgresValue(v))
-					index = index + 2
+					patterns = append(patterns, fmt.Sprintf(`"%s" %s $%d`, fieldName, pgComparator, index))
+					values = append(values, toPostgresValue(v))
+					index = index + 1
 				}
 			}
 		}

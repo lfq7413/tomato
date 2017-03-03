@@ -650,9 +650,122 @@ func (p *PostgresAdapter) DeleteObjectsByQuery(className string, schema, query t
 
 // Find ...
 func (p *PostgresAdapter) Find(className string, schema, query, options types.M) ([]types.M, error) {
-	// TODO
+	if options == nil {
+		options = types.M{}
+	}
+
+	var hasLimit bool
+	var hasSkip bool
+	if _, ok := options["limit"]; ok {
+		hasLimit = true
+	}
+	if _, ok := options["skip"]; ok {
+		hasSkip = true
+	}
+
+	values := types.S{}
+	where, err := buildWhereClause(schema, query, 1)
+	if err != nil {
+		return nil, err
+	}
+	values = append(values, where.values...)
+
+	var wherePattern string
+	var limitPattern string
+	var skipPattern string
+	if where.pattern != "" {
+		wherePattern = `WHERE ` + where.pattern
+	}
+	if hasLimit {
+		limitPattern = fmt.Sprintf(`LIMIT $%d`, len(values)+1)
+		values = append(values, options["limit"])
+	}
+	if hasSkip {
+		skipPattern = fmt.Sprintf(`OFFSET $%d`, len(values)+1)
+		values = append(values, options["skip"])
+	}
+
+	var sortPattern string
+	if _, ok := options["sort"]; ok {
+		if keys, ok := options["sort"].([]string); ok {
+			postgresSort := []string{}
+			for _, key := range keys {
+				var postgresKey string
+				if strings.HasPrefix(key, "-") {
+					key = key[1:]
+					postgresKey = fmt.Sprintf(`"%s" DESC`, key)
+				} else {
+					postgresKey = fmt.Sprintf(`"%s" ASC`, key)
+				}
+				postgresSort = append(postgresSort, postgresKey)
+			}
+			sorting := strings.Join(postgresSort, ",")
+			if len(postgresSort) > 0 {
+				sortPattern = fmt.Sprintf(`ORDER BY %s`, sorting)
+			}
+		}
+	}
+	if len(where.sorts) > 0 {
+		sortPattern = fmt.Sprintf(`ORDER BY %s`, strings.Join(where.sorts, ","))
+	}
+
+	columns := "*"
+	if _, ok := options["keys"]; ok {
+		if keys, ok := options["keys"].([]string); ok {
+			postgresKeys := []string{}
+			for _, key := range keys {
+				if key != "" {
+					postgresKeys = append(postgresKeys, fmt.Sprintf(`"%s"`, key))
+				}
+			}
+			if len(postgresKeys) > 0 {
+				columns = strings.Join(postgresKeys, ",")
+			}
+		}
+	}
+
+	qs := fmt.Sprintf(`SELECT %s FROM "%s" %s %s %s %s`, columns, className, wherePattern, sortPattern, limitPattern, skipPattern)
+	rows, err := p.db.Query(qs, values)
+	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			// 表不存在返回空
+			if e.Code != postgresRelationDoesNotExistError {
+				return []types.M{}, nil
+			}
+		}
+		return nil, err
+	}
+
+	results := []types.M{}
+	var fields []string
+	for rows.Next() {
+		if fields == nil {
+			fields, err = rows.Columns()
+			if err != nil {
+				return nil, err
+			}
+		}
+		values := types.S{}
+		for i := 0; i < len(fields); i++ {
+			var v interface{}
+			values = append(values, v)
+		}
+		err = rows.Scan(values...)
+		if err != nil {
+			return nil, err
+		}
+		object := types.M{}
+		for i, field := range fields {
+			object[field] = values[i]
+		}
+
+		// TODO
+
+		results = append(results, object)
+	}
+
 	// buildWhereClause
-	return nil, nil
+	return results, nil
 }
 
 // Count ...

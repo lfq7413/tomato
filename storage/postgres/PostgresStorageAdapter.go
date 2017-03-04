@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"regexp"
 
@@ -650,6 +652,9 @@ func (p *PostgresAdapter) DeleteObjectsByQuery(className string, schema, query t
 
 // Find ...
 func (p *PostgresAdapter) Find(className string, schema, query, options types.M) ([]types.M, error) {
+	if schema == nil {
+		schema = types.M{}
+	}
 	if options == nil {
 		options = types.M{}
 	}
@@ -736,30 +741,203 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 		return nil, err
 	}
 
+	fields := utils.M(schema["fields"])
+	if fields == nil {
+		fields = types.M{}
+	}
+
 	results := []types.M{}
-	var fields []string
+	var resultColumns []string
 	for rows.Next() {
-		if fields == nil {
-			fields, err = rows.Columns()
+		if resultColumns == nil {
+			resultColumns, err = rows.Columns()
 			if err != nil {
 				return nil, err
 			}
 		}
+		resultValues := []*interface{}{}
 		values := types.S{}
-		for i := 0; i < len(fields); i++ {
+		for i := 0; i < len(resultColumns); i++ {
 			var v interface{}
-			values = append(values, v)
+			resultValues = append(resultValues, &v)
+			values = append(values, &v)
 		}
 		err = rows.Scan(values...)
 		if err != nil {
 			return nil, err
 		}
 		object := types.M{}
-		for i, field := range fields {
-			object[field] = values[i]
+		for i, field := range resultColumns {
+			object[field] = *resultValues[i]
 		}
 
-		// TODO
+		for fieldName, v := range fields {
+			tp := utils.M(v)
+			if tp == nil {
+				continue
+			}
+			objectType := utils.S(tp["type"])
+
+			if objectType == "Pointer" && object[fieldName] != nil {
+				if v, ok := object[fieldName].([]byte); ok {
+					object[fieldName] = types.M{
+						"objectId":  string(v),
+						"__type":    "Pointer",
+						"className": tp["targetClass"],
+					}
+				} else {
+					object[fieldName] = nil
+				}
+			} else if objectType == "Relation" {
+				object[fieldName] = types.M{
+					"__type":    "Relation",
+					"className": tp["targetClass"],
+				}
+			} else if objectType == "GeoPoint" && object[fieldName] != nil {
+				// object[fieldName] = (10,20) (longitude, latitude)
+				resString := ""
+				if v, ok := object[fieldName].([]byte); ok {
+					resString = string(v)
+				}
+				if len(resString) < 5 {
+					object[fieldName] = nil
+					continue
+				}
+				pointString := strings.Split(resString[1:len(resString)-1], ",")
+				if len(pointString) != 2 {
+					object[fieldName] = nil
+					continue
+				}
+				longitude, err := strconv.ParseFloat(pointString[0], 64)
+				if err != nil {
+					return nil, err
+				}
+				latitude, err := strconv.ParseFloat(pointString[1], 64)
+				if err != nil {
+					return nil, err
+				}
+				object[fieldName] = types.M{
+					"longitude": longitude,
+					"latitude":  latitude,
+				}
+			} else if objectType == "File" && object[fieldName] != nil {
+				if v, ok := object[fieldName].([]byte); ok {
+					object[fieldName] = types.M{
+						"__type": "File",
+						"name":   string(v),
+					}
+				} else {
+					object[fieldName] = nil
+				}
+			} else if objectType == "String" && object[fieldName] != nil {
+				if v, ok := object[fieldName].([]byte); ok {
+					object[fieldName] = string(v)
+				} else {
+					object[fieldName] = nil
+				}
+			} else if objectType == "Object" && object[fieldName] != nil {
+				if v, ok := object[fieldName].([]byte); ok {
+					var r types.M
+					err = json.Unmarshal(v, &r)
+					if err != nil {
+						return nil, err
+					}
+					object[fieldName] = r
+				} else {
+					object[fieldName] = nil
+				}
+			} else if objectType == "Array" && object[fieldName] != nil {
+				if fieldName == "_rperm" || fieldName == "_wperm" {
+					continue
+				}
+				if v, ok := object[fieldName].([]byte); ok {
+					var r types.S
+					err = json.Unmarshal(v, &r)
+					if err != nil {
+						return nil, err
+					}
+					object[fieldName] = r
+				} else {
+					object[fieldName] = nil
+				}
+			}
+		}
+
+		if object["_rperm"] != nil {
+			// object["_rperm"] = {hello,world}
+			// 在添加 _rperm 时已保证值里不含 ','
+			resString := ""
+			if v, ok := object["_rperm"].([]byte); ok {
+				resString = string(v)
+			}
+			if len(resString) < 2 {
+				object["_rperm"] = nil
+			} else {
+				object["_rperm"] = strings.Split(resString[1:len(resString)-1], ",")
+			}
+		}
+
+		if object["_wperm"] != nil {
+			// object["_wperm"] = {hello,world}
+			// 在添加 _wperm 时已保证值里不含 ','
+			resString := ""
+			if v, ok := object["_wperm"].([]byte); ok {
+				resString = string(v)
+			}
+			if len(resString) < 2 {
+				object["_wperm"] = nil
+			} else {
+				object["_wperm"] = strings.Split(resString[1:len(resString)-1], ",")
+			}
+		}
+
+		if object["createdAt"] != nil {
+			if v, ok := object["createdAt"].(time.Time); ok {
+				object["createdAt"] = utils.TimetoString(v)
+			} else {
+				object["createdAt"] = nil
+			}
+		}
+
+		if object["updatedAt"] != nil {
+			if v, ok := object["updatedAt"].(time.Time); ok {
+				object["updatedAt"] = utils.TimetoString(v)
+			} else {
+				object["updatedAt"] = nil
+			}
+		}
+
+		if object["expiresAt"] != nil {
+			object["expiresAt"] = valueToDate(object["expiresAt"])
+		}
+
+		if object["_email_verify_token_expires_at"] != nil {
+			object["_email_verify_token_expires_at"] = valueToDate(object["_email_verify_token_expires_at"])
+		}
+
+		if object["_account_lockout_expires_at"] != nil {
+			object["_account_lockout_expires_at"] = valueToDate(object["_account_lockout_expires_at"])
+		}
+
+		if object["_perishable_token_expires_at"] != nil {
+			object["_account_lockout_expires_at"] = valueToDate(object["_account_lockout_expires_at"])
+		}
+
+		if object["_password_changed_at"] != nil {
+			object["_password_changed_at"] = valueToDate(object["_password_changed_at"])
+		}
+
+		for fieldName := range object {
+			if object[fieldName] == nil {
+				delete(object, fieldName)
+			}
+			if v, ok := object[fieldName].(time.Time); ok {
+				object[fieldName] = types.M{
+					"__type": "Date",
+					"iso":    utils.TimetoString(v),
+				}
+			}
+		}
 
 		results = append(results, object)
 	}
@@ -1459,6 +1637,16 @@ func literalizeRegexPart(s string) string {
 	re = regexp.MustCompile(`^'([^'])`)
 	s = re.ReplaceAllString(s, "''$1")
 	return s
+}
+
+func valueToDate(v interface{}) types.M {
+	if v, ok := v.(time.Time); ok {
+		return types.M{
+			"__type": "Date",
+			"iso":    utils.TimetoString(v),
+		}
+	}
+	return nil
 }
 
 // Function to set a key on a nested JSON document

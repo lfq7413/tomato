@@ -2867,3 +2867,125 @@ func TestPostgresAdapter_CreateObject(t *testing.T) {
 		tt.clean(tt.args.className)
 	}
 }
+
+func TestPostgresAdapter_Find(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	initialize := func(className string, schema types.M, objects []types.M) {
+		p.CreateClass(className, schema)
+		for _, object := range objects {
+			p.CreateObject(className, schema, object)
+		}
+	}
+	clean := func(className string) {
+		db.Exec(`DROP TABLE "` + className + `"`)
+		db.Exec(`DROP TABLE "_SCHEMA"`)
+	}
+	type args struct {
+		className   string
+		schema      types.M
+		query       types.M
+		options     types.M
+		dataObjects []types.M
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       []types.M
+		wantErr    error
+		initialize func(className string, schema types.M, objects []types.M)
+		clean      func(className string)
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				schema:    types.M{},
+				query:     types.M{"key": "hello"},
+				options:   types.M{},
+			},
+			want:    []types.M{},
+			wantErr: nil,
+			initialize: func(className string, schema types.M, objects []types.M) {
+				p.ensureSchemaCollectionExists()
+			},
+			clean: func(className string) {
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+			},
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields":    types.M{"key": types.M{"type": "String"}},
+				},
+				query:       types.M{"key": "hello"},
+				options:     types.M{},
+				dataObjects: []types.M{},
+			},
+			want:       []types.M{},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "3",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields":    types.M{"key": types.M{"type": "String"}},
+				},
+				query:   types.M{"key": "hello"},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "4",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields":    types.M{"key": types.M{"type": "String"}},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
+				types.M{"key": "world"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize(tt.args.className, tt.args.schema, tt.args.dataObjects)
+		got, err := p.Find(tt.args.className, tt.args.schema, tt.args.query, tt.args.options)
+		tt.clean(tt.args.className)
+		if reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.Find() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. PostgresAdapter.Find() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

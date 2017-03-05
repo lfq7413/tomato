@@ -730,11 +730,11 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 	}
 
 	qs := fmt.Sprintf(`SELECT %s FROM "%s" %s %s %s %s`, columns, className, wherePattern, sortPattern, limitPattern, skipPattern)
-	rows, err := p.db.Query(qs, values)
+	rows, err := p.db.Query(qs, values...)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			// 表不存在返回空
-			if e.Code != postgresRelationDoesNotExistError {
+			if e.Code == postgresRelationDoesNotExistError {
 				return []types.M{}, nil
 			}
 		}

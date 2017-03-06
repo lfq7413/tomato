@@ -817,6 +817,7 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 					return nil, err
 				}
 				object[fieldName] = types.M{
+					"__type":    "GeoPoint",
 					"longitude": longitude,
 					"latitude":  latitude,
 				}
@@ -873,7 +874,12 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 			if len(resString) < 2 {
 				object["_rperm"] = nil
 			} else {
-				object["_rperm"] = strings.Split(resString[1:len(resString)-1], ",")
+				keys := strings.Split(resString[1:len(resString)-1], ",")
+				rperm := make(types.S, len(keys))
+				for i, k := range keys {
+					rperm[i] = k
+				}
+				object["_rperm"] = rperm
 			}
 		}
 
@@ -887,7 +893,12 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 			if len(resString) < 2 {
 				object["_wperm"] = nil
 			} else {
-				object["_wperm"] = strings.Split(resString[1:len(resString)-1], ",")
+				keys := strings.Split(resString[1:len(resString)-1], ",")
+				wperm := make(types.S, len(keys))
+				for i, k := range keys {
+					wperm[i] = k
+				}
+				object["_wperm"] = wperm
 			}
 		}
 
@@ -920,7 +931,7 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 		}
 
 		if object["_perishable_token_expires_at"] != nil {
-			object["_account_lockout_expires_at"] = valueToDate(object["_account_lockout_expires_at"])
+			object["_perishable_token_expires_at"] = valueToDate(object["_perishable_token_expires_at"])
 		}
 
 		if object["_password_changed_at"] != nil {

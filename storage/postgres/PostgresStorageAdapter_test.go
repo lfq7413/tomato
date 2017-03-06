@@ -2975,6 +2975,567 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
+		{
+			name: "5-limit",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields":    types.M{"key": types.M{"type": "String"}},
+				},
+				query:   types.M{},
+				options: types.M{"limit": 1},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "6-skip",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields":    types.M{"key": types.M{"type": "String"}},
+				},
+				query:   types.M{},
+				options: types.M{"skip": 1},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "world"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "7-sort",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields":    types.M{"key": types.M{"type": "String"}},
+				},
+				query:   types.M{},
+				options: types.M{"sort": []string{"key"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
+				types.M{"key": "world"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "8-sort",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields":    types.M{"key": types.M{"type": "String"}},
+				},
+				query:   types.M{},
+				options: types.M{"sort": []string{"-key"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "world"},
+				types.M{"key": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "9-keys",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query:   types.M{},
+				options: types.M{"keys": []string{"key"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hi", "key2": "friend"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
+				types.M{"key": "hi"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "10-keys",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query:   types.M{},
+				options: types.M{"keys": []string{"key2"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hi", "key2": "friend"},
+				},
+			},
+			want: []types.M{
+				types.M{"key2": "world"},
+				types.M{"key2": "friend"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "11-Pointer",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{
+							"type":        "Pointer",
+							"targetClass": "user",
+						},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"className": "user",
+							"__type":    "Pointer",
+							"objectId":  "123456789012345678901111",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"className": "user",
+						"__type":    "Pointer",
+						"objectId":  "123456789012345678901111",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "12-Relation",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{
+							"type":        "Relation",
+							"targetClass": "user",
+						},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query:       types.M{},
+				options:     types.M{},
+				dataObjects: []types.M{types.M{"key2": "hello"}},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"className": "user",
+						"__type":    "Relation",
+					},
+					"key2": "hello",
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "13-GeoPoint",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{
+							"type": "GeoPoint",
+						},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type":    "GeoPoint",
+							"longitude": -30.5,
+							"latitude":  40.5,
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type":    "GeoPoint",
+						"longitude": -30.5,
+						"latitude":  40.5,
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "14-File",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{
+							"type": "File",
+						},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type": "File",
+							"name":   "icon.png",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type": "File",
+						"name":   "icon.png",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "15",
+			args: args{
+				className: "post-Object",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{
+							"type": "Object",
+						},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"sub": "hello",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"sub": "hello",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "16-Array",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{
+							"type": "Array",
+						},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.S{"hello", "world"},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.S{"hello", "world"},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "17-Boolean Number",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "Boolean"},
+						"key2": types.M{"type": "Number"},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": true, "key2": 10.24},
+				},
+			},
+			want: []types.M{
+				types.M{"key": true, "key2": 10.24},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "18-_rperm",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"_rperm": types.M{
+							"type": "Array",
+						},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"_rperm": types.S{"hello", "world"}},
+				},
+			},
+			want: []types.M{
+				types.M{"_rperm": types.S{"hello", "world"}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "19-_wperm",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"_wperm": types.M{
+							"type": "Array",
+						},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"_wperm": types.S{"hello", "world"}},
+				},
+			},
+			want: []types.M{
+				types.M{"_wperm": types.S{"hello", "world"}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "20-objectId...",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"objectId":  types.M{"type": "String"},
+						"createdAt": types.M{"type": "Date"},
+						"updatedAt": types.M{"type": "Date"},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"objectId": "123456789012345678901111",
+						"createdAt": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+						"updatedAt": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"objectId":  "123456789012345678901111",
+					"createdAt": "2006-01-02T15:04:05.000Z",
+					"updatedAt": "2006-01-02T15:04:05.000Z",
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "21-expiresAt...",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"expiresAt":                      types.M{"type": "Date"},
+						"_email_verify_token_expires_at": types.M{"type": "Date"},
+						"_account_lockout_expires_at":    types.M{"type": "Date"},
+						"_perishable_token_expires_at":   types.M{"type": "Date"},
+						"_password_changed_at":           types.M{"type": "Date"},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"expiresAt": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+						"_email_verify_token_expires_at": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+						"_account_lockout_expires_at": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+						"_perishable_token_expires_at": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+						"_password_changed_at": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"expiresAt": types.M{
+						"__type": "Date",
+						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+					"_email_verify_token_expires_at": types.M{
+						"__type": "Date",
+						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+					"_account_lockout_expires_at": types.M{
+						"__type": "Date",
+						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+					"_perishable_token_expires_at": types.M{
+						"__type": "Date",
+						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+					"_password_changed_at": types.M{
+						"__type": "Date",
+						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "22-Date",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Date"},
+					},
+				},
+				query:   types.M{},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type": "Date",
+						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		// TODO 测试不同的查询条件
 	}
 	for _, tt := range tests {
 		tt.initialize(tt.args.className, tt.args.schema, tt.args.dataObjects)

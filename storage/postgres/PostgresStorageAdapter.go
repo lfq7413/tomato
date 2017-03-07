@@ -1320,17 +1320,11 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				}
 			}
 			name := strings.Join(components, "->")
-			var value interface{}
-			if _, ok := fieldValue.(string); ok {
-				value = fieldValue
-			} else {
-				b, err := json.Marshal(fieldValue)
-				if err != nil {
-					return nil, err
-				}
-				value = string(b)
+			b, err := json.Marshal(fieldValue)
+			if err != nil {
+				return nil, err
 			}
-			patterns = append(patterns, fmt.Sprintf(`%s = '%v'`, name, value))
+			patterns = append(patterns, fmt.Sprintf(`%s = '%v'`, name, string(b)))
 		} else if _, ok := fieldValue.(string); ok {
 			patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
 			values = append(values, fieldValue)

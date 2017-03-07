@@ -720,7 +720,7 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `"key"->'sub' = 'hello'`,
+				pattern: `"key"->'sub' = '"hello"'`,
 				values:  types.S{},
 				sorts:   []string{},
 			},
@@ -800,7 +800,7 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `"key"->'subkey'->'sub' = 'hello'`,
+				pattern: `"key"->'subkey'->'sub' = '"hello"'`,
 				values:  types.S{},
 				sorts:   []string{},
 			},
@@ -3184,7 +3184,11 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			},
 			wantErr:    nil,
 			initialize: initialize,
-			clean:      clean,
+			clean: func(className string) {
+				db.Exec(`DROP TABLE "` + className + `"`)
+				db.Exec(`DROP TABLE "_SCHEMA"`)
+				db.Exec(`DROP TABLE "_Join:key:post"`)
+			},
 		},
 		{
 			name: "13-GeoPoint",
@@ -3528,6 +3532,105 @@ func TestPostgresAdapter_Find(t *testing.T) {
 					"key": types.M{
 						"__type": "Date",
 						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "23-where-.",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Object"},
+					},
+				},
+				query:   types.M{"key.subKey": "hello"},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"subKey": "hello",
+							"sub":    types.M{"key": "world"},
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"subKey": "hello",
+						"sub":    map[string]interface{}{"key": "world"},
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "24-where-.",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Object"},
+					},
+				},
+				query:   types.M{"key.sub": types.M{"key": "world"}},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"subKey": "hello",
+							"sub":    types.M{"key": "world"},
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"subKey": "hello",
+						"sub":    map[string]interface{}{"key": "world"},
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "25-where-.",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Object"},
+					},
+				},
+				query:   types.M{"key.sub.key": "world"},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"subKey": "hello",
+							"sub":    types.M{"key": "world"},
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"subKey": "hello",
+						"sub":    map[string]interface{}{"key": "world"},
 					},
 				},
 			},

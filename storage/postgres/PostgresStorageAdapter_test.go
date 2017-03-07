@@ -3638,6 +3638,139 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
+		{
+			name: "26-where-bool",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Boolean"},
+					},
+				},
+				query:   types.M{"key": true},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": true},
+					types.M{"key": false},
+				},
+			},
+			want: []types.M{
+				types.M{"key": true},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "27-where-float64",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Number"},
+					},
+				},
+				query:   types.M{"key": 10.24},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": 10.24},
+					types.M{"key": 20.48},
+				},
+			},
+			want: []types.M{
+				types.M{"key": 10.24},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "28-where-int",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Number"},
+					},
+				},
+				query:   types.M{"key": 1024},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": 1024},
+					types.M{"key": 2048},
+				},
+			},
+			want: []types.M{
+				types.M{"key": 1024.0},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "29-where-$or",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "Number"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"$or": types.S{
+						types.M{"key": 10.24},
+						types.M{"key": 20.48},
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": 10.24, "key2": "hello"},
+					types.M{"key": 20.48, "key2": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": 10.24, "key2": "hello"},
+				types.M{"key": 20.48, "key2": "world"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "30-where-$and",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "Number"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"$and": types.S{
+						types.M{"key": 10.24},
+						types.M{"key2": "hello"},
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": 10.24, "key2": "hello"},
+					types.M{"key": 20.48, "key2": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": 10.24, "key2": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
 		// TODO 测试不同的查询条件
 	}
 	for _, tt := range tests {

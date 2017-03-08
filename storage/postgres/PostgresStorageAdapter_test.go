@@ -931,6 +931,28 @@ func Test_buildWhereClause(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name: "12.1",
+			args: args{
+				schema: types.M{
+					"fields": types.M{
+						"key": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$ne": nil,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `NOT array_contains("key", $1)`,
+				values:  types.S{`[null]`},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
 			name: "13",
 			args: args{
 				schema: types.M{},
@@ -942,8 +964,8 @@ func Test_buildWhereClause(t *testing.T) {
 				index: 1,
 			},
 			want: &whereClause{
-				pattern: `"key" <> $1`,
-				values:  types.S{nil},
+				pattern: `"key" IS NOT NULL`,
+				values:  types.S{},
 				sorts:   []string{},
 			},
 			wantErr: nil,
@@ -3766,6 +3788,112 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			},
 			want: []types.M{
 				types.M{"key": 10.24, "key2": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "31-where-$ne",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$ne": nil},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": nil},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "32-where-$ne",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Number"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$ne": "world"},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": 10.24},
+					types.M{"key": nil, "key2": 10.24},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello", "key2": 10.24},
+				types.M{"key2": 10.24},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "33-where-$ne",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$ne": "world"},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": types.S{"hello", "world"}},
+					types.M{"key": types.S{"hello", nil}},
+				},
+			},
+			want: []types.M{
+				types.M{"key": types.S{"hello", nil}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "33-where-$ne",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$ne": nil},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": types.S{"hello", "world"}},
+					types.M{"key": types.S{"hello", nil}},
+				},
+			},
+			want: []types.M{
+				types.M{"key": types.S{"hello", "world"}},
 			},
 			wantErr:    nil,
 			initialize: initialize,

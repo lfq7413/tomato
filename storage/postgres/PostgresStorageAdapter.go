@@ -1277,8 +1277,7 @@ type whereClause struct {
 }
 
 func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
-	// arrayContainsAll
-	// arrayContains
+	// array_contains_all
 	patterns := []string{}
 	values := types.S{}
 	sorts := []string{}
@@ -1376,16 +1375,17 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 					j, _ := json.Marshal(types.S{v})
 					value["$ne"] = string(j)
 					patterns = append(patterns, fmt.Sprintf(`NOT array_contains("%s", $%d)`, fieldName, index))
+					values = append(values, value["$ne"])
+					index = index + 1
 				} else {
 					if v == nil {
-						patterns = append(patterns, fmt.Sprintf(`"%s" <> $%d`, fieldName, index))
+						patterns = append(patterns, fmt.Sprintf(`"%s" IS NOT NULL`, fieldName))
 					} else {
 						patterns = append(patterns, fmt.Sprintf(`("%s" <> $%d OR "%s" IS NULL)`, fieldName, index, fieldName))
+						values = append(values, value["$ne"])
+						index = index + 1
 					}
 				}
-
-				values = append(values, value["$ne"])
-				index = index + 1
 			}
 
 			if v, ok := value["$eq"]; ok {

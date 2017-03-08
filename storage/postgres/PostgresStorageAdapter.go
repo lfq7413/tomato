@@ -1553,6 +1553,10 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 			}
 		}
 
+		if fieldValue == nil {
+			patterns = append(patterns, fmt.Sprintf(`"%s" IS NULL`, fieldName))
+		}
+
 		if initialPatternsLength == len(patterns) {
 			s, _ := json.Marshal(fieldValue)
 			return nil, errs.E(errs.OperationForbidden, "Postgres doesn't support this query type yet "+string(s))

@@ -1526,6 +1526,24 @@ func Test_buildWhereClause(t *testing.T) {
 			want:    nil,
 			wantErr: errs.E(errs.OperationForbidden, `Postgres doesn't support this query type yet ["hello"]`),
 		},
+		{
+			name: "39",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": nil,
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key" IS NULL`,
+				values:  types.S{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		got, err := buildWhereClause(tt.args.schema, tt.args.query, tt.args.index)

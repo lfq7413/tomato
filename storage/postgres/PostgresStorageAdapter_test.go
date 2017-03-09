@@ -3989,6 +3989,159 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
+		{
+			name: "36-where-text[]",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"_rperm": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"_rperm": types.M{"$in": types.S{"hello"}},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"_rperm": types.S{"hello", "world"}},
+				},
+			},
+			want: []types.M{
+				types.M{"_rperm": types.S{"hello", "world"}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "37-where-text[]",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"_rperm": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"_rperm": types.M{"$in": types.S{"hello", nil}},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"_rperm": types.S{"hello", "world"}},
+				},
+			},
+			want: []types.M{
+				types.M{"_rperm": types.S{"hello", "world"}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "38-where-$in",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$in": types.S{"hello"}},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": types.S{"hello", "world"}},
+				},
+			},
+			want: []types.M{
+				types.M{"key": types.S{"hello", "world"}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "39-where-$in",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$in": types.S{"hello"}},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "40-where-$nin",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$nin": types.S{"hello"}},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": types.S{"hello", "world"}},
+					types.M{"key": types.S{"hi", "world"}},
+				},
+			},
+			want: []types.M{
+				types.M{"key": types.S{"hi", "world"}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "41-where-$nin",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$nin": types.S{"hello"}},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "world"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
 		// TODO 测试不同的查询条件
 	}
 	for _, tt := range tests {

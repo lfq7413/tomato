@@ -1389,9 +1389,13 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 			}
 
 			if v, ok := value["$eq"]; ok {
-				patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
-				values = append(values, v)
-				index = index + 1
+				if v == nil {
+					patterns = append(patterns, fmt.Sprintf(`"%s" IS NULL`, fieldName))
+				} else {
+					patterns = append(patterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+					values = append(values, v)
+					index = index + 1
+				}
 			}
 
 			inArray := utils.A(value["$in"])

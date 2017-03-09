@@ -1007,6 +1007,24 @@ func Test_buildWhereClause(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name: "15.1",
+			args: args{
+				schema: types.M{},
+				query: types.M{
+					"key": types.M{
+						"$eq": nil,
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key" IS NULL`,
+				values:  types.S{},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
 			name: "16",
 			args: args{
 				schema: types.M{
@@ -3912,6 +3930,60 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			},
 			want: []types.M{
 				types.M{"key": types.S{"hello", "world"}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "34-where-$eq",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key2": types.M{"$eq": "world"},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hello", "key2": nil},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello", "key2": "world"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "35-where-$eq",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key2": types.M{"$eq": nil},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hello", "key2": nil},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
 			},
 			wantErr:    nil,
 			initialize: initialize,

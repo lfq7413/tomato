@@ -4142,6 +4142,86 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
+		{
+			name: "42-where-$all",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$all": types.S{"hello", "world"}},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": types.S{"hello", "world"}},
+					types.M{"key": types.S{"hi", "world"}},
+				},
+			},
+			want: []types.M{
+				types.M{"key": types.S{"hello", "world"}},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "43-where-$exists",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$exists": true},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": nil, "key2": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello", "key2": "world"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "44-where-$exists",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$exists": false},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": nil, "key2": "world"},
+				},
+			},
+			want: []types.M{
+				types.M{"key2": "world"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
 		// TODO 测试不同的查询条件
 	}
 	for _, tt := range tests {

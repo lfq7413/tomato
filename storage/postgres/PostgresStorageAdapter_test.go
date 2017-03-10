@@ -4222,6 +4222,56 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
+		{
+			name: "45-where-$nearSphere",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "GeoPoint"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$nearSphere": types.M{
+							"longitude": 10.00,
+							"latitude":  10.00,
+						},
+						"$maxDistance": 0.1,
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type":    "GeoPoint",
+							"longitude": 10.10,
+							"latitude":  10.10,
+						},
+					},
+					types.M{
+						"key": types.M{
+							"__type":    "GeoPoint",
+							"longitude": 90.10,
+							"latitude":  90.10,
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type":    "GeoPoint",
+						"longitude": 10.10,
+						"latitude":  10.10,
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
 		// TODO 测试不同的查询条件
 	}
 	for _, tt := range tests {

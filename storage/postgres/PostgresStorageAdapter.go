@@ -1277,7 +1277,6 @@ type whereClause struct {
 }
 
 func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
-	// array_contains_all
 	patterns := []string{}
 	values := types.S{}
 	sorts := []string{}

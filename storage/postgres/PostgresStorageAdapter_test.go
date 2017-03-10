@@ -4235,10 +4235,84 @@ func TestPostgresAdapter_Find(t *testing.T) {
 				query: types.M{
 					"key": types.M{
 						"$nearSphere": types.M{
+							"__type":    "GeoPoint",
 							"longitude": 10.00,
 							"latitude":  10.00,
 						},
 						"$maxDistance": 0.1,
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type":    "GeoPoint",
+							"longitude": 10.20,
+							"latitude":  10.20,
+						},
+					},
+					types.M{
+						"key": types.M{
+							"__type":    "GeoPoint",
+							"longitude": 10.10,
+							"latitude":  10.10,
+						},
+					},
+					types.M{
+						"key": types.M{
+							"__type":    "GeoPoint",
+							"longitude": 90.10,
+							"latitude":  90.10,
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type":    "GeoPoint",
+						"longitude": 10.10,
+						"latitude":  10.10,
+					},
+				},
+				types.M{
+					"key": types.M{
+						"__type":    "GeoPoint",
+						"longitude": 10.20,
+						"latitude":  10.20,
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "46-where-$within",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "GeoPoint"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$within": types.M{
+							"$box": types.S{
+								types.M{
+									"__type":    "GeoPoint",
+									"latitude":  5.0,
+									"longitude": 5.0,
+								},
+								types.M{
+									"__type":    "GeoPoint",
+									"latitude":  15.0,
+									"longitude": 15.0,
+								},
+							},
+						},
 					},
 				},
 				options: types.M{},

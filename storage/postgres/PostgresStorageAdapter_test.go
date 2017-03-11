@@ -4405,7 +4405,7 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			clean:      clean,
 		},
 		{
-			name: "48-where-$regex",
+			name: "49-where-$regex",
 			args: args{
 				className: "post",
 				schema: types.M{
@@ -4428,6 +4428,152 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			},
 			want: []types.M{
 				types.M{"key": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "50-where-$Pointer",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"__type":    "Pointer",
+						"objectId":  "123456789012345678901111",
+						"className": "user",
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.S{
+							types.M{
+								"__type":    "Pointer",
+								"objectId":  "123456789012345678901111",
+								"className": "user",
+							},
+						},
+					},
+					types.M{
+						"key": types.S{
+							types.M{
+								"__type":    "Pointer",
+								"objectId":  "123456789012345678902222",
+								"className": "user",
+							},
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.S{
+						map[string]interface{}{
+							"__type":    "Pointer",
+							"objectId":  "123456789012345678901111",
+							"className": "user",
+						},
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "51-where-$Pointer",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Pointer", "targetClass": "user"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"__type":    "Pointer",
+						"objectId":  "123456789012345678901111",
+						"className": "user",
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type":    "Pointer",
+							"objectId":  "123456789012345678901111",
+							"className": "user",
+						},
+					},
+					types.M{
+						"key": types.M{
+							"__type":    "Pointer",
+							"objectId":  "123456789012345678902222",
+							"className": "user",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type":    "Pointer",
+						"objectId":  "123456789012345678901111",
+						"className": "user",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "52-where-$Date",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Date"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"__type": "Date",
+						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+					},
+					types.M{
+						"key": types.M{
+							"__type": "Date",
+							"iso":    "2007-01-02T15:04:05.000Z",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type": "Date",
+						"iso":    "2006-01-02T15:04:05.000Z",
+					},
+				},
 			},
 			wantErr:    nil,
 			initialize: initialize,

@@ -4579,7 +4579,287 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
-		// TODO 测试不同的查询条件
+		{
+			name: "53-where-$gt",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Number"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$gt": 15.0},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": 10.0},
+					types.M{"key": 15.0},
+					types.M{"key": 20.0},
+				},
+			},
+			want: []types.M{
+				types.M{"key": 20.0},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "54-where-$lt",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Number"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$lt": 15.0},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": 10.0},
+					types.M{"key": 15.0},
+					types.M{"key": 20.0},
+				},
+			},
+			want: []types.M{
+				types.M{"key": 10.0},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "55-where-$gte",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Number"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$gte": 15.0},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": 10.0},
+					types.M{"key": 15.0},
+					types.M{"key": 20.0},
+				},
+			},
+			want: []types.M{
+				types.M{"key": 15.0},
+				types.M{"key": 20.0},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "56-where-$lte",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Number"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$lte": 15.0},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": 10.0},
+					types.M{"key": 15.0},
+					types.M{"key": 20.0},
+				},
+			},
+			want: []types.M{
+				types.M{"key": 10.0},
+				types.M{"key": 15.0},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "57-where-$gt",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$gt": "def"},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "abc"},
+					types.M{"key": "def"},
+					types.M{"key": "hij"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hij"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "58-where-$lt",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{
+					"key": types.M{"$lt": "def"},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "abc"},
+					types.M{"key": "def"},
+					types.M{"key": "hij"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "abc"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "59-where-$gt",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Date"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$gt": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type": "Date",
+							"iso":    "2005-01-02T15:04:05.000Z",
+						},
+					},
+					types.M{
+						"key": types.M{
+							"__type": "Date",
+							"iso":    "2007-01-02T15:04:05.000Z",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type": "Date",
+						"iso":    "2007-01-02T15:04:05.000Z",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "60-where-$lt",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "Date"},
+					},
+				},
+				query: types.M{
+					"key": types.M{
+						"$lt": types.M{
+							"__type": "Date",
+							"iso":    "2006-01-02T15:04:05.000Z",
+						},
+					},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{
+						"key": types.M{
+							"__type": "Date",
+							"iso":    "2005-01-02T15:04:05.000Z",
+						},
+					},
+					types.M{
+						"key": types.M{
+							"__type": "Date",
+							"iso":    "2007-01-02T15:04:05.000Z",
+						},
+					},
+				},
+			},
+			want: []types.M{
+				types.M{
+					"key": types.M{
+						"__type": "Date",
+						"iso":    "2005-01-02T15:04:05.000Z",
+					},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "61-where-null",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query:   types.M{"key2": nil},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hello", "key2": nil},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hello"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
 	}
 	for _, tt := range tests {
 		tt.initialize(tt.args.className, tt.args.schema, tt.args.dataObjects)

@@ -4874,3 +4874,100 @@ func TestPostgresAdapter_Find(t *testing.T) {
 		}
 	}
 }
+
+func TestPostgresAdapter_DeleteObjectsByQuery(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	initialize := func(className string, schema types.M, objects []types.M) {
+		p.CreateClass(className, schema)
+		for _, object := range objects {
+			p.CreateObject(className, schema, object)
+		}
+	}
+	clean := func(className string) {
+		db.Exec(`DROP TABLE "` + className + `"`)
+		db.Exec(`DROP TABLE "_SCHEMA"`)
+	}
+	type args struct {
+		className   string
+		schema      types.M
+		query       types.M
+		dataObjects []types.M
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    error
+		initialize func(className string, schema types.M, objects []types.M)
+		clean      func(className string)
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "hi"},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{"key": "hi"},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "hi"},
+				},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "3",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{"key": "world"},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "hi"},
+				},
+			},
+			wantErr:    errs.E(errs.ObjectNotFound, "Object not found."),
+			initialize: initialize,
+			clean:      clean,
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize(tt.args.className, tt.args.schema, tt.args.dataObjects)
+		err := p.DeleteObjectsByQuery(tt.args.className, tt.args.schema, tt.args.query)
+		tt.clean(tt.args.className)
+		if reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.DeleteObjectsByQuery() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+}

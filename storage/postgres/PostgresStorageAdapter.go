@@ -643,10 +643,29 @@ func (p *PostgresAdapter) GetClass(className string) (types.M, error) {
 	return toParseSchema(schema), nil
 }
 
-// DeleteObjectsByQuery ...
+// DeleteObjectsByQuery 删除符合条件的所有对象
 func (p *PostgresAdapter) DeleteObjectsByQuery(className string, schema, query types.M) error {
-	// TODO
-	// buildWhereClause
+	where, err := buildWhereClause(schema, query, 1)
+	if err != nil {
+		return err
+	}
+
+	if len(query) == 0 {
+		where.pattern = "TRUE"
+	}
+
+	qs := fmt.Sprintf(`WITH deleted AS (DELETE FROM "%s" WHERE %s RETURNING *) SELECT count(*) FROM deleted`, className, where.pattern)
+	row := p.db.QueryRow(qs, where.values...)
+	var count int
+	err = row.Scan(&count)
+	if err != nil {
+		return err
+	}
+
+	if count == 0 {
+		return errs.E(errs.ObjectNotFound, "Object not found.")
+	}
+
 	return nil
 }
 
@@ -953,7 +972,6 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 		results = append(results, object)
 	}
 
-	// buildWhereClause
 	return results, nil
 }
 

@@ -790,183 +790,9 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 			object[field] = *resultValues[i]
 		}
 
-		for fieldName, v := range fields {
-			tp := utils.M(v)
-			if tp == nil {
-				continue
-			}
-			objectType := utils.S(tp["type"])
-
-			if objectType == "Pointer" && object[fieldName] != nil {
-				if v, ok := object[fieldName].([]byte); ok {
-					object[fieldName] = types.M{
-						"objectId":  string(v),
-						"__type":    "Pointer",
-						"className": tp["targetClass"],
-					}
-				} else {
-					object[fieldName] = nil
-				}
-			} else if objectType == "Relation" {
-				object[fieldName] = types.M{
-					"__type":    "Relation",
-					"className": tp["targetClass"],
-				}
-			} else if objectType == "GeoPoint" && object[fieldName] != nil {
-				// object[fieldName] = (10,20) (longitude, latitude)
-				resString := ""
-				if v, ok := object[fieldName].([]byte); ok {
-					resString = string(v)
-				}
-				if len(resString) < 5 {
-					object[fieldName] = nil
-					continue
-				}
-				pointString := strings.Split(resString[1:len(resString)-1], ",")
-				if len(pointString) != 2 {
-					object[fieldName] = nil
-					continue
-				}
-				longitude, err := strconv.ParseFloat(pointString[0], 64)
-				if err != nil {
-					return nil, err
-				}
-				latitude, err := strconv.ParseFloat(pointString[1], 64)
-				if err != nil {
-					return nil, err
-				}
-				object[fieldName] = types.M{
-					"__type":    "GeoPoint",
-					"longitude": longitude,
-					"latitude":  latitude,
-				}
-			} else if objectType == "File" && object[fieldName] != nil {
-				if v, ok := object[fieldName].([]byte); ok {
-					object[fieldName] = types.M{
-						"__type": "File",
-						"name":   string(v),
-					}
-				} else {
-					object[fieldName] = nil
-				}
-			} else if objectType == "String" && object[fieldName] != nil {
-				if v, ok := object[fieldName].([]byte); ok {
-					object[fieldName] = string(v)
-				} else {
-					object[fieldName] = nil
-				}
-			} else if objectType == "Object" && object[fieldName] != nil {
-				if v, ok := object[fieldName].([]byte); ok {
-					var r types.M
-					err = json.Unmarshal(v, &r)
-					if err != nil {
-						return nil, err
-					}
-					object[fieldName] = r
-				} else {
-					object[fieldName] = nil
-				}
-			} else if objectType == "Array" && object[fieldName] != nil {
-				if fieldName == "_rperm" || fieldName == "_wperm" {
-					continue
-				}
-				if v, ok := object[fieldName].([]byte); ok {
-					var r types.S
-					err = json.Unmarshal(v, &r)
-					if err != nil {
-						return nil, err
-					}
-					object[fieldName] = r
-				} else {
-					object[fieldName] = nil
-				}
-			}
-		}
-
-		if object["_rperm"] != nil {
-			// object["_rperm"] = {hello,world}
-			// 在添加 _rperm 时已保证值里不含 ','
-			resString := ""
-			if v, ok := object["_rperm"].([]byte); ok {
-				resString = string(v)
-			}
-			if len(resString) < 2 {
-				object["_rperm"] = nil
-			} else {
-				keys := strings.Split(resString[1:len(resString)-1], ",")
-				rperm := make(types.S, len(keys))
-				for i, k := range keys {
-					rperm[i] = k
-				}
-				object["_rperm"] = rperm
-			}
-		}
-
-		if object["_wperm"] != nil {
-			// object["_wperm"] = {hello,world}
-			// 在添加 _wperm 时已保证值里不含 ','
-			resString := ""
-			if v, ok := object["_wperm"].([]byte); ok {
-				resString = string(v)
-			}
-			if len(resString) < 2 {
-				object["_wperm"] = nil
-			} else {
-				keys := strings.Split(resString[1:len(resString)-1], ",")
-				wperm := make(types.S, len(keys))
-				for i, k := range keys {
-					wperm[i] = k
-				}
-				object["_wperm"] = wperm
-			}
-		}
-
-		if object["createdAt"] != nil {
-			if v, ok := object["createdAt"].(time.Time); ok {
-				object["createdAt"] = utils.TimetoString(v)
-			} else {
-				object["createdAt"] = nil
-			}
-		}
-
-		if object["updatedAt"] != nil {
-			if v, ok := object["updatedAt"].(time.Time); ok {
-				object["updatedAt"] = utils.TimetoString(v)
-			} else {
-				object["updatedAt"] = nil
-			}
-		}
-
-		if object["expiresAt"] != nil {
-			object["expiresAt"] = valueToDate(object["expiresAt"])
-		}
-
-		if object["_email_verify_token_expires_at"] != nil {
-			object["_email_verify_token_expires_at"] = valueToDate(object["_email_verify_token_expires_at"])
-		}
-
-		if object["_account_lockout_expires_at"] != nil {
-			object["_account_lockout_expires_at"] = valueToDate(object["_account_lockout_expires_at"])
-		}
-
-		if object["_perishable_token_expires_at"] != nil {
-			object["_perishable_token_expires_at"] = valueToDate(object["_perishable_token_expires_at"])
-		}
-
-		if object["_password_changed_at"] != nil {
-			object["_password_changed_at"] = valueToDate(object["_password_changed_at"])
-		}
-
-		for fieldName := range object {
-			if object[fieldName] == nil {
-				delete(object, fieldName)
-			}
-			if v, ok := object[fieldName].(time.Time); ok {
-				object[fieldName] = types.M{
-					"__type": "Date",
-					"iso":    utils.TimetoString(v),
-				}
-			}
+		object, err = postgresObjectToParseObject(object, fields)
+		if err != nil {
+			return nil, err
 		}
 
 		results = append(results, object)
@@ -1097,6 +923,191 @@ func (p *PostgresAdapter) PerformInitialization(options types.M) error {
 	}
 
 	return nil
+}
+
+func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
+	if len(object) == 0 {
+		return object, nil
+	}
+	for fieldName, v := range fields {
+		tp := utils.M(v)
+		if tp == nil {
+			continue
+		}
+		objectType := utils.S(tp["type"])
+
+		if objectType == "Pointer" && object[fieldName] != nil {
+			if v, ok := object[fieldName].([]byte); ok {
+				object[fieldName] = types.M{
+					"objectId":  string(v),
+					"__type":    "Pointer",
+					"className": tp["targetClass"],
+				}
+			} else {
+				object[fieldName] = nil
+			}
+		} else if objectType == "Relation" {
+			object[fieldName] = types.M{
+				"__type":    "Relation",
+				"className": tp["targetClass"],
+			}
+		} else if objectType == "GeoPoint" && object[fieldName] != nil {
+			// object[fieldName] = (10,20) (longitude, latitude)
+			resString := ""
+			if v, ok := object[fieldName].([]byte); ok {
+				resString = string(v)
+			}
+			if len(resString) < 5 {
+				object[fieldName] = nil
+				continue
+			}
+			pointString := strings.Split(resString[1:len(resString)-1], ",")
+			if len(pointString) != 2 {
+				object[fieldName] = nil
+				continue
+			}
+			longitude, err := strconv.ParseFloat(pointString[0], 64)
+			if err != nil {
+				return nil, err
+			}
+			latitude, err := strconv.ParseFloat(pointString[1], 64)
+			if err != nil {
+				return nil, err
+			}
+			object[fieldName] = types.M{
+				"__type":    "GeoPoint",
+				"longitude": longitude,
+				"latitude":  latitude,
+			}
+		} else if objectType == "File" && object[fieldName] != nil {
+			if v, ok := object[fieldName].([]byte); ok {
+				object[fieldName] = types.M{
+					"__type": "File",
+					"name":   string(v),
+				}
+			} else {
+				object[fieldName] = nil
+			}
+		} else if objectType == "String" && object[fieldName] != nil {
+			if v, ok := object[fieldName].([]byte); ok {
+				object[fieldName] = string(v)
+			} else {
+				object[fieldName] = nil
+			}
+		} else if objectType == "Object" && object[fieldName] != nil {
+			if v, ok := object[fieldName].([]byte); ok {
+				var r types.M
+				err := json.Unmarshal(v, &r)
+				if err != nil {
+					return nil, err
+				}
+				object[fieldName] = r
+			} else {
+				object[fieldName] = nil
+			}
+		} else if objectType == "Array" && object[fieldName] != nil {
+			if fieldName == "_rperm" || fieldName == "_wperm" {
+				continue
+			}
+			if v, ok := object[fieldName].([]byte); ok {
+				var r types.S
+				err := json.Unmarshal(v, &r)
+				if err != nil {
+					return nil, err
+				}
+				object[fieldName] = r
+			} else {
+				object[fieldName] = nil
+			}
+		}
+	}
+
+	if object["_rperm"] != nil {
+		// object["_rperm"] = {hello,world}
+		// 在添加 _rperm 时已保证值里不含 ','
+		resString := ""
+		if v, ok := object["_rperm"].([]byte); ok {
+			resString = string(v)
+		}
+		if len(resString) < 2 {
+			object["_rperm"] = nil
+		} else {
+			keys := strings.Split(resString[1:len(resString)-1], ",")
+			rperm := make(types.S, len(keys))
+			for i, k := range keys {
+				rperm[i] = k
+			}
+			object["_rperm"] = rperm
+		}
+	}
+
+	if object["_wperm"] != nil {
+		// object["_wperm"] = {hello,world}
+		// 在添加 _wperm 时已保证值里不含 ','
+		resString := ""
+		if v, ok := object["_wperm"].([]byte); ok {
+			resString = string(v)
+		}
+		if len(resString) < 2 {
+			object["_wperm"] = nil
+		} else {
+			keys := strings.Split(resString[1:len(resString)-1], ",")
+			wperm := make(types.S, len(keys))
+			for i, k := range keys {
+				wperm[i] = k
+			}
+			object["_wperm"] = wperm
+		}
+	}
+
+	if object["createdAt"] != nil {
+		if v, ok := object["createdAt"].(time.Time); ok {
+			object["createdAt"] = utils.TimetoString(v)
+		} else {
+			object["createdAt"] = nil
+		}
+	}
+
+	if object["updatedAt"] != nil {
+		if v, ok := object["updatedAt"].(time.Time); ok {
+			object["updatedAt"] = utils.TimetoString(v)
+		} else {
+			object["updatedAt"] = nil
+		}
+	}
+
+	if object["expiresAt"] != nil {
+		object["expiresAt"] = valueToDate(object["expiresAt"])
+	}
+
+	if object["_email_verify_token_expires_at"] != nil {
+		object["_email_verify_token_expires_at"] = valueToDate(object["_email_verify_token_expires_at"])
+	}
+
+	if object["_account_lockout_expires_at"] != nil {
+		object["_account_lockout_expires_at"] = valueToDate(object["_account_lockout_expires_at"])
+	}
+
+	if object["_perishable_token_expires_at"] != nil {
+		object["_perishable_token_expires_at"] = valueToDate(object["_perishable_token_expires_at"])
+	}
+
+	if object["_password_changed_at"] != nil {
+		object["_password_changed_at"] = valueToDate(object["_password_changed_at"])
+	}
+
+	for fieldName := range object {
+		if object[fieldName] == nil {
+			delete(object, fieldName)
+		}
+		if v, ok := object[fieldName].(time.Time); ok {
+			object[fieldName] = types.M{
+				"__type": "Date",
+				"iso":    utils.TimetoString(v),
+			}
+		}
+	}
+	return object, nil
 }
 
 var parseToPosgresComparator = map[string]string{

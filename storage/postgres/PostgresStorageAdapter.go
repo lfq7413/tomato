@@ -977,9 +977,35 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 
 // Count ...
 func (p *PostgresAdapter) Count(className string, schema, query types.M) (int, error) {
-	// TODO
-	// buildWhereClause
-	return 0, nil
+	where, err := buildWhereClause(schema, query, 1)
+	if err != nil {
+		return 0, err
+	}
+
+	wherePattern := ""
+	if len(where.pattern) > 0 {
+		wherePattern = `WHERE ` + where.pattern
+	}
+
+	qs := fmt.Sprintf(`SELECT count(*) FROM "%s" %s`, className, wherePattern)
+	rows, err := p.db.Query(qs, where.values...)
+	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			if e.Code == postgresRelationDoesNotExistError {
+				return 0, nil
+			}
+		}
+		return 0, err
+	}
+	var count int
+	if rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return 0, nil
+		}
+	}
+
+	return count, nil
 }
 
 // UpdateObjectsByQuery ...

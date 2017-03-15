@@ -848,9 +848,258 @@ func (p *PostgresAdapter) UpdateObjectsByQuery(className string, schema, query, 
 
 // FindOneAndUpdate ...
 func (p *PostgresAdapter) FindOneAndUpdate(className string, schema, query, update types.M) (types.M, error) {
-	// TODO
-	// UpdateObjectsByQuery
-	return nil, nil
+	updatePatterns := []string{}
+	values := types.S{}
+	index := 1
+
+	if schema == nil {
+		schema = types.M{}
+	}
+	schema = toPostgresSchema(schema)
+
+	fields := utils.M(schema["fields"])
+	if fields == nil {
+		fields = types.M{}
+	}
+
+	originalUpdate := utils.CopyMapM(update)
+	update = handleDotFields(update)
+
+	for fieldName, v := range update {
+		re := regexp.MustCompile(`^_auth_data_([a-zA-Z0-9_]+)$`)
+		authDataMatch := re.FindStringSubmatch(fieldName)
+		if authDataMatch != nil && len(authDataMatch) == 2 {
+			provider := authDataMatch[1]
+			delete(update, fieldName)
+			authData := utils.M(update["authData"])
+			if authData == nil {
+				authData = types.M{}
+			}
+			authData[provider] = v
+			update["authData"] = authData
+		}
+	}
+
+	for fieldName, fieldValue := range update {
+		if fieldValue == nil {
+			updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = NULL`, fieldName))
+			continue
+		}
+
+		if fieldName == "authData" {
+			generate := func(jsonb, key, value string) string {
+				return fmt.Sprintf(`json_object_set_key(COALESCE(%s, '{}'::jsonb), %s, %s)::jsonb`, jsonb, key, value)
+			}
+			lastKey := fmt.Sprintf(`"%s"`, fieldName)
+			authData := utils.M(fieldValue)
+			if authData == nil {
+				continue
+			}
+			for key, value := range authData {
+				lastKey = generate(lastKey, fmt.Sprintf(`$%d::text`, index), fmt.Sprintf(`$%d::jsonb`, index+1))
+				index = index + 2
+				if value != nil {
+					if v := utils.M(value); v != nil && utils.S(v["__op"]) == "Delete" {
+						value = nil
+					} else {
+						b, err := json.Marshal(v)
+						if err != nil {
+							return nil, err
+						}
+						value = string(b)
+					}
+				}
+				values = append(values, key, value)
+			}
+			updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = %s`, fieldName, lastKey))
+			continue
+		}
+
+		if fieldName == "updatedAt" {
+			updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+			values = append(values, fieldValue)
+			index = index + 1
+			continue
+		}
+
+		switch fieldValue.(type) {
+		case string, bool, float64, int:
+			updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+			values = append(values, fieldValue)
+			index = index + 1
+			continue
+		case time.Time:
+			updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+			values = append(values, utils.TimetoString(fieldValue.(time.Time)))
+			index = index + 1
+			continue
+		}
+
+		if object := utils.M(fieldValue); object != nil {
+			switch utils.S(object["__op"]) {
+			case "Increment":
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = COALESCE("%s", 0) + $%d`, fieldName, fieldName, index))
+				values = append(values, object["amount"])
+				index = index + 1
+				continue
+			case "Add":
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = array_add(COALESCE("%s", '[]'::jsonb), $%d::jsonb)`, fieldName, fieldName, index))
+				b, err := json.Marshal(object["objects"])
+				if err != nil {
+					return nil, err
+				}
+				values = append(values, string(b))
+				index = index + 1
+				continue
+			case "Delete":
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+				values = append(values, nil)
+				index = index + 1
+				continue
+			case "Remove":
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = array_remove(COALESCE("%s", '[]'::jsonb), $%d::jsonb)`, fieldName, fieldName, index))
+				b, err := json.Marshal(object["objects"])
+				if err != nil {
+					return nil, err
+				}
+				values = append(values, string(b))
+				index = index + 1
+				continue
+			case "AddUnique":
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = array_add_unique(COALESCE("%s", '[]'::jsonb), $%d::jsonb)`, fieldName, fieldName, index))
+				b, err := json.Marshal(object["objects"])
+				if err != nil {
+					return nil, err
+				}
+				values = append(values, string(b))
+				index = index + 1
+				continue
+			}
+
+			switch utils.S(object["__type"]) {
+			case "Pointer":
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+				values = append(values, object["objectId"])
+				index = index + 1
+				continue
+			case "Date", "File":
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d`, fieldName, index))
+				values = append(values, toPostgresValue(object))
+				index = index + 1
+				continue
+			case "GeoPoint":
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = POINT($%d, $%d)`, fieldName, index, index+1))
+				values = append(values, object["longitude"], object["latitude"])
+				index = index + 2
+				continue
+			case "Relation":
+				continue
+			}
+
+			if tp := utils.M(fields[fieldName]); tp != nil && utils.S(tp["type"]) == "Object" {
+				keysToDelete := []string{}
+				for k, v := range originalUpdate {
+					if o := utils.M(v); o != nil && utils.S(o["__op"]) == "Delete" {
+						if keys := strings.Split(k, "."); len(keys) == 2 && keys[0] == fieldName {
+							keysToDelete = append(keysToDelete, keys[1])
+						}
+					}
+				}
+
+				deletePatterns := ""
+				for _, k := range keysToDelete {
+					deletePatterns = deletePatterns + fmt.Sprintf(` - '%s'`, k)
+				}
+
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = ( COALESCE("%s", '{}'::jsonb) %s || $%d::jsonb )`, fieldName, fieldName, deletePatterns, index))
+				b, err := json.Marshal(object)
+				if err != nil {
+					return nil, err
+				}
+				values = append(values, string(b))
+				index = index + 1
+				continue
+			}
+		}
+
+		if array := utils.A(fieldValue); array != nil {
+			if tp := utils.M(fields[fieldName]); tp != nil && utils.S(tp["type"]) == "Array" {
+				expectedType, err := parseTypeToPostgresType(tp)
+				if err != nil {
+					return nil, err
+				}
+
+				b, err := json.Marshal(fieldValue)
+				if err != nil {
+					return nil, err
+				}
+
+				if expectedType == "text[]" {
+					// '[' => '{'
+					if b[0] == 91 {
+						b[0] = 123
+					}
+					// ']' => '}'
+					if len(b) > 0 && b[len(b)-1] == 93 {
+						b[len(b)-1] = 125
+					}
+					fieldValue = string(b)
+					updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d::text[]`, fieldName, index))
+				} else {
+					updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d::jsonb`, fieldName, index))
+				}
+
+				values = append(values, fieldValue)
+				index = index + 1
+				continue
+			}
+		}
+
+		b, _ := json.Marshal(fieldValue)
+		return nil, errs.E(errs.OperationForbidden, "Postgres doesn't support update "+string(b)+" yet")
+	}
+
+	where, err := buildWhereClause(schema, query, index)
+	if err != nil {
+		return nil, err
+	}
+	values = append(values, where.values...)
+
+	qs := fmt.Sprintf(`UPDATE "%s" SET %s WHERE %s RETURNING *`, className, strings.Join(updatePatterns, ","), where.pattern)
+	rows, err := p.db.Query(qs, values...)
+	if err != nil {
+		return nil, err
+	}
+
+	object := types.M{}
+	if rows.Next() {
+		resultColumns, err := rows.Columns()
+		if err != nil {
+			return nil, err
+		}
+
+		resultValues := []*interface{}{}
+		values := types.S{}
+		for i := 0; i < len(resultColumns); i++ {
+			var v interface{}
+			resultValues = append(resultValues, &v)
+			values = append(values, &v)
+		}
+		err = rows.Scan(values...)
+		if err != nil {
+			return nil, err
+		}
+		for i, field := range resultColumns {
+			object[field] = *resultValues[i]
+		}
+
+		object, err = postgresObjectToParseObject(object, fields)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return object, nil
 }
 
 // UpsertOneObject ...

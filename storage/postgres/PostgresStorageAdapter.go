@@ -836,14 +836,8 @@ func (p *PostgresAdapter) Count(className string, schema, query types.M) (int, e
 
 // UpdateObjectsByQuery ...
 func (p *PostgresAdapter) UpdateObjectsByQuery(className string, schema, query, update types.M) error {
-	// TODO
-	// buildWhereClause
-	// jsonObjectSetKey
-	// arrayAdd
-	// arrayAddUnique
-	// arrayRemove
-
-	return nil
+	_, err := p.FindOneAndUpdate(className, schema, query, update)
+	return err
 }
 
 // FindOneAndUpdate ...
@@ -1102,11 +1096,26 @@ func (p *PostgresAdapter) FindOneAndUpdate(className string, schema, query, upda
 	return object, nil
 }
 
-// UpsertOneObject ...
+// UpsertOneObject 仅用于 config 和 hooks
 func (p *PostgresAdapter) UpsertOneObject(className string, schema, query, update types.M) error {
-	// TODO
-	// createObject
-	// FindOneAndUpdate
+	object, err := p.FindOneAndUpdate(className, schema, query, update)
+	if err != nil {
+		return err
+	}
+	if len(object) == 0 {
+		createValue := types.M{}
+		for k, v := range query {
+			createValue[k] = v
+		}
+		for k, v := range update {
+			createValue[k] = v
+		}
+
+		err = p.CreateObject(className, schema, createValue)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

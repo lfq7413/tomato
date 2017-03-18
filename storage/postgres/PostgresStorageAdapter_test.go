@@ -5442,6 +5442,98 @@ func TestPostgresAdapter_FindOneAndUpdate(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
+		{
+			name: "15-Pointer",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Pointer", "targetClass": "user"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2": types.M{"__type": "Pointer", "className": "user", "objectId": "123456789012345678903333"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"__type": "Pointer", "className": "user", "objectId": "123456789012345678901111"}},
+					types.M{"key": "hi", "key2": types.M{"__type": "Pointer", "className": "user", "objectId": "123456789012345678902222"}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"__type": "Pointer", "className": "user", "objectId": "123456789012345678903333"}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "16-Date",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Date"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2": types.M{"__type": "Date", "iso": "2008-01-02T15:04:05.000Z"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"__type": "Date", "iso": "2006-01-02T15:04:05.000Z"}},
+					types.M{"key": "hi", "key2": types.M{"__type": "Date", "iso": "2007-01-02T15:04:05.000Z"}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"__type": "Date", "iso": "2008-01-02T15:04:05.000Z"}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "17-File",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "File"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2": types.M{"__type": "File", "name": "hi.png"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"__type": "File", "name": "hello.png"}},
+					types.M{"key": "hi", "key2": types.M{"__type": "File", "name": "world.png"}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"__type": "File", "name": "hi.png"}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "18-GeoPoint",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "GeoPoint"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2": types.M{"__type": "GeoPoint", "longitude": 30, "latitude": 30}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"__type": "GeoPoint", "longitude": 10, "latitude": 10}},
+					types.M{"key": "hi", "key2": types.M{"__type": "GeoPoint", "longitude": 20, "latitude": 20}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"__type": "GeoPoint", "longitude": 30.0, "latitude": 30.0}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
 	}
 	for _, tt := range tests {
 		tt.initialize(tt.args.className, tt.args.schema, tt.args.dataObjects)

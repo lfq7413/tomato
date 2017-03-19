@@ -524,9 +524,7 @@ func Test_handleDotFields(t *testing.T) {
 				},
 			},
 			want: types.M{
-				"key": types.M{
-					"sub": nil,
-				},
+				"key":  types.M{},
 				"key2": "world",
 			},
 		},
@@ -5530,6 +5528,75 @@ func TestPostgresAdapter_FindOneAndUpdate(t *testing.T) {
 				},
 			},
 			want:       types.M{"key": "hi", "key2": types.M{"__type": "GeoPoint", "longitude": 30.0, "latitude": 30.0}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "19-Object",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Object"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2": types.M{"key2": "go"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"key1": "hello", "key2": "world"}},
+					types.M{"key": "hi", "key2": types.M{"key1": "hi", "key2": "world"}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"key1": "hi", "key2": "go"}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "20-Object",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Object"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2.key2": types.M{"__op": "Delete"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"key1": "hello", "key2": "world"}},
+					types.M{"key": "hi", "key2": types.M{"key1": "hi", "key2": "world"}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"key1": "hi"}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "21-Object",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Object"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2.key2": types.M{"__op": "Delete"}, "key2.key1": "hello"},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"key1": "hello", "key2": "world"}},
+					types.M{"key": "hi", "key2": types.M{"key1": "hi", "key2": "world"}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"key1": "hello"}},
 			wantErr:    nil,
 			initialize: initialize,
 			clean:      clean,

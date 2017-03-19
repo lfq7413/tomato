@@ -1534,7 +1534,9 @@ func handleDotFields(object types.M) types.M {
 		currentObj := object
 		for i, next := range components {
 			if i == (len(components) - 1) {
-				currentObj[next] = value
+				if value != nil {
+					currentObj[next] = value
+				}
 				break
 			}
 			obj := currentObj[next]

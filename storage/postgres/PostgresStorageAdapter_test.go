@@ -5,7 +5,6 @@ import (
 	"log"
 	"reflect"
 	"testing"
-
 	"time"
 
 	"github.com/lfq7413/tomato/errs"
@@ -5670,6 +5669,29 @@ func TestPostgresAdapter_FindOneAndUpdate(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
+		{
+			name: "25",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query:  types.M{"key": "haha"},
+				update: types.M{"key2": "go"},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hi", "key2": "world"},
+				},
+			},
+			want:       types.M{},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
 	}
 	for _, tt := range tests {
 		tt.initialize(tt.args.className, tt.args.schema, tt.args.dataObjects)
@@ -5681,6 +5703,97 @@ func TestPostgresAdapter_FindOneAndUpdate(t *testing.T) {
 		}
 		if !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("%q. PostgresAdapter.FindOneAndUpdate() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestPostgresAdapter_UpsertOneObject(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	initialize := func(className string, schema types.M, objects []types.M) {
+		p.CreateClass(className, schema)
+		for _, object := range objects {
+			p.CreateObject(className, schema, object)
+		}
+	}
+	clean := func(className string) {
+		db.Exec(`DROP TABLE "` + className + `"`)
+		db.Exec(`DROP TABLE "_SCHEMA"`)
+	}
+	type args struct {
+		className   string
+		schema      types.M
+		query       types.M
+		update      types.M
+		dataObjects []types.M
+	}
+	tests := []struct {
+		name       string
+		args       args
+		want       types.M
+		wantErr    error
+		initialize func(className string, schema types.M, objects []types.M)
+		clean      func(className string)
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2": "go"},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hi", "key2": "world"},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": "go"},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query:  types.M{"key": "haha"},
+				update: types.M{"key2": "go"},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hi", "key2": "world"},
+				},
+			},
+			want:       types.M{"key": "haha", "key2": "go"},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize(tt.args.className, tt.args.schema, tt.args.dataObjects)
+		err := p.UpsertOneObject(tt.args.className, tt.args.schema, tt.args.query, tt.args.update)
+		got, err := p.Find(tt.args.className, tt.args.schema, tt.args.query, types.M{})
+		tt.clean(tt.args.className)
+
+		if reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.UpsertOneObject() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+
+		if err != nil || len(got) != 1 || reflect.DeepEqual(got[0], tt.want) == false {
+			t.Errorf("%q. PostgresAdapter.UpsertOneObject() = %v, want %v", tt.name, got, tt.want)
 		}
 	}
 }

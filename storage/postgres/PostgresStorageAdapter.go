@@ -1037,13 +1037,12 @@ func (p *PostgresAdapter) FindOneAndUpdate(className string, schema, query, upda
 					if len(b) > 0 && b[len(b)-1] == 93 {
 						b[len(b)-1] = 125
 					}
-					fieldValue = string(b)
 					updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d::text[]`, fieldName, index))
 				} else {
 					updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = $%d::jsonb`, fieldName, index))
 				}
 
-				values = append(values, fieldValue)
+				values = append(values, string(b))
 				index = index + 1
 				continue
 			}

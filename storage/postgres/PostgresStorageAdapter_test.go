@@ -5601,6 +5601,75 @@ func TestPostgresAdapter_FindOneAndUpdate(t *testing.T) {
 			initialize: initialize,
 			clean:      clean,
 		},
+		{
+			name: "22-text[]",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":    types.M{"type": "String"},
+						"_rperm": types.M{"type": "Array"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"_rperm": types.S{"hello"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "_rperm": types.S{"hello", "world"}},
+					types.M{"key": "hi", "_rperm": types.S{"hi", "world"}},
+				},
+			},
+			want:       types.M{"key": "hi", "_rperm": types.S{"hello"}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "23-Array",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Array"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2": types.S{"hello"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.S{"hello", "world"}},
+					types.M{"key": "hi", "key2": types.S{"hi", "world"}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.S{"hello"}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "24-Unsupport",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2": types.M{"key": "hello"}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": "world"},
+					types.M{"key": "hi", "key2": "world"},
+				},
+			},
+			want:       nil,
+			wantErr:    errs.E(errs.OperationForbidden, `Postgres doesn't support update {"key":"hello"} yet`),
+			initialize: initialize,
+			clean:      clean,
+		},
 	}
 	for _, tt := range tests {
 		tt.initialize(tt.args.className, tt.args.schema, tt.args.dataObjects)

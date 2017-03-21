@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -1118,9 +1119,28 @@ func (p *PostgresAdapter) UpsertOneObject(className string, schema, query, updat
 	return nil
 }
 
-// EnsureUniqueness ...
+// EnsureUniqueness 创建索引
 func (p *PostgresAdapter) EnsureUniqueness(className string, schema types.M, fieldNames []string) error {
-	// TODO
+	sort.Sort(sort.StringSlice(fieldNames))
+	constraintName := `unique_` + strings.Join(fieldNames, "_")
+	constraintPatterns := []string{}
+	for _, fieldName := range fieldNames {
+		constraintPatterns = append(constraintPatterns, `"`+fieldName+`"`)
+	}
+
+	qs := fmt.Sprintf(`ALTER TABLE "%s" ADD CONSTRAINT "%s" UNIQUE (%s)`, className, constraintName, strings.Join(constraintPatterns, ","))
+	_, err := p.db.Exec(qs)
+	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			if e.Code == postgresDuplicateRelationError && strings.Contains(e.Message, constraintName) {
+
+			} else if e.Code == postgresUniqueIndexViolationError && strings.Contains(e.Message, constraintName) {
+				return errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")
+			}
+		} else {
+			return err
+		}
+	}
 	return nil
 }
 

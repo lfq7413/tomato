@@ -5797,3 +5797,90 @@ func TestPostgresAdapter_UpsertOneObject(t *testing.T) {
 		}
 	}
 }
+
+func TestPostgresAdapter_EnsureUniqueness(t *testing.T) {
+	db := openDB()
+	p := NewPostgresAdapter("", db)
+	initialize := func(className string, schema types.M) {
+		p.CreateClass(className, schema)
+	}
+	clean := func(className string) {
+		db.Exec(`DROP TABLE "` + className + `"`)
+		db.Exec(`DROP TABLE "_SCHEMA"`)
+	}
+	type args struct {
+		className  string
+		schema     types.M
+		fieldNames []string
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    error
+		initialize func(className string, schema types.M)
+		clean      func(className string)
+	}{
+		{
+			name: "1",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				fieldNames: []string{"key"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "2",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				fieldNames: []string{"key", "key2"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "3",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "String"},
+					},
+				},
+				fieldNames: []string{"key"},
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+				p.EnsureUniqueness(className, schema, []string{"key"})
+			},
+			clean: clean,
+		},
+	}
+	for _, tt := range tests {
+		tt.initialize(tt.args.className, tt.args.schema)
+		err := p.EnsureUniqueness(tt.args.className, tt.args.schema, tt.args.fieldNames)
+		tt.clean(tt.args.className)
+		if reflect.DeepEqual(err, tt.wantErr) == false {
+			t.Errorf("%q. PostgresAdapter.EnsureUniqueness() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+}

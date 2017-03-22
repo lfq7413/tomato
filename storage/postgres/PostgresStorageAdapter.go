@@ -1133,7 +1133,7 @@ func (p *PostgresAdapter) EnsureUniqueness(className string, schema types.M, fie
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == postgresDuplicateRelationError && strings.Contains(e.Message, constraintName) {
-
+				// 索引已存在，忽略错误
 			} else if e.Code == postgresUniqueIndexViolationError && strings.Contains(e.Message, constraintName) {
 				return errs.E(errs.DuplicateValue, "A duplicate value for a field with unique values was provided")
 			}

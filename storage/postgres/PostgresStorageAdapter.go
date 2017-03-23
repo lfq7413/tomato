@@ -92,6 +92,10 @@ func (p *PostgresAdapter) SetClassLevelPermissions(className string, CLPs types.
 
 // CreateClass 创建类
 func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M, error) {
+	if schema == nil {
+		schema = types.M{}
+	}
+	schema["className"] = className
 	b, err := json.Marshal(schema)
 	if err != nil {
 		return nil, err
@@ -620,6 +624,10 @@ func (p *PostgresAdapter) GetAllClasses() ([]types.M, error) {
 
 // GetClass ...
 func (p *PostgresAdapter) GetClass(className string) (types.M, error) {
+	err := p.ensureSchemaCollectionExists()
+	if err != nil {
+		return nil, err
+	}
 	qs := `SELECT "schema" FROM "_SCHEMA" WHERE "className"=$1`
 	rows, err := p.db.Query(qs, className)
 	if err != nil {

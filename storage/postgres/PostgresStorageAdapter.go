@@ -413,8 +413,8 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 	if schema == nil {
 		schema = types.M{}
 	}
-	if object == nil {
-		object = types.M{}
+	if len(object) == 0 {
+		return nil
 	}
 	schema = toPostgresSchema(schema)
 	object = handleDotFields(object)
@@ -668,6 +668,12 @@ func (p *PostgresAdapter) DeleteObjectsByQuery(className string, schema, query t
 	var count int
 	err = row.Scan(&count)
 	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			// 表不存在返回空
+			if e.Code == postgresRelationDoesNotExistError {
+				return errs.E(errs.ObjectNotFound, "Object not found.")
+			}
+		}
 		return err
 	}
 

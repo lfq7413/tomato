@@ -2915,6 +2915,24 @@ func TestPostgresAdapter_CreateObject(t *testing.T) {
 			},
 			clean: clean,
 		},
+		{
+			name: "14",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key1": types.M{"type": "String"},
+					},
+				},
+				object: nil,
+			},
+			wantErr: nil,
+			initialize: func(className string, schema types.M) {
+				p.CreateClass(className, schema)
+			},
+			clean: clean,
+		},
 	}
 	for _, tt := range tests {
 		tt.initialize(tt.args.className, tt.args.schema)
@@ -4959,6 +4977,28 @@ func TestPostgresAdapter_DeleteObjectsByQuery(t *testing.T) {
 			wantErr:    errs.E(errs.ObjectNotFound, "Object not found."),
 			initialize: initialize,
 			clean:      clean,
+		},
+		{
+			name: "4",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key": types.M{"type": "String"},
+					},
+				},
+				query: types.M{"key": "world"},
+				dataObjects: []types.M{
+					types.M{"key": "hello"},
+					types.M{"key": "hi"},
+				},
+			},
+			wantErr: errs.E(errs.ObjectNotFound, "Object not found."),
+			initialize: func(className string, schema types.M, objects []types.M) {
+				p.ensureSchemaCollectionExists()
+			},
+			clean: clean,
 		},
 	}
 	for _, tt := range tests {

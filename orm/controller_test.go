@@ -1658,9 +1658,9 @@ func Test_Update(t *testing.T) {
 	options = nil
 	skipSanitization = false
 	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
-	expectErr = errs.E(errs.ObjectNotFound, "Object not found.")
-	if err == nil || reflect.DeepEqual(expectErr, err) == false {
-		t.Error("expect:", expectErr, "result:", err)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
@@ -1671,7 +1671,7 @@ func Test_Update(t *testing.T) {
 	}
 	Adapter.CreateObject(className, types.M{}, object)
 	className = "user"
-	query = types.M{}
+	query = types.M{"key": "hello"}
 	update = types.M{"key": "haha"}
 	options = nil
 	skipSanitization = false

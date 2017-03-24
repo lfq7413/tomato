@@ -271,11 +271,11 @@ var specialKeysForUpdate = map[string]bool{
 // options 中的参数包括：acl、many、upsert
 // skipSanitization 默认为 false
 func (d *DBController) Update(className string, query, update, options types.M, skipSanitization bool) (types.M, error) {
-	if query == nil {
+	if len(query) == 0 {
 		return types.M{}, nil
 	}
-	if update == nil {
-		update = types.M{}
+	if len(update) == 0 {
+		return types.M{}, nil
 	}
 	if options == nil {
 		options = types.M{}

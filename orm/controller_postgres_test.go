@@ -11,7 +11,7 @@ import (
 	"github.com/lfq7413/tomato/utils"
 )
 
-func TestPostgres_CollectionExists(t *testing.T) { // test ok
+func TestPostgres_CollectionExists(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var schema types.M
@@ -47,7 +47,7 @@ func TestPostgres_CollectionExists(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_PurgeCollection(t *testing.T) { // test ok
+func TestPostgres_PurgeCollection(t *testing.T) {
 	initPostgresEnv()
 	var schema types.M
 	var object types.M
@@ -120,7 +120,7 @@ func TestPostgres_Find(t *testing.T) {
 		"key":      "hello",
 	}
 	Adapter.CreateObject(className, schema, object)
-	className = "user"
+	className = "post"
 	query = nil
 	options = nil
 	results, err = TomatoDBController.Find(className, query, options)
@@ -148,7 +148,7 @@ func TestPostgres_Find(t *testing.T) {
 		"key":      "hello",
 	}
 	Adapter.CreateObject(className, schema, object)
-	className = "user"
+	className = "post"
 	query = nil
 	options = types.M{"count": true}
 	results, err = TomatoDBController.Find(className, query, options)
@@ -349,7 +349,7 @@ func TestPostgres_Find(t *testing.T) {
 	schema = types.M{
 		"fields": types.M{
 			"objectId": types.M{"type": "String"},
-			"key":      types.M{"type": "String"},
+			"key":      types.M{"type": "Number"},
 		},
 	}
 	Adapter.CreateClass(className, schema)
@@ -376,15 +376,15 @@ func TestPostgres_Find(t *testing.T) {
 	expects = types.S{
 		types.M{
 			"objectId": "02",
-			"key":      1,
+			"key":      1.0,
 		},
 		types.M{
 			"objectId": "03",
-			"key":      2,
+			"key":      2.0,
 		},
 		types.M{
 			"objectId": "01",
-			"key":      3,
+			"key":      3.0,
 		},
 	}
 	if err != nil || reflect.DeepEqual(expects, results) == false {
@@ -396,7 +396,7 @@ func TestPostgres_Find(t *testing.T) {
 	schema = types.M{
 		"fields": types.M{
 			"objectId": types.M{"type": "String"},
-			"key":      types.M{"type": "String"},
+			"key":      types.M{"type": "Number"},
 		},
 	}
 	Adapter.CreateClass(className, schema)
@@ -423,15 +423,15 @@ func TestPostgres_Find(t *testing.T) {
 	expects = types.S{
 		types.M{
 			"objectId": "01",
-			"key":      3,
+			"key":      3.0,
 		},
 		types.M{
 			"objectId": "03",
-			"key":      2,
+			"key":      2.0,
 		},
 		types.M{
 			"objectId": "02",
-			"key":      1,
+			"key":      1.0,
 		},
 	}
 	if err != nil || reflect.DeepEqual(expects, results) == false {
@@ -443,7 +443,7 @@ func TestPostgres_Find(t *testing.T) {
 	schema = types.M{
 		"fields": types.M{
 			"objectId": types.M{"type": "String"},
-			"key":      types.M{"type": "String"},
+			"key":      types.M{"type": "Number"},
 		},
 	}
 	Adapter.CreateClass(className, schema)
@@ -477,7 +477,7 @@ func TestPostgres_Find(t *testing.T) {
 	schema = types.M{
 		"fields": types.M{
 			"objectId": types.M{"type": "String"},
-			"key":      types.M{"type": "String"},
+			"key":      types.M{"type": "Number"},
 		},
 	}
 	Adapter.CreateClass(className, schema)
@@ -511,7 +511,7 @@ func TestPostgres_Find(t *testing.T) {
 	schema = types.M{
 		"fields": types.M{
 			"objectId": types.M{"type": "String"},
-			"key":      types.M{"type": "String"},
+			"key":      types.M{"type": "Number"},
 		},
 	}
 	Adapter.CreateClass(className, schema)
@@ -559,7 +559,7 @@ func TestPostgres_Find(t *testing.T) {
 	expects = types.S{
 		types.M{
 			"objectId": "01",
-			"key":      3,
+			"key":      3.0,
 		},
 	}
 	if err != nil || reflect.DeepEqual(expects, results) == false {
@@ -1243,6 +1243,11 @@ func TestPostgres_Find(t *testing.T) {
 		types.M{
 			"objectId": "01",
 			"key":      "hello",
+			"key2": types.M{
+				"__type":    "Pointer",
+				"className": "_User",
+				"objectId":  "123456789012345678901234",
+			},
 		},
 	}
 	if err != nil || reflect.DeepEqual(expects, results) == false {
@@ -1373,7 +1378,7 @@ func TestPostgres_Find(t *testing.T) {
 			"facebook": types.M{"id": "1024"},
 		},
 	}
-	Adapter.CreateObject(className, schema, schema)
+	Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
@@ -1395,7 +1400,7 @@ func TestPostgres_Find(t *testing.T) {
 			},
 			"password": "123456",
 			"authData": types.M{
-				"facebook": types.M{"id": "1024"},
+				"facebook": map[string]interface{}{"id": "1024"},
 			},
 		},
 	}
@@ -1460,7 +1465,7 @@ func TestPostgres_Find(t *testing.T) {
 	TomatoDBController.DeleteEverything()
 }
 
-func TestPostgres_Destroy(t *testing.T) { // test ok
+func TestPostgres_Destroy(t *testing.T) {
 	initPostgresEnv()
 	var schema types.M
 	var object types.M
@@ -1739,7 +1744,7 @@ func TestPostgres_Destroy(t *testing.T) { // test ok
 	TomatoDBController.DeleteEverything()
 }
 
-func TestPostgres_Update(t *testing.T) { // test ok
+func TestPostgres_Update(t *testing.T) {
 	initPostgresEnv()
 	var schema types.M
 	var object types.M
@@ -2727,7 +2732,7 @@ func TestPostgres_Update(t *testing.T) { // test ok
 	TomatoDBController.DeleteEverything()
 }
 
-func TestPostgres_Create(t *testing.T) { // test ok
+func TestPostgres_Create(t *testing.T) {
 	initPostgresEnv()
 	var className string
 	var schema types.M
@@ -3046,7 +3051,7 @@ func TestPostgres_Create(t *testing.T) { // test ok
 	TomatoDBController.DeleteEverything()
 }
 
-func TestPostgres_validateClassName(t *testing.T) { // test ok
+func TestPostgres_validateClassName(t *testing.T) {
 	initPostgresEnv()
 	var className string
 	var err error
@@ -3067,7 +3072,7 @@ func TestPostgres_validateClassName(t *testing.T) { // test ok
 	}
 }
 
-func TestPostgres_handleRelationUpdates(t *testing.T) { // test ok
+func TestPostgres_handleRelationUpdates(t *testing.T) {
 	initPostgresEnv()
 	var className string
 	var objectID string
@@ -3297,7 +3302,7 @@ func TestPostgres_handleRelationUpdates(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_addRelation(t *testing.T) { // test ok
+func TestPostgres_addRelation(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var key, fromClassName, fromID, toID string
@@ -3365,7 +3370,7 @@ func TestPostgres_addRelation(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_removeRelation(t *testing.T) { // test ok
+func TestPostgres_removeRelation(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var key, fromClassName, fromID, toID string
@@ -3423,7 +3428,7 @@ func TestPostgres_removeRelation(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_ValidateObject(t *testing.T) { // test ok
+func TestPostgres_ValidateObject(t *testing.T) {
 	initPostgresEnv()
 	var className string
 	var object types.M
@@ -3511,7 +3516,7 @@ func TestPostgres_ValidateObject(t *testing.T) { // test ok
 	TomatoDBController.DeleteEverything()
 }
 
-func TestPostgres_LoadSchema(t *testing.T) { // test ok
+func TestPostgres_LoadSchema(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var className string
@@ -3553,11 +3558,11 @@ func TestPostgres_LoadSchema(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_DeleteEverything(t *testing.T) { // test ok
+func TestPostgres_DeleteEverything(t *testing.T) {
 	// 测试用例与 Adapter.DeleteAllClasses 类似
 }
 
-func TestPostgres_RedirectClassNameForKey(t *testing.T) { // test ok
+func TestPostgres_RedirectClassNameForKey(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var className string
@@ -3611,7 +3616,7 @@ func TestPostgres_RedirectClassNameForKey(t *testing.T) { // test ok
 	TomatoDBController.DeleteEverything()
 }
 
-func TestPostgres_canAddField(t *testing.T) { // test ok
+func TestPostgres_canAddField(t *testing.T) {
 	initPostgresEnv()
 	var schema *Schema
 	var className string
@@ -3780,7 +3785,7 @@ func TestPostgres_canAddField(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_reduceRelationKeys(t *testing.T) { // test ok
+func TestPostgres_reduceRelationKeys(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var className string
@@ -3933,7 +3938,7 @@ func TestPostgres_reduceRelationKeys(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_relatedIds(t *testing.T) { // test ok
+func TestPostgres_relatedIds(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var className string
@@ -3985,7 +3990,7 @@ func TestPostgres_relatedIds(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_addInObjectIdsIds(t *testing.T) { // test ok
+func TestPostgres_addInObjectIdsIds(t *testing.T) {
 	initPostgresEnv()
 	var ids types.S
 	var query types.M
@@ -4152,7 +4157,7 @@ func TestPostgres_addInObjectIdsIds(t *testing.T) { // test ok
 	}
 }
 
-func TestPostgres_addNotInObjectIdsIds(t *testing.T) { // test ok
+func TestPostgres_addNotInObjectIdsIds(t *testing.T) {
 	initPostgresEnv()
 	var ids types.S
 	var query types.M
@@ -4334,7 +4339,7 @@ func TestPostgres_addNotInObjectIdsIds(t *testing.T) { // test ok
 	}
 }
 
-func TestPostgres_reduceInRelation(t *testing.T) { // test ok
+func TestPostgres_reduceInRelation(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var className string
@@ -4792,7 +4797,7 @@ func TestPostgres_reduceInRelation(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_owningIds(t *testing.T) { // test ok
+func TestPostgres_owningIds(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var className string
@@ -4844,7 +4849,7 @@ func TestPostgres_owningIds(t *testing.T) { // test ok
 	Adapter.DeleteAllClasses()
 }
 
-func TestPostgres_DeleteSchema(t *testing.T) { // test ok
+func TestPostgres_DeleteSchema(t *testing.T) {
 	initPostgresEnv()
 	var schema types.M
 	var object types.M
@@ -4961,7 +4966,7 @@ func TestPostgres_DeleteSchema(t *testing.T) { // test ok
 	TomatoDBController.DeleteEverything()
 }
 
-func TestPostgres_addPointerPermissions(t *testing.T) { // test ok
+func TestPostgres_addPointerPermissions(t *testing.T) {
 	initPostgresEnv()
 	var object types.M
 	var schema *Schema

@@ -4057,6 +4057,34 @@ func TestPostgresAdapter_Find(t *testing.T) {
 			clean:      clean,
 		},
 		{
+			name: "37.1-where-text[]",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":    types.M{"type": "String"},
+						"_rperm": types.M{"type": "Array"},
+					},
+				},
+				query: types.M{
+					"_rperm": types.M{"$in": types.S{"hello", nil}},
+				},
+				options: types.M{},
+				dataObjects: []types.M{
+					types.M{"key": "hi", "_rperm": types.S{"hello", "world"}},
+					types.M{"key": "hi"},
+				},
+			},
+			want: []types.M{
+				types.M{"key": "hi", "_rperm": types.S{"hello", "world"}},
+				types.M{"key": "hi"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
 			name: "38-where-$in",
 			args: args{
 				className: "post",

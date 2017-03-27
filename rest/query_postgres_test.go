@@ -635,7 +635,8 @@ func TestPostgres_replaceSelect(t *testing.T) {
 	className = "Team"
 	schema = types.M{
 		"fields": types.M{
-			"city": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"city":     types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -680,8 +681,9 @@ func TestPostgres_replaceSelect(t *testing.T) {
 	className = "Team"
 	schema = types.M{
 		"fields": types.M{
-			"city":   types.M{"type": "String"},
-			"winPct": types.M{"type": "Number"},
+			"objectId": types.M{"type": "String"},
+			"city":     types.M{"type": "String"},
+			"winPct":   types.M{"type": "Number"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -732,8 +734,9 @@ func TestPostgres_replaceSelect(t *testing.T) {
 	className = "Team"
 	schema = types.M{
 		"fields": types.M{
-			"city":   types.M{"type": "String"},
-			"winPct": types.M{"type": "Number"},
+			"objectId": types.M{"type": "String"},
+			"city":     types.M{"type": "String"},
+			"winPct":   types.M{"type": "Number"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -924,7 +927,8 @@ func TestPostgres_replaceDontSelect(t *testing.T) {
 	className = "Team"
 	schema = types.M{
 		"fields": types.M{
-			"city": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"city":     types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -969,8 +973,9 @@ func TestPostgres_replaceDontSelect(t *testing.T) {
 	className = "Team"
 	schema = types.M{
 		"fields": types.M{
-			"city":   types.M{"type": "String"},
-			"winPct": types.M{"type": "Number"},
+			"objectId": types.M{"type": "String"},
+			"city":     types.M{"type": "String"},
+			"winPct":   types.M{"type": "Number"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -1021,8 +1026,9 @@ func TestPostgres_replaceDontSelect(t *testing.T) {
 	className = "Team"
 	schema = types.M{
 		"fields": types.M{
-			"city":   types.M{"type": "String"},
-			"winPct": types.M{"type": "Number"},
+			"objectId": types.M{"type": "String"},
+			"city":     types.M{"type": "String"},
+			"winPct":   types.M{"type": "Number"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)

@@ -1463,8 +1463,8 @@ func Test_replaceNotInQuery(t *testing.T) {
 			"$nin": types.S{},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1522,8 +1522,8 @@ func Test_replaceNotInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1581,8 +1581,8 @@ func Test_replaceNotInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1659,8 +1659,8 @@ func Test_replaceNotInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 }

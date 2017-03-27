@@ -205,8 +205,9 @@ func TestPostgres_BuildRestWhere(t *testing.T) {
 	className = "Team"
 	schema = types.M{
 		"fields": types.M{
-			"city":   types.M{"type": "String"},
-			"winPct": types.M{"type": "Number"},
+			"objectId": types.M{"type": "String"},
+			"city":     types.M{"type": "String"},
+			"winPct":   types.M{"type": "Number"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -231,8 +232,9 @@ func TestPostgres_BuildRestWhere(t *testing.T) {
 	className = "Post"
 	schema = types.M{
 		"fields": types.M{
-			"title": types.M{"type": "String"},
-			"image": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"title":    types.M{"type": "String"},
+			"image":    types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -328,9 +330,10 @@ func TestPostgres_getUserAndRoleACL(t *testing.T) {
 	className = "_Role"
 	schema = types.M{
 		"fields": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
+			"users":    types.M{"type": "Relation", "targetClass": "_User"},
+			"roles":    types.M{"type": "Relation", "targetClass": "_Role"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -353,7 +356,6 @@ func TestPostgres_getUserAndRoleACL(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5001",
 		"owningId":  "1002",
 		"relatedId": "1001",
 	}
@@ -367,7 +369,6 @@ func TestPostgres_getUserAndRoleACL(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5002",
 		"owningId":  "1001",
 		"relatedId": "9001",
 	}
@@ -1675,6 +1676,7 @@ func TestPostgres_replaceNotInQuery(t *testing.T) {
 }
 
 func TestPostgres_runFind(t *testing.T) {
+	var schema types.M
 	var object types.M
 	var where types.M
 	var options types.M
@@ -1697,17 +1699,18 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{}
@@ -1727,17 +1730,18 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{"limit": 0}
@@ -1752,22 +1756,23 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{"limit": 1}
@@ -1787,22 +1792,23 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{"skip": 1}
@@ -1822,31 +1828,32 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
-			"age": types.M{"type": "Number"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
+			"age":      types.M{"type": "Number"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 		"age":      2,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 		"age":      3,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "03",
 		"key":      "hello",
 		"age":      1,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{"order": "age"}
@@ -1857,17 +1864,17 @@ func TestPostgres_runFind(t *testing.T) {
 		types.M{
 			"objectId": "03",
 			"key":      "hello",
-			"age":      1,
+			"age":      1.0,
 		},
 		types.M{
 			"objectId": "01",
 			"key":      "hello",
-			"age":      2,
+			"age":      2.0,
 		},
 		types.M{
 			"objectId": "02",
 			"key":      "hello",
-			"age":      3,
+			"age":      3.0,
 		},
 	}
 	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
@@ -1877,31 +1884,34 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
-			"age": types.M{"type": "Number"},
+			"objectId":  types.M{"type": "String"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"key":       types.M{"type": "String"},
+			"age":       types.M{"type": "Number"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 		"age":      2,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 		"age":      3,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "03",
 		"key":      "hello",
 		"age":      1,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{"keys": "age"}
@@ -1911,15 +1921,15 @@ func TestPostgres_runFind(t *testing.T) {
 	expect = types.S{
 		types.M{
 			"objectId": "01",
-			"age":      2,
+			"age":      2.0,
 		},
 		types.M{
 			"objectId": "02",
-			"age":      3,
+			"age":      3.0,
 		},
 		types.M{
 			"objectId": "03",
-			"age":      1,
+			"age":      1.0,
 		},
 	}
 	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
@@ -1929,31 +1939,34 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
-			"age": types.M{"type": "Number"},
+			"objectId":  types.M{"type": "String"},
+			"createdAt": types.M{"type": "Date"},
+			"updatedAt": types.M{"type": "Date"},
+			"key":       types.M{"type": "String"},
+			"age":       types.M{"type": "Number"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 		"age":      2,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 		"age":      3,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "03",
 		"key":      "hello",
 		"age":      1,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{"keys": "age.id"}
@@ -1963,15 +1976,15 @@ func TestPostgres_runFind(t *testing.T) {
 	expect = types.S{
 		types.M{
 			"objectId": "01",
-			"age":      2,
+			"age":      2.0,
 		},
 		types.M{
 			"objectId": "02",
-			"age":      3,
+			"age":      3.0,
 		},
 		types.M{
 			"objectId": "03",
-			"age":      1,
+			"age":      1.0,
 		},
 	}
 	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
@@ -1981,25 +1994,26 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
-			"age": types.M{"type": "Number"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
+			"age":      types.M{"type": "Number"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 		"age":      2,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 		"age":      3,
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{}
@@ -2012,13 +2026,13 @@ func TestPostgres_runFind(t *testing.T) {
 			"className": "post",
 			"objectId":  "01",
 			"key":       "hello",
-			"age":       2,
+			"age":       2.0,
 		},
 		types.M{
 			"className": "post",
 			"objectId":  "02",
 			"key":       "hello",
-			"age":       3,
+			"age":       3.0,
 		},
 	}
 	if err != nil || reflect.DeepEqual(expect, q.response["results"]) == false {
@@ -2028,13 +2042,15 @@ func TestPostgres_runFind(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "_User"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
+			"objectId": types.M{"type": "String"},
 			"username": types.M{"type": "String"},
 			"password": types.M{"type": "String"},
+			"authData": types.M{"type": "Object"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"username": "joe",
@@ -2045,7 +2061,7 @@ func TestPostgres_runFind(t *testing.T) {
 			},
 		},
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"username": "jack",
@@ -2056,7 +2072,7 @@ func TestPostgres_runFind(t *testing.T) {
 			},
 		},
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{}
@@ -2068,7 +2084,7 @@ func TestPostgres_runFind(t *testing.T) {
 			"objectId": "01",
 			"username": "joe",
 			"authData": types.M{
-				"facebook": types.M{
+				"facebook": map[string]interface{}{
 					"id": "1001",
 				},
 			},
@@ -2077,7 +2093,7 @@ func TestPostgres_runFind(t *testing.T) {
 			"objectId": "02",
 			"username": "jack",
 			"authData": types.M{
-				"facebook": types.M{
+				"facebook": map[string]interface{}{
 					"id": "1002",
 				},
 			},
@@ -2092,14 +2108,15 @@ func TestPostgres_runFind(t *testing.T) {
 	config.TConfig.ServerURL = "http://127.0.0.1"
 	config.TConfig.AppID = "1001"
 	className = "_User"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
+			"objectId": types.M{"type": "String"},
 			"username": types.M{"type": "String"},
 			"password": types.M{"type": "String"},
 			"icon":     types.M{"type": "File"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"username": "joe",
@@ -2109,7 +2126,7 @@ func TestPostgres_runFind(t *testing.T) {
 			"name":   "icon1.jpg",
 		},
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"username": "jack",
@@ -2119,7 +2136,7 @@ func TestPostgres_runFind(t *testing.T) {
 			"name":   "icon2.jpg",
 		},
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	initPostgresEnv()
 	where = types.M{}
 	options = types.M{}

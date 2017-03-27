@@ -1171,8 +1171,8 @@ func TestPostgres_replaceInQuery(t *testing.T) {
 			"$in": types.S{},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1180,7 +1180,8 @@ func TestPostgres_replaceInQuery(t *testing.T) {
 	className = "Post"
 	schema = types.M{
 		"fields": types.M{
-			"title": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"title":    types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -1230,8 +1231,8 @@ func TestPostgres_replaceInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1239,8 +1240,9 @@ func TestPostgres_replaceInQuery(t *testing.T) {
 	className = "Post"
 	schema = types.M{
 		"fields": types.M{
-			"title": types.M{"type": "String"},
-			"image": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"title":    types.M{"type": "String"},
+			"image":    types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -1289,8 +1291,8 @@ func TestPostgres_replaceInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1298,9 +1300,10 @@ func TestPostgres_replaceInQuery(t *testing.T) {
 	className = "Post"
 	schema = types.M{
 		"fields": types.M{
-			"title":  types.M{"type": "String"},
-			"image":  types.M{"type": "String"},
-			"author": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"title":    types.M{"type": "String"},
+			"image":    types.M{"type": "String"},
+			"author":   types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -1367,8 +1370,8 @@ func TestPostgres_replaceInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 }
@@ -1460,8 +1463,8 @@ func TestPostgres_replaceNotInQuery(t *testing.T) {
 			"$nin": types.S{},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1469,7 +1472,8 @@ func TestPostgres_replaceNotInQuery(t *testing.T) {
 	className = "Post"
 	schema = types.M{
 		"fields": types.M{
-			"title": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"title":    types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -1519,8 +1523,8 @@ func TestPostgres_replaceNotInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1528,8 +1532,9 @@ func TestPostgres_replaceNotInQuery(t *testing.T) {
 	className = "Post"
 	schema = types.M{
 		"fields": types.M{
-			"title": types.M{"type": "String"},
-			"image": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"title":    types.M{"type": "String"},
+			"image":    types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -1578,8 +1583,8 @@ func TestPostgres_replaceNotInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1587,9 +1592,10 @@ func TestPostgres_replaceNotInQuery(t *testing.T) {
 	className = "Post"
 	schema = types.M{
 		"fields": types.M{
-			"title":  types.M{"type": "String"},
-			"image":  types.M{"type": "String"},
-			"author": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"title":    types.M{"type": "String"},
+			"image":    types.M{"type": "String"},
+			"author":   types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -1656,8 +1662,8 @@ func TestPostgres_replaceNotInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 }
@@ -2248,7 +2254,8 @@ func TestPostgres_handleInclude(t *testing.T) {
 	className = "post"
 	schema = types.M{
 		"fields": types.M{
-			"id": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"id":       types.M{"type": "String"},
 			"user": types.M{
 				"type":        "Pointer",
 				"targetClass": "user",
@@ -2262,7 +2269,7 @@ func TestPostgres_handleInclude(t *testing.T) {
 		"user": types.M{
 			"__type":    "Pointer",
 			"className": "user",
-			"objectId":  "3001",
+			"objectId":  "123456789012345678903001",
 		},
 	}
 	orm.Adapter.CreateObject(className, schema, object)
@@ -2272,24 +2279,25 @@ func TestPostgres_handleInclude(t *testing.T) {
 		"user": types.M{
 			"__type":    "Pointer",
 			"className": "user",
-			"objectId":  "3002",
+			"objectId":  "123456789012345678903002",
 		},
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	className = "user"
 	schema = types.M{
 		"fields": types.M{
-			"name": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId": "3001",
+		"objectId": "123456789012345678903001",
 		"name":     "joe",
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
-		"objectId": "3002",
+		"objectId": "123456789012345678903002",
 		"name":     "jack",
 	}
 	orm.Adapter.CreateObject(className, schema, object)
@@ -2328,7 +2336,7 @@ func TestPostgres_handleInclude(t *testing.T) {
 					"user": types.M{
 						"__type":    "Object",
 						"className": "user",
-						"objectId":  "3001",
+						"objectId":  "123456789012345678903001",
 						"name":      "joe",
 					},
 				},
@@ -2343,7 +2351,7 @@ func TestPostgres_handleInclude(t *testing.T) {
 					"user": types.M{
 						"__type":    "Object",
 						"className": "user",
-						"objectId":  "3002",
+						"objectId":  "123456789012345678903002",
 						"name":      "jack",
 					},
 				},
@@ -2351,7 +2359,7 @@ func TestPostgres_handleInclude(t *testing.T) {
 		},
 	}
 	if err != nil || reflect.DeepEqual(expect, q.response) == false {
-		t.Error("expect:", expect, "result:", q.response)
+		t.Error("expect:", expect, "result:", q.response, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 }

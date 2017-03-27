@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -1171,8 +1172,8 @@ func Test_replaceInQuery(t *testing.T) {
 			"$in": types.S{},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1208,7 +1209,9 @@ func Test_replaceInQuery(t *testing.T) {
 		},
 	}
 	q, _ = NewQuery(Master(), "user", where, nil, nil)
+	fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++")
 	err = q.replaceInQuery()
+	fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++")
 	expect = types.M{
 		"post": types.M{
 			"$in": types.S{
@@ -1230,8 +1233,8 @@ func Test_replaceInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1289,8 +1292,8 @@ func Test_replaceInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/**********************************************************/
@@ -1367,8 +1370,8 @@ func Test_replaceInQuery(t *testing.T) {
 			},
 		},
 	}
-	if err != nil || reflect.DeepEqual(expect, expect) == false {
-		t.Error("expect:", expect, "result:", expect, err)
+	if err != nil || reflect.DeepEqual(expect, q.Where) == false {
+		t.Error("expect:", expect, "result:", q.Where, err)
 	}
 	orm.TomatoDBController.DeleteEverything()
 }

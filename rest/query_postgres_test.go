@@ -27,22 +27,23 @@ func TestPostgres_Execute(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	className = "user"
 	where = types.M{}
 	options = types.M{}
@@ -69,7 +70,8 @@ func TestPostgres_Execute(t *testing.T) {
 	className = "list"
 	schema = types.M{
 		"fields": types.M{
-			"title": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"title":    types.M{"type": "String"},
 			"post": types.M{
 				"type":        "Pointer",
 				"targetClass": "post",
@@ -83,7 +85,7 @@ func TestPostgres_Execute(t *testing.T) {
 		"post": types.M{
 			"__type":    "Pointer",
 			"className": "post",
-			"objectId":  "2001",
+			"objectId":  "123456789012345678902001",
 		},
 	}
 	orm.Adapter.CreateObject(className, schema, object)
@@ -93,14 +95,15 @@ func TestPostgres_Execute(t *testing.T) {
 		"post": types.M{
 			"__type":    "Pointer",
 			"className": "post",
-			"objectId":  "2002",
+			"objectId":  "123456789012345678902002",
 		},
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	className = "post"
 	schema = types.M{
 		"fields": types.M{
-			"id": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"id":       types.M{"type": "String"},
 			"user": types.M{
 				"type":        "Pointer",
 				"targetClass": "user",
@@ -109,39 +112,40 @@ func TestPostgres_Execute(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId": "2001",
+		"objectId": "123456789012345678902001",
 		"id":       "01",
 		"user": types.M{
 			"__type":    "Pointer",
 			"className": "user",
-			"objectId":  "3001",
+			"objectId":  "123456789012345678903001",
 		},
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
-		"objectId": "2002",
+		"objectId": "123456789012345678902002",
 		"id":       "02",
 		"user": types.M{
 			"__type":    "Pointer",
 			"className": "user",
-			"objectId":  "3002",
+			"objectId":  "123456789012345678903002",
 		},
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	className = "user"
 	schema = types.M{
 		"fields": types.M{
-			"name": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId": "3001",
+		"objectId": "123456789012345678903001",
 		"name":     "joe",
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
-		"objectId": "3002",
+		"objectId": "123456789012345678903002",
 		"name":     "jack",
 	}
 	orm.Adapter.CreateObject(className, schema, object)
@@ -158,12 +162,12 @@ func TestPostgres_Execute(t *testing.T) {
 				"post": types.M{
 					"__type":    "Object",
 					"className": "post",
-					"objectId":  "2001",
+					"objectId":  "123456789012345678902001",
 					"id":        "01",
 					"user": types.M{
 						"__type":    "Object",
 						"className": "user",
-						"objectId":  "3001",
+						"objectId":  "123456789012345678903001",
 						"name":      "joe",
 					},
 				},
@@ -174,12 +178,12 @@ func TestPostgres_Execute(t *testing.T) {
 				"post": types.M{
 					"__type":    "Object",
 					"className": "post",
-					"objectId":  "2002",
+					"objectId":  "123456789012345678902002",
 					"id":        "02",
 					"user": types.M{
 						"__type":    "Object",
 						"className": "user",
-						"objectId":  "3002",
+						"objectId":  "123456789012345678903002",
 						"name":      "jack",
 					},
 				},
@@ -2170,6 +2174,7 @@ func TestPostgres_runFind(t *testing.T) {
 }
 
 func TestPostgres_runCount(t *testing.T) {
+	var schema types.M
 	var object types.M
 	var options types.M
 	var className string
@@ -2187,12 +2192,13 @@ func TestPostgres_runCount(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	options = types.M{"count": true}
 	className = "user"
 	q, _ = NewQuery(Master(), className, types.M{}, options, nil)
@@ -2205,22 +2211,23 @@ func TestPostgres_runCount(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	options = types.M{"count": true}
 	className = "user"
 	q, _ = NewQuery(Master(), className, types.M{}, options, nil)
@@ -2233,22 +2240,23 @@ func TestPostgres_runCount(t *testing.T) {
 	/**********************************************************/
 	initPostgresEnv()
 	className = "user"
-	object = types.M{
+	schema = types.M{
 		"fields": types.M{
-			"key": types.M{"type": "String"},
+			"objectId": types.M{"type": "String"},
+			"key":      types.M{"type": "String"},
 		},
 	}
-	orm.Adapter.CreateClass(className, object)
+	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
 		"objectId": "01",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
 		"objectId": "02",
 		"key":      "hello",
 	}
-	orm.Adapter.CreateObject(className, types.M{}, object)
+	orm.Adapter.CreateObject(className, schema, object)
 	options = types.M{
 		"count": true,
 		"skip":  1,

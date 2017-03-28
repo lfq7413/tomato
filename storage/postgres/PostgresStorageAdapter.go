@@ -424,6 +424,7 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 		return err
 	}
 
+	// 预处理 authData 字段，避免在向 map 添加元素时造成的不稳定性
 	for fieldName := range object {
 		re := regexp.MustCompile(`^_auth_data_([a-zA-Z0-9_]+)$`)
 		authDataMatch := re.FindStringSubmatch(fieldName)
@@ -435,9 +436,11 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 			}
 			authData[provider] = object[fieldName]
 			delete(object, fieldName)
-			fieldName = "authData"
 			object["authData"] = authData
 		}
+	}
+
+	for fieldName := range object {
 		columnsArray = append(columnsArray, fieldName)
 
 		fields := utils.M(schema["fields"])

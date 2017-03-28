@@ -424,7 +424,7 @@ func (p *PostgresAdapter) CreateObject(className string, schema, object types.M)
 		return err
 	}
 
-	// 预处理 authData 字段，避免在向 map 添加元素时造成的不稳定性
+	// 预处理 authData 字段，避免在遍历 map 并向其添加元素时造成的不稳定性
 	for fieldName := range object {
 		re := regexp.MustCompile(`^_auth_data_([a-zA-Z0-9_]+)$`)
 		authDataMatch := re.FindStringSubmatch(fieldName)
@@ -1080,6 +1080,12 @@ func (p *PostgresAdapter) FindOneAndUpdate(className string, schema, query, upda
 	qs := fmt.Sprintf(`UPDATE "%s" SET %s WHERE %s RETURNING *`, className, strings.Join(updatePatterns, ","), where.pattern)
 	rows, err := p.db.Query(qs, values...)
 	if err != nil {
+		if e, ok := err.(*pq.Error); ok {
+			// 表不存在返回空
+			if e.Code == postgresRelationDoesNotExistError {
+				return nil, errs.E(errs.ObjectNotFound, "Object not found.")
+			}
+		}
 		return nil, err
 	}
 

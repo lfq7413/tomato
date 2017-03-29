@@ -23,11 +23,17 @@ func OpenMongoDBForTest() *mgo.Database {
 	return session.DB("")
 }
 
+var postgresDB *sql.DB
+
 // OpenPostgreSQForTest ...
 func OpenPostgreSQForTest() *sql.DB {
+	if postgresDB != nil {
+		return postgresDB
+	}
 	db, err := sql.Open("postgres", PostgreSQLTestURL)
 	if err != nil {
 		log.Fatal(err)
 	}
+	postgresDB = db
 	return db
 }

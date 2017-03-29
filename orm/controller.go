@@ -641,16 +641,14 @@ func (d *DBController) ValidateObject(className string, object, query, options t
 		isMaster = true
 	}
 
-	if isMaster {
-		return nil
+	if !isMaster {
+		err := d.canAddField(schema, className, object, aclGroup)
+		if err != nil {
+			return err
+		}
 	}
 
-	err := d.canAddField(schema, className, object, aclGroup)
-	if err != nil {
-		return err
-	}
-
-	err = schema.validateObject(className, object, query)
+	err := schema.validateObject(className, object, query)
 	if err != nil {
 		return err
 	}

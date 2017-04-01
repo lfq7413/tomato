@@ -1912,6 +1912,16 @@ func TestPostgresAdapter_createTable(t *testing.T) {
 			clean:      clean,
 		},
 		{
+			name: "1.1",
+			args: args{
+				className: "_User",
+				schema:    nil,
+			},
+			wantErr:    nil,
+			initialize: func(name string) {},
+			clean:      clean,
+		},
+		{
 			name: "2",
 			args: args{
 				className: "post",

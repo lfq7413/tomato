@@ -126,9 +126,9 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 	}
 	valuesArray := types.S{}
 	patternsArray := []string{}
-	var fields types.M
-	if f := utils.M(schema["fields"]); f != nil {
-		fields = f
+	fields := utils.M(schema["fields"])
+	if fields == nil {
+		fields = types.M{}
 	}
 
 	if className == "_User" {

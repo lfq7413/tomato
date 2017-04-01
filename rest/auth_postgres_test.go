@@ -12,7 +12,7 @@ import (
 	"github.com/lfq7413/tomato/utils"
 )
 
-func Test_GetAuthForSessionToken(t *testing.T) {
+func TestPostgres_GetAuthForSessionToken(t *testing.T) {
 	var schema types.M
 	var object types.M
 	var className string
@@ -24,7 +24,7 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	var expectErr error
 	/********************************************************/
 	cache.InitCache()
-	initEnv()
+	initPostgresEnv()
 	sessionToken = "abc"
 	installationID = "111"
 	_, err = GetAuthForSessionToken(sessionToken, installationID)
@@ -35,10 +35,11 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 	/********************************************************/
 	cache.InitCache()
-	initEnv()
+	initPostgresEnv()
 	className = "_User"
 	schema = types.M{
 		"fields": types.M{
+			"objectId": types.M{"type": "String"},
 			"username": types.M{"type": "String"},
 			"password": types.M{"type": "String"},
 		},
@@ -80,10 +81,11 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 	/********************************************************/
 	cache.InitCache()
-	initEnv()
+	initPostgresEnv()
 	className = "_User"
 	schema = types.M{
 		"fields": types.M{
+			"objectId": types.M{"type": "String"},
 			"username": types.M{"type": "String"},
 			"password": types.M{"type": "String"},
 		},
@@ -98,6 +100,7 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	className = "_Session"
 	schema = types.M{
 		"fields": types.M{
+			"objectId":     types.M{"type": "String"},
 			"user":         types.M{"type": "Pointer", "targetClass": "_User"},
 			"sessionToken": types.M{"type": "String"},
 			"expiresAt":    types.M{"type": "Date"},
@@ -124,10 +127,11 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 	/********************************************************/
 	cache.InitCache()
-	initEnv()
+	initPostgresEnv()
 	className = "_User"
 	schema = types.M{
 		"fields": types.M{
+			"objectId": types.M{"type": "String"},
 			"username": types.M{"type": "String"},
 			"password": types.M{"type": "String"},
 		},
@@ -142,6 +146,7 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	className = "_Session"
 	schema = types.M{
 		"fields": types.M{
+			"objectId":     types.M{"type": "String"},
 			"user":         types.M{"type": "Pointer", "targetClass": "_User"},
 			"sessionToken": types.M{"type": "String"},
 			"expiresAt":    types.M{"type": "Date"},
@@ -169,17 +174,18 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 	/********************************************************/
 	cache.InitCache()
-	initEnv()
+	initPostgresEnv()
 	className = "_User"
 	schema = types.M{
 		"fields": types.M{
+			"objectId": types.M{"type": "String"},
 			"username": types.M{"type": "String"},
 			"password": types.M{"type": "String"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId": "1001",
+		"objectId": "123456789012345678901001",
 		"username": "joe",
 		"password": "123",
 	}
@@ -187,6 +193,7 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	className = "_Session"
 	schema = types.M{
 		"fields": types.M{
+			"objectId":     types.M{"type": "String"},
 			"user":         types.M{"type": "Pointer", "targetClass": "_User"},
 			"sessionToken": types.M{"type": "String"},
 			"expiresAt":    types.M{"type": "Date"},
@@ -198,10 +205,10 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 		"user": types.M{
 			"__type":    "Pointer",
 			"className": "_User",
-			"objectId":  "1001",
+			"objectId":  "123456789012345678901001",
 		},
 		"sessionToken": "abc1001",
-		"expiresAt":    utils.TimetoString(time.Now().UTC().Add(5 * time.Second)),
+		"expiresAt":    types.M{"__type": "Date", "iso": utils.TimetoString(time.Now().UTC().Add(5 * time.Second))},
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	sessionToken = "abc1001"
@@ -213,7 +220,7 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 		User: types.M{
 			"__type":       "Object",
 			"className":    "_User",
-			"objectId":     "1001",
+			"objectId":     "123456789012345678901001",
 			"username":     "joe",
 			"sessionToken": "abc1001",
 		},
@@ -224,61 +231,7 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 }
 
-func Test_CouldUpdateUserID(t *testing.T) {
-	var auth *Auth
-	var result bool
-	var expect bool
-	/********************************************************/
-	auth = &Auth{
-		IsMaster: true,
-	}
-	result = auth.CouldUpdateUserID("1001")
-	expect = true
-	if result != expect {
-		t.Error("expect:", expect, "result:", result)
-	}
-	/********************************************************/
-	auth = &Auth{
-		IsMaster: false,
-	}
-	result = auth.CouldUpdateUserID("1001")
-	expect = false
-	if result != expect {
-		t.Error("expect:", expect, "result:", result)
-	}
-	/********************************************************/
-	auth = &Auth{
-		IsMaster: false,
-		User:     types.M{},
-	}
-	result = auth.CouldUpdateUserID("1001")
-	expect = false
-	if result != expect {
-		t.Error("expect:", expect, "result:", result)
-	}
-	/********************************************************/
-	auth = &Auth{
-		IsMaster: false,
-		User:     types.M{"objectId": "1002"},
-	}
-	result = auth.CouldUpdateUserID("1001")
-	expect = false
-	if result != expect {
-		t.Error("expect:", expect, "result:", result)
-	}
-	/********************************************************/
-	auth = &Auth{
-		IsMaster: false,
-		User:     types.M{"objectId": "1001"},
-	}
-	result = auth.CouldUpdateUserID("1001")
-	expect = true
-	if result != expect {
-		t.Error("expect:", expect, "result:", result)
-	}
-}
-
-func Test_GetUserRoles(t *testing.T) {
+func TestPostgres_GetUserRoles(t *testing.T) {
 	var schema types.M
 	var object types.M
 	var className string
@@ -329,13 +282,14 @@ func Test_GetUserRoles(t *testing.T) {
 	}
 	/********************************************************/
 	cache.InitCache()
-	initEnv()
+	initPostgresEnv()
 	className = "_Role"
 	schema = types.M{
 		"fields": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
+			"users":    types.M{"type": "Relation", "targetClass": "_User"},
+			"roles":    types.M{"type": "Relation", "targetClass": "_Role"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -358,7 +312,6 @@ func Test_GetUserRoles(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5001",
 		"owningId":  "1002",
 		"relatedId": "1001",
 	}
@@ -372,7 +325,6 @@ func Test_GetUserRoles(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5002",
 		"owningId":  "1001",
 		"relatedId": "9001",
 	}
@@ -393,7 +345,7 @@ func Test_GetUserRoles(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 }
 
-func Test_loadRoles(t *testing.T) {
+func TestPostgres_loadRoles(t *testing.T) {
 	var schema types.M
 	var object types.M
 	var className string
@@ -402,13 +354,14 @@ func Test_loadRoles(t *testing.T) {
 	var expect []string
 	/********************************************************/
 	cache.InitCache()
-	initEnv()
+	initPostgresEnv()
 	className = "_Role"
 	schema = types.M{
 		"fields": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
+			"users":    types.M{"type": "Relation", "targetClass": "_User"},
+			"roles":    types.M{"type": "Relation", "targetClass": "_Role"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -431,7 +384,6 @@ func Test_loadRoles(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5001",
 		"owningId":  "1002",
 		"relatedId": "1001",
 	}
@@ -450,13 +402,14 @@ func Test_loadRoles(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 	/********************************************************/
 	cache.InitCache()
-	initEnv()
+	initPostgresEnv()
 	className = "_Role"
 	schema = types.M{
 		"fields": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
+			"users":    types.M{"type": "Relation", "targetClass": "_User"},
+			"roles":    types.M{"type": "Relation", "targetClass": "_Role"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -479,7 +432,6 @@ func Test_loadRoles(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5001",
 		"owningId":  "1002",
 		"relatedId": "1001",
 	}
@@ -493,7 +445,6 @@ func Test_loadRoles(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5002",
 		"owningId":  "1001",
 		"relatedId": "9001",
 	}
@@ -512,7 +463,7 @@ func Test_loadRoles(t *testing.T) {
 	orm.TomatoDBController.DeleteEverything()
 }
 
-func Test_getAllRolesNamesForRoleIds(t *testing.T) {
+func TestPostgres_getAllRolesNamesForRoleIds(t *testing.T) {
 	var schema types.M
 	var object types.M
 	var className string
@@ -522,13 +473,14 @@ func Test_getAllRolesNamesForRoleIds(t *testing.T) {
 	var result []string
 	var expect []string
 	/********************************************************/
-	initEnv()
+	initPostgresEnv()
 	className = "_Role"
 	schema = types.M{
 		"fields": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
+			"users":    types.M{"type": "Relation", "targetClass": "_User"},
+			"roles":    types.M{"type": "Relation", "targetClass": "_Role"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -550,13 +502,14 @@ func Test_getAllRolesNamesForRoleIds(t *testing.T) {
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/********************************************************/
-	initEnv()
+	initPostgresEnv()
 	className = "_Role"
 	schema = types.M{
 		"fields": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
+			"users":    types.M{"type": "Relation", "targetClass": "_User"},
+			"roles":    types.M{"type": "Relation", "targetClass": "_Role"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -583,13 +536,14 @@ func Test_getAllRolesNamesForRoleIds(t *testing.T) {
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/********************************************************/
-	initEnv()
+	initPostgresEnv()
 	className = "_Role"
 	schema = types.M{
 		"fields": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
+			"users":    types.M{"type": "Relation", "targetClass": "_User"},
+			"roles":    types.M{"type": "Relation", "targetClass": "_Role"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -612,7 +566,6 @@ func Test_getAllRolesNamesForRoleIds(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5001",
 		"owningId":  "1002",
 		"relatedId": "1001",
 	}
@@ -627,13 +580,14 @@ func Test_getAllRolesNamesForRoleIds(t *testing.T) {
 	}
 	orm.TomatoDBController.DeleteEverything()
 	/********************************************************/
-	initEnv()
+	initPostgresEnv()
 	className = "_Role"
 	schema = types.M{
 		"fields": types.M{
-			"name":  types.M{"type": "String"},
-			"users": types.M{"type": "Relation", "targetClass": "_User"},
-			"roles": types.M{"type": "Relation", "targetClass": "_Role"},
+			"objectId": types.M{"type": "String"},
+			"name":     types.M{"type": "String"},
+			"users":    types.M{"type": "Relation", "targetClass": "_User"},
+			"roles":    types.M{"type": "Relation", "targetClass": "_Role"},
 		},
 	}
 	orm.Adapter.CreateClass(className, schema)
@@ -676,25 +630,21 @@ func Test_getAllRolesNamesForRoleIds(t *testing.T) {
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
-		"objectId":  "5001",
 		"owningId":  "1002",
 		"relatedId": "1001",
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
-		"objectId":  "5002",
 		"owningId":  "1003",
 		"relatedId": "1002",
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
-		"objectId":  "5003",
 		"owningId":  "2002",
 		"relatedId": "2001",
 	}
 	orm.Adapter.CreateObject(className, schema, object)
 	object = types.M{
-		"objectId":  "5004",
 		"owningId":  "2003",
 		"relatedId": "2002",
 	}

@@ -669,6 +669,10 @@ func (d *DBController) LoadSchema(options types.M) *Schema {
 	if options == nil {
 		options = types.M{"clearCache": false}
 	}
+	if c, ok := options["clearCache"].(bool); ok && c {
+		schemaPromise = Load(Adapter, schemaCache, options)
+		return schemaPromise
+	}
 	if schemaPromise == nil {
 		schemaPromise = Load(Adapter, schemaCache, options)
 	}
@@ -1179,6 +1183,7 @@ func (d *DBController) DeleteSchema(className string) error {
 			}
 		}
 	}
+	d.LoadSchema(types.M{"clearCache": true})
 	return nil
 }
 

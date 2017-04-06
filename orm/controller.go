@@ -11,6 +11,7 @@ import (
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/storage/mongo"
+	"github.com/lfq7413/tomato/storage/postgres"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -26,7 +27,14 @@ var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
-	Adapter = mongo.NewMongoAdapter("tomato", storage.OpenMongoDB())
+	if config.TConfig.DatabaseType == "MongoDB" {
+		Adapter = mongo.NewMongoAdapter("tomato", storage.OpenMongoDB())
+	} else if config.TConfig.DatabaseType == "PostgreSQL" {
+		Adapter = postgres.NewPostgresAdapter("tomato", storage.OpenPostgreSQL())
+	} else {
+		// 默认连接 MongoDB
+		Adapter = mongo.NewMongoAdapter("tomato", storage.OpenMongoDB())
+	}
 	schemaCache = cache.NewSchemaCache(config.TConfig.SchemaCacheTTL, config.TConfig.EnableSingleSchemaCache)
 	TomatoDBController = &DBController{}
 }

@@ -1,10 +1,6 @@
 package controllers
 
-import (
-	"fmt"
-
-	"github.com/lfq7413/tomato/logger"
-)
+import "github.com/lfq7413/tomato/logger"
 
 // LogsController ...
 type LogsController struct {
@@ -34,7 +30,6 @@ func (l *LogsController) HandleGet() {
 		"order": order,
 		"level": level,
 	}
-	fmt.Println(options)
 	result, err := logger.GetLogs(options)
 	if err != nil {
 		l.HandleError(err, 0)

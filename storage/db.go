@@ -1,8 +1,11 @@
 package storage
 
 import (
+	"database/sql"
+
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/test"
+	_ "github.com/lib/pq" // postgres driver
 	"gopkg.in/mgo.v2"
 )
 
@@ -19,4 +22,13 @@ func OpenMongoDB() *mgo.Database {
 	}
 	session.SetMode(mgo.Monotonic, true)
 	return session.DB("")
+}
+
+// OpenPostgreSQL 打开 PostgreSQL
+func OpenPostgreSQL() *sql.DB {
+	db, err := sql.Open("postgres", config.TConfig.DatabaseURI)
+	if err != nil {
+		panic(err)
+	}
+	return db
 }

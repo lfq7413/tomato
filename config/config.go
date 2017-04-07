@@ -70,6 +70,11 @@ type Config struct {
 	MaxPasswordAge                   int      // 密码的最长使用时间，单位为天，取值大于等于 0 ，默认为 0 表示不设置最长使用时间
 	MaxPasswordHistory               int      // 最大密码历史个数，修改的密码不能与密码历史重复，取值范围： 0-20 ，默认为 0 表示不设置密码历史
 	UserSensitiveFields              []string // 用户敏感字段，按需删除，多个字段使用 | 删除，如： email|password
+	AnalyticsAdapter                 string   // 分析模块，可选：InfluxDB，默认使用空的分析模块
+	InfluxDBURL                      string   // InfluxDB 地址，仅在 AnalyticsAdapter=InfluxDB 时需要配置
+	InfluxDBUsername                 string   // InfluxDB 用户名，仅在 AnalyticsAdapter=InfluxDB 时需要配置
+	InfluxDBPassword                 string   // InfluxDB 密码，仅在 AnalyticsAdapter=InfluxDB 时需要配置
+	InfluxDBDatabaseName             string   // InfluxDB 数据库，仅在 AnalyticsAdapter=InfluxDB 时需要配置
 }
 
 var (
@@ -157,6 +162,12 @@ func parseConfig() {
 	for _, field := range strings.Split(beego.AppConfig.String("UserSensitiveFields"), "|") {
 		TConfig.UserSensitiveFields = append(TConfig.UserSensitiveFields, field)
 	}
+
+	TConfig.AnalyticsAdapter = beego.AppConfig.String("AnalyticsAdapter")
+	TConfig.InfluxDBURL = beego.AppConfig.String("InfluxDBURL")
+	TConfig.InfluxDBUsername = beego.AppConfig.String("InfluxDBUsername")
+	TConfig.InfluxDBPassword = beego.AppConfig.String("InfluxDBPassword")
+	TConfig.InfluxDBDatabaseName = beego.AppConfig.String("InfluxDBDatabaseName")
 }
 
 // Validate 校验用户参数合法性
@@ -170,6 +181,7 @@ func Validate() {
 	validateAccountLockoutPolicy()
 	validatePasswordPolicy()
 	validateCacheConfiguration()
+	validateAnalyticsConfiguration()
 }
 
 // validateApplicationConfiguration 校验应用相关参数
@@ -315,6 +327,30 @@ func validateCacheConfiguration() {
 	}
 	if TConfig.SchemaCacheTTL < -1 {
 		log.Fatalln("SchemaCacheTTL should be -1 or 0 or an integer greater than 0")
+	}
+}
+
+// validateAnalyticsConfiguration 校验分析模块相关参数
+func validateAnalyticsConfiguration() {
+	adapter := TConfig.AnalyticsAdapter
+	switch adapter {
+	case "InfluxDB":
+		if TConfig.InfluxDBURL == "" {
+			log.Fatalln("InfluxDBURL is required")
+		}
+		if TConfig.InfluxDBUsername == "" {
+			log.Fatalln("InfluxDBUsername is required")
+		}
+		if TConfig.InfluxDBPassword == "" {
+			log.Fatalln("InfluxDBPassword is required")
+		}
+		if TConfig.InfluxDBDatabaseName == "" {
+			log.Fatalln("InfluxDBDatabaseName is required")
+		}
+	case "":
+		// 默认使用空实现
+	default:
+		log.Fatalln("Unsupported AnalyticsAdapter")
 	}
 }
 

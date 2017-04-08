@@ -1,9 +1,12 @@
 package analytics
 
 import (
+	"time"
+
 	"github.com/influxdata/influxdb/client/v2"
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 type influxDBAdapter struct {
@@ -32,4 +35,53 @@ func (a *influxDBAdapter) appOpened(body types.M) (types.M, error) {
 
 func (a *influxDBAdapter) trackEvent(eventName string, body types.M) (types.M, error) {
 	return types.M{}, nil
+}
+
+func (a *influxDBAdapter) addEvent(name string, event types.M) error {
+	var at time.Time
+	if atM := utils.M(event["at"]); atM != nil {
+		if utils.S(atM["__type"]) == "Date" || utils.S(atM["iso"]) != "" {
+			t, err := utils.StringtoTime(utils.S(atM["iso"]))
+			if err != nil {
+				at = time.Now()
+			} else {
+				at = t
+			}
+		}
+	}
+	if at.IsZero() {
+		at = time.Now()
+	}
+
+	fields := types.M{}
+	if dimensions := utils.M(event["dimensions"]); dimensions != nil {
+		for k, v := range dimensions {
+			fields[k] = v
+		}
+	}
+
+	tags := map[string]string{
+		name: name + "-total",
+	}
+
+	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
+		Database:  a.databaseName,
+		Precision: "ns",
+	})
+	if err != nil {
+		return err
+	}
+
+	pt, err := client.NewPoint(
+		name,
+		tags,
+		fields,
+		at,
+	)
+	if err != nil {
+		return err
+	}
+	bp.AddPoint(pt)
+
+	return a.c.Write(bp)
 }

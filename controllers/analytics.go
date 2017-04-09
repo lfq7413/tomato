@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/lfq7413/tomato/analytics"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 // AnalyticsController ...
@@ -18,6 +19,7 @@ func (a *AnalyticsController) AppOpened() {
 		a.ServeJSON()
 		return
 	}
+	a.addTags(a.JSONBody)
 	response := analytics.AppOpened(a.JSONBody)
 	a.Data["json"] = response
 	a.ServeJSON()
@@ -31,9 +33,33 @@ func (a *AnalyticsController) HandleEvent() {
 		a.ServeJSON()
 		return
 	}
+	a.addTags(a.JSONBody)
 	response := analytics.TrackEvent(a.Ctx.Input.Param(":eventName"), a.JSONBody)
 	a.Data["json"] = response
 	a.ServeJSON()
+}
+
+func (a *AnalyticsController) addTags(event types.M) {
+	tags := utils.M(event["tags"])
+	if tags == nil {
+		tags = types.M{}
+	}
+
+	if a.Info.ClientKey != "" {
+		tags["from"] = "Client"
+	} else if a.Info.JavaScriptKey != "" {
+		tags["from"] = "JavaScript"
+	} else if a.Info.DotNetKey != "" {
+		tags["from"] = "DotNet"
+	} else if a.Info.RestAPIKey != "" {
+		tags["from"] = "RestAPI"
+	}
+
+	if a.Info.ClientVersion != "" {
+		tags["version"] = a.Info.ClientVersion
+	}
+
+	event["tags"] = tags
 }
 
 // Get ...

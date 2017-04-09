@@ -42,8 +42,8 @@ func (b *BatchController) HandleBatch() {
 	if b.Info.ClientKey != "" {
 		headers["X-Parse-Client-Key"] = b.Info.ClientKey
 	}
-	if b.Info.JavascriptKey != "" {
-		headers["X-Parse-Javascript-Key"] = b.Info.JavascriptKey
+	if b.Info.JavaScriptKey != "" {
+		headers["X-Parse-Javascript-Key"] = b.Info.JavaScriptKey
 	}
 	if b.Info.DotNetKey != "" {
 		headers["X-Parse-Windows-Key"] = b.Info.DotNetKey

@@ -63,6 +63,13 @@ func (a *influxDBAdapter) addEvent(name string, event types.M) error {
 	tags := map[string]string{
 		name: name + "-total",
 	}
+	if enevtTag := utils.M(event["tags"]); enevtTag != nil {
+		for k, v := range enevtTag {
+			if tag := utils.S(v); tag != "" {
+				tags[k] = tag
+			}
+		}
+	}
 
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
 		Database:  a.databaseName,

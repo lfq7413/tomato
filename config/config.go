@@ -21,7 +21,7 @@ type Config struct {
 	AppID                            string   // 必填
 	MasterKey                        string   // 必填
 	ClientKey                        string   // 选填
-	JavascriptKey                    string   // 选填
+	JavaScriptKey                    string   // 选填
 	DotNetKey                        string   // 选填
 	RestAPIKey                       string   // 选填
 	AllowClientClassCreation         bool     // 是否允许客户端操作不存在的 class ，默认为 fasle 不允许操作
@@ -99,7 +99,7 @@ func parseConfig() {
 	TConfig.AppID = beego.AppConfig.String("AppID")
 	TConfig.MasterKey = beego.AppConfig.String("MasterKey")
 	TConfig.ClientKey = beego.AppConfig.String("ClientKey")
-	TConfig.JavascriptKey = beego.AppConfig.String("JavascriptKey")
+	TConfig.JavaScriptKey = beego.AppConfig.String("JavaScriptKey")
 	TConfig.DotNetKey = beego.AppConfig.String("DotNetKey")
 	TConfig.RestAPIKey = beego.AppConfig.String("RestAPIKey")
 	TConfig.AllowClientClassCreation = beego.AppConfig.DefaultBool("AllowClientClassCreation", false)
@@ -198,8 +198,8 @@ func validateApplicationConfiguration() {
 	if TConfig.MasterKey == "" {
 		log.Fatalln("MasterKey is required")
 	}
-	if TConfig.ClientKey == "" && TConfig.JavascriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
-		log.Fatalln("ClientKey or JavascriptKey or DotNetKey or RestAPIKey is required")
+	if TConfig.ClientKey == "" && TConfig.JavaScriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
+		log.Fatalln("ClientKey or JavaScriptKey or DotNetKey or RestAPIKey is required")
 	}
 }
 

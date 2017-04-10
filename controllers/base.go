@@ -172,7 +172,7 @@ func (b *BaseController) Prepare() {
 	}
 	var allow = false
 	if (len(info.ClientKey) > 0 && info.ClientKey == config.TConfig.ClientKey) ||
-		(len(info.JavaScriptKey) > 0 && info.JavaScriptKey == config.TConfig.JavascriptKey) ||
+		(len(info.JavaScriptKey) > 0 && info.JavaScriptKey == config.TConfig.JavaScriptKey) ||
 		(len(info.RestAPIKey) > 0 && info.RestAPIKey == config.TConfig.RestAPIKey) ||
 		(len(info.DotNetKey) > 0 && info.DotNetKey == config.TConfig.DotNetKey) {
 		allow = true

@@ -30,11 +30,13 @@ func newInfluxDBAdapter() *influxDBAdapter {
 }
 
 func (a *influxDBAdapter) appOpened(body types.M) (types.M, error) {
-	return types.M{}, nil
+	err := a.addEvent("AppOpened", body)
+	return types.M{}, err
 }
 
 func (a *influxDBAdapter) trackEvent(eventName string, body types.M) (types.M, error) {
-	return types.M{}, nil
+	err := a.addEvent(eventName, body)
+	return types.M{}, err
 }
 
 func (a *influxDBAdapter) addEvent(name string, event types.M) error {
@@ -58,6 +60,9 @@ func (a *influxDBAdapter) addEvent(name string, event types.M) error {
 		for k, v := range dimensions {
 			fields[k] = v
 		}
+	}
+	if len(fields) == 0 {
+		fields["_noFields"] = true
 	}
 
 	tags := map[string]string{

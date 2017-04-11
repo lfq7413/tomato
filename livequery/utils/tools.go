@@ -91,9 +91,25 @@ func MatchesQuery(object, query t.M) bool {
 
 // matchesKeyConstraints 检测对象中的字段是否符合指定的条件
 func matchesKeyConstraints(object t.M, key string, constraints interface{}) bool {
+	if object == nil {
+		return false
+	}
+
 	if constraints == nil {
 		return false
 	}
+
+	if strings.Contains(key, ".") {
+		keyComponents := strings.Split(key, ".")
+		subObjectKey := keyComponents[0]
+		keyRemainder := strings.Join(keyComponents[1:], ".")
+		subObject := t.M{}
+		if o, ok := object[subObjectKey].(map[string]interface{}); ok && o != nil {
+			subObject = o
+		}
+		return matchesKeyConstraints(subObject, keyRemainder, constraints)
+	}
+
 	// 处理 $or ，有一处符合即可
 	if key == "$or" {
 		if querys, ok := constraints.([]interface{}); ok {

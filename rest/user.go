@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"time"
 
+	"strings"
+
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/mail"
@@ -56,7 +58,8 @@ func SendVerificationEmail(user types.M) {
 	}
 	user["className"] = "_User"
 	username := url.QueryEscape(utils.S(user["username"]))
-	link := config.TConfig.ServerURL + "/apps/verify_email" + "?token=" + token + "&username=" + username
+	// link := config.TConfig.ServerURL + "/apps/verify_email" + "?token=" + token + "&username=" + username
+	link := buildEmailLink(config.TConfig.ServerURL+"/apps/verify_email", username, token)
 	options := types.M{
 		"appName": config.TConfig.AppName,
 		"link":    link,
@@ -130,7 +133,8 @@ func SendPasswordResetEmail(email string) error {
 	user["className"] = "_User"
 	token := url.QueryEscape(utils.S(user["_perishable_token"]))
 	username := url.QueryEscape(utils.S(user["username"]))
-	link := config.TConfig.ServerURL + "/apps/request_password_reset" + "?token=" + token + "&username=" + username
+	// link := config.TConfig.ServerURL + "/apps/request_password_reset" + "?token=" + token + "&username=" + username
+	link := buildEmailLink(config.TConfig.ServerURL+"/apps/request_password_reset", username, token)
 	options := types.M{
 		"appName": config.TConfig.AppName,
 		"link":    link,
@@ -290,4 +294,14 @@ func updateUserPassword(userID, password string) error {
 		return err
 	}
 	return nil
+}
+
+func buildEmailLink(destination, username, token string) string {
+	usernameAndToken := `token=` + token + `&username=` + username
+
+	if config.TConfig.ParseFrameURL != "" {
+		destinationWithoutHost := strings.Replace(destination, config.TConfig.ServerURL, "", -1)
+		return config.TConfig.ParseFrameURL + `?link=` + url.QueryEscape(destinationWithoutHost) + `&` + usernameAndToken
+	}
+	return destination + `?` + usernameAndToken
 }

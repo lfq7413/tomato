@@ -75,6 +75,7 @@ type Config struct {
 	InfluxDBUsername                 string   // InfluxDB 用户名，仅在 AnalyticsAdapter=InfluxDB 时需要配置
 	InfluxDBPassword                 string   // InfluxDB 密码，仅在 AnalyticsAdapter=InfluxDB 时需要配置
 	InfluxDBDatabaseName             string   // InfluxDB 数据库，仅在 AnalyticsAdapter=InfluxDB 时需要配置
+	ParseFrameURL                    string   // 自定义地址，用于呈现验证 Email 页面和密码重置页面
 }
 
 var (
@@ -168,6 +169,8 @@ func parseConfig() {
 	TConfig.InfluxDBUsername = beego.AppConfig.String("InfluxDBUsername")
 	TConfig.InfluxDBPassword = beego.AppConfig.String("InfluxDBPassword")
 	TConfig.InfluxDBDatabaseName = beego.AppConfig.String("InfluxDBDatabaseName")
+
+	TConfig.ParseFrameURL = beego.AppConfig.String("ParseFrameURL")
 }
 
 // Validate 校验用户参数合法性

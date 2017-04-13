@@ -75,7 +75,11 @@ type Config struct {
 	InfluxDBUsername                 string   // InfluxDB 用户名，仅在 AnalyticsAdapter=InfluxDB 时需要配置
 	InfluxDBPassword                 string   // InfluxDB 密码，仅在 AnalyticsAdapter=InfluxDB 时需要配置
 	InfluxDBDatabaseName             string   // InfluxDB 数据库，仅在 AnalyticsAdapter=InfluxDB 时需要配置
-	ParseFrameURL                    string   // 自定义地址，用于呈现验证 Email 页面和密码重置页面
+	InvalidLink                      string   // 自定义页面地址，无效链接页面
+	VerifyEmailSuccess               string   // 自定义页面地址，验证邮箱成功页面
+	ChoosePassword                   string   // 自定义页面地址，修改密码页面
+	PasswordResetSuccess             string   // 自定义页面地址，密码重置成功页面
+	ParseFrameURL                    string   // 自定义页面地址，用于呈现验证 Email 页面和密码重置页面
 }
 
 var (
@@ -170,6 +174,10 @@ func parseConfig() {
 	TConfig.InfluxDBPassword = beego.AppConfig.String("InfluxDBPassword")
 	TConfig.InfluxDBDatabaseName = beego.AppConfig.String("InfluxDBDatabaseName")
 
+	TConfig.InvalidLink = beego.AppConfig.String("InvalidLink")
+	TConfig.VerifyEmailSuccess = beego.AppConfig.String("VerifyEmailSuccess")
+	TConfig.ChoosePassword = beego.AppConfig.String("ChoosePassword")
+	TConfig.PasswordResetSuccess = beego.AppConfig.String("PasswordResetSuccess")
 	TConfig.ParseFrameURL = beego.AppConfig.String("ParseFrameURL")
 }
 
@@ -382,4 +390,51 @@ func GeneratePasswordResetTokenExpiresAt() time.Time {
 	expiresAt := time.Now().UTC()
 	expiresAt = expiresAt.Add(time.Duration(TConfig.ResetTokenValidityDuration) * time.Second)
 	return expiresAt
+}
+
+// InvalidLinkURL ...
+func InvalidLinkURL() string {
+	if TConfig.InvalidLink != "" {
+		return TConfig.InvalidLink
+	}
+	return TConfig.ServerURL + `/apps/invalid_link`
+}
+
+// VerifyEmailSuccessURL ...
+func VerifyEmailSuccessURL() string {
+	if TConfig.VerifyEmailSuccess != "" {
+		return TConfig.VerifyEmailSuccess
+	}
+	return TConfig.ServerURL + `/apps/verify_email_success`
+}
+
+// ChoosePasswordURL ...
+func ChoosePasswordURL() string {
+	if TConfig.ChoosePassword != "" {
+		return TConfig.ChoosePassword
+	}
+	return TConfig.ServerURL + `/apps/choose_password`
+}
+
+// RequestResetPasswordURL ...
+func RequestResetPasswordURL() string {
+	return TConfig.ServerURL + `/apps/request_password_reset`
+}
+
+// PasswordResetSuccessURL ...
+func PasswordResetSuccessURL() string {
+	if TConfig.PasswordResetSuccess != "" {
+		return TConfig.PasswordResetSuccess
+	}
+	return TConfig.ServerURL + `/apps/password_reset_success`
+}
+
+// ParseFrameURL ...
+func ParseFrameURL() string {
+	return TConfig.ParseFrameURL
+}
+
+// VerifyEmailURL ...
+func VerifyEmailURL() string {
+	return TConfig.ServerURL + `/apps/verify_email`
 }

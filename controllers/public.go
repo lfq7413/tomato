@@ -33,7 +33,7 @@ func (p *PublicController) VerifyEmail() {
 	ok := rest.VerifyEmail(username, token)
 	if ok {
 		p.Ctx.Output.SetStatus(302)
-		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"/apps/verify_email_success?username="+username)
+		p.Ctx.Output.Header("location", config.VerifyEmailSuccessURL()+"?username="+username)
 	} else {
 		p.invalid()
 	}
@@ -72,10 +72,10 @@ func (p *PublicController) ResetPassword() {
 	err := rest.UpdatePassword(username, token, newPassword)
 	if err == nil {
 		p.Ctx.Output.SetStatus(302)
-		p.Ctx.Output.Header("location", config.TConfig.ServerURL+"/apps/password_reset_success?username="+username)
+		p.Ctx.Output.Header("location", config.PasswordResetSuccessURL()+"?username="+username)
 	} else {
 		p.Ctx.Output.SetStatus(302)
-		location := config.TConfig.ServerURL + "/apps/choose_password"
+		location := config.ChoosePasswordURL()
 		location += "?token=" + token
 		location += "&id=" + config.TConfig.AppID
 		location += "&username=" + username
@@ -105,7 +105,7 @@ func (p *PublicController) RequestResetPassword() {
 	user := rest.CheckResetTokenValidity(username, token)
 	if user != nil {
 		p.Ctx.Output.SetStatus(302)
-		location := config.TConfig.ServerURL + "/apps/choose_password"
+		location := config.ChoosePasswordURL()
 		location += "?token=" + token
 		location += "&id=" + config.TConfig.AppID
 		location += "&username=" + username
@@ -139,7 +139,7 @@ func (p *PublicController) VerifyEmailSuccess() {
 
 func (p *PublicController) invalid() {
 	p.Ctx.Output.SetStatus(302)
-	p.Ctx.Output.Header("location", config.TConfig.ServerURL+"/apps/invalid_link")
+	p.Ctx.Output.Header("location", config.InvalidLinkURL())
 }
 
 func (p *PublicController) missingPublicServerURL() {

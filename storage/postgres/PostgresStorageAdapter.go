@@ -1009,6 +1009,39 @@ func (p *PostgresAdapter) FindOneAndUpdate(className string, schema, query, upda
 			}
 
 			if tp := utils.M(fields[fieldName]); tp != nil && utils.S(tp["type"]) == "Object" {
+				keysToIncrement := []string{}
+				for k, v := range originalUpdate {
+					if o := utils.M(v); o != nil && utils.S(o["__op"]) == "Increment" {
+						if keys := strings.Split(k, "."); len(keys) == 2 && keys[0] == fieldName {
+							keysToIncrement = append(keysToIncrement, keys[1])
+						}
+					}
+				}
+
+				incrementPatterns := ""
+				if len(keysToIncrement) > 0 {
+					for _, key := range keysToIncrement {
+						increment := utils.M(object[key])
+						if increment == nil {
+							continue
+						}
+
+						var amount interface{}
+						switch increment["amount"].(type) {
+						case float64, int:
+							amount = increment["amount"]
+						}
+						if amount == nil {
+							continue
+						}
+						incrementPatterns += " || " + fmt.Sprintf(`CONCAT('{"%s":', COALESCE("%s"->>'%s', '0')::float + %v, '}')::jsonb`, key, fieldName, key, amount)
+					}
+
+					for _, key := range keysToIncrement {
+						delete(object, key)
+					}
+				}
+
 				keysToDelete := []string{}
 				for k, v := range originalUpdate {
 					if o := utils.M(v); o != nil && utils.S(o["__op"]) == "Delete" {
@@ -1023,7 +1056,7 @@ func (p *PostgresAdapter) FindOneAndUpdate(className string, schema, query, upda
 					deletePatterns = deletePatterns + fmt.Sprintf(` - '%s'`, k)
 				}
 
-				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = ( COALESCE("%s", '{}'::jsonb) %s || $%d::jsonb )`, fieldName, fieldName, deletePatterns, index))
+				updatePatterns = append(updatePatterns, fmt.Sprintf(`"%s" = ( COALESCE("%s", '{}'::jsonb) %s %s || $%d::jsonb )`, fieldName, fieldName, deletePatterns, incrementPatterns, index))
 				b, err := json.Marshal(object)
 				if err != nil {
 					return nil, err

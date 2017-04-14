@@ -5633,7 +5633,7 @@ func TestPostgresAdapter_FindOneAndUpdate(t *testing.T) {
 			clean:      clean,
 		},
 		{
-			name: "20-Object",
+			name: "20-Object-Delete",
 			args: args{
 				className: "post",
 				schema: types.M{
@@ -5656,7 +5656,7 @@ func TestPostgresAdapter_FindOneAndUpdate(t *testing.T) {
 			clean:      clean,
 		},
 		{
-			name: "21-Object",
+			name: "21-Object-Delete",
 			args: args{
 				className: "post",
 				schema: types.M{
@@ -5674,6 +5674,52 @@ func TestPostgresAdapter_FindOneAndUpdate(t *testing.T) {
 				},
 			},
 			want:       types.M{"key": "hi", "key2": types.M{"key1": "hello"}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "21.1-Object-Increment",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Object"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2.key2": types.M{"__op": "Increment", "amount": 10.0}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"key1": "hello", "key2": 10}},
+					types.M{"key": "hi", "key2": types.M{"key1": "hi", "key2": 10}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"key1": "hi", "key2": 20.0}},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
+		},
+		{
+			name: "21.2-Object-Increment",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"className": "post",
+					"fields": types.M{
+						"key":  types.M{"type": "String"},
+						"key2": types.M{"type": "Object"},
+					},
+				},
+				query:  types.M{"key": "hi"},
+				update: types.M{"key2.key2": types.M{"__op": "Increment", "amount": -10}},
+				dataObjects: []types.M{
+					types.M{"key": "hello", "key2": types.M{"key1": "hello", "key2": 10}},
+					types.M{"key": "hi", "key2": types.M{"key1": "hi", "key2": 10.5}},
+				},
+			},
+			want:       types.M{"key": "hi", "key2": types.M{"key1": "hi", "key2": 0.5}},
 			wantErr:    nil,
 			initialize: initialize,
 			clean:      clean,

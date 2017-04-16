@@ -160,42 +160,6 @@ func sendToAdapter(body types.M, installations []interface{}, status *pushStatus
 	return adapter.send(body, installations, status.objectID)
 }
 
-// validatePushType 校验查询条件中的推送类型
-// where 查询条件
-// validPushTypes 当前推送模块支持的类型
-func validatePushType(where types.M, validPushTypes []string) error {
-	deviceTypeField := where["deviceType"]
-	if deviceTypeField == nil {
-		deviceTypeField = types.M{}
-	}
-	deviceTypes := []string{}
-	if utils.S(deviceTypeField) != "" {
-		deviceTypes = append(deviceTypes, utils.S(deviceTypeField))
-	} else if utils.M(deviceTypeField) != nil {
-		m := utils.M(deviceTypeField)
-		if utils.A(m["$in"]) != nil {
-			s := utils.A(m["$in"])
-			for _, v := range s {
-				deviceTypes = append(deviceTypes, utils.S(v))
-			}
-		}
-	}
-	for _, v := range deviceTypes {
-		b := false
-		for _, t := range validPushTypes {
-			if v == t {
-				b = true
-				break
-			}
-		}
-		if b == false {
-			return errs.E(errs.PushMisconfigured, v+" is not supported push type.")
-		}
-	}
-
-	return nil
-}
-
 // getExpirationTime 把过期时间转换为以毫秒为单位的 Unix 时间
 func getExpirationTime(body types.M) (interface{}, error) {
 	expirationTimeParam := body["expiration_time"]
@@ -228,6 +192,6 @@ func getExpirationTime(body types.M) (interface{}, error) {
 // pushAdapter 推送模块要实现的接口
 // send() 中的 status 参数暂时没有使用
 type pushAdapter interface {
-	send(data types.M, installations types.S, objectID string) []types.M
+	send(body types.M, installations types.S, pushStatus string) []types.M
 	getValidPushTypes() []string
 }

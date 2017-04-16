@@ -13,7 +13,7 @@ func newTomatoPush() *tomatoPushAdapter {
 	return t
 }
 
-func (t *tomatoPushAdapter) send(data types.M, installations types.S, objectID string) []types.M {
+func (t *tomatoPushAdapter) send(body types.M, installations types.S, pushStatus string) []types.M {
 	return []types.M{}
 }
 

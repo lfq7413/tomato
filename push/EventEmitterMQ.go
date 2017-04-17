@@ -46,16 +46,23 @@ func (c *Consumer) Unsubscribe(channel string) {
 	unsubscribe(channel)
 }
 
+// On ...
+func (c *Consumer) On(channel string, listener pubsub.HandlerType) {
+	c.EventEmitter.On(channel, listener)
+}
+
 // CreatePublisher ...
-func CreatePublisher() *Publisher {
+func CreatePublisher() pubsub.Publisher {
 	return &Publisher{
 		emitter: emitter,
 	}
 }
 
 // CreateSubscriber ...
-func CreateSubscriber() *Consumer {
-	return &Consumer{
+func CreateSubscriber() pubsub.Subscriber {
+	c := &Consumer{
 		emitter: emitter,
 	}
+	c.Init()
+	return c
 }

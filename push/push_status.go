@@ -73,7 +73,7 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 }
 
 // setRunning 设置正在推送
-func (p *pushStatus) setRunning() {
+func (p *pushStatus) setRunning(count int) {
 	where := types.M{
 		"status":   "pending",
 		"objectId": p.status["objectId"],

@@ -93,7 +93,7 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 		}
 	}
 
-	status.setRunning()
+	status.setRunning(0)
 
 	onPushStatusSaved(status.objectID)
 

@@ -18,6 +18,11 @@ func NewEventEmitter() *EventEmitter {
 	}
 }
 
+// Init ...
+func (e *EventEmitter) Init() {
+	e.events = map[string]map[int]HandlerType{}
+}
+
 // Emit 向指定通道中的所有订阅者发送事件消息
 func (e *EventEmitter) Emit(messageType string, args ...string) bool {
 	e.mutex.Lock()

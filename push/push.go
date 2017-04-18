@@ -29,7 +29,7 @@ func init() {
 // SendPush 发送推送消息
 func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved func(string)) error {
 
-	status := newPushStatus()
+	status := newPushStatus("")
 
 	// TODO where 中并不包含 deviceType，此处是否有问题？
 	err := validatePushType(where, adapter.getValidPushTypes())

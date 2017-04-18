@@ -17,9 +17,12 @@ type pushStatus struct {
 	db       *orm.DBController
 }
 
-func newPushStatus() *pushStatus {
+func newPushStatus(objectID string) *pushStatus {
+	if objectID == "" {
+		objectID = utils.CreateObjectID()
+	}
 	p := &pushStatus{
-		objectID: utils.CreateObjectID(),
+		objectID: objectID,
 		db:       orm.TomatoDBController,
 	}
 	return p
@@ -83,6 +86,11 @@ func (p *pushStatus) setRunning(count int) {
 		"updatedAt": utils.TimetoString(time.Now().UTC()),
 	}
 	p.db.Update(pushStatusCollection, where, update, types.M{}, false)
+}
+
+func (p *pushStatus) trackSent(results []types.M) error {
+	// TODO
+	return nil
 }
 
 // complete 推送完成，传入数据格式如下

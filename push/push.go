@@ -104,13 +104,13 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 		return err
 	}
 	if utils.HasResults(response) == false {
-		status.complete([]types.M{})
+		status.complete()
 		return nil
 	}
 	results := utils.A(response["results"])
 
-	res := sendToAdapter(body, results, status)
-	status.complete(res)
+	sendToAdapter(body, results, status)
+	status.complete()
 
 	return nil
 }

@@ -1376,6 +1376,7 @@ func Test_reloadData(t *testing.T) {
 			"errorMessage":  types.M{"type": "Object"},
 			"sentPerType":   types.M{"type": "Object"},
 			"failedPerType": types.M{"type": "Object"},
+			"count":         types.M{"type": "Number"},
 		},
 		"_JobStatus": types.M{
 			"objectId":   types.M{"type": "String"},
@@ -2826,6 +2827,7 @@ func Test_volatileClassesSchemas(t *testing.T) {
 				"errorMessage":  types.M{"type": "Object"},
 				"sentPerType":   types.M{"type": "Object"},
 				"failedPerType": types.M{"type": "Object"},
+				"count":         types.M{"type": "Number"},
 			},
 			"classLevelPermissions": types.M{},
 		},
@@ -3199,6 +3201,7 @@ func Test_Load(t *testing.T) {
 			"errorMessage":  types.M{"type": "Object"},
 			"sentPerType":   types.M{"type": "Object"},
 			"failedPerType": types.M{"type": "Object"},
+			"count":         types.M{"type": "Number"},
 		},
 		"_JobStatus": types.M{
 			"objectId":   types.M{"type": "String"},
@@ -3277,6 +3280,7 @@ func Test_Load(t *testing.T) {
 			"errorMessage":  types.M{"type": "Object"},
 			"sentPerType":   types.M{"type": "Object"},
 			"failedPerType": types.M{"type": "Object"},
+			"count":         types.M{"type": "Number"},
 		},
 		"_JobStatus": types.M{
 			"objectId":   types.M{"type": "String"},

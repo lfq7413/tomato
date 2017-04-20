@@ -86,6 +86,7 @@ var DefaultColumns = map[string]types.M{
 		"errorMessage":  types.M{"type": "Object"},
 		"sentPerType":   types.M{"type": "Object"},
 		"failedPerType": types.M{"type": "Object"},
+		"count":         types.M{"type": "Number"},
 	},
 	"_JobStatus": types.M{
 		"jobName":    types.M{"type": "String"},

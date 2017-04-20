@@ -13,7 +13,6 @@ const pushStatusCollection = "_PushStatus"
 
 type pushStatus struct {
 	objectID string
-	status   types.M
 	db       *orm.DBController
 }
 
@@ -29,7 +28,7 @@ func newPushStatus(objectID string) *pushStatus {
 }
 
 // setInitial 初始化推送状态
-func (p *pushStatus) setInitial(body, where, options types.M) {
+func (p *pushStatus) setInitial(body, where, options types.M) error {
 	if body == nil {
 		body = types.M{}
 	}
@@ -69,15 +68,7 @@ func (p *pushStatus) setInitial(body, where, options types.M) {
 		"ACL": types.M{},
 	}
 
-	err := p.db.Create(pushStatusCollection, object, types.M{})
-	if err != nil {
-		p.status = types.M{}
-		return
-	}
-
-	p.status = types.M{
-		"objectId": object["objectId"],
-	}
+	return p.db.Create(pushStatusCollection, object, types.M{})
 }
 
 // setRunning 设置正在推送

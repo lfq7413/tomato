@@ -47,6 +47,8 @@ type Config struct {
 	TencentSecretID                  string   // 腾讯云存储 SecretID ，仅在 FileAdapter=Tencent 时需要配置
 	TencentSecretKey                 string   // 腾讯云存储 SecretKey ，仅在 FileAdapter=Tencent 时需要配置
 	PushAdapter                      string   // 推送模块
+	PushChannel                      string   // 推送通道
+	PushBatchSize                    int      // 批量推送的大小
 	LiveQueryClasses                 string   // LiveQuery 支持的 classe ，多个 class 使用 | 隔开，如： classeA|classeB|classeC
 	PublisherType                    string   // 发布者类型，可选：Redis ，默认使用自带的 EventEmitter
 	PublisherURL                     string   // 发布者地址， PublisherType=Redis 时必填
@@ -179,6 +181,9 @@ func parseConfig() {
 	TConfig.ChoosePassword = beego.AppConfig.String("ChoosePassword")
 	TConfig.PasswordResetSuccess = beego.AppConfig.String("PasswordResetSuccess")
 	TConfig.ParseFrameURL = beego.AppConfig.String("ParseFrameURL")
+
+	TConfig.PushChannel = beego.AppConfig.String("PushChannel")
+	TConfig.PushBatchSize = beego.AppConfig.DefaultInt("PushBatchSize", 0)
 }
 
 // Validate 校验用户参数合法性

@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -1209,9 +1208,7 @@ func Test_replaceInQuery(t *testing.T) {
 		},
 	}
 	q, _ = NewQuery(Master(), "user", where, nil, nil)
-	fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++")
 	err = q.replaceInQuery()
-	fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++")
 	expect = types.M{
 		"post": types.M{
 			"$in": types.S{
@@ -2506,7 +2503,7 @@ func Test_NewQuery(t *testing.T) {
 		auth:              auth,
 		className:         "user",
 		Where:             types.M{},
-		restOptions:       types.M{"keys": 1024},
+		restOptions:       types.M{"keys": ""},
 		findOptions:       types.M{},
 		response:          types.M{},
 		doCount:           false,

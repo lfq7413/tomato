@@ -646,10 +646,12 @@ func (s *Schema) reloadData(options types.M) {
 		return
 	}
 
-	s.data = types.M{}
-	s.perms = types.M{}
+	data := types.M{}
+	perms := types.M{}
 	allSchemas, err := s.GetAllClasses(options)
 	if err != nil {
+		s.data = data
+		s.perms = perms
 		s.reloadDataPromise = nil
 		return
 	}
@@ -660,10 +662,9 @@ func (s *Schema) reloadData(options types.M) {
 			continue
 		}
 		// allSchemas 中的数据，已经经过了 injectDefaultSchema 处理
-		s.data[utils.S(schema["className"])] = schema["fields"]
-		s.perms[utils.S(schema["className"])] = schema["classLevelPermissions"]
+		data[utils.S(schema["className"])] = schema["fields"]
+		perms[utils.S(schema["className"])] = schema["classLevelPermissions"]
 	}
-	s.permsMutex.Unlock()
 
 	for _, className := range volatileClasses {
 		sch := types.M{
@@ -672,9 +673,13 @@ func (s *Schema) reloadData(options types.M) {
 			"classLevelPermissions": types.M{},
 		}
 		schema := injectDefaultSchema(sch)
-		s.data[className] = schema["fields"]
-		s.perms[className] = schema["classLevelPermissions"]
+		data[className] = schema["fields"]
+		perms[className] = schema["classLevelPermissions"]
 	}
+
+	s.data = data
+	s.perms = perms
+	s.permsMutex.Unlock()
 	s.dataMutex.Unlock()
 
 	s.reloadDataPromise = allSchemas

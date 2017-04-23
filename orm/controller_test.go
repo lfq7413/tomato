@@ -5178,6 +5178,34 @@ func Test_addReadACL(t *testing.T) {
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
+	/*************************************************/
+	query = types.M{
+		"$or": types.S{
+			types.M{"key": "hello"},
+			types.M{"key1": "hello"},
+		},
+	}
+	acl = []string{"role:1024"}
+	result = addReadACL(query, acl)
+	expect = types.M{
+		"$or": types.S{
+			types.M{
+				"key": "hello",
+				"_rperm": types.M{
+					"$in": types.S{nil, "*", "role:1024"},
+				},
+			},
+			types.M{
+				"key1": "hello",
+				"_rperm": types.M{
+					"$in": types.S{nil, "*", "role:1024"},
+				},
+			},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_validateQuery(t *testing.T) {

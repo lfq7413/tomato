@@ -1302,7 +1302,15 @@ func addReadACL(query types.M, acl []string) types.M {
 	for _, a := range acl {
 		orParts = append(orParts, a)
 	}
-	newQuery["_rperm"] = types.M{"$in": orParts}
+	if or := utils.A(newQuery["$or"]); or != nil {
+		for _, v := range or {
+			if qobj := utils.M(v); qobj != nil {
+				qobj["_rperm"] = types.M{"$in": orParts}
+			}
+		}
+	} else {
+		newQuery["_rperm"] = types.M{"$in": orParts}
+	}
 	return newQuery
 }
 

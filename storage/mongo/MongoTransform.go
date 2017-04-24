@@ -1181,6 +1181,15 @@ func (t *Transform) nestedMongoObjectToNestedParseObject(mongoObject interface{}
 		return b.databaseToJSON(mongoObject), nil
 	}
 
+	if object := utils.M(mongoObject); object != nil {
+		if utils.S(object["__type"]) == "Date" {
+			if date, ok := object["iso"].(time.Time); ok {
+				object["iso"] = utils.TimetoString(date)
+				return mongoObject, nil
+			}
+		}
+	}
+
 	// 转换对象类型
 	if object := utils.M(mongoObject); object != nil {
 		newObject := types.M{}

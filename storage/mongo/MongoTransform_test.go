@@ -2319,6 +2319,19 @@ func Test_nestedMongoObjectToNestedParseObject(t *testing.T) {
 	}
 	/*************************************************/
 	mongoObject = types.M{
+		"__type": "Date",
+		"iso":    tmpTime,
+	}
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = types.M{
+		"__type": "Date",
+		"iso":    tmpTimeStr,
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
 		"name":  "joe",
 		"age":   25,
 		"m":     false,

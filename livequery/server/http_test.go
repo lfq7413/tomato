@@ -6,14 +6,14 @@ import (
 	"testing"
 )
 
-func Test_getUser(t *testing.T) {
+func Test_userForSessionToken(t *testing.T) {
 	TomatoInfo = map[string]string{
 		"appId":     "test",
-		"clientKey": "test",
+		"masterKey": "test",
 		"serverURL": "http://127.0.0.1:8080/v1",
 	}
 	sessionToken := "59C3697129E46DE6F1CED31B8FB2B862"
-	user, err := getUser(sessionToken)
+	user, err := userForSessionToken(sessionToken)
 	if err != nil {
 		t.Error(err)
 	}

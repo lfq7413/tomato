@@ -88,5 +88,5 @@ func (m *redisCacheAdapter) del(key string) {
 }
 
 func (m *redisCacheAdapter) clear() {
-	m.do("FLUSHALL")
+	m.do("FLUSHDB")
 }

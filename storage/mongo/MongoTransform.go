@@ -124,21 +124,22 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	}
 
 	// key 为顶层字段时，转换原子数据，包含子对象字段时，不做处理
-	if strings.Index(key, ".") < 0 {
-		value, err := t.transformTopLevelAtom(restValue)
-		if err != nil {
-			return "", nil, err
-		}
-		if value != cannotTransform() {
-			if timeField && utils.S(value) != "" {
-				var err error
-				value, err = utils.StringtoTime(utils.S(value))
-				if err != nil {
-					return "", nil, errs.E(errs.InvalidJSON, "Invalid Date value.")
-				}
+	value, err := t.transformTopLevelAtom(restValue)
+	if err != nil {
+		return "", nil, err
+	}
+	if value != cannotTransform() {
+		if timeField && utils.S(value) != "" {
+			var err error
+			value, err = utils.StringtoTime(utils.S(value))
+			if err != nil {
+				return "", nil, errs.E(errs.InvalidJSON, "Invalid Date value.")
 			}
-			return key, value, nil
 		}
+		if strings.Index(key, ".") > 0 {
+			return key, restValue, nil
+		}
+		return key, value, nil
 	}
 
 	// 转换数组类型

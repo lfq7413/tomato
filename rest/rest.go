@@ -69,10 +69,9 @@ func Delete(auth *Auth, className, objectID string) error {
 
 	var inflatedObject types.M
 	// 如果存在删前回调、或者删后回调、或者要删除的属于 _Session 类，则需要获取到要删除的对象数据
-	if cloud.TriggerExists(cloud.TypeBeforeDelete, className) ||
-		cloud.TriggerExists(cloud.TypeAfterDelete, className) ||
-		(livequery.TLiveQuery != nil && livequery.TLiveQuery.HasLiveQuery(className)) ||
-		className == "_Session" {
+	hasTriggers := checkTriggers(className, []string{cloud.TypeBeforeDelete, cloud.TypeAfterDelete})
+	hasLiveQuery := checkLiveQuery(className)
+	if hasTriggers || hasLiveQuery || className == "_Session" {
 		response, err := Find(auth, className, types.M{"objectId": objectID}, types.M{}, nil)
 		if err != nil || utils.HasResults(response) == false {
 			return errs.E(errs.ObjectNotFound, "Object not found for delete.")
@@ -125,10 +124,9 @@ func Update(auth *Auth, className, objectID string, object types.M, clientSDK ma
 
 	// 如果存在删前回调、或者删后回调，则需要获取到要删除的对象数据
 	var response types.M
-	if cloud.TriggerExists(cloud.TypeBeforeSave, className) ||
-		cloud.TriggerExists(cloud.TypeAfterSave, className) ||
-		(livequery.TLiveQuery != nil && livequery.TLiveQuery.HasLiveQuery(className)) {
-
+	hasTriggers := checkTriggers(className, []string{cloud.TypeBeforeSave, cloud.TypeAfterSave})
+	hasLiveQuery := checkLiveQuery(className)
+	if hasTriggers || hasLiveQuery {
 		response, err = Find(auth, className, types.M{"objectId": objectID}, types.M{}, clientSDK)
 		if err != nil || utils.HasResults(response) == false {
 			return nil, errs.E(errs.ObjectNotFound, "Object not found for update.")
@@ -159,4 +157,16 @@ func enforceRoleSecurity(method string, className string, auth *Auth) error {
 		}
 	}
 	return nil
+}
+
+func checkTriggers(className string, triggerTypes []string) bool {
+	result := false
+	for _, triggerType := range triggerTypes {
+		result = result || cloud.TriggerExists(triggerType, className)
+	}
+	return result
+}
+
+func checkLiveQuery(className string) bool {
+	return livequery.TLiveQuery != nil && livequery.TLiveQuery.HasLiveQuery(className)
 }

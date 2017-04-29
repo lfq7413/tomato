@@ -1302,15 +1302,7 @@ func addReadACL(query types.M, acl []string) types.M {
 	for _, a := range acl {
 		orParts = append(orParts, a)
 	}
-	if or := utils.A(newQuery["$or"]); or != nil {
-		for _, v := range or {
-			if qobj := utils.M(v); qobj != nil {
-				qobj["_rperm"] = types.M{"$in": orParts}
-			}
-		}
-	} else {
-		newQuery["_rperm"] = types.M{"$in": orParts}
-	}
+	newQuery["_rperm"] = types.M{"$in": orParts}
 	return newQuery
 }
 
@@ -1338,8 +1330,10 @@ func validateQuery(query types.M) error {
 	}
 
 	if or, ok := query["$or"]; ok {
+		var orArr []types.M
 		if arr := utils.A(or); arr != nil {
-			for _, a := range arr {
+			orArr = make([]types.M, len(arr))
+			for i, a := range arr {
 				subQuery := utils.M(a)
 				if subQuery == nil {
 					return errs.E(errs.InvalidQuery, "Bad $or format - invalid sub query.")
@@ -1348,9 +1342,43 @@ func validateQuery(query types.M) error {
 				if err != nil {
 					return err
 				}
+				orArr[i] = subQuery
 			}
 		} else {
 			return errs.E(errs.InvalidQuery, "Bad $or format - use an array value.")
+		}
+
+		/* In MongoDB, $or queries which are not alone at the top level of the
+		 * query can not make efficient use of indexes due to a long standing
+		 * bug known as SERVER-13732.
+		 *
+		 * This block restructures queries in which $or is not the sole top
+		 * level element by moving all other top-level predicates inside every
+		 * subdocument of the $or predicate, allowing MongoDB's query planner
+		 * to make full use of the most relevant indexes.
+		 *
+		 * EG:      {$or: [{a: 1}, {a: 2}], b: 2}
+		 * Becomes: {$or: [{a: 1, b: 2}, {a: 2, b: 2}]}
+		 *
+		 * https://jira.mongodb.org/browse/SERVER-13732
+		 */
+		for key := range query {
+			if key == "$or" {
+				continue
+			}
+			noCollisions := true
+			for _, subq := range orArr {
+				if _, ok := subq[key]; ok {
+					noCollisions = false
+					break
+				}
+			}
+			if noCollisions {
+				for _, subquery := range orArr {
+					subquery[key] = query[key]
+				}
+				delete(query, key)
+			}
 		}
 	}
 

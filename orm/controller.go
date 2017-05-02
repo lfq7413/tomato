@@ -1260,17 +1260,31 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 // PerformInitialization 初始化数据库索引
 func (d *DBController) PerformInitialization() {
 	requiredUserFields := types.M{}
-	defaultUserColumns := types.M{}
+	requiredRoleFields := types.M{}
+
+	fields := types.M{}
 	for k, v := range DefaultColumns["_Default"] {
-		defaultUserColumns[k] = v
+		fields[k] = v
 	}
 	for k, v := range DefaultColumns["_User"] {
-		defaultUserColumns[k] = v
+		fields[k] = v
 	}
-	requiredUserFields["fields"] = defaultUserColumns
+	requiredUserFields["fields"] = fields
+
+	fields = types.M{}
+	for k, v := range DefaultColumns["_Default"] {
+		fields[k] = v
+	}
+	for k, v := range DefaultColumns["_Role"] {
+		fields[k] = v
+	}
+	requiredRoleFields["fields"] = fields
+
 	d.LoadSchema(nil).EnforceClassExists("_User")
+	d.LoadSchema(nil).EnforceClassExists("_Role")
 	Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"username"})
 	Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"email"})
+	Adapter.EnsureUniqueness("_Role", requiredRoleFields, []string{"name"})
 	Adapter.PerformInitialization(types.M{"VolatileClassesSchemas": volatileClassesSchemas()})
 }
 

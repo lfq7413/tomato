@@ -14,7 +14,7 @@ type ResetController struct {
 // HandleResetRequest 处理通过 email 重置密码的请求
 // @router / [post]
 func (r *ResetController) HandleResetRequest() {
-	if r.JSONBody == nil && r.JSONBody["email"] == nil {
+	if r.JSONBody == nil || r.JSONBody["email"] == nil {
 		r.HandleError(errs.E(errs.EmailMissing, "you must provide an email"), 0)
 		return
 	}

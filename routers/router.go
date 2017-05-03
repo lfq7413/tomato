@@ -32,6 +32,11 @@ func init() {
 				&controllers.ResetController{},
 			),
 		),
+		beego.NSNamespace("/verificationEmailRequest",
+			beego.NSInclude(
+				&controllers.VerificationController{},
+			),
+		),
 		beego.NSNamespace("/sessions",
 			beego.NSInclude(
 				&controllers.SessionsController{},

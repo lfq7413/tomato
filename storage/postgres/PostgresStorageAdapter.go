@@ -22,6 +22,7 @@ const postgresSchemaCollectionName = "_SCHEMA"
 const postgresRelationDoesNotExistError = "42P01"
 const postgresDuplicateRelationError = "42P07"
 const postgresDuplicateColumnError = "42701"
+const postgresDuplicateObjectError = "42710"
 const postgresUniqueIndexViolationError = "23505"
 const postgresTransactionAbortedError = "25P02"
 
@@ -46,7 +47,7 @@ func (p *PostgresAdapter) ensureSchemaCollectionExists() error {
 	_, err := p.db.Exec(`CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )`)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
-			if e.Code == postgresDuplicateRelationError || e.Code == postgresUniqueIndexViolationError {
+			if e.Code == postgresDuplicateRelationError || e.Code == postgresUniqueIndexViolationError || e.Code == postgresDuplicateObjectError {
 				// _SCHEMA 表已经存在，已经由其他请求创建，忽略错误
 				return nil
 			}

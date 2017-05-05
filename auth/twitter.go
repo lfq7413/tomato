@@ -11,6 +11,9 @@ type twitter struct{}
 func (a twitter) ValidateAuthData(authData types.M, options types.M) error {
 	// 具体接口参考：https://dev.twitter.com/rest/reference/get/account/verify_credentials
 	// https://dev.twitter.com/rest/tools/console
+	if len(options) == 0 {
+		return errs.E(errs.InternalServerError, "No options passed to OAuth")
+	}
 	client := NewOAuth(options)
 	client.Host = "https://api.twitter.com"
 	client.AuthToken = utils.S(authData["access_token"])

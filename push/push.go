@@ -127,7 +127,7 @@ func getExpirationTime(body types.M) (interface{}, error) {
 	} else if v, ok := expirationTimeParam.(string); ok {
 		expirationTime, err = utils.StringtoTime(v)
 		if err != nil {
-			return nil, err
+			return nil, errs.E(errs.PushMisconfigured, fmt.Sprint(expirationTimeParam, "is not valid time."))
 		}
 	} else {
 		// 时间格式错误
@@ -140,6 +140,33 @@ func getExpirationTime(body types.M) (interface{}, error) {
 	}
 
 	return expirationTime.Unix() * 1000, nil
+}
+
+// getPushTime 获取推送时间
+func getPushTime(body types.M) (interface{}, error) {
+	pushTimeParam := body["push_time"]
+	if pushTimeParam == nil {
+		return nil, nil
+	}
+
+	var pushTime time.Time
+	var err error
+
+	if v, ok := pushTimeParam.(float64); ok {
+		pushTime = time.Unix(int64(v), 0)
+	} else if v, ok := pushTimeParam.(int); ok {
+		pushTime = time.Unix(int64(v), 0)
+	} else if v, ok := pushTimeParam.(string); ok {
+		pushTime, err = utils.StringtoTime(v)
+		if err != nil {
+			return nil, errs.E(errs.PushMisconfigured, fmt.Sprint(pushTimeParam, "is not valid time."))
+		}
+	} else {
+		// 时间格式错误
+		return nil, errs.E(errs.PushMisconfigured, fmt.Sprint(pushTimeParam, "is not valid time."))
+	}
+
+	return pushTime, nil
 }
 
 // pushAdapter 推送模块要实现的接口

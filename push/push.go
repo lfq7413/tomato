@@ -48,6 +48,14 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 		}
 	}
 
+	if body["push_time"] != nil {
+		var err error
+		body["push_time"], err = getExpirationTime(body)
+		if err != nil {
+			return err
+		}
+	}
+
 	badgeUpdate := func() error { return nil }
 
 	data := utils.M(body["data"])
@@ -103,7 +111,12 @@ func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved fu
 		return err
 	}
 
-	err = queue.enqueue(body, where, auth, status)
+	if body["push_time"] != nil && config.TConfig.ScheduledPush {
+
+	} else {
+		err = queue.enqueue(body, where, auth, status)
+	}
+
 	if err != nil {
 		status.fail(err)
 	}

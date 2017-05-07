@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/orm"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
@@ -37,6 +38,16 @@ func (p *pushStatus) setInitial(body, where, options types.M) error {
 	}
 
 	now := time.Now().UTC()
+	pushTime := time.Now().UTC()
+	status := "pending"
+
+	if t, ok := body["push_time"].(time.Time); ok {
+		if config.TConfig.ScheduledPush {
+			pushTime = t
+			status = "scheduled"
+		}
+	}
+
 	data := utils.M(body["data"])
 	if data == nil {
 		data = types.M{}
@@ -55,13 +66,13 @@ func (p *pushStatus) setInitial(body, where, options types.M) error {
 	object := types.M{
 		"objectId":  p.objectID,
 		"createdAt": utils.TimetoString(now),
-		"pushTime":  types.M{"__type": "Date", "iso": utils.TimetoString(now)},
+		"pushTime":  types.M{"__type": "Date", "iso": utils.TimetoString(pushTime)},
 		"query":     string(whereString),
 		"payload":   string(payloadString),
 		"source":    utils.S(options["source"]),
 		"title":     utils.S(options["title"]),
 		"expiry":    body["expiration_time"],
-		"status":    "pending",
+		"status":    status,
 		"numSent":   0,
 		"pushHash":  pushHash,
 		// lockdown!

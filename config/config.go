@@ -49,6 +49,7 @@ type Config struct {
 	PushAdapter                      string   // 推送模块
 	PushChannel                      string   // 推送通道
 	PushBatchSize                    int      // 批量推送的大小
+	ScheduledPush                    bool     // 是否有推送调度器
 	LiveQueryClasses                 string   // LiveQuery 支持的 classe ，多个 class 使用 | 隔开，如： classeA|classeB|classeC
 	PublisherType                    string   // 发布者类型，可选：Redis ，默认使用自带的 EventEmitter
 	PublisherURL                     string   // 发布者地址， PublisherType=Redis 时必填
@@ -184,6 +185,7 @@ func parseConfig() {
 
 	TConfig.PushChannel = beego.AppConfig.String("PushChannel")
 	TConfig.PushBatchSize = beego.AppConfig.DefaultInt("PushBatchSize", 0)
+	TConfig.ScheduledPush = beego.AppConfig.DefaultBool("ScheduledPush", false)
 }
 
 // Validate 校验用户参数合法性

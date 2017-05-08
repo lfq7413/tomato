@@ -273,16 +273,16 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 	restKey = "key.subkey"
 	restValue = types.M{
 		"__type":    "GeoPoint",
-		"latitude":  "10.0",
-		"longitude": "10.0",
+		"latitude":  10.0,
+		"longitude": 10.0,
 	}
 	parseFormatSchema = types.M{}
 	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
 	expectKey = "key.subkey"
 	expectValue = types.M{
 		"__type":    "GeoPoint",
-		"latitude":  "10.0",
-		"longitude": "10.0",
+		"latitude":  10.0,
+		"longitude": 10.0,
 	}
 	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
 		t.Error("expect:", expectValue, "get result:", resultValue)

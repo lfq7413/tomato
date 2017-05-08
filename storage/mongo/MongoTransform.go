@@ -338,6 +338,10 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 	}
 
 	if v := utils.A(value); v == nil && expectedTypeIsArray {
+		value, err = t.transformInteriorAtom(value)
+		if err != nil {
+			return "", nil, err
+		}
 		return key, types.M{"$all": types.S{value}}, nil
 	}
 

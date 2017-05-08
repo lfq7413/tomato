@@ -42,7 +42,7 @@ func (f *FeaturesController) HandleGet() {
 		},
 		"push": types.M{
 			"immediatePush":  config.TConfig.PushAdapter != "",
-			"scheduledPush":  false,
+			"scheduledPush":  config.TConfig.ScheduledPush,
 			"storedPushData": config.TConfig.PushAdapter != "",
 			"pushAudiences":  false,
 		},

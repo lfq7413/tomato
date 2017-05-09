@@ -210,6 +210,45 @@ func TestPostgres_UpdateClass(t *testing.T) {
 	/************************************************************/
 	class = types.M{
 		"fields": types.M{
+			"key":  types.M{"type": "String"},
+			"key2": types.M{"type": "String"},
+		},
+	}
+	adapter.CreateClass(className, class)
+	className = "user"
+	submittedFields = types.M{
+		"key1": types.M{"type": "String"},
+		"key":  types.M{"__op": "Delete"},
+		"key2": types.M{"__op": "Delete"},
+	}
+	classLevelPermissions = nil
+	result, err = schama.UpdateClass(className, submittedFields, classLevelPermissions)
+	expect = types.M{
+		"className": className,
+		"fields": types.M{
+			"key1":      map[string]interface{}{"type": "String"},
+			"objectId":  types.M{"type": "String"},
+			"updatedAt": types.M{"type": "Date"},
+			"createdAt": types.M{"type": "Date"},
+			"ACL":       types.M{"type": "ACL"},
+		},
+		"classLevelPermissions": types.M{
+			"find":     map[string]interface{}{"*": true},
+			"get":      map[string]interface{}{"*": true},
+			"create":   map[string]interface{}{"*": true},
+			"update":   map[string]interface{}{"*": true},
+			"delete":   map[string]interface{}{"*": true},
+			"addField": map[string]interface{}{"*": true},
+		},
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
+	}
+	schama.data = nil
+	adapter.DeleteAllClasses()
+	/************************************************************/
+	class = types.M{
+		"fields": types.M{
 			"key": types.M{"type": "String"},
 		},
 	}

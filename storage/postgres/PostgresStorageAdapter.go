@@ -382,7 +382,7 @@ func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNa
 	for _ = range fldNames {
 		columnArray = append(columnArray, `"%s"`)
 	}
-	columns := strings.Join(columnArray, ",")
+	columns := strings.Join(columnArray, ", DROP COLUMN ")
 
 	b, err := json.Marshal(schema)
 	if err != nil {

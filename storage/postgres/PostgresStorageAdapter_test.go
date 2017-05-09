@@ -2466,7 +2466,7 @@ func TestPostgresAdapter_DeleteFields(t *testing.T) {
 			clean:      clean,
 		},
 		{
-			name: "2",
+			name: "3",
 			args: args{
 				className: "post",
 				schema: types.M{
@@ -2486,6 +2486,23 @@ func TestPostgresAdapter_DeleteFields(t *testing.T) {
 				db.Exec(`DROP TABLE "_SCHEMA"`)
 				db.Exec(`DROP TABLE "_Join:user:post"`)
 			},
+		},
+		{
+			name: "4",
+			args: args{
+				className: "post",
+				schema: types.M{
+					"fields": types.M{
+						"title":   types.M{"type": "String"},
+						"content": types.M{"type": "String"},
+						"name":    types.M{"type": "String"},
+					},
+				},
+				fieldNames: []string{"content", "name"},
+			},
+			wantErr:    nil,
+			initialize: initialize,
+			clean:      clean,
 		},
 	}
 	for _, tt := range tests {

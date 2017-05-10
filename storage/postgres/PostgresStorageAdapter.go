@@ -247,47 +247,61 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 		}
 	}
 
-	qs := `SELECT "schema" FROM "_SCHEMA" WHERE "className" = $1`
-	rows, err := p.db.Query(qs, className)
+	qs := `SELECT "schema" FROM "_SCHEMA" WHERE "className" = $1 and ("schema"::json->'fields'->$2) is not null`
+	rows, err := p.db.Query(qs, className, fieldName)
 	if err != nil {
 		return err
 	}
 	if rows.Next() {
-		var sch types.M
-		var v []byte
-		err := rows.Scan(&v)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal(v, &sch)
-		if err != nil {
-			return err
-		}
-		if sch == nil {
-			sch = types.M{}
-		}
-		var fields types.M
-		if v := utils.M(sch["fields"]); v != nil {
-			fields = v
-		} else {
-			fields = types.M{}
-		}
-		if _, ok := fields[fieldName]; ok {
-			// 当表不存在时，会进行新建表，所以也会走到这里，不再处理错误
-			// Attempted to add a field that already exists
-			return nil
-		}
-		fields[fieldName] = fieldType
-		sch["fields"] = fields
-		b, err := json.Marshal(sch)
-		qs := `UPDATE "_SCHEMA" SET "schema"=$1 WHERE "className"=$2`
-		_, err = p.db.Exec(qs, b, className)
-		if err != nil {
-			return err
-		}
+		return nil
 	}
 
-	return nil
+	path := fmt.Sprintf(`{fields,%s}`, fieldName)
+	qs = `UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $1, $2)  WHERE "className"=$3`
+	b, _ := json.Marshal(fieldType)
+	_, err = p.db.Exec(qs, path, string(b), className)
+
+	// qs := `SELECT "schema" FROM "_SCHEMA" WHERE "className" = $1`
+	// rows, err := p.db.Query(qs, className)
+	// if err != nil {
+	// 	return err
+	// }
+	// if rows.Next() {
+	// 	var sch types.M
+	// 	var v []byte
+	// 	err := rows.Scan(&v)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	err = json.Unmarshal(v, &sch)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if sch == nil {
+	// 		sch = types.M{}
+	// 	}
+	// 	var fields types.M
+	// 	if v := utils.M(sch["fields"]); v != nil {
+	// 		fields = v
+	// 	} else {
+	// 		fields = types.M{}
+	// 	}
+	// 	if _, ok := fields[fieldName]; ok {
+	// 		// 当表不存在时，会进行新建表，所以也会走到这里，不再处理错误
+	// 		// Attempted to add a field that already exists
+	// 		return nil
+	// 	}
+	// 	fields[fieldName] = fieldType
+	// 	sch["fields"] = fields
+	// 	b, err := json.Marshal(sch)
+	// 	qs := `UPDATE "_SCHEMA" SET "schema"=$1 WHERE "className"=$2`
+	// 	_, err = p.db.Exec(qs, b, className)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	return err
 }
 
 // DeleteClass 删除指定表

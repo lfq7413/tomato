@@ -4360,6 +4360,78 @@ func Test_transformNotInQuery(t *testing.T) {
 	}
 }
 
+func Test_replaceEqualityConstraint(t *testing.T) {
+	type args struct {
+		constraint interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want interface{}
+	}{
+		{
+			name: "1",
+			args: args{
+				constraint: nil,
+			},
+			want: nil,
+		},
+		{
+			name: "2",
+			args: args{
+				constraint: "hello",
+			},
+			want: "hello",
+		},
+		{
+			name: "3",
+			args: args{
+				constraint: types.M{
+					"__type":   "Pointer",
+					"objectId": "1024",
+				},
+			},
+			want: types.M{
+				"__type":   "Pointer",
+				"objectId": "1024",
+			},
+		},
+		{
+			name: "4",
+			args: args{
+				constraint: types.M{
+					"$in": types.S{"hello", "world"},
+				},
+			},
+			want: types.M{
+				"$in": types.S{"hello", "world"},
+			},
+		},
+		{
+			name: "5",
+			args: args{
+				constraint: types.M{
+					"__type":   "Pointer",
+					"objectId": "1024",
+					"$in":      types.S{"hello", "world"},
+				},
+			},
+			want: types.M{
+				"$eq": types.M{
+					"__type":   "Pointer",
+					"objectId": "1024",
+				},
+				"$in": types.S{"hello", "world"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		if got := replaceEqualityConstraint(tt.args.constraint); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. replaceEqualityConstraint() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
 func initEnv() {
 	orm.InitOrm(getAdapter())
 }

@@ -236,6 +236,7 @@ func (q *Query) BuildRestWhere() error {
 	if err != nil {
 		return err
 	}
+	q.replaceEquality()
 	return nil
 }
 
@@ -544,6 +545,12 @@ func (q *Query) replaceNotInQuery() error {
 	transformNotInQuery(notInQueryObject, query.className, values)
 	// 继续搜索替换
 	return q.replaceNotInQuery()
+}
+
+func (q *Query) replaceEquality() {
+	for key := range q.Where {
+		q.Where[key] = replaceEqualityConstraint(q.Where[key])
+	}
 }
 
 // runFind 从数据库查找数据，并处理返回结果
@@ -1005,4 +1012,33 @@ func cleanResultAuthData(result types.M) {
 			delete(result, "authData")
 		}
 	}
+}
+
+func replaceEqualityConstraint(constraint interface{}) interface{} {
+	object := utils.M(constraint)
+	if object == nil {
+		return constraint
+	}
+
+	equalToObject := types.M{}
+	hasDirectConstraint := false
+	hasOperatorConstraint := false
+
+	for key := range object {
+		if strings.Index(key, "$") != 0 {
+			hasDirectConstraint = true
+			equalToObject[key] = object[key]
+		} else {
+			hasOperatorConstraint = true
+		}
+	}
+
+	if hasDirectConstraint && hasOperatorConstraint {
+		object["$eq"] = equalToObject
+		for key := range equalToObject {
+			delete(object, key)
+		}
+	}
+
+	return constraint
 }

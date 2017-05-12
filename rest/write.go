@@ -512,11 +512,6 @@ func (w *Write) validateAuthData() error {
 
 // handleAuthData 处理第三方登录数据
 func (w *Write) handleAuthData(authData types.M) error {
-	// 校验第三方数据
-	err := w.handleAuthDataValidation(authData)
-	if err != nil {
-		return err
-	}
 	results, err := w.findUsersWithAuthData(authData)
 	if err != nil {
 		return err
@@ -561,23 +556,31 @@ func (w *Write) handleAuthData(authData types.M) error {
 				"location": w.location(),
 			}
 
-			// 当第三方登录信息中的 token 刷新时，就需要更新 authData
-			if len(mutatedAuthData) > 0 {
-				// 添加新的 authData 到返回数据中
-				userAuthData := utils.M(userResult["authData"])
-				if userAuthData == nil {
-					userAuthData = types.M{}
-				}
-				for provider, providerData := range mutatedAuthData {
-					userAuthData[provider] = providerData
-				}
-				userResult["authData"] = userAuthData
-				w.response["response"] = userResult
-
-				// 更新数据库中的 authData 字段
-				orm.TomatoDBController.Update(w.className, types.M{"objectId": w.data["objectId"]}, types.M{"authData": mutatedAuthData}, types.M{}, false)
+			// 未修改任何数据，直接返回
+			if len(mutatedAuthData) == 0 {
+				return nil
 			}
 
+			// 当第三方登录信息中的 token 刷新时，就需要更新 authData
+			// 仅验证需要修改的部分
+			err = w.handleAuthDataValidation(mutatedAuthData)
+			if err != nil {
+				return err
+			}
+			// 添加新的 authData 到返回数据中
+			userAuthData := utils.M(userResult["authData"])
+			if userAuthData == nil {
+				userAuthData = types.M{}
+			}
+			for provider, providerData := range mutatedAuthData {
+				userAuthData[provider] = providerData
+			}
+			userResult["authData"] = userAuthData
+			w.response["response"] = userResult
+
+			// 更新数据库中的 authData 字段
+			_, err = orm.TomatoDBController.Update(w.className, types.M{"objectId": w.data["objectId"]}, types.M{"authData": mutatedAuthData}, types.M{}, false)
+			return err
 		} else if w.query != nil && w.query["objectId"] != nil {
 			// 存在一个用户，并且当前为 update 请求，校验 objectId 是否一致
 			user := utils.M(results[0])
@@ -588,7 +591,8 @@ func (w *Write) handleAuthData(authData types.M) error {
 		}
 	}
 
-	return nil
+	// 当前第三方数据未关联任何用户或者是 update 请求时，会来到这里
+	return w.handleAuthDataValidation(authData)
 }
 
 // handleAuthDataValidation 校验第三方登录数据

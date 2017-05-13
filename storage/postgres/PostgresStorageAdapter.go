@@ -1274,6 +1274,11 @@ func (p *PostgresAdapter) PerformInitialization(options types.M) error {
 	return nil
 }
 
+// HandleShutdown 关闭数据库
+func (p *PostgresAdapter) HandleShutdown() {
+	p.db.Close()
+}
+
 func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
 	if len(object) == 0 {
 		return object, nil

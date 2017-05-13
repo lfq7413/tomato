@@ -22,4 +22,5 @@ type Adapter interface {
 	UpsertOneObject(className string, schema, query, update types.M) error
 	EnsureUniqueness(className string, schema types.M, fieldNames []string) error
 	PerformInitialization(options types.M) error
+	HandleShutdown()
 }

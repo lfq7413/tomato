@@ -334,7 +334,11 @@ func (w *Write) handleInstallation() error {
 			}
 			err := orm.TomatoDBController.Destroy("_Installation", delQuery, types.M{})
 			if err != nil {
-				return err
+				if errs.GetErrorCode(err) == errs.ObjectNotFound {
+
+				} else {
+					return err
+				}
 			}
 			objID = ""
 		}
@@ -353,7 +357,11 @@ func (w *Write) handleInstallation() error {
 			}
 			err := orm.TomatoDBController.Destroy("_Installation", delQuery, nil)
 			if err != nil {
-				return err
+				if errs.GetErrorCode(err) == errs.ObjectNotFound {
+
+				} else {
+					return err
+				}
 			}
 			objID = utils.S(deviceTokenMatches[0]["objectId"])
 		} else {
@@ -383,7 +391,11 @@ func (w *Write) handleInstallation() error {
 					}
 					err := orm.TomatoDBController.Destroy("_Installation", delQuery, nil)
 					if err != nil {
-						return err
+						if errs.GetErrorCode(err) == errs.ObjectNotFound {
+
+						} else {
+							return err
+						}
 					}
 				}
 			}

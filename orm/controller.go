@@ -1352,10 +1352,6 @@ func validateQuery(query types.M) error {
 				if subQuery == nil {
 					return errs.E(errs.InvalidQuery, "Bad $or format - invalid sub query.")
 				}
-				err := validateQuery(subQuery)
-				if err != nil {
-					return err
-				}
 				orArr[i] = subQuery
 			}
 		} else {
@@ -1374,7 +1370,12 @@ func validateQuery(query types.M) error {
 		 * EG:      {$or: [{a: 1}, {a: 2}], b: 2}
 		 * Becomes: {$or: [{a: 1, b: 2}, {a: 2, b: 2}]}
 		 *
+		 * The only exceptions are $near and $nearSphere operators, which are
+		 * constrained to only 1 operator per query. As a result, these ops
+		 * remain at the top level
+		 *
 		 * https://jira.mongodb.org/browse/SERVER-13732
+		 * https://github.com/parse-community/parse-server/issues/3767
 		 */
 		for key := range query {
 			if key == "$or" {
@@ -1387,11 +1388,26 @@ func validateQuery(query types.M) error {
 					break
 				}
 			}
-			if noCollisions {
+			hasNears := false
+			if obj := utils.M(query[key]); obj != nil {
+				if _, ok := obj["$nearSphere"]; ok {
+					hasNears = true
+				} else if _, ok := obj["$near"]; ok {
+					hasNears = true
+				}
+			}
+			if noCollisions && !hasNears {
 				for _, subquery := range orArr {
 					subquery[key] = query[key]
 				}
 				delete(query, key)
+			}
+		}
+
+		for _, subQuery := range orArr {
+			err := validateQuery(subQuery)
+			if err != nil {
+				return err
 			}
 		}
 	}

@@ -5334,6 +5334,41 @@ func Test_validateQuery(t *testing.T) {
 	}
 	/*************************************************/
 	query = types.M{
+		"$or": types.S{
+			types.M{"key": "value"},
+			types.M{"key": "value"},
+		},
+		"loc": types.M{
+			"$nearSphere": types.M{
+				"__type":    "GeoPoint",
+				"latitude":  40,
+				"longitude": -30,
+			},
+		},
+	}
+	err = validateQuery(query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	expectQuery = types.M{
+		"$or": types.S{
+			types.M{"key": "value"},
+			types.M{"key": "value"},
+		},
+		"loc": types.M{
+			"$nearSphere": types.M{
+				"__type":    "GeoPoint",
+				"latitude":  40,
+				"longitude": -30,
+			},
+		},
+	}
+	if reflect.DeepEqual(query, expectQuery) == false {
+		t.Error("expect:", expectQuery, "result:", query)
+	}
+	/*************************************************/
+	query = types.M{
 		"$and": "hello",
 	}
 	err = validateQuery(query)

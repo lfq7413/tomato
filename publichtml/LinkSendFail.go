@@ -1,12 +1,12 @@
 package publichtml
 
-// InvalidLinkPage ...
-var InvalidLinkPage = `
+// LinkSendFail ...
+var LinkSendFail = `
 <!DOCTYPE html>
-<!-- This page is displayed when someone navigates to a verify email or reset password link
-     but their security token is wrong. This can either mean the user has clicked on a
-     stale link (i.e. re-click on a password reset link after resetting their password) or
-     (rarely) this could be a sign of a malicious user trying to tamper with your app.
+<!-- This page is displayed when someone navigates to a verify email link with an invalid
+     security token and requests a link resend. This page is displayed when the username from
+     the original link is invalid or if the email of that user has already been verfieid when
+     the resend request is made
  -->
 <html>
   <head>
@@ -43,7 +43,7 @@ var InvalidLinkPage = `
 
   <body> 
     <div class="container">
-      <h1>Invalid Link</h1>
+      <h1>No link sent. User not found or email already verified</h1>
     </div> 
   </body>
 </html>

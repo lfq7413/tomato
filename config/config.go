@@ -79,6 +79,9 @@ type Config struct {
 	InfluxDBPassword                 string   // InfluxDB 密码，仅在 AnalyticsAdapter=InfluxDB 时需要配置
 	InfluxDBDatabaseName             string   // InfluxDB 数据库，仅在 AnalyticsAdapter=InfluxDB 时需要配置
 	InvalidLink                      string   // 自定义页面地址，无效链接页面
+	InvalidVerificationLink          string   // 自定义页面地址，无效验证链接页面
+	LinkSendSuccess                  string   // 自定义页面地址，发送成功页面
+	LinkSendFail                     string   // 自定义页面地址，发送失败页面
 	VerifyEmailSuccess               string   // 自定义页面地址，验证邮箱成功页面
 	ChoosePassword                   string   // 自定义页面地址，修改密码页面
 	PasswordResetSuccess             string   // 自定义页面地址，密码重置成功页面
@@ -405,6 +408,30 @@ func InvalidLinkURL() string {
 		return TConfig.InvalidLink
 	}
 	return TConfig.ServerURL + `/apps/invalid_link`
+}
+
+// InvalidVerificationLinkURL ...
+func InvalidVerificationLinkURL() string {
+	if TConfig.InvalidVerificationLink != "" {
+		return TConfig.InvalidVerificationLink
+	}
+	return TConfig.ServerURL + `/apps/invalid_verification_link`
+}
+
+// LinkSendSuccessURL ...
+func LinkSendSuccessURL() string {
+	if TConfig.LinkSendSuccess != "" {
+		return TConfig.LinkSendSuccess
+	}
+	return TConfig.ServerURL + `/apps/link_send_success`
+}
+
+// LinkSendFailURL ...
+func LinkSendFailURL() string {
+	if TConfig.LinkSendFail != "" {
+		return TConfig.LinkSendFail
+	}
+	return TConfig.ServerURL + `/apps/link_send_fail`
 }
 
 // VerifyEmailSuccessURL ...

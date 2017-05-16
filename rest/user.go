@@ -67,6 +67,24 @@ func SendVerificationEmail(user types.M) {
 	adapter.SendMail(defaultVerificationEmail(options))
 }
 
+// ResendVerificationEmail 重新发送验证邮件
+func ResendVerificationEmail(username string) error {
+	aUser := getUserIfNeeded(types.M{"username": username})
+	if aUser == nil {
+		return errors.New("no user")
+	}
+	if emailVerified, ok := aUser["emailVerified"].(bool); ok && emailVerified {
+		return errors.New("emailVerified")
+	}
+	SetEmailVerifyToken(aUser)
+	_, err := orm.TomatoDBController.Update("_User", types.M{"username": username}, aUser, types.M{}, false)
+	if err != nil {
+		return err
+	}
+	SendVerificationEmail(aUser)
+	return nil
+}
+
 // getUserIfNeeded 把 user 填充完整，如果无法完成则返回 nil
 func getUserIfNeeded(user types.M) types.M {
 	if user == nil {
@@ -224,6 +242,18 @@ func VerifyEmail(username, token string) bool {
 		updateFields["_email_verify_token_expires_at"] = types.M{
 			"__op": "Delete",
 		}
+	}
+
+	checkIfAlreadyVerified, err := NewQuery(Master(), "_User", types.M{"username": username, "emailVerified": true}, types.M{}, nil)
+	if err != nil {
+		return false
+	}
+	result, err := checkIfAlreadyVerified.Execute()
+	if err != nil {
+		return false
+	}
+	if utils.HasResults(result) {
+		return true
 	}
 
 	document, err := db.Update("_User", query, updateFields, types.M{}, false)

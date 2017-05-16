@@ -36,7 +36,29 @@ func (p *PublicController) VerifyEmail() {
 		p.Ctx.Output.SetStatus(302)
 		p.Ctx.Output.Header("location", config.VerifyEmailSuccessURL()+"?username="+username)
 	} else {
+		p.invalidVerification()
+	}
+}
+
+// ResendVerificationEmail 处理重新发送验证邮件请求
+// @router /resend_verification_email [post]
+func (p *PublicController) ResendVerificationEmail() {
+	username := p.GetString("username")
+	if config.TConfig.ServerURL == "" {
+		p.missingPublicServerURL()
+		return
+	}
+	if username == "" {
 		p.invalid()
+		return
+	}
+	err := rest.ResendVerificationEmail(username)
+	if err != nil {
+		p.Ctx.Output.SetStatus(302)
+		p.Ctx.Output.Header("location", config.LinkSendFailURL())
+	} else {
+		p.Ctx.Output.SetStatus(302)
+		p.Ctx.Output.Header("location", config.LinkSendSuccessURL())
 	}
 }
 
@@ -124,6 +146,28 @@ func (p *PublicController) InvalidLink() {
 	p.Ctx.Output.Body([]byte(publichtml.InvalidLinkPage))
 }
 
+// InvalidVerificationLink 无效验证链接页面
+// @router /invalid_verification_link [get]
+func (p *PublicController) InvalidVerificationLink() {
+	data := strings.Replace(publichtml.InvalidVerificationLink, "RESEND_VERIFICATION_URL", config.TConfig.ServerURL+"/apps/resend_verification_email", -1)
+	p.Ctx.Output.Header("Content-Type", "text/html")
+	p.Ctx.Output.Body([]byte(data))
+}
+
+// LinkSendSuccess 发送成功页面
+// @router /link_send_success [get]
+func (p *PublicController) LinkSendSuccess() {
+	p.Ctx.Output.Header("Content-Type", "text/html")
+	p.Ctx.Output.Body([]byte(publichtml.LinkSendSuccess))
+}
+
+// LinkSendFail 发送失败页面
+// @router /link_send_fail [get]
+func (p *PublicController) LinkSendFail() {
+	p.Ctx.Output.Header("Content-Type", "text/html")
+	p.Ctx.Output.Body([]byte(publichtml.LinkSendFail))
+}
+
 // PasswordResetSuccess 密码重置成功页面
 // @router /password_reset_success [get]
 func (p *PublicController) PasswordResetSuccess() {
@@ -141,6 +185,16 @@ func (p *PublicController) VerifyEmailSuccess() {
 func (p *PublicController) invalid() {
 	p.Ctx.Output.SetStatus(302)
 	p.Ctx.Output.Header("location", config.InvalidLinkURL())
+}
+
+func (p *PublicController) invalidVerification() {
+	username := p.GetString("username")
+	if username != "" {
+		p.Ctx.Output.SetStatus(302)
+		p.Ctx.Output.Header("location", config.InvalidVerificationLinkURL()+"?username="+username)
+	} else {
+		p.invalid()
+	}
 }
 
 func (p *PublicController) missingPublicServerURL() {

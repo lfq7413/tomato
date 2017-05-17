@@ -732,6 +732,12 @@ func (w *Write) transformUser() error {
 		return nil
 	}
 
+	if w.auth.IsMaster == false {
+		if _, ok := w.data["emailVerified"]; ok {
+			return errs.E(errs.OperationForbidden, "Clients aren't allowed to manually update email verification.")
+		}
+	}
+
 	// 如果是正在更新 _User ，则清除相应用户的 session 缓存
 	if w.query != nil {
 		where := types.M{

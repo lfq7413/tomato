@@ -1275,6 +1275,18 @@ func Test_transformUser(t *testing.T) {
 	/***************************************************************/
 	query = nil
 	data = types.M{
+		"emailVerified": true,
+	}
+	originalData = nil
+	w, _ = NewWrite(Nobody(), "_User", query, data, originalData, nil)
+	err = w.transformUser()
+	expectErr = errs.E(errs.OperationForbidden, "Clients aren't allowed to manually update email verification.")
+	if reflect.DeepEqual(expectErr, err) == false {
+		t.Error("expect:", expectErr, "result:", err)
+	}
+	/***************************************************************/
+	query = nil
+	data = types.M{
 		"password": "123456",
 	}
 	originalData = nil

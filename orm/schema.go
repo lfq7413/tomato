@@ -415,10 +415,8 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 		} else if len(aclGroup) == 1 && aclGroup[0] == "*" {
 			return errs.E(errs.ObjectNotFound, "Permission denied, user needs to be authenticated.")
 		}
-		// 当前类权限中仅有 requiresAuthentication 时，允许访问
-		if len(perms) == 1 {
-			return nil
-		}
+		// 当前类权限中有 requiresAuthentication 时，允许访问
+		return nil
 	}
 
 	var permissionField string

@@ -7,6 +7,7 @@ import (
 	"github.com/lfq7413/tomato/livequery/pubsub"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
+	"github.com/lfq7413/tomato/utils"
 )
 
 const (
@@ -42,6 +43,11 @@ func (q *pushQueue) enqueue(body, where types.M, auth *rest.Auth, status *pushSt
 		order = "badge,createdAt"
 	} else {
 		order = "createdAt"
+	}
+
+	where = utils.CopyMapM(where)
+	if _, ok := where["deviceToken"]; !ok {
+		where["deviceToken"] = types.M{"$exists": true}
 	}
 
 	options := types.M{

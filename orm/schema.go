@@ -13,7 +13,7 @@ import (
 )
 
 // clpValidKeys 类级别的权限 列表
-var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField", "readUserFields", "writeUserFields"}
+var clpValidKeys = []string{"find", "count", "get", "create", "update", "delete", "addField", "readUserFields", "writeUserFields"}
 
 // SystemClasses 系统表
 var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product", "_PushStatus", "_JobStatus"}
@@ -420,7 +420,7 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 	}
 
 	var permissionField string
-	if operation == "get" || operation == "find" {
+	if operation == "get" || operation == "find" || operation == "count" {
 		permissionField = "readUserFields"
 	} else {
 		permissionField = "writeUserFields"

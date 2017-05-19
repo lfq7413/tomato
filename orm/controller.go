@@ -93,6 +93,9 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 			op = "find"
 		}
 	}
+	if _, ok := options["count"]; ok {
+		op = "count"
+	}
 
 	classExists := true
 

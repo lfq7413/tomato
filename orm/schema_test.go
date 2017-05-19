@@ -2501,6 +2501,16 @@ func Test_validateCLP(t *testing.T) {
 	}
 	/************************************************************/
 	perms = types.M{
+		"count": types.M{"012345678901234567890123": true},
+	}
+	fields = nil
+	err = validateCLP(perms, fields)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	/************************************************************/
+	perms = types.M{
 		"create": types.M{"012345678901234567890123": true},
 	}
 	fields = nil

@@ -774,10 +774,12 @@ func (w *Write) transformUser() error {
 			return err
 		}
 
-		if w.query != nil && w.auth.IsMaster == false {
+		if w.query != nil {
 			// 如果是 update 请求时，标识出需要清理 Sessions ，并生成新的 Session
 			w.storage["clearSessions"] = true
-			w.storage["generateNewSession"] = true
+			if w.auth.IsMaster == false {
+				w.storage["generateNewSession"] = true
+			}
 		}
 		w.data["_hashed_password"] = utils.Hash(utils.S(w.data["password"]))
 		delete(w.data, "password")

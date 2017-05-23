@@ -46,7 +46,7 @@ type Config struct {
 	TencentAppID                     string   // 腾讯云存储 AppID ，仅在 FileAdapter=Tencent 时需要配置
 	TencentSecretID                  string   // 腾讯云存储 SecretID ，仅在 FileAdapter=Tencent 时需要配置
 	TencentSecretKey                 string   // 腾讯云存储 SecretKey ，仅在 FileAdapter=Tencent 时需要配置
-	PushAdapter                      string   // 推送模块
+	PushAdapter                      string   // 推送模块，可选：FCM，默认为 tomato
 	PushChannel                      string   // 推送通道
 	PushBatchSize                    int      // 批量推送的大小
 	ScheduledPush                    bool     // 是否有推送调度器
@@ -86,6 +86,7 @@ type Config struct {
 	ChoosePassword                   string   // 自定义页面地址，修改密码页面
 	PasswordResetSuccess             string   // 自定义页面地址，密码重置成功页面
 	ParseFrameURL                    string   // 自定义页面地址，用于呈现验证 Email 页面和密码重置页面
+	FCMServerKey                     string   // FCM Server Key
 }
 
 var (
@@ -189,6 +190,8 @@ func parseConfig() {
 	TConfig.PushChannel = beego.AppConfig.String("PushChannel")
 	TConfig.PushBatchSize = beego.AppConfig.DefaultInt("PushBatchSize", 0)
 	TConfig.ScheduledPush = beego.AppConfig.DefaultBool("ScheduledPush", false)
+
+	TConfig.FCMServerKey = beego.AppConfig.String("FCMServerKey")
 }
 
 // Validate 校验用户参数合法性

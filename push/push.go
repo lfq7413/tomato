@@ -24,6 +24,8 @@ func init() {
 	a := config.TConfig.PushAdapter
 	if a == "tomato" {
 		adapter = newTomatoPush()
+	} else if a == "FCM" {
+		adapter = newFCMPush()
 	} else {
 		adapter = nil
 	}
@@ -187,6 +189,28 @@ func getPushTime(body types.M) (interface{}, error) {
 // pushAdapter 推送模块要实现的接口
 // send() 中的 status 参数暂时没有使用
 type pushAdapter interface {
+	// send 发送消息
+	/*
+		body 数据格式：
+		{
+			"channels":["aaa","bbb"],
+			"where":{
+				"key":"v"
+			},
+			"push_time":"2015-03-13T22:05:08Z",
+			"expiration_interval": 518400,
+			"expiration_time": "2015-03-19T22:05:08Z"
+			"data":{
+				"alert":"hello world."
+				"badge":"Increment",
+				"sound":"cheering.caf",
+				"content-available":1,
+				"category":"aaa",
+				"uri":"xxxx",
+				"title":"hello"
+			}
+		}
+	*/
 	send(body types.M, installations types.S, pushStatus string) []types.M
 	getValidPushTypes() []string
 }

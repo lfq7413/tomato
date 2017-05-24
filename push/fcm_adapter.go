@@ -15,7 +15,7 @@ type fcmPushAdapter struct {
 
 func newFCMPush() *fcmPushAdapter {
 	f := &fcmPushAdapter{
-		validPushTypes: []string{"ios", "android"},
+		validPushTypes: []string{"ios", "osx", "tvos", "android", "fcm"},
 		serverKey:      config.TConfig.FCMServerKey,
 	}
 	return f
@@ -87,4 +87,48 @@ func (f *fcmPushAdapter) sendToRegistrationTokens(tokens []string, body types.M)
 	c.NewFcmRegIdsMsg(tokens, body)
 
 	return c.Send()
+}
+
+// classifyInstallations 对设备按照推送类型进行分类
+func classifyInstallations(installations types.S, validPushTypes []string) map[string][]types.M {
+	deviceMap := map[string][]types.M{}
+	for _, validPushType := range validPushTypes {
+		deviceMap[validPushType] = []types.M{}
+	}
+
+	for _, installation := range installations {
+		if dev := utils.M(installation); dev != nil {
+			deviceToken := utils.S(dev["deviceToken"])
+			if deviceToken == "" {
+				continue
+			}
+
+			pushType := utils.S(dev["pushType"])
+			deviceType := utils.S(dev["deviceType"])
+			var devices []types.M
+			var tp string
+
+			if d := deviceMap[pushType]; d != nil {
+				devices = d
+				tp = pushType
+			} else if d := deviceMap[deviceType]; d != nil {
+				devices = d
+				tp = deviceType
+			} else {
+				devices = nil
+			}
+
+			if devices != nil {
+				device := types.M{
+					"deviceToken":   deviceToken,
+					"deviceType":    deviceType,
+					"appIdentifier": dev["appIdentifier"],
+				}
+				devices = append(devices, device)
+				deviceMap[tp] = devices
+			}
+		}
+	}
+
+	return deviceMap
 }

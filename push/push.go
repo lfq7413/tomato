@@ -197,9 +197,9 @@ type pushAdapter interface {
 			"where":{
 				"key":"v"
 			},
-			"push_time":"2015-03-13T22:05:08Z",
+			"push_time":time.Time("2015-03-13T22:05:08Z"),
 			"expiration_interval": 518400,
-			"expiration_time": "2015-03-19T22:05:08Z"
+			"expiration_time": 14xxxxxxxxx,
 			"data":{
 				"alert":"hello world."
 				"badge":"Increment",

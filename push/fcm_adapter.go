@@ -5,6 +5,8 @@ import (
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 
+	"time"
+
 	"github.com/NaySoftware/go-fcm"
 )
 
@@ -107,10 +109,47 @@ func (f *fcmPushAdapter) sendToiOSDevices(tokens []string, body types.M) (*fcm.F
 }
 
 func (f *fcmPushAdapter) sendToAndroidDevices(tokens []string, body types.M) (*fcm.FcmResponseStatus, error) {
-	// TODO 转换 body 中的数据到 FCM 支持的格式
 	c := fcm.NewFcmClient(f.serverKey)
-	c.NewFcmRegIdsMsg(tokens, body)
+	c.SetPriority(fcm.Priority_HIGH)
 
+	if t, ok := body["expiration_time"].(int64); ok {
+		timeToLive := (t - time.Now().Unix()) / 1000
+		if timeToLive < 0 {
+			timeToLive = 0
+		}
+		c.SetTimeToLive(int(timeToLive))
+	}
+
+	pushData := utils.M(body["data"])
+	if pushData == nil {
+		pushData = types.M{}
+	}
+	payload := fcm.NotificationPayload{}
+	for key, v := range pushData {
+		switch key {
+		case "alert":
+			payload.Body = utils.S(v)
+		case "badge":
+		case "sound":
+			payload.Sound = utils.S(v)
+		case "content-available":
+		case "category":
+		case "uri":
+			payload.ClickAction = utils.S(v)
+		case "title":
+			payload.Title = utils.S(v)
+		default:
+		}
+	}
+	c.SetNotificationPayload(&payload)
+
+	data := types.M{
+		"data":    body["data"],
+		"push_id": utils.CreateString(10),
+		"time":    utils.TimetoString(time.Now().UTC()),
+	}
+
+	c.NewFcmRegIdsMsg(tokens, data)
 	return c.Send()
 }
 

@@ -7,6 +7,8 @@ import (
 
 	"time"
 
+	"fmt"
+
 	"github.com/NaySoftware/go-fcm"
 )
 
@@ -101,10 +103,45 @@ func (f *fcmPushAdapter) getValidPushTypes() []string {
 }
 
 func (f *fcmPushAdapter) sendToiOSDevices(tokens []string, body types.M) (*fcm.FcmResponseStatus, error) {
-	// TODO 转换 body 中的数据到 FCM 支持的格式
 	c := fcm.NewFcmClient(f.serverKey)
-	c.NewFcmRegIdsMsg(tokens, body)
+	c.SetPriority(fcm.Priority_HIGH)
 
+	if t, ok := body["expiration_time"].(int64); ok {
+		timeToLive := (t - time.Now().Unix()) / 1000
+		if timeToLive < 0 {
+			timeToLive = 0
+		}
+		c.SetTimeToLive(int(timeToLive))
+	}
+
+	pushData := utils.M(body["data"])
+	if pushData == nil {
+		pushData = types.M{}
+	}
+	payload := fcm.NotificationPayload{}
+	data := types.M{}
+	for key, v := range pushData {
+		switch key {
+		case "alert":
+			payload.Body = utils.S(v)
+		case "badge":
+			payload.Badge = fmt.Sprintf("%v", v)
+		case "sound":
+			payload.Sound = utils.S(v)
+		case "content-available":
+			c.SetContentAvailable(true)
+		case "category":
+			payload.ClickAction = utils.S(v)
+		case "uri":
+		case "title":
+			payload.Title = utils.S(v)
+		default:
+			data[key] = v
+		}
+	}
+	c.SetNotificationPayload(&payload)
+
+	c.NewFcmRegIdsMsg(tokens, data)
 	return c.Send()
 }
 

@@ -3083,11 +3083,13 @@ func TestPostgres_handleRelationUpdates(t *testing.T) {
 	var object types.M
 	var results []types.M
 	var expects []types.M
+	var ops []types.M
 	/*************************************************/
 	className = "user"
 	objectID = "1001"
 	update = nil
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -3097,7 +3099,8 @@ func TestPostgres_handleRelationUpdates(t *testing.T) {
 	className = "user"
 	objectID = "1001"
 	update = types.M{"key": "hello"}
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -3135,7 +3138,8 @@ func TestPostgres_handleRelationUpdates(t *testing.T) {
 			},
 		},
 	}
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -3198,7 +3202,8 @@ func TestPostgres_handleRelationUpdates(t *testing.T) {
 			},
 		},
 	}
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -3270,7 +3275,8 @@ func TestPostgres_handleRelationUpdates(t *testing.T) {
 			},
 		},
 	}
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)

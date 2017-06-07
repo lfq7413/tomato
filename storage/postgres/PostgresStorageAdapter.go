@@ -102,12 +102,17 @@ func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M
 		return nil, err
 	}
 
-	err = p.createTable(className, schema)
+	tx, err := p.db.Begin()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = p.db.Exec(`INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($1, $2, $3)`, className, string(b), true)
+	err = p.createTable(className, schema, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = tx.Exec(`INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($1, $2, $3)`, className, string(b), true)
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == postgresUniqueIndexViolationError {
@@ -117,11 +122,16 @@ func (p *PostgresAdapter) CreateClass(className string, schema types.M) (types.M
 		return nil, err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
 	return toParseSchema(schema), nil
 }
 
 // createTable 仅创建表，不加入 schema 中
-func (p *PostgresAdapter) createTable(className string, schema types.M) error {
+func (p *PostgresAdapter) createTable(className string, schema types.M, tx *sql.Tx) error {
 	if schema == nil {
 		schema = types.M{}
 	}
@@ -183,11 +193,17 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 		return err
 	}
 
-	_, err = p.db.Exec(qs)
+	if tx != nil {
+		_, err = tx.Exec(qs)
+	} else {
+		_, err = p.db.Exec(qs)
+	}
 	if err != nil {
 		if e, ok := err.(*pq.Error); ok {
 			if e.Code == postgresDuplicateRelationError {
 				// 表已经存在，已经由其他请求创建，忽略错误
+				// TODO 在执行 CREATE TABLE IF NOT EXISTS... 时是否会出现该错误？
+				// 如果不可能出现该错误，则无需处理 tx 中止事件
 			} else {
 				return err
 			}
@@ -199,7 +215,12 @@ func (p *PostgresAdapter) createTable(className string, schema types.M) error {
 	// 创建 relation 表
 	for _, fieldName := range relations {
 		name := fmt.Sprintf(`_Join:%s:%s`, fieldName, className)
-		_, err = p.db.Exec(fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )`, name))
+		qs = fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )`, name)
+		if tx != nil {
+			_, err = tx.Exec(qs)
+		} else {
+			_, err = p.db.Exec(qs)
+		}
 		if err != nil {
 			return err
 		}
@@ -214,13 +235,18 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 		fieldType = types.M{}
 	}
 
+	tx, err := p.db.Begin()
+	if err != nil {
+		return err
+	}
+
 	if utils.S(fieldType["type"]) != "Relation" {
 		tp, err := parseTypeToPostgresType(fieldType)
 		if err != nil {
 			return err
 		}
 		qs := fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, className, fieldName, tp)
-		_, err = p.db.Exec(qs)
+		_, err = tx.Exec(qs)
 		if err != nil {
 			if e, ok := err.(*pq.Error); ok {
 				if e.Code == postgresRelationDoesNotExistError {
@@ -237,11 +263,16 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 			} else {
 				return err
 			}
+			// 发生错误之后 tx 异常中止，需要重新获取
+			tx, err = p.db.Begin()
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		name := fmt.Sprintf(`_Join:%s:%s`, fieldName, className)
 		qs := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )`, name)
-		_, err := p.db.Exec(qs)
+		_, err := tx.Exec(qs)
 		if err != nil {
 			return err
 		}
@@ -259,61 +290,34 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 	path := fmt.Sprintf(`{fields,%s}`, fieldName)
 	qs = `UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $1, $2)  WHERE "className"=$3`
 	b, _ := json.Marshal(fieldType)
-	_, err = p.db.Exec(qs, path, string(b), className)
+	_, err = tx.Exec(qs, path, string(b), className)
+	if err != nil {
+		return err
+	}
 
-	// qs := `SELECT "schema" FROM "_SCHEMA" WHERE "className" = $1`
-	// rows, err := p.db.Query(qs, className)
-	// if err != nil {
-	// 	return err
-	// }
-	// if rows.Next() {
-	// 	var sch types.M
-	// 	var v []byte
-	// 	err := rows.Scan(&v)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	err = json.Unmarshal(v, &sch)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if sch == nil {
-	// 		sch = types.M{}
-	// 	}
-	// 	var fields types.M
-	// 	if v := utils.M(sch["fields"]); v != nil {
-	// 		fields = v
-	// 	} else {
-	// 		fields = types.M{}
-	// 	}
-	// 	if _, ok := fields[fieldName]; ok {
-	// 		// 当表不存在时，会进行新建表，所以也会走到这里，不再处理错误
-	// 		// Attempted to add a field that already exists
-	// 		return nil
-	// 	}
-	// 	fields[fieldName] = fieldType
-	// 	sch["fields"] = fields
-	// 	b, err := json.Marshal(sch)
-	// 	qs := `UPDATE "_SCHEMA" SET "schema"=$1 WHERE "className"=$2`
-	// 	_, err = p.db.Exec(qs, b, className)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	return err
+	return tx.Commit()
 }
 
 // DeleteClass 删除指定表
 func (p *PostgresAdapter) DeleteClass(className string) (types.M, error) {
+	tx, err := p.db.Begin()
+
+	if err != nil {
+		return nil, err
+	}
 	qs := fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, className)
-	_, err := p.db.Exec(qs)
+	_, err = tx.Exec(qs)
 	if err != nil {
 		return nil, err
 	}
 
 	qs = `DELETE FROM "_SCHEMA" WHERE "className"=$1`
-	_, err = p.db.Exec(qs, className)
+	_, err = tx.Exec(qs, className)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return nil, err
 	}
@@ -361,12 +365,20 @@ func (p *PostgresAdapter) DeleteAllClasses() error {
 	classes = append(classes, classNames...)
 	classes = append(classes, joins...)
 
-	for _, name := range classes {
-		qs = fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, name)
-		p.db.Exec(qs)
+	tx, err := p.db.Begin()
+	if err != nil {
+		return err
 	}
 
-	return nil
+	for _, name := range classes {
+		qs = fmt.Sprintf(`DROP TABLE IF EXISTS "%s"`, name)
+		_, err = tx.Exec(qs)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 // DeleteFields 删除字段
@@ -402,8 +414,14 @@ func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNa
 	if err != nil {
 		return err
 	}
+
+	tx, err := p.db.Begin()
+	if err != nil {
+		return err
+	}
+
 	qs := `UPDATE "_SCHEMA" SET "schema"=$1 WHERE "className"=$2`
-	_, err = p.db.Exec(qs, b, className)
+	_, err = tx.Exec(qs, b, className)
 	if err != nil {
 		return err
 	}
@@ -411,13 +429,13 @@ func (p *PostgresAdapter) DeleteFields(className string, schema types.M, fieldNa
 	if len(values) > 1 {
 		qs = fmt.Sprintf(`ALTER TABLE "%%s" DROP COLUMN %s`, columns)
 		qs = fmt.Sprintf(qs, values...)
-		_, err = p.db.Exec(qs)
+		_, err = tx.Exec(qs)
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 // CreateObject 创建对象
@@ -1224,7 +1242,7 @@ func (p *PostgresAdapter) PerformInitialization(options types.M) error {
 
 	if volatileClassesSchemas, ok := options["VolatileClassesSchemas"].([]types.M); ok {
 		for _, schema := range volatileClassesSchemas {
-			err := p.createTable(utils.S(schema["className"]), schema)
+			err := p.createTable(utils.S(schema["className"]), schema, nil)
 			if err != nil {
 				if e, ok := err.(*pq.Error); ok {
 					if e.Code != postgresDuplicateRelationError {
@@ -1241,37 +1259,42 @@ func (p *PostgresAdapter) PerformInitialization(options types.M) error {
 		}
 	}
 
-	_, err := p.db.Exec(jsonObjectSetKey)
+	tx, err := p.db.Begin()
 	if err != nil {
 		return err
 	}
 
-	_, err = p.db.Exec(arrayAdd)
+	_, err = tx.Exec(jsonObjectSetKey)
 	if err != nil {
 		return err
 	}
 
-	_, err = p.db.Exec(arrayAddUnique)
+	_, err = tx.Exec(arrayAdd)
 	if err != nil {
 		return err
 	}
 
-	_, err = p.db.Exec(arrayRemove)
+	_, err = tx.Exec(arrayAddUnique)
 	if err != nil {
 		return err
 	}
 
-	_, err = p.db.Exec(arrayContainsAll)
+	_, err = tx.Exec(arrayRemove)
 	if err != nil {
 		return err
 	}
 
-	_, err = p.db.Exec(arrayContains)
+	_, err = tx.Exec(arrayContainsAll)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	_, err = tx.Exec(arrayContains)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // HandleShutdown 关闭数据库

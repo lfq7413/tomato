@@ -2011,7 +2011,7 @@ func TestPostgresAdapter_createTable(t *testing.T) {
 	}
 	for _, tt := range tests {
 		tt.initialize(tt.args.className)
-		if err := p.createTable(tt.args.className, tt.args.schema); reflect.DeepEqual(err, tt.wantErr) == false {
+		if err := p.createTable(tt.args.className, tt.args.schema, nil); reflect.DeepEqual(err, tt.wantErr) == false {
 			t.Errorf("%q. PostgresAdapter.createTable() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 		tt.clean(tt.args.className)

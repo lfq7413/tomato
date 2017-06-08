@@ -1098,6 +1098,42 @@ func Test_transformConstraint(t *testing.T) {
 		t.Error("expect:", expect, "get result:", result)
 	}
 	/*************************************************/
+	constraint = types.M{
+		"$geoWithin": types.M{
+			"$polygon": types.S{
+				types.M{
+					"__type":    "GeoPoint",
+					"longitude": 20,
+					"latitude":  20,
+				},
+				types.M{
+					"__type":    "GeoPoint",
+					"longitude": 30,
+					"latitude":  30,
+				},
+				types.M{
+					"__type":    "GeoPoint",
+					"longitude": 20,
+					"latitude":  30,
+				},
+			},
+		},
+	}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{
+		"$geoWithin": types.M{
+			"$polygon": types.S{
+				types.S{20, 20},
+				types.S{30, 30},
+				types.S{20, 30},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
+	}
+	/*************************************************/
 	constraint = types.M{"$other": "hello"}
 	inArray = true
 	result, err = tf.transformConstraint(constraint, inArray)

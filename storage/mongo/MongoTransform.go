@@ -566,6 +566,32 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 				},
 			}
 
+		case "$geoWithin":
+			geoWithin := utils.M(object[key])
+			if geoWithin == nil {
+				return nil, errs.E(errs.InvalidJSON, "bad $geoWithin value")
+			}
+			polygon := utils.A(geoWithin["$polygon"])
+			if polygon == nil {
+				return nil, errs.E(errs.InvalidJSON, "bad $geoWithin value")
+			}
+			points := types.S{}
+			for _, point := range polygon {
+				g := geoPointCoder{}
+				if g.isValidJSON(utils.M(point)) {
+					p, err := g.jsonToDatabase(utils.M(point))
+					if err != nil {
+						return nil, err
+					}
+					points = append(points, p)
+				} else {
+					return nil, errs.E(errs.InvalidJSON, "bad $geoWithin value")
+				}
+			}
+			answer["$geoWithin"] = types.M{
+				"$polygon": points,
+			}
+
 		default:
 			b, _ := regexp.MatchString(`^\$+`, key)
 			if b {

@@ -1945,6 +1945,27 @@ func buildWhereClause(schema, query types.M, index int) (*whereClause, error) {
 				}
 			}
 
+			if geoWithin := utils.M(value["$geoWithin"]); geoWithin != nil {
+				if polygon := utils.A(geoWithin["$polygon"]); polygon != nil {
+					points := []string{}
+					for _, p := range polygon {
+						if point := utils.M(p); point != nil && utils.S(point["__type"]) == "GeoPoint" {
+							points = append(points, fmt.Sprintf("(%v, %v)", point["longitude"], point["latitude"]))
+						} else {
+							return nil, errs.E(errs.InvalidJSON, "bad $geoWithin value")
+						}
+					}
+
+					if len(points) > 0 {
+						patterns = append(patterns, fmt.Sprintf(`"%s"::point <@ $%d::polygon`, fieldName, index))
+						values = append(values, fmt.Sprintf("(%s)", strings.Join(points, ", ")))
+						index = index + 1
+					}
+				} else {
+					return nil, errs.E(errs.InvalidJSON, "bad $geoWithin value")
+				}
+			}
+
 			if regex := utils.S(value["$regex"]); regex != "" {
 				operator := "~"
 				opts := utils.S(value["$options"])

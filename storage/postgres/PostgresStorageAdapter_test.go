@@ -1321,6 +1321,44 @@ func Test_buildWhereClause(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name: "27.1",
+			args: args{
+				schema: types.M{
+					"fields": types.M{},
+				},
+				query: types.M{
+					"key": types.M{
+						"$geoWithin": types.M{
+							"$polygon": types.S{
+								types.M{
+									"__type":    "GeoPoint",
+									"longitude": 10.0,
+									"latitude":  20.0,
+								},
+								types.M{
+									"__type":    "GeoPoint",
+									"longitude": 20.0,
+									"latitude":  10.0,
+								},
+								types.M{
+									"__type":    "GeoPoint",
+									"longitude": 20.0,
+									"latitude":  20.0,
+								},
+							},
+						},
+					},
+				},
+				index: 1,
+			},
+			want: &whereClause{
+				pattern: `"key"::point <@ $1::polygon`,
+				values:  types.S{"((10, 20), (20, 10), (20, 20))"},
+				sorts:   []string{},
+			},
+			wantErr: nil,
+		},
+		{
 			name: "28",
 			args: args{
 				schema: types.M{

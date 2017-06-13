@@ -29,6 +29,7 @@ type TriggerRequest struct {
 	Object         types.M
 	Original       types.M
 	Query          types.M // beforeFind 时使用
+	Count          bool    // beforeFind 时使用
 	Objects        types.S // afterFind 时使用
 	Master         bool
 	User           types.M

@@ -10,12 +10,13 @@ import (
 type redisCacheAdapter struct {
 	address  string
 	password string
+	ttl      int
 	p        *redis.Pool
 }
 
 const defaultRedisTTL = 30
 
-func newRedisMemoryCacheAdapter(address, password string) *redisCacheAdapter {
+func newRedisMemoryCacheAdapter(address, password string, ttl int) *redisCacheAdapter {
 	m := &redisCacheAdapter{
 		address:  address,
 		password: password,
@@ -25,6 +26,12 @@ func newRedisMemoryCacheAdapter(address, password string) *redisCacheAdapter {
 	defer c.Close()
 	if c.Err() != nil {
 		panic(c.Err())
+	}
+
+	if ttl > 0 {
+		m.ttl = ttl
+	} else {
+		m.ttl = defaultRedisTTL
 	}
 
 	return m
@@ -75,7 +82,7 @@ func (m *redisCacheAdapter) get(key string) interface{} {
 func (m *redisCacheAdapter) put(key string, value interface{}, ttl int64) {
 	v, _ := json.Marshal(value)
 	if ttl == 0 {
-		m.do("SETEX", key, int64(defaultRedisTTL), v)
+		m.do("SETEX", key, int64(m.ttl), v)
 	} else if ttl == -1 {
 		m.do("SET", key, v)
 	} else {
@@ -88,5 +95,5 @@ func (m *redisCacheAdapter) del(key string) {
 }
 
 func (m *redisCacheAdapter) clear() {
-	m.do("FLUSHALL")
+	m.do("FLUSHDB")
 }

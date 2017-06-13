@@ -1,7 +1,8 @@
 package push
 
 import (
-	"strconv"
+	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 )
 
 var adapter pushAdapter
+var queue *pushQueue
+var worker *pushWorker
 
 // init 初始化推送模块
 // 当前仅有模拟的推送模块，
@@ -21,179 +24,108 @@ func init() {
 	a := config.TConfig.PushAdapter
 	if a == "tomato" {
 		adapter = newTomatoPush()
+	} else if a == "FCM" {
+		adapter = newFCMPush()
 	} else {
-		adapter = newTomatoPush()
+		adapter = nil
 	}
+
+	worker = newPushWorker(adapter, config.TConfig.PushChannel)
+	queue = newPushQueue(config.TConfig.PushChannel, config.TConfig.PushBatchSize)
 }
 
 // SendPush 发送推送消息
 func SendPush(body types.M, where types.M, auth *rest.Auth, onPushStatusSaved func(string)) error {
-
-	status := newPushStatus()
-
-	// TODO where 中并不包含 deviceType，此处是否有问题？
-	err := validatePushType(where, adapter.getValidPushTypes())
-	if err != nil {
-		return err
+	if adapter == nil {
+		return errs.E(errs.PushMisconfigured, "Missing push configuration")
 	}
 
+	// validatePushType(where, adapter.getValidPushTypes())
+
 	if body["expiration_time"] != nil {
+		var err error
 		body["expiration_time"], err = getExpirationTime(body)
 		if err != nil {
 			return err
 		}
 	}
 
-	// TODO 检测通过立即返回，不等待推送发送完成，后续添加
+	if body["push_time"] != nil {
+		pushTime, err := getPushTime(body)
+		if err != nil {
+			return err
+		}
+		if pushTime != nil {
+			body["push_time"] = pushTime
+		}
+	}
 
-	var restUpdate types.M
-	var updateWhere types.M
+	badgeUpdate := func() error { return nil }
+
 	data := utils.M(body["data"])
 	if data != nil && data["badge"] != nil {
+		restUpdate := types.M{}
 		badge := data["badge"]
 		restUpdate = types.M{}
 		if strings.ToLower(utils.S(badge)) == "increment" {
-			inc := types.M{
+			restUpdate["badge"] = types.M{
 				"__op":   "Increment",
 				"amount": 1,
 			}
-			restUpdate["badge"] = inc
 		} else if v, ok := badge.(float64); ok {
 			restUpdate["badge"] = v
+		} else if v, ok := badge.(int); ok {
+			restUpdate["badge"] = v
 		} else {
-			return errs.E(errs.PushMisconfigured, "Invalid value for badge, expected number or 'Increment'")
+			return errors.New("Invalid value for badge, expected number or 'Increment'")
 		}
-		updateWhere = utils.CopyMap(where)
-	}
+		updateWhere := utils.CopyMapM(where)
 
-	status.setInitial(body, where, nil)
-
-	if restUpdate != nil && updateWhere != nil {
-		updateWhere["deviceType"] = "ios"
-		restQuery, err := rest.NewQuery(rest.Master(), "_Installation", updateWhere, types.M{}, nil)
-		if err != nil {
-			status.fail(err)
-			return err
-		}
-		err = restQuery.BuildRestWhere()
-		if err != nil {
-			status.fail(err)
-			return err
-		}
-		write, err := rest.NewWrite(rest.Master(), "_Installation", restQuery.Where, restUpdate, types.M{}, nil)
-		if err != nil {
-			status.fail(err)
-			return err
-		}
-		write.RunOptions["many"] = true
-		_, err = write.Execute()
-		if err != nil {
-			status.fail(err)
+		badgeUpdate = func() error {
+			updateWhere["deviceType"] = "ios"
+			restQuery, err := rest.NewQuery(rest.Master(), "_Installation", updateWhere, types.M{}, nil)
+			if err != nil {
+				return err
+			}
+			err = restQuery.BuildRestWhere()
+			if err != nil {
+				return err
+			}
+			write, err := rest.NewWrite(rest.Master(), "_Installation", restQuery.Where, restUpdate, types.M{}, nil)
+			if err != nil {
+				return err
+			}
+			write.RunOptions["many"] = true
+			_, err = write.Execute()
 			return err
 		}
 	}
 
-	status.setRunning()
+	status := newPushStatus("")
+
+	err := status.setInitial(body, where, nil)
+	if err != nil {
+		return err
+	}
 
 	onPushStatusSaved(status.objectID)
-
-	// TODO 处理结果大于100的情况
-	response, err := rest.Find(auth, "_Installation", where, types.M{}, nil)
+	err = badgeUpdate()
 	if err != nil {
 		status.fail(err)
 		return err
 	}
-	if utils.HasResults(response) == false {
-		status.complete([]types.M{})
-		return nil
-	}
-	results := utils.A(response["results"])
 
-	res := sendToAdapter(body, results, status)
-	status.complete(res)
+	if _, ok := body["push_time"]; ok && config.TConfig.ScheduledPush {
 
-	return nil
-}
-
-// sendToAdapter 发送推送消息
-func sendToAdapter(body types.M, installations []interface{}, status *pushStatus) []types.M {
-	data := utils.M(body["data"])
-	if data != nil && data["badge"] != nil && strings.ToLower(utils.S(data["badge"])) == "increment" {
-		badgeInstallationsMap := types.M{}
-		// 按 badge 分组
-		for _, v := range installations {
-			installation := utils.M(v)
-			var badge string
-			if v, ok := installation["badge"].(float64); ok {
-				badge = strconv.Itoa(int(v))
-			} else {
-				continue
-			}
-			if utils.S(installation["deviceType"]) != "ios" {
-				badge = "unsupported"
-			}
-			installations := types.S{}
-			if badgeInstallationsMap[badge] != nil {
-				installations = append(installations, utils.A(badgeInstallationsMap[badge])...)
-			}
-			installations = append(installations, installation)
-			badgeInstallationsMap[badge] = installations
-		}
-
-		var results = []types.M{}
-
-		// 按 badge 分组发送推送
-		for k, v := range badgeInstallationsMap {
-			payload := utils.CopyMap(body)
-			paydata := utils.M(payload["data"])
-			if k == "unsupported" {
-				delete(paydata, "badge")
-			} else {
-				paydata["badge"], _ = strconv.Atoi(k)
-			}
-			result := adapter.send(payload, utils.A(v), status.objectID)
-			results = append(results, result...)
-		}
-		return results
+	} else {
+		err = queue.enqueue(body, where, auth, status)
 	}
 
-	return adapter.send(body, installations, status.objectID)
-}
-
-// validatePushType 校验查询条件中的推送类型
-// where 查询条件
-// validPushTypes 当前推送模块支持的类型
-func validatePushType(where types.M, validPushTypes []string) error {
-	deviceTypeField := where["deviceType"]
-	if deviceTypeField == nil {
-		deviceTypeField = types.M{}
-	}
-	deviceTypes := []string{}
-	if utils.S(deviceTypeField) != "" {
-		deviceTypes = append(deviceTypes, utils.S(deviceTypeField))
-	} else if utils.M(deviceTypeField) != nil {
-		m := utils.M(deviceTypeField)
-		if utils.A(m["$in"]) != nil {
-			s := utils.A(m["$in"])
-			for _, v := range s {
-				deviceTypes = append(deviceTypes, utils.S(v))
-			}
-		}
-	}
-	for _, v := range deviceTypes {
-		b := false
-		for _, t := range validPushTypes {
-			if v == t {
-				b = true
-				break
-			}
-		}
-		if b == false {
-			return errs.E(errs.PushMisconfigured, v+" is not supported push type.")
-		}
+	if err != nil {
+		status.fail(err)
 	}
 
-	return nil
+	return err
 }
 
 // getExpirationTime 把过期时间转换为以毫秒为单位的 Unix 时间
@@ -207,27 +139,78 @@ func getExpirationTime(body types.M) (interface{}, error) {
 	var err error
 	if v, ok := expirationTimeParam.(float64); ok {
 		expirationTime = time.Unix(int64(v), 0)
+	} else if v, ok := expirationTimeParam.(int); ok {
+		expirationTime = time.Unix(int64(v), 0)
 	} else if v, ok := expirationTimeParam.(string); ok {
 		expirationTime, err = utils.StringtoTime(v)
 		if err != nil {
-			return nil, err
+			return nil, errs.E(errs.PushMisconfigured, fmt.Sprint(expirationTimeParam, "is not valid time."))
 		}
 	} else {
 		// 时间格式错误
-		return nil, errs.E(errs.PushMisconfigured, "expiration_time is not valid time.")
+		return nil, errs.E(errs.PushMisconfigured, fmt.Sprint(expirationTimeParam, "is not valid time."))
 	}
 
 	if expirationTime.Unix() < time.Now().Unix() {
 		// 时间非法
-		return nil, errs.E(errs.PushMisconfigured, "expiration_time is not valid time.")
+		return nil, errs.E(errs.PushMisconfigured, fmt.Sprint(expirationTimeParam, "is not valid time."))
 	}
 
 	return expirationTime.Unix() * 1000, nil
 }
 
+// getPushTime 获取推送时间
+func getPushTime(body types.M) (interface{}, error) {
+	pushTimeParam := body["push_time"]
+	if pushTimeParam == nil {
+		return nil, nil
+	}
+
+	var pushTime time.Time
+	var err error
+
+	if v, ok := pushTimeParam.(float64); ok {
+		pushTime = time.Unix(int64(v), 0)
+	} else if v, ok := pushTimeParam.(int); ok {
+		pushTime = time.Unix(int64(v), 0)
+	} else if v, ok := pushTimeParam.(string); ok {
+		pushTime, err = utils.StringtoTime(v)
+		if err != nil {
+			return nil, errs.E(errs.PushMisconfigured, fmt.Sprint(pushTimeParam, "is not valid time."))
+		}
+	} else {
+		// 时间格式错误
+		return nil, errs.E(errs.PushMisconfigured, fmt.Sprint(pushTimeParam, "is not valid time."))
+	}
+
+	return pushTime, nil
+}
+
 // pushAdapter 推送模块要实现的接口
 // send() 中的 status 参数暂时没有使用
 type pushAdapter interface {
-	send(data types.M, installations types.S, objectID string) []types.M
+	// send 发送消息
+	/*
+		body 数据格式：
+		{
+			"channels":["aaa","bbb"],
+			"where":{
+				"key":"v"
+			},
+			"push_time":time.Time("2015-03-13T22:05:08Z"),
+			"expiration_interval": 518400,
+			"expiration_time": 14xxxxxxxxx,
+			"data":{
+				"alert":"hello world."
+				"badge":"Increment",
+				"sound":"cheering.caf",
+				"content-available":1,
+				"category":"aaa",
+				"uri":"xxxx",
+				"title":"hello"
+			}
+		}
+	*/
+	send(body types.M, installations types.S, pushStatus string) []types.M
 	getValidPushTypes() []string
 }

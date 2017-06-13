@@ -84,24 +84,34 @@ func NewQuery(
 		}
 	}
 
-	// 当 keys 包含 n 级时，在 include 中自动加入 n-1 级
+	keys := []string{}
 	if k, ok := options["keys"]; ok {
 		if s, ok := k.(string); ok {
-			keys := []string{}
-			for _, key := range strings.Split(s, ",") {
-				if len(strings.Split(key, ".")) > 1 {
-					key = key[:strings.LastIndex(key, ".")]
-					keys = append(keys, key)
-				}
+			keys = strings.Split(s, ",")
+			for i, key := range keys {
+				keys[i] = strings.TrimSpace(key)
 			}
-			keysForInclude := strings.Join(keys, ",")
+		}
+		// 在 includePath 中 会使用 restOptions["keys"] ，所以需要设置过滤后的数据
+		options["keys"] = strings.Join(keys, ",")
+	}
 
-			if keysForInclude != "" {
-				if include := utils.S(options["include"]); include == "" {
-					options["include"] = keysForInclude
-				} else {
-					options["include"] = include + "," + keysForInclude
-				}
+	// 当 keys 包含 n 级时，在 include 中自动加入 n-1 级
+	if len(keys) > 0 {
+		includeKeys := []string{}
+		for _, key := range keys {
+			if len(strings.Split(key, ".")) > 1 {
+				key = key[:strings.LastIndex(key, ".")]
+				includeKeys = append(includeKeys, key)
+			}
+		}
+		keysForInclude := strings.Join(includeKeys, ",")
+
+		if keysForInclude != "" {
+			if include := utils.S(options["include"]); include == "" {
+				options["include"] = keysForInclude
+			} else {
+				options["include"] = include + "," + keysForInclude
 			}
 		}
 	}
@@ -109,9 +119,8 @@ func NewQuery(
 	for k, v := range options {
 		switch k {
 		case "keys":
-			if s, ok := v.(string); ok {
-				query.keys = strings.Split(s, ",")
-				query.keys = append(query.keys, alwaysSelectedKeys...)
+			if len(keys) > 0 {
+				query.keys = append(keys, alwaysSelectedKeys...)
 			}
 		case "count":
 			query.doCount = true
@@ -122,6 +131,9 @@ func NewQuery(
 		case "order":
 			if s, ok := v.(string); ok {
 				fields := strings.Split(s, ",")
+				for i, field := range fields {
+					fields[i] = strings.TrimSpace(field)
+				}
 				// sortMap := map[string]int{}
 				// for _, v := range fields {
 				// 	if strings.HasPrefix(v, "-") {
@@ -136,6 +148,9 @@ func NewQuery(
 		case "include":
 			if s, ok := v.(string); ok { // v = "user.session,name.friend"
 				paths := strings.Split(s, ",") // paths = ["user.session","name.friend"]
+				for i, path := range paths {
+					paths[i] = strings.TrimSpace(path)
+				}
 				pathSet := map[string]bool{}
 				for _, path := range paths {
 					parts := strings.Split(path, ".") // parts = ["user","session"]
@@ -221,6 +236,7 @@ func (q *Query) BuildRestWhere() error {
 	if err != nil {
 		return err
 	}
+	q.replaceEquality()
 	return nil
 }
 
@@ -529,6 +545,12 @@ func (q *Query) replaceNotInQuery() error {
 	transformNotInQuery(notInQueryObject, query.className, values)
 	// 继续搜索替换
 	return q.replaceNotInQuery()
+}
+
+func (q *Query) replaceEquality() {
+	for key := range q.Where {
+		q.Where[key] = replaceEqualityConstraint(q.Where[key])
+	}
 }
 
 // runFind 从数据库查找数据，并处理返回结果
@@ -990,4 +1012,33 @@ func cleanResultAuthData(result types.M) {
 			delete(result, "authData")
 		}
 	}
+}
+
+func replaceEqualityConstraint(constraint interface{}) interface{} {
+	object := utils.M(constraint)
+	if object == nil {
+		return constraint
+	}
+
+	equalToObject := types.M{}
+	hasDirectConstraint := false
+	hasOperatorConstraint := false
+
+	for key := range object {
+		if strings.Index(key, "$") != 0 {
+			hasDirectConstraint = true
+			equalToObject[key] = object[key]
+		} else {
+			hasOperatorConstraint = true
+		}
+	}
+
+	if hasDirectConstraint && hasOperatorConstraint {
+		object["$eq"] = equalToObject
+		for key := range equalToObject {
+			delete(object, key)
+		}
+	}
+
+	return constraint
 }

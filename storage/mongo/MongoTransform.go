@@ -124,21 +124,22 @@ func (t *Transform) transformKeyValueForUpdate(className, restKey string, restVa
 	}
 
 	// key 为顶层字段时，转换原子数据，包含子对象字段时，不做处理
-	if strings.Index(key, ".") < 0 {
-		value, err := t.transformTopLevelAtom(restValue)
-		if err != nil {
-			return "", nil, err
-		}
-		if value != cannotTransform() {
-			if timeField && utils.S(value) != "" {
-				var err error
-				value, err = utils.StringtoTime(utils.S(value))
-				if err != nil {
-					return "", nil, errs.E(errs.InvalidJSON, "Invalid Date value.")
-				}
+	value, err := t.transformTopLevelAtom(restValue)
+	if err != nil {
+		return "", nil, err
+	}
+	if value != cannotTransform() {
+		if timeField && utils.S(value) != "" {
+			var err error
+			value, err = utils.StringtoTime(utils.S(value))
+			if err != nil {
+				return "", nil, errs.E(errs.InvalidJSON, "Invalid Date value.")
 			}
-			return key, value, nil
 		}
+		if strings.Index(key, ".") > 0 {
+			return key, restValue, nil
+		}
+		return key, value, nil
 	}
 
 	// 转换数组类型
@@ -337,6 +338,10 @@ func (t *Transform) transformQueryKeyValue(className, key string, value interfac
 	}
 
 	if v := utils.A(value); v == nil && expectedTypeIsArray {
+		value, err = t.transformInteriorAtom(value)
+		if err != nil {
+			return "", nil, err
+		}
 		return key, types.M{"$all": types.S{value}}, nil
 	}
 
@@ -559,6 +564,32 @@ func (t *Transform) transformConstraint(constraint interface{}, inArray bool) (i
 					types.S{box1["longitude"], box1["latitude"]},
 					types.S{box2["longitude"], box2["latitude"]},
 				},
+			}
+
+		case "$geoWithin":
+			geoWithin := utils.M(object[key])
+			if geoWithin == nil {
+				return nil, errs.E(errs.InvalidJSON, "bad $geoWithin value")
+			}
+			polygon := utils.A(geoWithin["$polygon"])
+			if polygon == nil {
+				return nil, errs.E(errs.InvalidJSON, "bad $geoWithin value")
+			}
+			points := types.S{}
+			for _, point := range polygon {
+				g := geoPointCoder{}
+				if g.isValidJSON(utils.M(point)) {
+					p, err := g.jsonToDatabase(utils.M(point))
+					if err != nil {
+						return nil, err
+					}
+					points = append(points, p)
+				} else {
+					return nil, errs.E(errs.InvalidJSON, "bad $geoWithin value")
+				}
+			}
+			answer["$geoWithin"] = types.M{
+				"$polygon": points,
 			}
 
 		default:
@@ -1179,6 +1210,15 @@ func (t *Transform) nestedMongoObjectToNestedParseObject(mongoObject interface{}
 	b := bytesCoder{}
 	if b.isValidDatabaseObject(mongoObject) {
 		return b.databaseToJSON(mongoObject), nil
+	}
+
+	if object := utils.M(mongoObject); object != nil {
+		if utils.S(object["__type"]) == "Date" {
+			if date, ok := object["iso"].(time.Time); ok {
+				object["iso"] = utils.TimetoString(date)
+				return mongoObject, nil
+			}
+		}
 	}
 
 	// 转换对象类型

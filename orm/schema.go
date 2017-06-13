@@ -13,7 +13,7 @@ import (
 )
 
 // clpValidKeys 类级别的权限 列表
-var clpValidKeys = []string{"find", "get", "create", "update", "delete", "addField", "readUserFields", "writeUserFields"}
+var clpValidKeys = []string{"find", "count", "get", "create", "update", "delete", "addField", "readUserFields", "writeUserFields"}
 
 // SystemClasses 系统表
 var SystemClasses = []string{"_User", "_Installation", "_Role", "_Session", "_Product", "_PushStatus", "_JobStatus"}
@@ -86,6 +86,7 @@ var DefaultColumns = map[string]types.M{
 		"errorMessage":  types.M{"type": "Object"},
 		"sentPerType":   types.M{"type": "Object"},
 		"failedPerType": types.M{"type": "Object"},
+		"count":         types.M{"type": "Number"},
 	},
 	"_JobStatus": types.M{
 		"jobName":    types.M{"type": "String"},
@@ -202,6 +203,7 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	}
 
 	// 删除指定字段，并统计需要插入的字段
+	deletedFields := []string{}
 	insertedFields := []string{}
 	for name, v := range submittedFields {
 		field := utils.M(v)
@@ -210,12 +212,16 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 		}
 		op := utils.S(field["__op"])
 		if op == "Delete" {
-			err := s.deleteField(name, className)
-			if err != nil {
-				return nil, err
-			}
+			deletedFields = append(deletedFields, name)
 		} else {
 			insertedFields = append(insertedFields, name)
+		}
+	}
+
+	if len(deletedFields) > 0 {
+		err = s.deleteFields(deletedFields, className)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -248,16 +254,23 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	}, nil
 }
 
-// deleteField 从类定义中删除指定的字段，并删除对象中的数据
+// deleteField 从类定义中删除指定的字段
 func (s *Schema) deleteField(fieldName string, className string) error {
+	return s.deleteFields([]string{fieldName}, className)
+}
+
+// deleteFields 从类定义中删除指定的多个字段，并删除对象中的数据
+func (s *Schema) deleteFields(fieldNames []string, className string) error {
 	if ClassNameIsValid(className) == false {
 		return errs.E(errs.InvalidClassName, InvalidClassNameMessage(className))
 	}
-	if fieldNameIsValid(fieldName) == false {
-		return errs.E(errs.InvalidKeyName, "invalid field name: "+fieldName)
-	}
-	if fieldNameIsValidForClass(fieldName, className) == false {
-		return errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be changed")
+	for _, fieldName := range fieldNames {
+		if fieldNameIsValid(fieldName) == false {
+			return errs.E(errs.InvalidKeyName, "invalid field name: "+fieldName)
+		}
+		if fieldNameIsValidForClass(fieldName, className) == false {
+			return errs.E(errs.ChangedImmutableFieldError, "field "+fieldName+" cannot be changed")
+		}
 	}
 
 	schema, err := s.GetOneSchema(className, false, types.M{"clearCache": true})
@@ -269,33 +282,32 @@ func (s *Schema) deleteField(fieldName string, className string) error {
 	}
 
 	fields := utils.M(schema["fields"])
-	if fields == nil || fields[fieldName] == nil {
-		return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
-	}
-
-	// 根据字段属性进行相应 对象数据 删除操作
-	if fieldType := utils.M(fields[fieldName]); fieldType != nil {
-		if utils.S(fieldType["type"]) == "Relation" {
-			// 删除表数据与 schema 中的对应字段
-			err := s.dbAdapter.DeleteFields(className, schema, []string{fieldName})
-			if err != nil {
-				return err
-			}
-			// 删除 _Join table 数据
-			_, err = s.dbAdapter.DeleteClass("_Join:" + fieldName + ":" + className)
-			if err != nil {
-				return err
-			}
-			return nil
+	for _, fieldName := range fieldNames {
+		if fields == nil || fields[fieldName] == nil {
+			return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
 		}
 	}
 
-	// 删除其他类型字段 对应的对象数据
-	err = s.dbAdapter.DeleteFields(className, schema, []string{fieldName})
-	if err == nil {
-		s.cache.Clear()
+	err = s.dbAdapter.DeleteFields(className, schema, fieldNames)
+	if err != nil {
+		return err
 	}
-	return err
+
+	// 根据字段属性进行相应 对象数据 删除操作
+	for _, fieldName := range fieldNames {
+		if fieldType := utils.M(fields[fieldName]); fieldType != nil {
+			if utils.S(fieldType["type"]) == "Relation" {
+				// 删除 _Join table 数据
+				_, err = s.dbAdapter.DeleteClass("_Join:" + fieldName + ":" + className)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	s.cache.Clear()
+	return nil
 }
 
 // validateObject 校验对象是否合法
@@ -403,14 +415,12 @@ func (s *Schema) validatePermission(className string, aclGroup []string, operati
 		} else if len(aclGroup) == 1 && aclGroup[0] == "*" {
 			return errs.E(errs.ObjectNotFound, "Permission denied, user needs to be authenticated.")
 		}
-		// 当前类权限中仅有 requiresAuthentication 时，允许访问
-		if len(perms) == 1 {
-			return nil
-		}
+		// 当前类权限中有 requiresAuthentication 时，允许访问
+		return nil
 	}
 
 	var permissionField string
-	if operation == "get" || operation == "find" {
+	if operation == "get" || operation == "find" || operation == "count" {
 		permissionField = "readUserFields"
 	} else {
 		permissionField = "writeUserFields"
@@ -645,10 +655,12 @@ func (s *Schema) reloadData(options types.M) {
 		return
 	}
 
-	s.data = types.M{}
-	s.perms = types.M{}
+	data := types.M{}
+	perms := types.M{}
 	allSchemas, err := s.GetAllClasses(options)
 	if err != nil {
+		s.data = data
+		s.perms = perms
 		s.reloadDataPromise = nil
 		return
 	}
@@ -659,10 +671,9 @@ func (s *Schema) reloadData(options types.M) {
 			continue
 		}
 		// allSchemas 中的数据，已经经过了 injectDefaultSchema 处理
-		s.data[utils.S(schema["className"])] = schema["fields"]
-		s.perms[utils.S(schema["className"])] = schema["classLevelPermissions"]
+		data[utils.S(schema["className"])] = schema["fields"]
+		perms[utils.S(schema["className"])] = schema["classLevelPermissions"]
 	}
-	s.permsMutex.Unlock()
 
 	for _, className := range volatileClasses {
 		sch := types.M{
@@ -671,9 +682,13 @@ func (s *Schema) reloadData(options types.M) {
 			"classLevelPermissions": types.M{},
 		}
 		schema := injectDefaultSchema(sch)
-		s.data[className] = schema["fields"]
-		s.perms[className] = schema["classLevelPermissions"]
+		data[className] = schema["fields"]
+		perms[className] = schema["classLevelPermissions"]
 	}
+
+	s.data = data
+	s.perms = perms
+	s.permsMutex.Unlock()
 	s.dataMutex.Unlock()
 
 	s.reloadDataPromise = allSchemas

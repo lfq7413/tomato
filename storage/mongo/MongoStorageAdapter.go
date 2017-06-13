@@ -406,6 +406,11 @@ func (m *MongoAdapter) PerformInitialization(options types.M) error {
 	return nil
 }
 
+// HandleShutdown 关闭数据库
+func (m *MongoAdapter) HandleShutdown() {
+	m.db.Session.Close()
+}
+
 func storageAdapterAllCollections(m *MongoAdapter) []*MongoCollection {
 	names := m.getCollectionNames()
 	collections := []*MongoCollection{}

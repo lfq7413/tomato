@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -13,16 +14,17 @@ import (
 // TomatoInfo ...
 var TomatoInfo = map[string]string{}
 
-// getUser 访问接口 获取用户信息
-func getUser(sessionToken string) (t.M, error) {
-	req, err := http.NewRequest("GET", TomatoInfo["serverURL"]+"/users/me", nil)
+// userForSessionToken 访问接口 获取用户信息
+func userForSessionToken(sessionToken string) (t.M, error) {
+	// TODO 后续使用 go SDK 实现
+	where := url.QueryEscape(`{"sessionToken":"` + sessionToken + `"}`)
+	req, err := http.NewRequest("GET", TomatoInfo["serverURL"]+"/classes/_Session"+"?where="+where, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	req.Header.Add("X-Parse-Application-Id", TomatoInfo["appId"])
-	req.Header.Add("X-Parse-Client-Key", TomatoInfo["clientKey"])
-	req.Header.Add("X-Parse-Session-Token", "r:"+sessionToken)
+	req.Header.Add("X-Parse-Master-Key", TomatoInfo["masterKey"])
 
 	client := http.DefaultClient
 	resp, err := client.Do(req)
@@ -35,13 +37,17 @@ func getUser(sessionToken string) (t.M, error) {
 	if err != nil {
 		return nil, err
 	}
-	var user t.M
-	err = json.Unmarshal(body, &user)
+	var session t.M
+	err = json.Unmarshal(body, &session)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("No session found for session token")
 	}
 
-	return user, nil
+	if user, ok := session["user"].(map[string]interface{}); ok && user != nil {
+		return user, nil
+	}
+
+	return t.M{}, nil
 }
 
 // GetUserRoles 获取用户对应的角色列表

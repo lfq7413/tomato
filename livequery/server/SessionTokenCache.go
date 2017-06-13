@@ -24,7 +24,7 @@ func (s *SessionTokenCache) GetUserID(sessionToken string) string {
 		return v.(string)
 	}
 
-	user, err := getUser(sessionToken)
+	user, err := userForSessionToken(sessionToken)
 	if err != nil {
 		utils.TLog.Error("Can not fetch userId for sessionToken", sessionToken, ", error", err.Error())
 		return ""

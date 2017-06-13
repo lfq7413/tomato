@@ -1658,9 +1658,9 @@ func Test_Update(t *testing.T) {
 	options = nil
 	skipSanitization = false
 	result, err = TomatoDBController.Update(className, query, update, options, skipSanitization)
-	expectErr = errs.E(errs.ObjectNotFound, "Object not found.")
-	if err == nil || reflect.DeepEqual(expectErr, err) == false {
-		t.Error("expect:", expectErr, "result:", err)
+	expect = types.M{}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result, err)
 	}
 	TomatoDBController.DeleteEverything()
 	/*************************************************/
@@ -1671,7 +1671,7 @@ func Test_Update(t *testing.T) {
 	}
 	Adapter.CreateObject(className, types.M{}, object)
 	className = "user"
-	query = types.M{}
+	query = types.M{"key": "hello"}
 	update = types.M{"key": "haha"}
 	options = nil
 	skipSanitization = false
@@ -2776,11 +2776,13 @@ func Test_handleRelationUpdates(t *testing.T) {
 	var object types.M
 	var results []types.M
 	var expects []types.M
+	var ops []types.M
 	/*************************************************/
 	className = "user"
 	objectID = "1001"
 	update = nil
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -2790,7 +2792,8 @@ func Test_handleRelationUpdates(t *testing.T) {
 	className = "user"
 	objectID = "1001"
 	update = types.M{"key": "hello"}
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -2821,7 +2824,8 @@ func Test_handleRelationUpdates(t *testing.T) {
 			},
 		},
 	}
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -2879,7 +2883,8 @@ func Test_handleRelationUpdates(t *testing.T) {
 			},
 		},
 	}
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -2947,7 +2952,8 @@ func Test_handleRelationUpdates(t *testing.T) {
 			},
 		},
 	}
-	err = TomatoDBController.handleRelationUpdates(className, objectID, update)
+	ops = TomatoDBController.collectRelationUpdates(className, objectID, update)
+	err = TomatoDBController.handleRelationUpdates(className, objectID, update, ops)
 	expectErr = nil
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
@@ -5178,12 +5184,34 @@ func Test_addReadACL(t *testing.T) {
 	if reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "result:", result)
 	}
+	/*************************************************/
+	query = types.M{
+		"$or": types.S{
+			types.M{"key": "hello"},
+			types.M{"key1": "hello"},
+		},
+	}
+	acl = []string{"role:1024"}
+	result = addReadACL(query, acl)
+	expect = types.M{
+		"$or": types.S{
+			types.M{"key": "hello"},
+			types.M{"key1": "hello"},
+		},
+		"_rperm": types.M{
+			"$in": types.S{nil, "*", "role:1024"},
+		},
+	}
+	if reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "result:", result)
+	}
 }
 
 func Test_validateQuery(t *testing.T) {
 	var query types.M
 	var err error
 	var expect error
+	var expectQuery types.M
 	/*************************************************/
 	query = nil
 	err = validateQuery(query)
@@ -5275,6 +5303,75 @@ func Test_validateQuery(t *testing.T) {
 	expect = nil
 	if reflect.DeepEqual(expect, err) == false {
 		t.Error("expect:", expect, "result:", err)
+	}
+	/*************************************************/
+	query = types.M{
+		"$or": types.S{
+			types.M{"key": "value"},
+			types.M{"key": "value"},
+		},
+		"_rperm": types.M{
+			"$in": types.S{nil, "*", "role:1024"},
+		},
+	}
+	err = validateQuery(query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	expectQuery = types.M{
+		"$or": types.S{
+			types.M{
+				"key": "value",
+				"_rperm": types.M{
+					"$in": types.S{nil, "*", "role:1024"},
+				},
+			},
+			types.M{
+				"key": "value",
+				"_rperm": types.M{
+					"$in": types.S{nil, "*", "role:1024"},
+				},
+			},
+		},
+	}
+	if reflect.DeepEqual(query, expectQuery) == false {
+		t.Error("expect:", expectQuery, "result:", query)
+	}
+	/*************************************************/
+	query = types.M{
+		"$or": types.S{
+			types.M{"key": "value"},
+			types.M{"key": "value"},
+		},
+		"loc": types.M{
+			"$nearSphere": types.M{
+				"__type":    "GeoPoint",
+				"latitude":  40,
+				"longitude": -30,
+			},
+		},
+	}
+	err = validateQuery(query)
+	expect = nil
+	if reflect.DeepEqual(expect, err) == false {
+		t.Error("expect:", expect, "result:", err)
+	}
+	expectQuery = types.M{
+		"$or": types.S{
+			types.M{"key": "value"},
+			types.M{"key": "value"},
+		},
+		"loc": types.M{
+			"$nearSphere": types.M{
+				"__type":    "GeoPoint",
+				"latitude":  40,
+				"longitude": -30,
+			},
+		},
+	}
+	if reflect.DeepEqual(query, expectQuery) == false {
+		t.Error("expect:", expectQuery, "result:", query)
 	}
 	/*************************************************/
 	query = types.M{

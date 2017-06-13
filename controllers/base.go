@@ -33,7 +33,7 @@ type RequestInfo struct {
 	AppID          string
 	MasterKey      string
 	ClientKey      string
-	JavascriptKey  string
+	JavaScriptKey  string
 	DotNetKey      string
 	RestAPIKey     string
 	SessionToken   string
@@ -53,7 +53,7 @@ func (b *BaseController) Prepare() {
 	info.AppID = b.Ctx.Input.Header("X-Parse-Application-Id")
 	info.MasterKey = b.Ctx.Input.Header("X-Parse-Master-Key")
 	info.ClientKey = b.Ctx.Input.Header("X-Parse-Client-Key")
-	info.JavascriptKey = b.Ctx.Input.Header("X-Parse-Javascript-Key")
+	info.JavaScriptKey = b.Ctx.Input.Header("X-Parse-Javascript-Key")
 	info.DotNetKey = b.Ctx.Input.Header("X-Parse-Windows-Key")
 	info.RestAPIKey = b.Ctx.Input.Header("X-Parse-REST-API-Key")
 	info.SessionToken = b.Ctx.Input.Header("X-Parse-Session-Token")
@@ -114,7 +114,7 @@ func (b *BaseController) Prepare() {
 		// 从请求数据中获取各种 key
 		if b.JSONBody != nil && b.JSONBody["_ApplicationId"] != nil {
 			info.AppID = utils.S(b.JSONBody["_ApplicationId"])
-			info.JavascriptKey = utils.S(b.JSONBody["_JavaScriptKey"])
+			info.JavaScriptKey = utils.S(b.JSONBody["_JavaScriptKey"])
 			delete(b.JSONBody, "_ApplicationId")
 			delete(b.JSONBody, "_JavaScriptKey")
 
@@ -172,7 +172,7 @@ func (b *BaseController) Prepare() {
 	}
 	var allow = false
 	if (len(info.ClientKey) > 0 && info.ClientKey == config.TConfig.ClientKey) ||
-		(len(info.JavascriptKey) > 0 && info.JavascriptKey == config.TConfig.JavascriptKey) ||
+		(len(info.JavaScriptKey) > 0 && info.JavaScriptKey == config.TConfig.JavaScriptKey) ||
 		(len(info.RestAPIKey) > 0 && info.RestAPIKey == config.TConfig.RestAPIKey) ||
 		(len(info.DotNetKey) > 0 && info.DotNetKey == config.TConfig.DotNetKey) {
 		allow = true

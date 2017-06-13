@@ -16,11 +16,12 @@ import (
 type Config struct {
 	AppName                          string   // 应用名称，必填
 	ServerURL                        string   // 服务对外地址，必填
-	DatabaseURI                      string   // MongoDB 数据库地址
+	DatabaseType                     string   // 数据库类型，可选： MongoDB、PostgreSQL
+	DatabaseURI                      string   // 数据库地址
 	AppID                            string   // 必填
 	MasterKey                        string   // 必填
 	ClientKey                        string   // 选填
-	JavascriptKey                    string   // 选填
+	JavaScriptKey                    string   // 选填
 	DotNetKey                        string   // 选填
 	RestAPIKey                       string   // 选填
 	AllowClientClassCreation         bool     // 是否允许客户端操作不存在的 class ，默认为 fasle 不允许操作
@@ -45,7 +46,10 @@ type Config struct {
 	TencentAppID                     string   // 腾讯云存储 AppID ，仅在 FileAdapter=Tencent 时需要配置
 	TencentSecretID                  string   // 腾讯云存储 SecretID ，仅在 FileAdapter=Tencent 时需要配置
 	TencentSecretKey                 string   // 腾讯云存储 SecretKey ，仅在 FileAdapter=Tencent 时需要配置
-	PushAdapter                      string   // 推送模块
+	PushAdapter                      string   // 推送模块，可选：FCM，默认为 tomato
+	PushChannel                      string   // 推送通道
+	PushBatchSize                    int      // 批量推送的大小
+	ScheduledPush                    bool     // 是否有推送调度器
 	LiveQueryClasses                 string   // LiveQuery 支持的 classe ，多个 class 使用 | 隔开，如： classeA|classeB|classeC
 	PublisherType                    string   // 发布者类型，可选：Redis ，默认使用自带的 EventEmitter
 	PublisherURL                     string   // 发布者地址， PublisherType=Redis 时必填
@@ -69,6 +73,20 @@ type Config struct {
 	MaxPasswordAge                   int      // 密码的最长使用时间，单位为天，取值大于等于 0 ，默认为 0 表示不设置最长使用时间
 	MaxPasswordHistory               int      // 最大密码历史个数，修改的密码不能与密码历史重复，取值范围： 0-20 ，默认为 0 表示不设置密码历史
 	UserSensitiveFields              []string // 用户敏感字段，按需删除，多个字段使用 | 删除，如： email|password
+	AnalyticsAdapter                 string   // 分析模块，可选：InfluxDB，默认使用空的分析模块
+	InfluxDBURL                      string   // InfluxDB 地址，仅在 AnalyticsAdapter=InfluxDB 时需要配置
+	InfluxDBUsername                 string   // InfluxDB 用户名，仅在 AnalyticsAdapter=InfluxDB 时需要配置
+	InfluxDBPassword                 string   // InfluxDB 密码，仅在 AnalyticsAdapter=InfluxDB 时需要配置
+	InfluxDBDatabaseName             string   // InfluxDB 数据库，仅在 AnalyticsAdapter=InfluxDB 时需要配置
+	InvalidLink                      string   // 自定义页面地址，无效链接页面
+	InvalidVerificationLink          string   // 自定义页面地址，无效验证链接页面
+	LinkSendSuccess                  string   // 自定义页面地址，发送成功页面
+	LinkSendFail                     string   // 自定义页面地址，发送失败页面
+	VerifyEmailSuccess               string   // 自定义页面地址，验证邮箱成功页面
+	ChoosePassword                   string   // 自定义页面地址，修改密码页面
+	PasswordResetSuccess             string   // 自定义页面地址，密码重置成功页面
+	ParseFrameURL                    string   // 自定义页面地址，用于呈现验证 Email 页面和密码重置页面
+	FCMServerKey                     string   // FCM Server Key
 }
 
 var (
@@ -88,11 +106,12 @@ func init() {
 func parseConfig() {
 	TConfig.AppName = beego.AppConfig.String("appname")
 	TConfig.ServerURL = beego.AppConfig.String("ServerURL")
+	TConfig.DatabaseType = beego.AppConfig.String("DatabaseType")
 	TConfig.DatabaseURI = beego.AppConfig.String("DatabaseURI")
 	TConfig.AppID = beego.AppConfig.String("AppID")
 	TConfig.MasterKey = beego.AppConfig.String("MasterKey")
 	TConfig.ClientKey = beego.AppConfig.String("ClientKey")
-	TConfig.JavascriptKey = beego.AppConfig.String("JavascriptKey")
+	TConfig.JavaScriptKey = beego.AppConfig.String("JavaScriptKey")
 	TConfig.DotNetKey = beego.AppConfig.String("DotNetKey")
 	TConfig.RestAPIKey = beego.AppConfig.String("RestAPIKey")
 	TConfig.AllowClientClassCreation = beego.AppConfig.DefaultBool("AllowClientClassCreation", false)
@@ -155,6 +174,24 @@ func parseConfig() {
 	for _, field := range strings.Split(beego.AppConfig.String("UserSensitiveFields"), "|") {
 		TConfig.UserSensitiveFields = append(TConfig.UserSensitiveFields, field)
 	}
+
+	TConfig.AnalyticsAdapter = beego.AppConfig.String("AnalyticsAdapter")
+	TConfig.InfluxDBURL = beego.AppConfig.String("InfluxDBURL")
+	TConfig.InfluxDBUsername = beego.AppConfig.String("InfluxDBUsername")
+	TConfig.InfluxDBPassword = beego.AppConfig.String("InfluxDBPassword")
+	TConfig.InfluxDBDatabaseName = beego.AppConfig.String("InfluxDBDatabaseName")
+
+	TConfig.InvalidLink = beego.AppConfig.String("InvalidLink")
+	TConfig.VerifyEmailSuccess = beego.AppConfig.String("VerifyEmailSuccess")
+	TConfig.ChoosePassword = beego.AppConfig.String("ChoosePassword")
+	TConfig.PasswordResetSuccess = beego.AppConfig.String("PasswordResetSuccess")
+	TConfig.ParseFrameURL = beego.AppConfig.String("ParseFrameURL")
+
+	TConfig.PushChannel = beego.AppConfig.String("PushChannel")
+	TConfig.PushBatchSize = beego.AppConfig.DefaultInt("PushBatchSize", 0)
+	TConfig.ScheduledPush = beego.AppConfig.DefaultBool("ScheduledPush", false)
+
+	TConfig.FCMServerKey = beego.AppConfig.String("FCMServerKey")
 }
 
 // Validate 校验用户参数合法性
@@ -168,6 +205,7 @@ func Validate() {
 	validateAccountLockoutPolicy()
 	validatePasswordPolicy()
 	validateCacheConfiguration()
+	validateAnalyticsConfiguration()
 }
 
 // validateApplicationConfiguration 校验应用相关参数
@@ -184,8 +222,8 @@ func validateApplicationConfiguration() {
 	if TConfig.MasterKey == "" {
 		log.Fatalln("MasterKey is required")
 	}
-	if TConfig.ClientKey == "" && TConfig.JavascriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
-		log.Fatalln("ClientKey or JavascriptKey or DotNetKey or RestAPIKey is required")
+	if TConfig.ClientKey == "" && TConfig.JavaScriptKey == "" && TConfig.DotNetKey == "" && TConfig.RestAPIKey == "" {
+		log.Fatalln("ClientKey or JavaScriptKey or DotNetKey or RestAPIKey is required")
 	}
 }
 
@@ -316,6 +354,30 @@ func validateCacheConfiguration() {
 	}
 }
 
+// validateAnalyticsConfiguration 校验分析模块相关参数
+func validateAnalyticsConfiguration() {
+	adapter := TConfig.AnalyticsAdapter
+	switch adapter {
+	case "InfluxDB":
+		if TConfig.InfluxDBURL == "" {
+			log.Fatalln("InfluxDBURL is required")
+		}
+		if TConfig.InfluxDBUsername == "" {
+			log.Fatalln("InfluxDBUsername is required")
+		}
+		if TConfig.InfluxDBPassword == "" {
+			log.Fatalln("InfluxDBPassword is required")
+		}
+		if TConfig.InfluxDBDatabaseName == "" {
+			log.Fatalln("InfluxDBDatabaseName is required")
+		}
+	case "":
+		// 默认使用空实现
+	default:
+		log.Fatalln("Unsupported AnalyticsAdapter")
+	}
+}
+
 // GenerateSessionExpiresAt 获取 Session 过期时间
 func GenerateSessionExpiresAt() time.Time {
 	expiresAt := time.Now().UTC()
@@ -341,4 +403,75 @@ func GeneratePasswordResetTokenExpiresAt() time.Time {
 	expiresAt := time.Now().UTC()
 	expiresAt = expiresAt.Add(time.Duration(TConfig.ResetTokenValidityDuration) * time.Second)
 	return expiresAt
+}
+
+// InvalidLinkURL ...
+func InvalidLinkURL() string {
+	if TConfig.InvalidLink != "" {
+		return TConfig.InvalidLink
+	}
+	return TConfig.ServerURL + `/apps/invalid_link`
+}
+
+// InvalidVerificationLinkURL ...
+func InvalidVerificationLinkURL() string {
+	if TConfig.InvalidVerificationLink != "" {
+		return TConfig.InvalidVerificationLink
+	}
+	return TConfig.ServerURL + `/apps/invalid_verification_link`
+}
+
+// LinkSendSuccessURL ...
+func LinkSendSuccessURL() string {
+	if TConfig.LinkSendSuccess != "" {
+		return TConfig.LinkSendSuccess
+	}
+	return TConfig.ServerURL + `/apps/link_send_success`
+}
+
+// LinkSendFailURL ...
+func LinkSendFailURL() string {
+	if TConfig.LinkSendFail != "" {
+		return TConfig.LinkSendFail
+	}
+	return TConfig.ServerURL + `/apps/link_send_fail`
+}
+
+// VerifyEmailSuccessURL ...
+func VerifyEmailSuccessURL() string {
+	if TConfig.VerifyEmailSuccess != "" {
+		return TConfig.VerifyEmailSuccess
+	}
+	return TConfig.ServerURL + `/apps/verify_email_success`
+}
+
+// ChoosePasswordURL ...
+func ChoosePasswordURL() string {
+	if TConfig.ChoosePassword != "" {
+		return TConfig.ChoosePassword
+	}
+	return TConfig.ServerURL + `/apps/choose_password`
+}
+
+// RequestResetPasswordURL ...
+func RequestResetPasswordURL() string {
+	return TConfig.ServerURL + `/apps/request_password_reset`
+}
+
+// PasswordResetSuccessURL ...
+func PasswordResetSuccessURL() string {
+	if TConfig.PasswordResetSuccess != "" {
+		return TConfig.PasswordResetSuccess
+	}
+	return TConfig.ServerURL + `/apps/password_reset_success`
+}
+
+// ParseFrameURL ...
+func ParseFrameURL() string {
+	return TConfig.ParseFrameURL
+}
+
+// VerifyEmailURL ...
+func VerifyEmailURL() string {
+	return TConfig.ServerURL + `/apps/verify_email`
 }

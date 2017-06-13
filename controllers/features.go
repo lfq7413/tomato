@@ -1,6 +1,9 @@
 package controllers
 
-import "github.com/lfq7413/tomato/types"
+import (
+	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/types"
+)
 
 // FeaturesController ...
 type FeaturesController struct {
@@ -38,9 +41,9 @@ func (f *FeaturesController) HandleGet() {
 			"from":  true,
 		},
 		"push": types.M{
-			"immediatePush":  true,
-			"scheduledPush":  false,
-			"storedPushData": true,
+			"immediatePush":  config.TConfig.PushAdapter != "",
+			"scheduledPush":  config.TConfig.ScheduledPush,
+			"storedPushData": config.TConfig.PushAdapter != "",
 			"pushAudiences":  false,
 		},
 		"schemas": types.M{

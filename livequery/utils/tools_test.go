@@ -268,10 +268,48 @@ func Test_matchesKeyConstraints(t *testing.T) {
 		expect      bool
 	}{
 		{
+			object:      nil,
+			key:         "name",
+			constraints: nil,
+			expect:      false,
+		},
+		{
 			object:      tp.M{},
 			key:         "name",
 			constraints: nil,
 			expect:      false,
+		},
+		{
+			object: tp.M{
+				"post": map[string]interface{}{
+					"user": "joe",
+				},
+			},
+			key:         "post.user",
+			constraints: "joe",
+			expect:      true,
+		},
+		{
+			object: tp.M{
+				"post": map[string]interface{}{
+					"user": "joe",
+				},
+			},
+			key:         "post.user",
+			constraints: "jack",
+			expect:      false,
+		},
+		{
+			object: tp.M{
+				"post": map[string]interface{}{
+					"user": map[string]interface{}{
+						"id": "1024",
+					},
+				},
+			},
+			key:         "post.user.id",
+			constraints: "1024",
+			expect:      true,
 		},
 		{
 			object: tp.M{

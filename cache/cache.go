@@ -16,7 +16,7 @@ func init() {
 	if a == "InMemory" {
 		adapter = newInMemoryCacheAdapter(5)
 	} else if a == "Redis" {
-		adapter = newRedisMemoryCacheAdapter(config.TConfig.RedisAddress, config.TConfig.RedisPassword)
+		adapter = newRedisMemoryCacheAdapter(config.TConfig.RedisAddress, config.TConfig.RedisPassword, 0)
 	} else if a == "Null" {
 		adapter = newNullMemoryCacheAdapter()
 	} else {

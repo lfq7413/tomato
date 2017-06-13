@@ -273,16 +273,16 @@ func Test_transformKeyValueForUpdate(t *testing.T) {
 	restKey = "key.subkey"
 	restValue = types.M{
 		"__type":    "GeoPoint",
-		"latitude":  "10.0",
-		"longitude": "10.0",
+		"latitude":  10.0,
+		"longitude": 10.0,
 	}
 	parseFormatSchema = types.M{}
 	resultKey, resultValue, err = tf.transformKeyValueForUpdate("", restKey, restValue, parseFormatSchema)
 	expectKey = "key.subkey"
 	expectValue = types.M{
 		"__type":    "GeoPoint",
-		"latitude":  "10.0",
-		"longitude": "10.0",
+		"latitude":  10.0,
+		"longitude": 10.0,
 	}
 	if err != nil || resultKey != expectKey || reflect.DeepEqual(resultValue, expectValue) == false {
 		t.Error("expect:", expectValue, "get result:", resultValue)
@@ -1096,6 +1096,42 @@ func Test_transformConstraint(t *testing.T) {
 	}
 	if err != nil || reflect.DeepEqual(result, expect) == false {
 		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	constraint = types.M{
+		"$geoWithin": types.M{
+			"$polygon": types.S{
+				types.M{
+					"__type":    "GeoPoint",
+					"longitude": 20,
+					"latitude":  20,
+				},
+				types.M{
+					"__type":    "GeoPoint",
+					"longitude": 30,
+					"latitude":  30,
+				},
+				types.M{
+					"__type":    "GeoPoint",
+					"longitude": 20,
+					"latitude":  30,
+				},
+			},
+		},
+	}
+	inArray = true
+	result, err = tf.transformConstraint(constraint, inArray)
+	expect = types.M{
+		"$geoWithin": types.M{
+			"$polygon": types.S{
+				types.S{20, 20},
+				types.S{30, 30},
+				types.S{20, 30},
+			},
+		},
+	}
+	if err != nil || reflect.DeepEqual(result, expect) == false {
+		t.Error("expect:", expect, "get result:", result, err)
 	}
 	/*************************************************/
 	constraint = types.M{"$other": "hello"}
@@ -2313,6 +2349,19 @@ func Test_nestedMongoObjectToNestedParseObject(t *testing.T) {
 	expect = types.M{
 		"__type": "Bytes",
 		"base64": "aGVsbG8=",
+	}
+	if err != nil || reflect.DeepEqual(expect, result) == false {
+		t.Error("expect:", expect, "get result:", result)
+	}
+	/*************************************************/
+	mongoObject = types.M{
+		"__type": "Date",
+		"iso":    tmpTime,
+	}
+	result, err = tf.nestedMongoObjectToNestedParseObject(mongoObject)
+	expect = types.M{
+		"__type": "Date",
+		"iso":    tmpTimeStr,
 	}
 	if err != nil || reflect.DeepEqual(expect, result) == false {
 		t.Error("expect:", expect, "get result:", result)

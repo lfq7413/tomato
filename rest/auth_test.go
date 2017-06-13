@@ -38,8 +38,10 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	initEnv()
 	className = "_User"
 	schema = types.M{
-		"username": types.M{"type": "String"},
-		"password": types.M{"type": "String"},
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
@@ -50,9 +52,11 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.Adapter.CreateObject(className, schema, object)
 	className = "_Session"
 	schema = types.M{
-		"user":         types.M{"type": "Pointer", "targetClass": "_User"},
-		"sessionToken": types.M{"type": "String"},
-		"expiresAt":    types.M{"type": "Date"},
+		"fields": types.M{
+			"user":         types.M{"type": "Pointer", "targetClass": "_User"},
+			"sessionToken": types.M{"type": "String"},
+			"expiresAt":    types.M{"type": "Date"},
+		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
@@ -79,8 +83,10 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	initEnv()
 	className = "_User"
 	schema = types.M{
-		"username": types.M{"type": "String"},
-		"password": types.M{"type": "String"},
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
@@ -91,9 +97,11 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.Adapter.CreateObject(className, schema, object)
 	className = "_Session"
 	schema = types.M{
-		"user":         types.M{"type": "Pointer", "targetClass": "_User"},
-		"sessionToken": types.M{"type": "String"},
-		"expiresAt":    types.M{"type": "Date"},
+		"fields": types.M{
+			"user":         types.M{"type": "Pointer", "targetClass": "_User"},
+			"sessionToken": types.M{"type": "String"},
+			"expiresAt":    types.M{"type": "Date"},
+		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
@@ -119,8 +127,10 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	initEnv()
 	className = "_User"
 	schema = types.M{
-		"username": types.M{"type": "String"},
-		"password": types.M{"type": "String"},
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
@@ -131,9 +141,11 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.Adapter.CreateObject(className, schema, object)
 	className = "_Session"
 	schema = types.M{
-		"user":         types.M{"type": "Pointer", "targetClass": "_User"},
-		"sessionToken": types.M{"type": "String"},
-		"expiresAt":    types.M{"type": "Date"},
+		"fields": types.M{
+			"user":         types.M{"type": "Pointer", "targetClass": "_User"},
+			"sessionToken": types.M{"type": "String"},
+			"expiresAt":    types.M{"type": "Date"},
+		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
@@ -160,8 +172,10 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	initEnv()
 	className = "_User"
 	schema = types.M{
-		"username": types.M{"type": "String"},
-		"password": types.M{"type": "String"},
+		"fields": types.M{
+			"username": types.M{"type": "String"},
+			"password": types.M{"type": "String"},
+		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{
@@ -172,9 +186,11 @@ func Test_GetAuthForSessionToken(t *testing.T) {
 	orm.Adapter.CreateObject(className, schema, object)
 	className = "_Session"
 	schema = types.M{
-		"user":         types.M{"type": "Pointer", "targetClass": "_User"},
-		"sessionToken": types.M{"type": "String"},
-		"expiresAt":    types.M{"type": "Date"},
+		"fields": types.M{
+			"user":         types.M{"type": "Pointer", "targetClass": "_User"},
+			"sessionToken": types.M{"type": "String"},
+			"expiresAt":    types.M{"type": "Date"},
+		},
 	}
 	orm.Adapter.CreateClass(className, schema)
 	object = types.M{

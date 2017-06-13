@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"time"
 
+	"strings"
+
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/mail"
@@ -56,13 +58,31 @@ func SendVerificationEmail(user types.M) {
 	}
 	user["className"] = "_User"
 	username := url.QueryEscape(utils.S(user["username"]))
-	link := config.TConfig.ServerURL + "/apps/verify_email" + "?token=" + token + "&username=" + username
+	link := buildEmailLink(config.VerifyEmailURL(), username, token)
 	options := types.M{
 		"appName": config.TConfig.AppName,
 		"link":    link,
 		"user":    user,
 	}
 	adapter.SendMail(defaultVerificationEmail(options))
+}
+
+// ResendVerificationEmail 重新发送验证邮件
+func ResendVerificationEmail(username string) error {
+	aUser := getUserIfNeeded(types.M{"username": username})
+	if aUser == nil {
+		return errors.New("no user")
+	}
+	if emailVerified, ok := aUser["emailVerified"].(bool); ok && emailVerified {
+		return errors.New("emailVerified")
+	}
+	SetEmailVerifyToken(aUser)
+	_, err := orm.TomatoDBController.Update("_User", types.M{"username": username}, aUser, types.M{}, false)
+	if err != nil {
+		return err
+	}
+	SendVerificationEmail(aUser)
+	return nil
 }
 
 // getUserIfNeeded 把 user 填充完整，如果无法完成则返回 nil
@@ -130,7 +150,7 @@ func SendPasswordResetEmail(email string) error {
 	user["className"] = "_User"
 	token := url.QueryEscape(utils.S(user["_perishable_token"]))
 	username := url.QueryEscape(utils.S(user["username"]))
-	link := config.TConfig.ServerURL + "/apps/request_password_reset" + "?token=" + token + "&username=" + username
+	link := buildEmailLink(config.RequestResetPasswordURL(), username, token)
 	options := types.M{
 		"appName": config.TConfig.AppName,
 		"link":    link,
@@ -224,6 +244,18 @@ func VerifyEmail(username, token string) bool {
 		}
 	}
 
+	checkIfAlreadyVerified, err := NewQuery(Master(), "_User", types.M{"username": username, "emailVerified": true}, types.M{}, nil)
+	if err != nil {
+		return false
+	}
+	result, err := checkIfAlreadyVerified.Execute()
+	if err != nil {
+		return false
+	}
+	if utils.HasResults(result) {
+		return true
+	}
+
 	document, err := db.Update("_User", query, updateFields, types.M{}, false)
 	if err != nil {
 		return false
@@ -290,4 +322,14 @@ func updateUserPassword(userID, password string) error {
 		return err
 	}
 	return nil
+}
+
+func buildEmailLink(destination, username, token string) string {
+	usernameAndToken := `token=` + token + `&username=` + username
+
+	if config.ParseFrameURL() != "" {
+		destinationWithoutHost := strings.Replace(destination, config.TConfig.ServerURL, "", -1)
+		return config.ParseFrameURL() + `?link=` + url.QueryEscape(destinationWithoutHost) + `&` + usernameAndToken
+	}
+	return destination + `?` + usernameAndToken
 }

@@ -1,11 +1,18 @@
 package analytics
 
-import "github.com/lfq7413/tomato/types"
+import (
+	"github.com/lfq7413/tomato/config"
+	"github.com/lfq7413/tomato/types"
+)
 
-var adapter *analyticsAdapter
+var adapter analyticsAdapter
 
 func init() {
-	adapter = &analyticsAdapter{}
+	if config.TConfig.AnalyticsAdapter == "InfluxDB" {
+		adapter = newInfluxDBAdapter()
+	} else {
+		adapter = &nullAnalyticsAdapter{}
+	}
 }
 
 // AppOpened 统计应用打开记录
@@ -24,4 +31,9 @@ func TrackEvent(eventName string, body types.M) types.M {
 		return types.M{}
 	}
 	return response
+}
+
+type analyticsAdapter interface {
+	appOpened(body types.M) (types.M, error)
+	trackEvent(eventName string, body types.M) (types.M, error)
 }

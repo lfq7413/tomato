@@ -11,6 +11,7 @@ import (
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/storage"
 	"github.com/lfq7413/tomato/storage/mongo"
+	"github.com/lfq7413/tomato/storage/postgres"
 	"github.com/lfq7413/tomato/types"
 	"github.com/lfq7413/tomato/utils"
 )
@@ -26,7 +27,14 @@ var schemaPromise *Schema
 
 // init 初始化 Mongo 适配器
 func init() {
-	Adapter = mongo.NewMongoAdapter("tomato", storage.OpenMongoDB())
+	if config.TConfig.DatabaseType == "MongoDB" {
+		Adapter = mongo.NewMongoAdapter("tomato", storage.OpenMongoDB())
+	} else if config.TConfig.DatabaseType == "PostgreSQL" {
+		Adapter = postgres.NewPostgresAdapter("tomato", storage.OpenPostgreSQL())
+	} else {
+		// 默认连接 MongoDB
+		Adapter = mongo.NewMongoAdapter("tomato", storage.OpenMongoDB())
+	}
 	schemaCache = cache.NewSchemaCache(config.TConfig.SchemaCacheTTL, config.TConfig.EnableSingleSchemaCache)
 	TomatoDBController = &DBController{}
 }
@@ -84,6 +92,9 @@ func (d *DBController) Find(className string, query, options types.M) (types.S, 
 		} else {
 			op = "find"
 		}
+	}
+	if _, ok := options["count"]; ok {
+		op = "count"
 	}
 
 	classExists := true
@@ -271,18 +282,20 @@ var specialKeysForUpdate = map[string]bool{
 // options 中的参数包括：acl、many、upsert
 // skipSanitization 默认为 false
 func (d *DBController) Update(className string, query, update, options types.M, skipSanitization bool) (types.M, error) {
-	if query == nil {
+	if len(query) == 0 {
 		return types.M{}, nil
 	}
-	if update == nil {
-		update = types.M{}
+	if len(update) == 0 {
+		return types.M{}, nil
 	}
 	if options == nil {
 		options = types.M{}
 	}
+	originalQuery := query
 	originalUpdate := update
 	// 复制数据，不要修改原数据
 	update = utils.CopyMap(update)
+	var relationUpdates []types.M
 
 	var many bool
 	if v, ok := options["many"].(bool); ok {
@@ -311,7 +324,7 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 		}
 	}
 	// 处理 Relation
-	d.handleRelationUpdates(className, utils.S(query["objectId"]), update)
+	relationUpdates = d.collectRelationUpdates(className, utils.S(originalQuery["objectId"]), update)
 
 	// 添加用户权限
 	if isMaster == false {
@@ -385,6 +398,11 @@ func (d *DBController) Update(className string, query, update, options types.M, 
 		return nil, errs.E(errs.ObjectNotFound, "Object not found.")
 	}
 
+	err = d.handleRelationUpdates(className, utils.S(originalQuery["objectId"]), update, relationUpdates)
+	if err != nil {
+		return nil, err
+	}
+
 	if skipSanitization {
 		return result, nil
 	}
@@ -455,6 +473,8 @@ func (d *DBController) Create(className string, object, options types.M) error {
 		isMaster = true
 	}
 
+	relationUpdates := d.collectRelationUpdates(className, "", object)
+
 	err := d.validateClassName(className)
 	if err != nil {
 		return err
@@ -466,12 +486,6 @@ func (d *DBController) Create(className string, object, options types.M) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	// 处理 Relation
-	err = d.handleRelationUpdates(className, "", object)
-	if err != nil {
-		return err
 	}
 
 	err = schema.EnforceClassExists(className)
@@ -490,7 +504,12 @@ func (d *DBController) Create(className string, object, options types.M) error {
 	flattenUpdateOperatorsForCreate(object)
 
 	// 无需调用 sanitizeDatabaseResult
-	return Adapter.CreateObject(className, convertSchemaToAdapterSchema(sch), object)
+	err = Adapter.CreateObject(className, convertSchemaToAdapterSchema(sch), object)
+	if err != nil {
+		return err
+	}
+
+	return d.handleRelationUpdates(className, "", object, relationUpdates)
 }
 
 // validateClassName 校验表名是否合法
@@ -501,15 +520,11 @@ func (d *DBController) validateClassName(className string) error {
 	return nil
 }
 
-// handleRelationUpdates 处理 Relation 相关操作
-// TODO 修改 handleRelationUpdates 调用时机：在 update 或 create 成功之后再调用
-func (d *DBController) handleRelationUpdates(className, objectID string, update types.M) error {
+// collectRelationUpdates 收集 Relation 相关操作
+func (d *DBController) collectRelationUpdates(className, objectID string, update types.M) []types.M {
+	ops := []types.M{}
 	if update == nil {
-		return nil
-	}
-	objID := objectID
-	if utils.S(update["objectId"]) != "" {
-		objID = utils.S(update["objectId"])
+		return ops
 	}
 
 	// 定义处理函数
@@ -529,21 +544,61 @@ func (d *DBController) handleRelationUpdates(className, objectID string, update 
 	//         }
 	//       ]
 	// }
-	var process func(op interface{}, key string) error
-	process = func(op interface{}, key string) error {
+	var process func(op interface{}, key string)
+	process = func(op interface{}, key string) {
 		if op == nil || utils.M(op) == nil || utils.M(op)["__op"] == nil {
-			return nil
+			return
 		}
 		opMap := utils.M(op)
 		p := utils.S(opMap["__op"])
 		if p == "AddRelation" {
+			ops = append(ops, types.M{"key": key, "op": op})
 			delete(update, key)
+		} else if p == "RemoveRelation" {
+			ops = append(ops, types.M{"key": key, "op": op})
+			delete(update, key)
+		} else if p == "Batch" {
+			delete(update, key)
+			// 批处理 Relation 对象
+			if ops := utils.A(opMap["ops"]); ops != nil {
+				for _, x := range ops {
+					process(x, key)
+				}
+			}
+		}
+	}
+
+	for k, v := range update {
+		process(v, k)
+	}
+
+	return ops
+}
+
+// handleRelationUpdates 处理 Relation 相关操作
+func (d *DBController) handleRelationUpdates(className, objectID string, update types.M, ops []types.M) error {
+	if update == nil {
+		return nil
+	}
+	if utils.S(update["objectId"]) != "" {
+		objectID = utils.S(update["objectId"])
+	}
+
+	for _, subOp := range ops {
+		key := utils.S(subOp["key"])
+		op := subOp["op"]
+		if op == nil || utils.M(op) == nil || utils.M(op)["__op"] == nil {
+			continue
+		}
+		opMap := utils.M(op)
+		p := utils.S(opMap["__op"])
+		if p == "AddRelation" {
 			// 添加 Relation 对象
 			if objects := utils.A(opMap["objects"]); objects != nil {
 				for _, object := range objects {
 					if obj := utils.M(object); obj != nil {
 						if relationID := utils.S(obj["objectId"]); relationID != "" {
-							err := d.addRelation(key, className, objID, relationID)
+							err := d.addRelation(key, className, objectID, relationID)
 							if err != nil {
 								return err
 							}
@@ -552,13 +607,12 @@ func (d *DBController) handleRelationUpdates(className, objectID string, update 
 				}
 			}
 		} else if p == "RemoveRelation" {
-			delete(update, key)
 			// 删除 Relation 对象
 			if objects := utils.A(opMap["objects"]); objects != nil {
 				for _, object := range objects {
 					if obj := utils.M(object); obj != nil {
 						if relationID := utils.S(obj["objectId"]); relationID != "" {
-							err := d.removeRelation(key, className, objID, relationID)
+							err := d.removeRelation(key, className, objectID, relationID)
 							if err != nil {
 								return err
 							}
@@ -566,27 +620,9 @@ func (d *DBController) handleRelationUpdates(className, objectID string, update 
 					}
 				}
 			}
-		} else if p == "Batch" {
-			delete(update, key)
-			// 批处理 Relation 对象
-			if ops := utils.A(opMap["ops"]); ops != nil {
-				for _, x := range ops {
-					err := process(x, key)
-					if err != nil {
-						return err
-					}
-				}
-			}
 		}
-		return nil
 	}
 
-	for k, v := range update {
-		err := process(v, k)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -641,16 +677,14 @@ func (d *DBController) ValidateObject(className string, object, query, options t
 		isMaster = true
 	}
 
-	if isMaster {
-		return nil
+	if !isMaster {
+		err := d.canAddField(schema, className, object, aclGroup)
+		if err != nil {
+			return err
+		}
 	}
 
-	err := d.canAddField(schema, className, object, aclGroup)
-	if err != nil {
-		return err
-	}
-
-	err = schema.validateObject(className, object, query)
+	err := schema.validateObject(className, object, query)
 	if err != nil {
 		return err
 	}
@@ -662,6 +696,10 @@ func (d *DBController) ValidateObject(className string, object, query, options t
 func (d *DBController) LoadSchema(options types.M) *Schema {
 	if options == nil {
 		options = types.M{"clearCache": false}
+	}
+	if c, ok := options["clearCache"].(bool); ok && c {
+		schemaPromise = Load(Adapter, schemaCache, options)
+		return schemaPromise
 	}
 	if schemaPromise == nil {
 		schemaPromise = Load(Adapter, schemaCache, options)
@@ -1173,6 +1211,7 @@ func (d *DBController) DeleteSchema(className string) error {
 			}
 		}
 	}
+	d.LoadSchema(types.M{"clearCache": true})
 	return nil
 }
 
@@ -1249,17 +1288,31 @@ func (d *DBController) addPointerPermissions(schema *Schema, className string, o
 // PerformInitialization 初始化数据库索引
 func (d *DBController) PerformInitialization() {
 	requiredUserFields := types.M{}
-	defaultUserColumns := types.M{}
+	requiredRoleFields := types.M{}
+
+	fields := types.M{}
 	for k, v := range DefaultColumns["_Default"] {
-		defaultUserColumns[k] = v
+		fields[k] = v
 	}
 	for k, v := range DefaultColumns["_User"] {
-		defaultUserColumns[k] = v
+		fields[k] = v
 	}
-	requiredUserFields["fields"] = defaultUserColumns
+	requiredUserFields["fields"] = fields
+
+	fields = types.M{}
+	for k, v := range DefaultColumns["_Default"] {
+		fields[k] = v
+	}
+	for k, v := range DefaultColumns["_Role"] {
+		fields[k] = v
+	}
+	requiredRoleFields["fields"] = fields
+
 	d.LoadSchema(nil).EnforceClassExists("_User")
+	d.LoadSchema(nil).EnforceClassExists("_Role")
 	Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"username"})
 	Adapter.EnsureUniqueness("_User", requiredUserFields, []string{"email"})
+	Adapter.EnsureUniqueness("_Role", requiredRoleFields, []string{"name"})
 	Adapter.PerformInitialization(types.M{"VolatileClassesSchemas": volatileClassesSchemas()})
 }
 
@@ -1319,19 +1372,71 @@ func validateQuery(query types.M) error {
 	}
 
 	if or, ok := query["$or"]; ok {
+		var orArr []types.M
 		if arr := utils.A(or); arr != nil {
-			for _, a := range arr {
+			orArr = make([]types.M, len(arr))
+			for i, a := range arr {
 				subQuery := utils.M(a)
 				if subQuery == nil {
 					return errs.E(errs.InvalidQuery, "Bad $or format - invalid sub query.")
 				}
-				err := validateQuery(subQuery)
-				if err != nil {
-					return err
-				}
+				orArr[i] = subQuery
 			}
 		} else {
 			return errs.E(errs.InvalidQuery, "Bad $or format - use an array value.")
+		}
+
+		/* In MongoDB, $or queries which are not alone at the top level of the
+		 * query can not make efficient use of indexes due to a long standing
+		 * bug known as SERVER-13732.
+		 *
+		 * This block restructures queries in which $or is not the sole top
+		 * level element by moving all other top-level predicates inside every
+		 * subdocument of the $or predicate, allowing MongoDB's query planner
+		 * to make full use of the most relevant indexes.
+		 *
+		 * EG:      {$or: [{a: 1}, {a: 2}], b: 2}
+		 * Becomes: {$or: [{a: 1, b: 2}, {a: 2, b: 2}]}
+		 *
+		 * The only exceptions are $near and $nearSphere operators, which are
+		 * constrained to only 1 operator per query. As a result, these ops
+		 * remain at the top level
+		 *
+		 * https://jira.mongodb.org/browse/SERVER-13732
+		 * https://github.com/parse-community/parse-server/issues/3767
+		 */
+		for key := range query {
+			if key == "$or" {
+				continue
+			}
+			noCollisions := true
+			for _, subq := range orArr {
+				if _, ok := subq[key]; ok {
+					noCollisions = false
+					break
+				}
+			}
+			hasNears := false
+			if obj := utils.M(query[key]); obj != nil {
+				if _, ok := obj["$nearSphere"]; ok {
+					hasNears = true
+				} else if _, ok := obj["$near"]; ok {
+					hasNears = true
+				}
+			}
+			if noCollisions && !hasNears {
+				for _, subquery := range orArr {
+					subquery[key] = query[key]
+				}
+				delete(query, key)
+			}
+		}
+
+		for _, subQuery := range orArr {
+			err := validateQuery(subQuery)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

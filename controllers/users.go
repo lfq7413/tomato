@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"regexp"
+
 	"github.com/lfq7413/tomato/errs"
 	"github.com/lfq7413/tomato/rest"
 	"github.com/lfq7413/tomato/types"
@@ -95,6 +97,17 @@ func (u *UsersController) HandleMe() {
 	}
 	user := utils.M(result["user"])
 	user["sessionToken"] = sessionToken
+
+	// 删除隐藏字段
+	for key := range user {
+		if key != "__type" {
+			b, _ := regexp.MatchString("^[A-Za-z][0-9A-Za-z_]*$", key)
+			if b == false {
+				delete(user, key)
+			}
+		}
+	}
+
 	u.Data["json"] = user
 	u.ServeJSON()
 }

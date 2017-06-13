@@ -38,10 +38,11 @@ func getResponse(request cloud.TriggerRequest) *cloud.TriggerResponse {
 	return response
 }
 
-func getRequestQuery(triggerType string, auth *Auth, query types.M) cloud.TriggerRequest {
+func getRequestQuery(triggerType string, auth *Auth, query types.M, count bool) cloud.TriggerRequest {
 	request := cloud.TriggerRequest{
 		TriggerName: triggerType,
 		Query:       query,
+		Count:       count,
 		Master:      false,
 	}
 
@@ -79,7 +80,29 @@ func maybeRunQueryTrigger(triggerType, className string, restWhere, restOptions 
 	if trigger == nil {
 		return restWhere, restOptions, nil
 	}
-	request := getRequestQuery(triggerType, auth, restWhere)
+
+	if restOptions == nil {
+		restOptions = types.M{}
+	}
+	query := types.M{}
+	if restWhere != nil {
+		query["where"] = restWhere
+	}
+	count := false
+	if restOptions["include"] != nil {
+		query["include"] = restOptions["include"]
+	}
+	if restOptions["skip"] != nil {
+		query["skip"] = restOptions["skip"]
+	}
+	if restOptions["limit"] != nil {
+		query["limit"] = restOptions["limit"]
+	}
+	if restOptions["count"] != nil {
+		count = true
+	}
+
+	request := getRequestQuery(triggerType, auth, query, count)
 	response := getResponse(request)
 	trigger(request, response)
 
@@ -91,9 +114,6 @@ func maybeRunQueryTrigger(triggerType, className string, restWhere, restOptions 
 	}
 	if where := utils.M(response.Response["where"]); where != nil {
 		restWhere = where
-	}
-	if restOptions == nil {
-		restOptions = types.M{}
 	}
 	if limit := response.Response["limit"]; limit != nil {
 		restOptions["limit"] = limit

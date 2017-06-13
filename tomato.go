@@ -40,6 +40,13 @@ func RunLiveQueryServer(args map[string]string) {
 	livequery.Run(args)
 }
 
+// HandleShutdown 处理退出
+func HandleShutdown() {
+	if orm.Adapter != nil {
+		orm.Adapter.HandleShutdown()
+	}
+}
+
 func allowCrossDomain() {
 	beego.InsertFilter("*", beego.BeforeRouter, cors.Allow(&cors.Options{
 		AllowAllOrigins: true,

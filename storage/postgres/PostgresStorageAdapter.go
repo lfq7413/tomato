@@ -283,6 +283,7 @@ func (p *PostgresAdapter) AddFieldIfNotExists(className, fieldName string, field
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	if rows.Next() {
 		return nil
 	}
@@ -336,6 +337,7 @@ func (p *PostgresAdapter) DeleteAllClasses() error {
 		}
 		return err
 	}
+	defer rows.Close()
 
 	classNames := []string{}
 	schemas := []types.M{}
@@ -636,6 +638,7 @@ func (p *PostgresAdapter) GetAllClasses() ([]types.M, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	schemas := []types.M{}
 
@@ -669,6 +672,7 @@ func (p *PostgresAdapter) GetClass(className string) (types.M, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	schema := types.M{}
 	if rows.Next() {
@@ -810,6 +814,7 @@ func (p *PostgresAdapter) Find(className string, schema, query, options types.M)
 		}
 		return nil, err
 	}
+	defer rows.Close()
 
 	fields := utils.M(schema["fields"])
 	if fields == nil {
@@ -874,6 +879,7 @@ func (p *PostgresAdapter) Count(className string, schema, query types.M) (int, e
 		}
 		return 0, err
 	}
+	defer rows.Close()
 	var count int
 	if rows.Next() {
 		err = rows.Scan(&count)
@@ -1154,6 +1160,7 @@ func (p *PostgresAdapter) FindOneAndUpdate(className string, schema, query, upda
 		}
 		return nil, err
 	}
+	defer rows.Close()
 
 	object := types.M{}
 	if rows.Next() {

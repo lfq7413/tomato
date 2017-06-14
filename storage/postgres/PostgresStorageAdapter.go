@@ -1327,6 +1327,12 @@ func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
 					"__type":    "Pointer",
 					"className": tp["targetClass"],
 				}
+			} else if v, ok := object[fieldName].(string); ok {
+				object[fieldName] = types.M{
+					"objectId":  v,
+					"__type":    "Pointer",
+					"className": tp["targetClass"],
+				}
 			} else {
 				object[fieldName] = nil
 			}
@@ -1340,6 +1346,8 @@ func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
 			resString := ""
 			if v, ok := object[fieldName].([]byte); ok {
 				resString = string(v)
+			} else if v, ok := object[fieldName].(string); ok {
+				resString = v
 			}
 			if len(resString) < 5 {
 				object[fieldName] = nil
@@ -1369,12 +1377,19 @@ func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
 					"__type": "File",
 					"name":   string(v),
 				}
+			} else if v, ok := object[fieldName].(string); ok {
+				object[fieldName] = types.M{
+					"__type": "File",
+					"name":   v,
+				}
 			} else {
 				object[fieldName] = nil
 			}
 		} else if objectType == "String" && object[fieldName] != nil {
 			if v, ok := object[fieldName].([]byte); ok {
 				object[fieldName] = string(v)
+			} else if v, ok := object[fieldName].(string); ok {
+				object[fieldName] = v
 			} else {
 				object[fieldName] = nil
 			}
@@ -1382,6 +1397,13 @@ func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
 			if v, ok := object[fieldName].([]byte); ok {
 				var r types.M
 				err := json.Unmarshal(v, &r)
+				if err != nil {
+					return nil, err
+				}
+				object[fieldName] = r
+			} else if v, ok := object[fieldName].(string); ok {
+				var r types.M
+				err := json.Unmarshal([]byte(v), &r)
 				if err != nil {
 					return nil, err
 				}
@@ -1400,6 +1422,13 @@ func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
 					return nil, err
 				}
 				object[fieldName] = r
+			} else if v, ok := object[fieldName].(string); ok {
+				var r types.S
+				err := json.Unmarshal([]byte(v), &r)
+				if err != nil {
+					return nil, err
+				}
+				object[fieldName] = r
 			} else {
 				object[fieldName] = nil
 			}
@@ -1412,6 +1441,8 @@ func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
 		resString := ""
 		if v, ok := object["_rperm"].([]byte); ok {
 			resString = string(v)
+		} else if v, ok := object["_rperm"].(string); ok {
+			resString = v
 		}
 		if len(resString) < 2 {
 			object["_rperm"] = nil
@@ -1431,6 +1462,8 @@ func postgresObjectToParseObject(object, fields types.M) (types.M, error) {
 		resString := ""
 		if v, ok := object["_wperm"].([]byte); ok {
 			resString = string(v)
+		} else if v, ok := object["_wperm"].(string); ok {
+			resString = v
 		}
 		if len(resString) < 2 {
 			object["_wperm"] = nil

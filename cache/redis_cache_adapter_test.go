@@ -9,7 +9,7 @@ import (
 
 func Test_redis(t *testing.T) {
 	var v interface{}
-	cache := newRedisMemoryCacheAdapter("192.168.99.100:6379", "")
+	cache := newRedisMemoryCacheAdapter("192.168.99.100:6379", "", 0)
 	/*******************************************************************/
 	cache.put("k1", "hello", 0)
 	v = "hello"

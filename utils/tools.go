@@ -26,22 +26,7 @@ func IsEmail(email string) bool {
 
 // DeepCopy 简易版的内存复制
 func DeepCopy(i interface{}) interface{} {
-	if i == nil {
-		return nil
-	}
-	if s, ok := i.([]interface{}); ok {
-		return CopySlice(s)
-	}
-	if s, ok := i.(types.S); ok {
-		return CopySliceS(s)
-	}
-	if m, ok := i.(map[string]interface{}); ok {
-		return CopyMap(m)
-	}
-	if m, ok := i.(types.M); ok {
-		return CopyMapM(m)
-	}
-	return i
+	return Copy(i)
 }
 
 // CopyMap 复制 map

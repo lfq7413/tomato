@@ -3,6 +3,8 @@ package cache
 import (
 	"sync"
 	"time"
+
+	"github.com/lfq7413/tomato/utils"
 )
 
 // TODO 增加定时清理过期缓存的操作
@@ -31,7 +33,7 @@ func (m *inMemoryCacheAdapter) get(key string) interface{} {
 	defer m.mu.Unlock()
 	if record, ok := m.cache[key]; ok {
 		if record.expire == -1 || record.expire >= time.Now().UnixNano() {
-			return record.value
+			return utils.DeepCopy(record.value)
 		}
 		delete(m.cache, key)
 		return nil

@@ -249,8 +249,8 @@ func (s *Schema) UpdateClass(className string, submittedFields types.M, classLev
 	defer s.permsMutex.Unlock()
 	return types.M{
 		"className":             className,
-		"fields":                s.data[className],
-		"classLevelPermissions": s.perms[className],
+		"fields":                utils.DeepCopy(s.data[className]),
+		"classLevelPermissions": utils.DeepCopy(s.perms[className]),
 	}, nil
 }
 
@@ -281,7 +281,7 @@ func (s *Schema) deleteFields(fieldNames []string, className string) error {
 		return errs.E(errs.InvalidClassName, "Class "+className+" does not exist.")
 	}
 
-	fields := utils.M(schema["fields"])
+	fields := utils.CopyMap(utils.M(schema["fields"]))
 	for _, fieldName := range fieldNames {
 		if fields == nil || fields[fieldName] == nil {
 			return errs.E(errs.ClassNotEmpty, "Field "+fieldName+" does not exist, cannot delete.")
@@ -631,7 +631,7 @@ func (s *Schema) getExpectedType(className, fieldName string) types.M {
 		if expectedType != nil && utils.S(expectedType["type"]) == "map" {
 			expectedType["type"] = "Object"
 		}
-		return expectedType
+		return utils.CopyMap(expectedType)
 	}
 	return nil
 }

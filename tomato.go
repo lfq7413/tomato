@@ -37,6 +37,18 @@ func Run() {
 
 // RunLiveQueryServer 运行 LiveQuery 服务
 func RunLiveQueryServer(args map[string]string) {
+	// 未设置启动参数时，使用默认参数填充
+	if args == nil {
+		args = map[string]string{}
+		args["logLevel"] = "VERBOSE"
+		args["serverURL"] = config.TConfig.ServerURL
+		args["appId"] = config.TConfig.AppID
+		args["clientKey"] = config.TConfig.ClientKey
+		args["masterKey"] = config.TConfig.MasterKey
+		args["subType"] = config.TConfig.PublisherType
+		args["subURL"] = config.TConfig.PublisherURL
+		args["subConfig"] = config.TConfig.PublisherConfig
+	}
 	livequery.Run(args)
 }
 

@@ -56,9 +56,16 @@ PublisherType = Redis
 PublisherURL = 192.168.99.100:6379
 ```
 ###### 启动 LiveQuery
+使用默认参数与 tomato 同时启动：
 ```go
 func main() {
-    ...
+    go tomato.RunLiveQueryServer(nil)
+    tomato.Run()
+}
+```
+使用自定义参数启动或者是独立运行：
+```go
+func main() {
     args := map[string]string{}
     args["pattern"] = "/livequery"
     args["addr"] = ":8089"
@@ -69,8 +76,12 @@ func main() {
     args["masterKey"] = "test"
     args["subType"] = "Redis"
     args["subURL"] = "192.168.99.100:6379"
+    // 使用自定义参数与 tomato 同时启动
     go tomato.RunLiveQueryServer(args)
-    ...
+    tomato.Run()
+
+    // 独立运行 LiveQueryServer
+    // tomato.RunLiveQueryServer(args)
 }
 ```
 

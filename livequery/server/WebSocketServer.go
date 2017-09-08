@@ -2,7 +2,9 @@ package server
 
 import (
 	"net/http"
+	"strings"
 
+	"github.com/astaxie/beego"
 	"golang.org/x/net/websocket"
 )
 
@@ -18,11 +20,30 @@ var handler WebSocketHandler
 // RunWebSocketServer ...
 func RunWebSocketServer(pattern, addr string, h WebSocketHandler) {
 	handler = h
-	http.Handle(pattern, http.HandlerFunc(
+	handlerFunc := http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
 			s := websocket.Server{Handler: websocket.Handler(httpHandler)}
 			s.ServeHTTP(w, req)
-		}))
+		})
+	// 如果未设置监听地址，则与 beego 共用
+	if addr == "" {
+		// http://127.0.0.1:8080/v1 ==>> pattern = /v1
+		serverURL := TomatoInfo["serverURL"]
+		i := strings.Index(serverURL, `//`)
+		if i < 0 {
+			panic("RunWebSocketServer: invalid serverURL: " + serverURL)
+		}
+		serverURL = serverURL[(i + 2):]
+		i = strings.Index(serverURL, `/`)
+		if i < 0 {
+			panic("RunWebSocketServer: invalid serverURL: " + serverURL)
+		}
+		pattern = serverURL[i:]
+		beego.Handler(pattern, handlerFunc)
+		return
+	}
+	// 如果设置了地址，则开启新服务去处理 WebSocket
+	http.Handle(pattern, handlerFunc)
 	err := http.ListenAndServe(addr, nil)
 	if err != nil {
 		panic("ListenAndServe: " + err.Error())

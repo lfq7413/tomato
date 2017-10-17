@@ -2,56 +2,84 @@ package files
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 
 	"github.com/lfq7413/tomato/config"
 	"github.com/lfq7413/tomato/errs"
-	"qiniupkg.com/api.v7/conf"
-	"qiniupkg.com/api.v7/kodo"
-	"qiniupkg.com/api.v7/kodocli"
+	"github.com/qiniu/api.v7/auth/qbox"
+	"github.com/qiniu/api.v7/storage"
 )
 
 // qiniuAdapter 七牛云存储
 // 参考文档： http://developer.qiniu.com/code/v7/sdk/go.html
+// 参考文档： https://developer.qiniu.com/kodo/sdk/1238/go
 type qiniuAdapter struct {
-	bucket string
-	url    string
+	bucket    string
+	url       string
+	accessKey string
+	secretKey string
 }
 
 func newQiniuAdapter() *qiniuAdapter {
 	q := &qiniuAdapter{
-		bucket: config.TConfig.QiniuBucket,
-		url:    config.TConfig.QiniuDomain,
+		bucket:    config.TConfig.QiniuBucket,
+		url:       config.TConfig.QiniuDomain,
+		accessKey: config.TConfig.QiniuAccessKey,
+		secretKey: config.TConfig.QiniuSecretKey,
 	}
-	conf.ACCESS_KEY = config.TConfig.QiniuAccessKey
-	conf.SECRET_KEY = config.TConfig.QiniuSecretKey
 	return q
 }
 
 func (q *qiniuAdapter) createFile(filename string, data []byte, contentType string) error {
-	c := kodo.New(0, nil)
-
-	policy := &kodo.PutPolicy{
-		Scope:   q.bucket,
-		Expires: 3600,
+	putPolicy := storage.PutPolicy{
+		Scope: q.bucket,
 	}
-	token := c.MakeUptoken(policy)
+	mac := qbox.NewMac(q.accessKey, q.secretKey)
+	upToken := putPolicy.UploadToken(mac)
 
-	zone := 0
-	uploader := kodocli.NewUploader(zone, nil)
+	cfg := storage.Config{}
+	// 空间对应的机房
+	switch config.TConfig.QiniuZone {
+	case "Huadong":
+		cfg.Zone = &storage.ZoneHuadong
+	case "Huabei":
+		cfg.Zone = &storage.ZoneHuabei
+	case "Huanan":
+		cfg.Zone = &storage.ZoneHuanan
+	case "Beimei":
+		cfg.Zone = &storage.ZoneBeimei
+	}
+	// 是否使用https域名
+	cfg.UseHTTPS = false
+	// 上传是否使用CDN上传加速
+	cfg.UseCdnDomains = false
 
-	var ret kodocli.PutRet
-	err := uploader.Put(nil, &ret, token, filename, bytes.NewReader(data), int64(len(data)), nil)
+	formUploader := storage.NewFormUploader(&cfg)
+	ret := storage.PutRet{}
+	putExtra := storage.PutExtra{
+		Params: map[string]string{
+			"x:name": "github logo",
+		},
+	}
+
+	err := formUploader.Put(context.Background(), &ret, upToken, filename, bytes.NewReader(data), int64(len(data)), &putExtra)
 	return err
 }
 
 func (q *qiniuAdapter) deleteFile(filename string) error {
-	c := kodo.New(0, nil)
-	p := c.Bucket(q.bucket)
-
-	err := p.Delete(nil, filename)
+	mac := qbox.NewMac(q.accessKey, q.secretKey)
+	cfg := storage.Config{
+		// 是否使用https域名进行资源管理
+		UseHTTPS: false,
+	}
+	// 指定空间所在的区域，如果不指定将自动探测
+	// 如果没有特殊需求，默认不需要指定
+	//cfg.Zone=&storage.ZoneHuabei
+	bucketManager := storage.NewBucketManager(mac, &cfg)
+	err := bucketManager.Delete(q.bucket, filename)
 	return err
 }
 

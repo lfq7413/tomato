@@ -38,6 +38,7 @@ type Config struct {
 	QiniuDomain                      string   // 七牛云存储 Domain ，仅在 FileAdapter=Qiniu 时需要配置
 	QiniuAccessKey                   string   // 七牛云存储 AccessKey ，仅在 FileAdapter=Qiniu 时需要配置
 	QiniuSecretKey                   string   // 七牛云存储 SecretKey ，仅在 FileAdapter=Qiniu 时需要配置
+	QiniuZone                        string   // 七牛云存储所在机房，仅在 FileAdapter=Qiniu 时需要配置，可选：Huadong、Huabei、Huanan、Beimei
 	SinaBucket                       string   // 新浪云存储 Bucket ，仅在 FileAdapter=Sina 时需要配置
 	SinaDomain                       string   // 新浪云存储 Domain ，仅在 FileAdapter=Sina 时需要配置
 	SinaAccessKey                    string   // 新浪云存储 AccessKey ，仅在 FileAdapter=Sina 时需要配置
@@ -152,6 +153,7 @@ func parseConfig() {
 	TConfig.QiniuDomain = beego.AppConfig.String("QiniuDomain")
 	TConfig.QiniuAccessKey = beego.AppConfig.String("QiniuAccessKey")
 	TConfig.QiniuSecretKey = beego.AppConfig.String("QiniuSecretKey")
+	TConfig.QiniuZone = beego.AppConfig.String("QiniuZone")
 	TConfig.FileDirectAccess = beego.AppConfig.DefaultBool("FileDirectAccess", true)
 
 	TConfig.SinaBucket = beego.AppConfig.String("SinaBucket")
@@ -235,15 +237,17 @@ func validateFileConfiguration() {
 	case "GridFS":
 	// TODO 校验 MongoDB 配置
 	case "Qiniu":
-		if TConfig.QiniuDomain == "" && TConfig.QiniuBucket == "" && TConfig.QiniuAccessKey == "" && TConfig.QiniuSecretKey == "" {
-			log.Fatalln("QiniuDomain, QiniuBucket, QiniuAccessKey, QiniuSecretKey is required")
+		if TConfig.QiniuDomain == "" || TConfig.QiniuBucket == "" || TConfig.QiniuAccessKey == "" || TConfig.QiniuSecretKey == "" || TConfig.QiniuZone == "" {
+			log.Fatalln("QiniuDomain, QiniuBucket, QiniuAccessKey, QiniuSecretKey, QiniuZone is required")
+		} else if TConfig.QiniuZone != "Huadong" && TConfig.QiniuZone != "Huabei" && TConfig.QiniuZone != "Huanan" && TConfig.QiniuZone != "Beimei" {
+			log.Fatalln("Unsupport Qiniu Zone")
 		}
 	case "Sina":
-		if TConfig.SinaDomain == "" && TConfig.SinaBucket == "" && TConfig.SinaAccessKey == "" && TConfig.SinaSecretKey == "" {
+		if TConfig.SinaDomain == "" || TConfig.SinaBucket == "" || TConfig.SinaAccessKey == "" || TConfig.SinaSecretKey == "" {
 			log.Fatalln("SinaDomain, SinaBucket, SinaAccessKey, SinaSecretKey is required")
 		}
 	case "Tencent":
-		if TConfig.TencentAppID == "" && TConfig.TencentBucket == "" && TConfig.TencentSecretID == "" && TConfig.TencentSecretKey == "" {
+		if TConfig.TencentAppID == "" || TConfig.TencentBucket == "" || TConfig.TencentSecretID == "" || TConfig.TencentSecretKey == "" {
 			log.Fatalln("TencentAppID, TencentBucket, TencentSecretID, TencentSecretKey is required")
 		}
 	default:

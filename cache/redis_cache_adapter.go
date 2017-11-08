@@ -16,7 +16,7 @@ type redisCacheAdapter struct {
 
 const defaultRedisTTL = 30
 
-func newRedisMemoryCacheAdapter(address, password string, ttl int) *redisCacheAdapter {
+func newRedisCacheAdapter(address, password string, ttl int) *redisCacheAdapter {
 	m := &redisCacheAdapter{
 		address:  address,
 		password: password,

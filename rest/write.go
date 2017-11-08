@@ -991,7 +991,7 @@ func (w *Write) runDatabaseOperation() error {
 
 	// TODO 确保不要出现用户无法访问自身数据的情况
 	if acl := utils.M(w.data["ACL"]); acl != nil && acl["*unresolved"] != nil {
-		return errs.E(errs.InvalidAcl, "Invalid ACL.")
+		return errs.E(errs.InvalidACL, "Invalid ACL.")
 	}
 
 	if w.query != nil {

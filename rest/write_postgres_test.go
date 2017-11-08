@@ -1727,7 +1727,7 @@ func TestPostgres_runDatabaseOperation(t *testing.T) {
 	originalData = types.M{}
 	w, _ = NewWrite(auth, className, query, data, originalData, nil)
 	err = w.runDatabaseOperation()
-	expectErr = errs.E(errs.InvalidAcl, "Invalid ACL.")
+	expectErr = errs.E(errs.InvalidACL, "Invalid ACL.")
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
 	}
@@ -1742,7 +1742,7 @@ func TestPostgres_runDatabaseOperation(t *testing.T) {
 	originalData = types.M{}
 	w, _ = NewWrite(auth, className, query, data, originalData, nil)
 	err = w.runDatabaseOperation()
-	expectErr = errs.E(errs.InvalidAcl, "Invalid ACL.")
+	expectErr = errs.E(errs.InvalidACL, "Invalid ACL.")
 	if reflect.DeepEqual(expectErr, err) == false {
 		t.Error("expect:", expectErr, "result:", err)
 	}
